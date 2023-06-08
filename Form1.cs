@@ -219,6 +219,18 @@ namespace Cave
                             screen.activeEntites.Add(new Entity(posXt, posYt, typet, rt, gt, bt));
                         }
                     }
+                    line = f.ReadLine();
+                    if (line[0] != 'x' && line.Count() >= 64)
+                    {
+                        modificationCount = 1;
+                        for(int i = 0; i < 16; i++)
+                        {
+                            for(int j = 0; j < 16; j++)
+                            {
+                                fillStates[i,j] = line[i*16+j] != '0';
+                            }
+                        }
+                    }
                 }
             }
             public void saveChunk(Screen screen)
@@ -233,6 +245,18 @@ namespace Cave
                         stringo += entity.color.R + ";" + entity.color.G + ";" + entity.color.B + ";";
                     }
                     stringo += "\n";
+                    if(modificationCount == 0)
+                    {
+                        stringo += "x\n";
+                    }
+                    else
+                    {
+                        foreach(bool boolo in fillStates)
+                        {
+                            stringo += (Convert.ToInt32(boolo)).ToString();
+                        }
+                        stringo += "\n";
+                    }
                     f.Write(stringo);
                 }
             }
@@ -792,7 +816,7 @@ namespace Cave
                         stringo += posX + ";" + posY + ";";
                         stringo += type + ";";
                         stringo += color.R + ";" + color.G + ";" + color.B + ";";
-                        stringo += "\n";
+                        stringo += "\nx\n";
                         f.Write(stringo);
                     }
                 }
