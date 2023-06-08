@@ -396,3 +396,12 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+App.config
+Cave.csproj
+Cave.sln
+Properties/AssemblyInfo.cs
+Properties/Resources.Designer.cs
+Properties/Resources.resx
+Properties/Settings.Designer.cs
+Properties/Settings.settings
+Form1.resx
