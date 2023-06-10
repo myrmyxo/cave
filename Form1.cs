@@ -70,6 +70,7 @@ namespace Cave
             public int[,,] secondaryFillValues;
             public int[,,] secondaryBiomeValues;
             public int[,] biomeIndex;
+            public float[,] biomability;
             public bool[,] fillStates;
             public List<Entity> entityList= new List<Entity>();
             public int modificationCount = 0;
@@ -139,6 +140,7 @@ namespace Cave
                 secondaryFillValues = new int[2, 16, 16];
                 secondaryBiomeValues = new int[16, 16, 6];
                 biomeIndex = new int[16, 16];
+                biomability = new float[16, 16];
                 fillStates = new bool[16, 16];
                 for (int i = 0; i < 16; i++)
                 {
@@ -150,8 +152,10 @@ namespace Cave
                             value = findSecondaryBiomeValue(this, i, j, k);
                             secondaryBiomeValues[i, j, k] = value;
                         }
-                        value = findBiome(secondaryBiomeValues, i, j);
-                        biomeIndex[i, j] = value;
+                        (int,float) valueTuple = findBiome(secondaryBiomeValues, i, j);
+                        biomeIndex[i, j] = valueTuple.Item1;
+                        biomability[i, j] = valueTuple.Item2;
+                        float biomabilityValue = biomability[i, j];
                         value = findSecondaryNoiseValue(this, i, j, 0);
                         secondaryFillValues[0, i, j] = value;
                         int value1 = value;
@@ -172,6 +176,16 @@ namespace Cave
                             float see2 = Sin(j+mod2*0.3f+0.5f, 16);
                             value2modifier = Min(0,20*(see1+see2)-10);
                             value1modifier = value2modifier+2;
+                        }
+                        else if (biomeIndex[i, j] == 6)
+                        {
+                            float see1 = Obs((posX*16)%64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
+                            float see2 = Obs((posY*16)%64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
+                            if (false && (value2 < 50 || value2 > 200)) { value2modifier = 300; }
+                            else { value2modifier = (Min(0, -40 * (see1 + see2) + 20) * 10 + value2 - 200); }
+                            value1modifier = 5*biomabilityValue;
+                            value2modifier = biomabilityValue*value2modifier + (1-biomabilityValue)*(value1 % 16);
+                            mod2 = (int)(mod2/(1+biomabilityValue*1.5f));
                         }
                         else { value2modifier = (value1 % 16);}
                         
@@ -878,17 +892,18 @@ namespace Cave
 
             Screen mainScreen;
 
-            bool updatePNG = true;
-            int PNGsize = 50; // in chunks
+            bool updatePNG = false;
+            int PNGsize = 100; // in chunks
             bool randomSeed = true;
 
-            long seed = 0;
+            long seed = 947024425;
 
             //
             // cool seeds !!!! DO NOT DELETE
             // 		
             // 527503228 : spawn inside a giant obsidian biome !
             // 1115706211 : very cool spawn, with all the 7 current biomes types near and visitable and amazing looking caves
+            // 947024425 : the biggest fucking obsidian biome i've ever seen. Not near the spawn, go FULL RIGHT, at around 130-140 chunks far right. What the actual fuck it's so big (that's what she said)
             //
 
             if (randomSeed)
@@ -906,7 +921,7 @@ namespace Cave
                 int rando = -10;
                 camPosX = -50*16;
                 camPosY = rando*16;
-                mainScreen = new Screen(-PNGsize/2, rando, PNGsize, seed);
+                mainScreen = new Screen(0, rando, PNGsize, seed);
                 mainScreen.updateScreen();
                 Bitmap bmp = mainScreen.bitmap;
                 Bitmap bmp2 = new Bitmap(512, 512);
@@ -1059,26 +1074,31 @@ namespace Cave
             int fY = fX1 * (modulo - modY) + fX2 * modY;
             return fY / (modulo*modulo);
         }
-        public static int findBiome(int[,,] values, int posX, int posY)
+        public static (int,float) findBiome(int[,,] values, int posX, int posY)
         {
             // arrite so... 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
             int temperature = values[posX, posY, 0];
             int humidity = values[posX, posY, 1];
             int acidity = values[posX, posY, 2];
             int toxicity = values[posX, posY, 3];
-            if (temperature > 200)
+            if (temperature > 190)
             {
-                if(temperature > 220 && humidity > 150) { return 6; }
-                return 2;
+                if(temperature > 210 && humidity > 150)
+                {
+                    int minimo = Min(temperature - 210, humidity - 150);
+                    float obsBiomability = minimo * 0.04f; 
+                    return (6,Min(obsBiomability, 1));
+                }
+                return (2,1);
             }
             if (temperature < 100)
             {
-                if(acidity < 100) { return 0; }
-                if(humidity > toxicity) { return 5; }
-                return 1;
+                if(acidity < 100) { return (0,1); }
+                if(humidity > toxicity) { return (5,1); }
+                return (1,1);
             }
-            if(humidity >= toxicity) { return 3; }
-            return 4;
+            if(humidity >= toxicity) { return (3,1); }
+            return (4,1);
         }
         private void pictureBox1_Click(object sender, EventArgs e)
         {
@@ -1331,16 +1351,23 @@ namespace Cave
             if (n == n2) { return n; }
             return n - n2*2;
         }
-        public static float BoundedSeesaw(float n, float mod) // if the values is already between the boudns of the seesaw
+        public static float Obseesaw(float n, float mod)
         {
+            n = ((n % mod) + n) % mod;
             float n2 = n % (mod / 2);
+            if (n*3 > mod && n*3 < mod*2) { return mod*0.33f; }
             if (n == n2) { return n; }
-            return n - n2*2;
+            return n - n2 * 2;
         }
         public static float Sin(float n, float period)
         {
             n = Seesaw(n, period);
             return (n*n)/(period*period*0.25f);
+        }
+        public static float Obs(float n, float period)
+        {
+            n = Obseesaw(n, period);
+            return (n * n) / (period * period * 0.25f);
         }
     }
 }
