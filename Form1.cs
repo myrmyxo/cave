@@ -28,6 +28,8 @@ namespace Cave
 
             public static bool[] arrowKeysState = { false, false, false, false };
             public static bool digPress = false;
+            public static bool[] placePress = { false, false };
+            public static bool shiftPress = false;
             public static DateTime timeAtLauch;
             public static float timeElapsed;
 
@@ -160,8 +162,21 @@ namespace Cave
                         int mod1 = secondaryBiomeValues[i, j, 4];
                         int mod2 = secondaryBiomeValues[i, j, 5];
 
-                        if (value2 > 200 + (value1%16)) { fillStates[i, j] = false; }
-                        else if (value1 > 122 - mod2*mod2*0.0003f && value1 < 133 + mod2*mod2*0.0003f) { fillStates[i, j] = false; }
+                        float value1modifier = 0;
+                        float value2modifier;
+                        
+                        if (biomeIndex[i, j] == 1){ value2modifier = -3*Max(Seesaw(value1, 13),Seesaw(value1, 11)); }
+                        else if (biomeIndex[i, j] == 4)
+                        {
+                            float see1 = Sin(i+mod2*0.3f+0.5f, 16);
+                            float see2 = Sin(j+mod2*0.3f+0.5f, 16);
+                            value2modifier = Min(0,20*(see1+see2)-10);
+                            value1modifier = value2modifier+2;
+                        }
+                        else { value2modifier = (value1 % 16);}
+                        
+                        if (value2 > 200 + value2modifier) { fillStates[i, j] = false; }
+                        else if (value1 > 122 - mod2*mod2*0.0003f + value1modifier && value1 < 133 + mod2*mod2*0.0003f - value1modifier) { fillStates[i, j] = false; }
                         else { fillStates[i, j] = true; }
                     }
                 }
@@ -555,6 +570,7 @@ namespace Cave
             public float speedY = 0;
 
             public float timeAtLastDig = -9999;
+            public float timeAtLastPlace = -9999;
             public (int,int) findIntPos(float positionX, float positionY)
             {
                 return ((int)Floor(positionX, 1), (int)Floor(positionY, 1));
@@ -601,7 +617,26 @@ namespace Cave
                         Dig(posX, posY-1, screen);
                     }
                 }
-                while(Abs(toMoveX) > 0)
+                if ((placePress[0] || placePress[1]) && timeElapsed > timeAtLastPlace + 0.5f)
+                {
+                    if (arrowKeysState[0] && !arrowKeysState[1])
+                    {
+                        Place(posX + 1, posY, screen);
+                    }
+                    else if (arrowKeysState[1] && !arrowKeysState[0])
+                    {
+                        Place(posX - 1, posY, screen);
+                    }
+                    else if (arrowKeysState[2] && !arrowKeysState[3])
+                    {
+                        Place(posX, posY + 1, screen);
+                    }
+                    else if (arrowKeysState[3] && !arrowKeysState[2])
+                    {
+                        Place(posX, posY - 1, screen);
+                    }
+                }
+                while (Abs(toMoveX) > 0)
                 {
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX + Sign(toMoveX), posY);
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
@@ -634,7 +669,6 @@ namespace Cave
                     }
                 }
             }
-
             public void Dig(int posToDigX, int posToDigY, Screen screen)
             {
                 (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posToDigX, posToDigY);
@@ -644,6 +678,17 @@ namespace Cave
                     chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = false;
                     chunkToDig.modificationCount += 1;
                     timeAtLastDig = timeElapsed;
+                }
+            }
+            public void Place(int posToDigX, int posToDigY, Screen screen)
+            {
+                (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posToDigX, posToDigY);
+                Chunk chunkToDig = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
+                if (!chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16])
+                {
+                    chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = true;
+                    chunkToDig.modificationCount += 1;
+                    timeAtLastPlace = timeElapsed;
                 }
             }
         }
@@ -833,8 +878,8 @@ namespace Cave
 
             Screen mainScreen;
 
-            bool updatePNG = false;
-            int PNGsize = 100; // in chunks
+            bool updatePNG = true;
+            int PNGsize = 50; // in chunks
             bool randomSeed = true;
 
             long seed = 0;
@@ -1052,6 +1097,11 @@ namespace Cave
             if (arrowKeysState[2]) { player.speedY += 1; }
             if (arrowKeysState[3]) { player.speedY -= 2; }
             player.speedY += 1;
+            if (shiftPress)
+            {
+                player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.5f) - 1.2f));
+                player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.5f) - 1.2f));
+            }
             foreach(Player playor in screen.playerList)
             {
                 playor.movePlayer(screen);
@@ -1118,6 +1168,18 @@ namespace Cave
             {
                 digPress = true;
             }
+            if (e.KeyCode == Keys.Z)
+            {
+                placePress[0] = true;
+            }
+            if (e.KeyCode == Keys.W)
+            {
+                placePress[1] = true;
+            }
+            if ((Control.ModifierKeys & Keys.Shift) != 0)
+            {
+                shiftPress = true;
+            }
         }
         private void KeyIsUp(object sender, KeyEventArgs e)
         {
@@ -1140,6 +1202,18 @@ namespace Cave
             if (e.KeyCode == Keys.X)
             {
                 digPress = false;
+            }
+            if (e.KeyCode == Keys.Z)
+            {
+                placePress[0] = false;
+            }
+            if (e.KeyCode == Keys.W)
+            {
+                placePress[1] = false;
+            }
+            if ((Control.ModifierKeys & Keys.Shift) == 0)
+            {
+                shiftPress = false;
             }
         }
     }
@@ -1173,7 +1247,7 @@ namespace Cave
             if (a > b) { return a; }
             return b;
         }
-        public static float Max(int a, int b)
+        public static int Max(int a, int b)
         {
             if (a > b) { return a; }
             return b;
@@ -1183,7 +1257,7 @@ namespace Cave
             if (a < b) { return a; }
             return b;
         }
-        public static float Min(int a, int b)
+        public static int Min(int a, int b)
         {
             if (a < b) { return a; }
             return b;
@@ -1194,7 +1268,7 @@ namespace Cave
             if (value < min) { return min; }
             return value;
         }
-        public static float Clamp(int value, int min, int max)
+        public static int Clamp(int value, int min, int max)
         {
             if (value > max) { return max; }
             if (value < min) { return min; }
@@ -1241,6 +1315,32 @@ namespace Cave
             }
             if (sq > n / sq) return sq - 1;
             return sq;
+        }
+
+        public static int Seesaw(int n, int mod)
+        {
+            n = ((n%mod)+n)%mod;
+            int n2 = n % (mod / 2);
+            if(n == n2) { return n; }
+            return n - n2;
+        }
+        public static float Seesaw(float n, float mod)
+        {
+            n = ((n%mod)+n)%mod;
+            float n2 = n % (mod / 2);
+            if (n == n2) { return n; }
+            return n - n2*2;
+        }
+        public static float BoundedSeesaw(float n, float mod) // if the values is already between the boudns of the seesaw
+        {
+            float n2 = n % (mod / 2);
+            if (n == n2) { return n; }
+            return n - n2*2;
+        }
+        public static float Sin(float n, float period)
+        {
+            n = Seesaw(n, period);
+            return (n*n)/(period*period*0.25f);
         }
     }
 }
