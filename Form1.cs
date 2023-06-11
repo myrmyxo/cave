@@ -14,6 +14,7 @@ using static Cave.Form1;
 using static Cave.Form1.Globals;
 using static Cave.MathF;
 using static System.Net.WebRequestMethods;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
 
 namespace Cave
 {
@@ -69,16 +70,16 @@ namespace Cave
             public int[,] primaryBiomeValues;
             public int[,,] secondaryFillValues;
             public int[,,] secondaryBiomeValues;
-            public int[,] biomeIndex;
-            public float[,] biomability;
+            public (int,int)[,][] biomeIndex;
             public bool[,] fillStates;
+            public Color[,] colors;
             public List<Entity> entityList= new List<Entity>();
             public int modificationCount = 0;
             public Chunk(long posX, long posY, long seed, Screen screen)
             {
                 position = (posX, posY);
-                long chunkX = (long)(Floor(posX,2)*0.5f);
-                long chunkY = (long)(Floor(posY,2)*0.5f);
+                long chunkX = (long)(Floor(posX, 2) * 0.5f);
+                long chunkY = (long)(Floor(posY, 2) * 0.5f);
                 int[,] fillValues =
                 {
                     {
@@ -95,8 +96,8 @@ namespace Cave
                     }
                 };
                 primaryFillValues = fillValues;
-                chunkX = Floor(posX,16)/16;
-                chunkY = Floor(posY,16)/16;
+                chunkX = Floor(posX, 16) / 16;
+                chunkY = Floor(posY, 16) / 16;
                 int[,] biomeValues =
                 {
                     {
@@ -139,23 +140,21 @@ namespace Cave
                 primaryBiomeValues = biomeValues;
                 secondaryFillValues = new int[2, 16, 16];
                 secondaryBiomeValues = new int[16, 16, 6];
-                biomeIndex = new int[16, 16];
-                biomability = new float[16, 16];
+                biomeIndex = new (int, int)[16, 16][];
                 fillStates = new bool[16, 16];
+                colors = new Color[16, 16];
                 for (int i = 0; i < 16; i++)
                 {
                     for (int j = 0; j < 16; j++)
                     {
                         int value;
-                        for(int k = 0; k < 6; k++)
+                        for (int k = 0; k < 6; k++)
                         {
                             value = findSecondaryBiomeValue(this, i, j, k);
                             secondaryBiomeValues[i, j, k] = value;
                         }
-                        (int,float) valueTuple = findBiome(secondaryBiomeValues, i, j);
-                        biomeIndex[i, j] = valueTuple.Item1;
-                        biomability[i, j] = valueTuple.Item2;
-                        float biomabilityValue = biomability[i, j];
+                        (int, int)[] valueTupleArray = findBiome(secondaryBiomeValues, i, j);
+                        biomeIndex[i, j] = valueTupleArray;
                         value = findSecondaryNoiseValue(this, i, j, 0);
                         secondaryFillValues[0, i, j] = value;
                         int value1 = value;
@@ -166,32 +165,66 @@ namespace Cave
                         int mod1 = secondaryBiomeValues[i, j, 4];
                         int mod2 = secondaryBiomeValues[i, j, 5];
 
+                        float valueToBeAdded;
                         float value1modifier = 0;
-                        float value2modifier;
-                        
-                        if (biomeIndex[i, j] == 1){ value2modifier = -3*Max(Seesaw(value1, 13),Seesaw(value1, 11)); }
-                        else if (biomeIndex[i, j] == 4)
+                        float value2PREmodifier;
+                        float value2modifier = 0;
+                        int[] colorArray = { 0, 0, 0 };
+                        float mod2divider = 1;
+
+                        float mult;
+                        foreach ((int, int) tupel in biomeIndex[i, j])
                         {
-                            float see1 = Sin(i+mod2*0.3f+0.5f, 16);
-                            float see2 = Sin(j+mod2*0.3f+0.5f, 16);
-                            value2modifier = Min(0,20*(see1+see2)-10);
-                            value1modifier = value2modifier+2;
+                            mult = tupel.Item2 * 0.01f;
+                            if (tupel.Item1 == 1)
+                            {
+                                value2modifier += -3 * mult * Max(Seesaw(value1, 13), Seesaw(value1, 11));
+                            }
+                            else if (tupel.Item1 == 4)
+                            {
+                                float see1 = Sin(i + mod2 * 0.3f + 0.5f, 16);
+                                float see2 = Sin(j + mod2 * 0.3f + 0.5f, 16);
+                                valueToBeAdded = mult*Min(0, 20 * (see1 + see2) - 10);
+                                value2modifier += valueToBeAdded;
+                                value1modifier += valueToBeAdded + 2;
+                            }
+                            else if (tupel.Item1 == 6)
+                            {
+                                float see1 = Obs((posX * 16) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
+                                float see2 = Obs((posY * 16) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
+                                if (false && (value2 < 50 || value2 > 200))
+                                {
+                                    value2PREmodifier = 300;
+                                }
+                                else
+                                {
+                                    value2PREmodifier = (Min(0, -40 * (see1 + see2) + 20) * 10 + value2 - 200);
+                                }
+                                value1modifier += 5 * mult;
+                                value2modifier += mult * value2PREmodifier;
+                                mod2divider += mult * 1.5f;
+                            }
+                            else { value2modifier += mult*(value1 % 16); }
+
+                            (int, int, int) tupel2 = biomeDict[tupel.Item1];
+                            colorArray[0] += (int)(mult * tupel2.Item1);
+                            colorArray[1] += (int)(mult * tupel2.Item2);
+                            colorArray[2] += (int)(mult * tupel2.Item3);
                         }
-                        else if (biomeIndex[i, j] == 6)
-                        {
-                            float see1 = Obs((posX*16)%64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
-                            float see2 = Obs((posY*16)%64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
-                            if (false && (value2 < 50 || value2 > 200)) { value2modifier = 300; }
-                            else { value2modifier = (Min(0, -40 * (see1 + see2) + 20) * 10 + value2 - 200); }
-                            value1modifier = 5*biomabilityValue;
-                            value2modifier = biomabilityValue*value2modifier + (1-biomabilityValue)*(value1 % 16);
-                            mod2 = (int)(mod2/(1+biomabilityValue*1.5f));
-                        }
-                        else { value2modifier = (value1 % 16);}
-                        
+
+                        mod2 = (int)(mod2 / mod2divider);
+
                         if (value2 > 200 + value2modifier) { fillStates[i, j] = false; }
-                        else if (value1 > 122 - mod2*mod2*0.0003f + value1modifier && value1 < 133 + mod2*mod2*0.0003f - value1modifier) { fillStates[i, j] = false; }
+                        else if (value1 > 122 - mod2 * mod2 * 0.0003f + value1modifier && value1 < 133 + mod2 * mod2 * 0.0003f - value1modifier) { fillStates[i, j] = false; }
                         else { fillStates[i, j] = true; }
+
+                        
+                        for (int k = 0; k < 3; k++)
+                        {
+                            colorArray[k] = (int)(colorArray[k] * 0.15f);
+                            colorArray[k] += 20;
+                        }
+                        colors[i, j] = Color.FromArgb(colorArray[0], colorArray[1], colorArray[2]);
                     }
                 }
                 if (System.IO.File.Exists($"{currentDirectory}\\ChunkData\\{seed}\\{position.Item1}.{position.Item2}.txt"))
@@ -199,7 +232,41 @@ namespace Cave
                     loadChunk(screen);
                 }
                 else { spawnEntites(screen); }
-                //spawnEntites(screen);
+
+                for (int i = 0; i < 16; i++)
+                {
+                    for (int j = 0; j < 16; j++)
+                    {
+                        if (!fillStates[i, j])
+                        {
+                            int[] colorArray = { colors[i, j].R, colors[i, j].G , colors[i, j].B };
+                            for (int k = 0; k < 3; k++)
+                            {
+                                colorArray[k] += 70;
+                            }
+                            colors[i, j] = Color.FromArgb(colorArray[0], colorArray[1], colorArray[2]);
+                        }
+                    }
+                }
+            }
+            public void updateColorAfterDig(int i, int j, bool hasBeenDugAndNotFilled)
+            {
+                int[] colorArray = { colors[i, j].R, colors[i, j].G, colors[i, j].B };
+                if (hasBeenDugAndNotFilled)
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        colorArray[k] += 70;
+                    }
+                }
+                else
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        colorArray[k] -= 70;
+                    }
+                }
+                colors[i, j] = Color.FromArgb(colorArray[0], colorArray[1], colorArray[2]);
             }
             public void spawnEntites(Screen screen)
             {
@@ -498,21 +565,13 @@ namespace Cave
                             continue;
                         }
 
-                        Chunk chunk = loadedChunks[i / 16, j / 16];
-                        bool filled = chunk.fillStates[i % 16, j % 16];
-                        int[] RGB;
-                        if (filled) { RGB = new int[3] { 20, 20, 20}; }
-                        else { RGB = new int[3] { 90, 90, 90}; }
-                        (int,int,int) color = biomeDict[chunk.biomeIndex[i%16, j%16]];
-                        RGB[0] += (int)(color.Item1*0.15f);
-                        RGB[1] += (int)(color.Item2*0.15f);
-                        RGB[2] += (int)(color.Item3*0.15f);
+                        Color color = loadedChunks[i/16, j/16].colors[i%16, j%16];
 
                         for (int i2 = 0; i2 < 4; i2++)
                         {
                             for (int j2 = 0; j2 < 4; j2++)
                             {
-                                bitmap.SetPixel(pixelPosX*4+i2, pixelPosY*4+j2, Color.FromArgb(RGB[0], RGB[1], RGB[2]));
+                                bitmap.SetPixel(pixelPosX*4+i2, pixelPosY*4+j2, color);
                             }
                         }
                     }
@@ -690,6 +749,7 @@ namespace Cave
                 if (chunkToDig.fillStates[(posToDigX%16+32)%16, (posToDigY%16+32)%16])
                 {
                     chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = false;
+                    chunkToDig.updateColorAfterDig((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16, true);
                     chunkToDig.modificationCount += 1;
                     timeAtLastDig = timeElapsed;
                 }
@@ -701,6 +761,7 @@ namespace Cave
                 if (!chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16])
                 {
                     chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = true;
+                    chunkToDig.updateColorAfterDig((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16, false);
                     chunkToDig.modificationCount += 1;
                     timeAtLastPlace = timeElapsed;
                 }
@@ -721,7 +782,7 @@ namespace Cave
             {
                 int hueVar = rand.Next(101) - 50;
                 int shadeVar = rand.Next(61) - 30;
-                int biome = chunk.biomeIndex[(posX % 16 + 16) % 16, (posY % 16 + 16) % 16];
+                int biome = chunk.biomeIndex[(posX%16+16)%16, (posY%16+16)%16][0].Item1;
                 if (biome == 5)
                 {
                     type = 0;
@@ -893,10 +954,10 @@ namespace Cave
             Screen mainScreen;
 
             bool updatePNG = false;
-            int PNGsize = 100; // in chunks
+            int PNGsize = 50; // in chunks
             bool randomSeed = true;
 
-            long seed = 947024425;
+            long seed = 527503228;
 
             //
             // cool seeds !!!! DO NOT DELETE
@@ -921,7 +982,7 @@ namespace Cave
                 int rando = -10;
                 camPosX = -50*16;
                 camPosY = rando*16;
-                mainScreen = new Screen(0, rando, PNGsize, seed);
+                mainScreen = new Screen(-PNGsize/2, rando, PNGsize, seed);
                 mainScreen.updateScreen();
                 Bitmap bmp = mainScreen.bitmap;
                 Bitmap bmp2 = new Bitmap(512, 512);
@@ -1074,31 +1135,85 @@ namespace Cave
             int fY = fX1 * (modulo - modY) + fX2 * modY;
             return fY / (modulo*modulo);
         }
-        public static (int,float) findBiome(int[,,] values, int posX, int posY)
+        public static (int,int)[] findBiome(int[,,] values, int posX, int posY)
         {
             // arrite so... 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
             int temperature = values[posX, posY, 0];
             int humidity = values[posX, posY, 1];
             int acidity = values[posX, posY, 2];
             int toxicity = values[posX, posY, 3];
-            if (temperature > 190)
+            List<(int, int)> listo = new List<(int, int)>();
+            int percentageFree = 100;
+
+            if(temperature > 180)
             {
+                int hotness = Min((temperature-180)*10, 100);
                 if(temperature > 210 && humidity > 150)
                 {
                     int minimo = Min(temperature - 210, humidity - 150);
-                    float obsBiomability = minimo * 0.04f; 
-                    return (6,Min(obsBiomability, 1));
+                    int obsidianess = minimo * 4;
+                    obsidianess = Min(obsidianess, 100);
+                    hotness -= obsidianess;
+                    listo.Add((6, obsidianess));
+                    percentageFree -= obsidianess;
                 }
-                return (2,1);
+                if(hotness > 0)
+                {
+                    listo.Add((2, hotness));
+                    percentageFree -= hotness;
+                }
             }
-            if (temperature < 100)
+            else if(temperature < 110)
             {
-                if(acidity < 100) { return (0,1); }
-                if(humidity > toxicity) { return (5,1); }
-                return (1,1);
+                int coldness = Min((110-temperature) * 10, 100);
+                if(acidity < 110)
+                {
+                    int acidness = (int)(Min((110-acidity)*10, 100)*coldness*0.01f);
+                    coldness -= acidness;
+                    listo.Add((1, acidness));
+                    percentageFree -= acidness;
+                }
+                if(humidity > toxicity)
+                {
+                    int fairyness = (int)(Min((humidity-toxicity)*10,100)*coldness*0.01f);
+                    coldness -= fairyness;
+                    if(fairyness > 0)
+                    {
+                        listo.Add((5, fairyness));
+                        percentageFree -= fairyness;
+                    }
+                }
+                if (coldness > 0)
+                {
+                    listo.Add((0, coldness));
+                    percentageFree -= coldness;
+                }
+
             }
-            if(humidity >= toxicity) { return (3,1); }
-            return (4,1);
+
+            if(percentageFree > 0)
+            {
+                int slimeness = (int)(Clamp((toxicity - humidity + 5) * 10, 0, 100) * percentageFree * 0.01f);
+                int forestness = (int)(Clamp((humidity - toxicity + 5) * 10, 0, 100) * percentageFree * 0.01f);
+                if (forestness > 0)
+                {
+                    listo.Add((3, forestness));
+                    percentageFree -= forestness;
+                }
+                if (slimeness > 0)
+                {
+                    listo.Add((4, slimeness));
+                    percentageFree -= slimeness;
+                }
+            }
+
+            Sort(listo, false);
+            (int, int)[] arrayo = new (int, int)[listo.Count];
+            for(int i = 0; i < arrayo.Length; i++)
+            {
+                arrayo[i] = listo[i];
+            }
+            return arrayo;
         }
         private void pictureBox1_Click(object sender, EventArgs e)
         {
@@ -1260,7 +1375,41 @@ namespace Cave
             return (long)((121525) * seed + (long)6763) % (long)4294967291;
         }
 
-
+        public static void Sort(List<(int,int)> listo, bool sortByFirstInt)
+        {
+            if(sortByFirstInt)
+            {
+                int idx = 0;
+                while(idx < listo.Count-1)
+                {
+                    if (listo[idx+1].Item1 > listo[idx].Item1 || (listo[idx+1].Item1 == listo[idx].Item1 && listo[idx + 1].Item2 > listo[idx].Item2))
+                    {
+                        listo.Insert(idx, listo[idx+1]);
+                        listo.RemoveAt(idx+2);
+                        idx -= 2;
+                    }
+                    idx += 1;
+                }
+            }
+            else
+            {
+                int idx = 0;
+                while(idx < listo.Count-1)
+                {
+                    if (listo[idx+1].Item2 > listo[idx].Item2 || (listo[idx+1].Item2 == listo[idx].Item2 && listo[idx + 1].Item1 > listo[idx].Item1))
+                    {
+                        listo.Insert(idx, listo[idx+1]);
+                        listo.RemoveAt(idx+2);
+                        idx -= 2;
+                    }
+                    idx = Max(0, idx+1);
+                }
+            }
+            if (listo.Count >= 3)
+            {
+                string stringo = "";
+            }
+        }
 
         public static float Max(float a, float b)
         {
