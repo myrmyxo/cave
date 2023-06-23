@@ -1004,8 +1004,7 @@ namespace Cave
         {
             long x = posX;
             long y = posY;
-            long seed = screen.seed;
-            long seedX = seed;
+            long seedX;
             if (x >= 0)
             {
                 seedX = screen.LCGCacheListMatrix[layer,0][(int)(x/50)];
@@ -1018,15 +1017,16 @@ namespace Cave
             }
             else
             {
-                seedX = screen.LCGCacheListMatrix[layer,1][(int)((-x) / 50)];
-                x = (-x) % 50;
+                x = -x;
+                seedX = screen.LCGCacheListMatrix[layer,1][(int)(x / 50)];
+                x = x % 50;
                 while (x > 0)
                 {
                     seedX = LCGxNeg(seedX);
                     x--;
                 }
             }
-            long seedY = seed;
+            long seedY;
             if (y >= 0)
             {
                 seedY = screen.LCGCacheListMatrix[layer,2][(int)(y / 50)];
@@ -1039,8 +1039,9 @@ namespace Cave
             }
             else
             {
-                seedY = screen.LCGCacheListMatrix[layer,3][(int)((-y) / 50)];
-                y = (-y) % 50;
+                y = -y;
+                seedY = screen.LCGCacheListMatrix[layer,3][(int)(y / 50)];
+                y = y % 50;
                 while (y > 0)
                 {
                     seedY = LCGyNeg(seedY);
@@ -1079,10 +1080,11 @@ namespace Cave
             }
             else
             {
-                while (x < 0)
+                x = -x;
+                while (x > 0)
                 {
                     seedX = LCGyNeg(seedX);
-                    x++;
+                    x--;
                 }
             }
             long seedY = seed;
@@ -1096,14 +1098,15 @@ namespace Cave
             }
             else
             {
-                while (y < 0)
+                y = -y;
+                while (y > 0)
                 {
                     seedY = LCGxNeg(seedY);
-                    y++;
+                    y--;
                 }
             }
-            int seedXY = (int)((256 + seedX % 256 + seedY % 256) % 256);
-            long seedZ = 3 + posX + posY * 11;
+            int seedXY = (int)((2048 + seedX % 256 + seedY % 256) % 256);
+            long seedZ = Abs(3 + posX + posY * 11);
             int z = seedXY;
             while (z > 0)
             {
@@ -1471,6 +1474,11 @@ namespace Cave
             return -a;
         }
         public static int Abs(int a)
+        {
+            if (a >= 0) { return a; }
+            return -a;
+        }
+        public static long Abs(long a)
         {
             if (a >= 0) { return a; }
             return -a;
