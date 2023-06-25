@@ -75,7 +75,7 @@ namespace Cave
             public Color[,] colors;
             public List<Entity> entityList= new List<Entity>();
             public int modificationCount = 0;
-            public Chunk(long posX, long posY, long seed, Screen screen)
+            public Chunk(long posX, long posY, long seed, Screen screen, bool structureGenerated)
             {
                 position = (posX, posY);
                 long chunkX = (long)(Floor(posX, 2) * 0.5f);
@@ -227,7 +227,11 @@ namespace Cave
                         colors[i, j] = Color.FromArgb(colorArray[0], colorArray[1], colorArray[2]);
                     }
                 }
-                if (System.IO.File.Exists($"{currentDirectory}\\ChunkData\\{seed}\\{position.Item1}.{position.Item2}.txt"))
+                if (structureGenerated)
+                {
+
+                }
+                else if (System.IO.File.Exists($"{currentDirectory}\\ChunkData\\{seed}\\{position.Item1}.{position.Item2}.txt"))
                 {
                     loadChunk(screen);
                 }
@@ -378,7 +382,16 @@ namespace Cave
                 playerList = new List<Player>();
                 activeEntites = new List<Entity>();
                 chunkResolution = chunkResolutionToPut;
+                if (!Directory.Exists($"{currentDirectory}\\ChunkData\\{seed}"))
+                {
+                    Directory.CreateDirectory($"{currentDirectory}\\ChunkData\\{seed}");
+                }
+                if (!Directory.Exists($"{currentDirectory}\\StructureData\\{seed}"))
+                {
+                    Directory.CreateDirectory($"{currentDirectory}\\StructureData\\{seed}");
+                }
                 LCGCacheInit();
+                checkStructuresPlayerSpawn(player);
                 loadChunks(posX, posY, seed);
 
             }
@@ -451,16 +464,13 @@ namespace Cave
             }
             public void loadChunks(long posX, long posY, long seed)
             {
-                if (!Directory.Exists($"{currentDirectory}\\ChunkData\\{seed}"))
-                {
-                    Directory.CreateDirectory($"{currentDirectory}\\ChunkData\\{seed}");
-                }
                 loadedChunks = new Chunk[chunkResolution, chunkResolution];
                 for (int i = 0; i < chunkResolution; i++)
                 {
                     for (int j = 0; j < chunkResolution; j++)
                     {
-                        loadedChunks[(i+ chunkResolution) % chunkResolution, (j+chunkResolution)%chunkResolution] = new Chunk(posX + i, posY + j, seed, this);
+                        loadedChunks[(i+ chunkResolution) % chunkResolution, (j+chunkResolution)%chunkResolution] = new Chunk(posX + i, posY + j, seed, this, false);
+                        loadedChunks[(i+ chunkResolution) % chunkResolution, (j+chunkResolution)%chunkResolution] = new Chunk(posX + i, posY + j, seed, this, false);
                     }
                 }
                 bitmap = new Bitmap(64* (chunkResolution - 1), 64* (chunkResolution - 1));
@@ -489,7 +499,7 @@ namespace Cave
                     for(int j = 0; j < chunkResolution; j++)
                     {
                         loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY+j)% chunkResolution].saveChunk(this);
-                        loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY+j)% chunkResolution] = new Chunk((posX-screenSlideX)+ chunkResolution, (posY-screenSlideY) + j, seed, this);
+                        loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY+j)% chunkResolution] = new Chunk((posX-screenSlideX)+ chunkResolution, (posY-screenSlideY) + j, seed, this, false);
                     }
                     loadedChunkOffsetX = (loadedChunkOffsetX + 1) % chunkResolution;
                     screenSlideX -= 1;
@@ -499,7 +509,7 @@ namespace Cave
                     for (int j = 0; j < chunkResolution; j++)
                     {
                         loadedChunks[(loadedChunkOffsetX+ chunkResolution-1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution].saveChunk(this);
-                        loadedChunks[(loadedChunkOffsetX+ chunkResolution-1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution] = new Chunk((posX-screenSlideX) - 1, (posY-screenSlideY) + j, seed, this);
+                        loadedChunks[(loadedChunkOffsetX+ chunkResolution-1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution] = new Chunk((posX-screenSlideX) - 1, (posY-screenSlideY) + j, seed, this, false);
                     }
                     loadedChunkOffsetX = (loadedChunkOffsetX + chunkResolution-1) % chunkResolution;
                     screenSlideX += 1;
@@ -509,7 +519,7 @@ namespace Cave
                     for (int i = 0; i < chunkResolution; i++)
                     {
                         loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY].saveChunk(this);
-                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY] = new Chunk((posX-screenSlideX) + i, (posY-screenSlideY)+chunkResolution, seed, this);
+                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY] = new Chunk((posX-screenSlideX) + i, (posY-screenSlideY)+chunkResolution, seed, this, false);
                     }
                     loadedChunkOffsetY = (loadedChunkOffsetY + 1) % chunkResolution;
                     screenSlideY -= 1;
@@ -519,7 +529,7 @@ namespace Cave
                     for (int i = 0; i < chunkResolution; i++)
                     {
                         loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution-1) % chunkResolution].saveChunk(this);
-                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution-1) % chunkResolution] = new Chunk((posX-screenSlideX) + i, (posY-screenSlideY)-1, seed, this);
+                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution-1) % chunkResolution] = new Chunk((posX-screenSlideX) + i, (posY-screenSlideY)-1, seed, this, false);
                     }
                     loadedChunkOffsetY = (loadedChunkOffsetY + chunkResolution-1) % chunkResolution;
                     screenSlideY += 1;
@@ -547,6 +557,70 @@ namespace Cave
                 chunkPosX = ((chunkPosX % chunkResolution) + 2*chunkResolution + 0*loadedChunkOffsetX) % chunkResolution;
                 chunkPosY = ((chunkPosY % chunkResolution) + 2*chunkResolution + 0*loadedChunkOffsetY) % chunkResolution;
                 return(chunkPosX, chunkPosY);
+            }
+            public void checkStructuresPlayerSpawn(Player player)
+            {
+                player.CheckStructurePosChange();
+                for(int i = -1; i < 2; i++)
+                {
+                    for (int j = -1; j < 2; j++)
+                    {
+                        createStructures(player.structureX + i, player.structureY + j);
+                    }
+                }
+
+            }
+            public void checkStructures(Player player)
+            {
+                (int, int) oldStructurePos = (player.structureX, player.structureY);
+                if(player.CheckStructurePosChange())
+                {
+                    int changeX = player.structureX - oldStructurePos.Item1;
+                    int changeY = player.structureY - oldStructurePos.Item2;
+                    if(Abs(changeX) > 0)
+                    {
+                        createStructures(player.structureX + changeX, player.structureY + 1);
+                        createStructures(player.structureX + changeX, player.structureY);
+                        createStructures(player.structureX + changeX, player.structureY - 1);
+                    }
+                    if(Abs(changeY) > 0)
+                    {
+                        createStructures(player.structureX + 1, player.structureY + changeY);
+                        createStructures(player.structureX, player.structureY + changeY);
+                        createStructures(player.structureX - 1, player.structureY + changeY);
+                    }
+                }
+            }
+            public void createStructures(int posX, int posY)
+            {
+                if(!Directory.Exists($"{currentDirectory}\\StructureData\\{seed}\\{posX}.{posY}"))
+                {
+                    Directory.CreateDirectory($"{currentDirectory}\\StructureData\\{seed}\\{posX}.{posY}");
+                    int x = posY%10+5;
+                    long seedX = posX+10;
+                    int y = posX % 10 + 5;
+                    long seedY = posY+10;
+                    while (x > 0)
+                    {
+                        seedX = LCGxPos(seedX);
+                        x--;
+                    }
+                    while (y > 0)
+                    {
+                        seedY = LCGyPos(seedY);
+                        y--;
+                    }
+                    long structuresAmount = (seedX + seedY )% 10 + 1;
+                    for(int i = 0; i < structuresAmount; i++)
+                    {
+                        seedX = LCGyPos(seedX); // on porpoise x    /\_/\
+                        seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
+                        Structure newStructure = new Structure(posX*1024 + 32+(int)(seedX%960), posY*1024 + 32+(int)(seedY%960), seedX, seedY, this);
+                        newStructure.drawStructure();
+                        newStructure.imprintChunks();
+                        newStructure.saveInFile();
+                    }
+                }
             }
             public Bitmap updateScreen()
             {
@@ -633,12 +707,132 @@ namespace Cave
                 return bitmap;
             }
         }
+        public class Structure
+        {
+            public string name;
+            public Screen screen;
+            public long seedX;
+            public long seedY;
+            public (int, int) centerPos;
+            public (int, int) centerChunkPos;
+            public (int, int) size;
+            public (int, int, int, int) chunkBounds; // (Start X, end X not included, Start Y, end Y not included)
+            public int[,][,] structureArray;
+            public Structure(int posX, int posY, long seedXToPut, long seedYToPut, Screen screenToPut)
+            {
+                seedX = seedXToPut;
+                seedY = seedYToPut;
+                screen = screenToPut;
+                centerPos = (posX, posY);
+                centerChunkPos = (Floor(posX, 16)/16, Floor(posY, 16) /16);
+                int sizeX = (int)(seedX%5)+1;
+                int sizeY = (int)(seedY%5)+1;
+                int posoX = centerChunkPos.Item1-Floor(sizeX,2)/2;
+                int posoY = centerChunkPos.Item2-Floor(sizeY,2)/2;
+                size = (sizeX, sizeY);
+                chunkBounds = (posoX, posoX + sizeX, posoY, posoX + sizeY);
+            }
+            public void drawStructure()
+            {
+                structureArray = new int[size.Item1, size.Item2][,];
+                for (int i = 0; i < size.Item1; i++)
+                {
+                    for (int j = 0; j < size.Item2; j++)
+                    {
+                        structureArray[i,j] = new int[16,16];
+                        for (int k = 0; k < 16; k++)
+                        {
+                            for (int l = 0; l < 16; l++)
+                            {
+                                structureArray[i, j][k, l] = -999;
+                            }
+                        }
+                    }
+                }
+                int squaresToDig = (int)(seedX%(10+(size.Item1*size.Item2))) + (int)(size.Item1*size.Item2*0.2f) + 1;
+                long seedoX = seedX;
+                long seedoY = seedY;
+                for (int gu = 0; gu < squaresToDig; gu++)
+                {
+                    seedoX = LCGxNeg(seedoX);
+                    seedoY = LCGyNeg(seedoY);
+                    int sizo = (int)((LCGxNeg(seedoY))%7+7)%7+1;
+                    int relativeCenterX = (int)(8+seedoX%(size.Item1*16-15));
+                    int relativeCenterY = (int)(8+seedoY%(size.Item2*16-15));
+                    for(int i = -sizo; i <= sizo; i++)
+                    {
+                        for (int j = -sizo; j <= sizo; j++)
+                        {
+                            int ii = relativeCenterX + i;
+                            int jj = relativeCenterY + j;
+                            structureArray[ii/16, jj/16][ii%16, jj%16] = 0; 
+                        }
+                    }
+                    for (int i = -sizo; i <= sizo; i+=2*sizo)
+                    {
+                        for (int j = -sizo; j <= sizo; j++)
+                        {
+                            int ii = relativeCenterX + i;
+                            int jj = relativeCenterY + j;
+                            structureArray[ii/16, jj/16][ii%16, jj%16] = 1;
+                        }
+                    }
+                    for (int i = -sizo; i <= sizo; i++)
+                    {
+                        for (int j = -sizo; j <= sizo; j+=2*sizo)
+                        {
+                            int ii = relativeCenterX + i;
+                            int jj = relativeCenterY + j;
+                            structureArray[ii/16, jj/16][ii%16, jj%16] = 1;
+                        }
+                    }
+                }
+            }
+            public void imprintChunks()
+            {
+                for (int i = 0; i < size.Item1; i++)
+                {
+                    for (int j = 0; j < size.Item2; j++)
+                    {
+                        int ii = chunkBounds.Item1+i;
+                        int jj = chunkBounds.Item3+j;
+                        Chunk chunko = new Chunk(ii, jj, screen.seed, screen, true);
+                        for (int k = 0; k < 16; k++)
+                        {
+                            for (int l = 0; l < 16; l++)
+                            {
+                                if(structureArray[i, j][k, l] != -999)
+                                {
+                                    if (structureArray[i, j][k, l] == 0)
+                                    {
+                                        chunko.fillStates[k, l] = false;
+                                    }
+                                    else
+                                    {
+                                        chunko.fillStates[k, l] = true;
+                                    }
+                                }
+                            }
+                        }
+                        chunko.modificationCount = 1;
+                        chunko.saveChunk(screen);
+                    }
+                }
+                
+            }
+            public void saveInFile()
+            {
+                //need to DO
+            }
+        }
         public class Player
         {
             public float realPosX = 0;
             public float realPosY = 0;
             public int posX = 0;
             public int posY = 0;
+            public int structureX;
+            public int structureY;
             public float speedX = 0;
             public float speedY = 0;
 
@@ -741,6 +935,15 @@ namespace Cave
                         break;
                     }
                 }
+            }
+            public bool CheckStructurePosChange()
+            {
+                (int,int) oldStructurePos = (structureX,structureY);
+                structureX = Floor(posX,1024) / 1024;
+                structureY = Floor(posY,1024) / 1024;
+                if(oldStructurePos == (structureX, structureY)) { return false; }
+                return true;
+                
             }
             public void Dig(int posToDigX, int posToDigY, Screen screen)
             {
