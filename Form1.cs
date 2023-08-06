@@ -597,9 +597,9 @@ namespace Cave
                 {
                     Directory.CreateDirectory($"{currentDirectory}\\StructureData\\{seed}\\{posX}.{posY}");
                     int x = posY%10+5;
-                    long seedX = posX+10;
+                    long seedX = seed + posX;
                     int y = posX % 10 + 5;
-                    long seedY = posY+10;
+                    long seedY = seed + posY;
                     while (x > 0)
                     {
                         seedX = LCGxPos(seedX);
@@ -757,9 +757,9 @@ namespace Cave
                     seedoX = LCGxNeg(seedoX);
                     seedoY = LCGyNeg(seedoY);
                     int sizo = (int)((LCGxNeg(seedoY))%7+7)%7+1;
-                    int relativeCenterX = (int)(8+seedoX%(size.Item1*16-15));
-                    int relativeCenterY = (int)(8+seedoY%(size.Item2*16-15));
-                    for(int i = -sizo; i <= sizo; i++)
+                    int relativeCenterX = (int)(sizo+seedoX%(size.Item1*16-2*sizo));
+                    int relativeCenterY = (int)(sizo+seedoY%(size.Item2*16-2*sizo));
+                    for(int i = 1-sizo; i < sizo; i++)
                     {
                         for (int j = -sizo; j <= sizo; j++)
                         {
@@ -1446,6 +1446,7 @@ namespace Cave
             foreach(Player playor in screen.playerList)
             {
                 playor.movePlayer(screen);
+                screen.checkStructures(playor);
             }
             screen.entitesToRemove = new List<Entity>();
             foreach (Entity entity in screen.activeEntites)
