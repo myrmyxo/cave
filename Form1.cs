@@ -1,15 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Runtime.Remoting.Messaging;
+using System.Security.Policy;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using static Cave.Form1;
 using static Cave.Form1.Globals;
 using static Cave.MathF;
@@ -48,7 +47,7 @@ namespace Cave
             public static float speedCamX = 0;
             public static float speedCamY = 0;
 
-            public static Dictionary<int, (int,int,int)> biomeDict = new Dictionary<int, (int, int, int)>
+            public static Dictionary<int, (int, int, int)> biomeDict = new Dictionary<int, (int, int, int)>
             {
                 { 0, (Color.Blue.R,Color.Blue.G,Color.Blue.B) }, // cold biome
                 { 1, (Color.Fuchsia.R,Color.Fuchsia.G,Color.Fuchsia.B) }, // acid biome
@@ -70,10 +69,10 @@ namespace Cave
             public int[,] primaryBiomeValues;
             public int[,,] secondaryFillValues;
             public int[,,] secondaryBiomeValues;
-            public (int,int)[,][] biomeIndex;
+            public (int, int)[,][] biomeIndex;
             public bool[,] fillStates;
             public Color[,] colors;
-            public List<Entity> entityList= new List<Entity>();
+            public List<Entity> entityList = new List<Entity>();
             public int modificationCount = 0;
             public Chunk(long posX, long posY, long seed, Screen screen, bool structureGenerated)
             {
@@ -178,13 +177,13 @@ namespace Cave
                             mult = tupel.Item2 * 0.01f;
                             if (tupel.Item1 == 1)
                             {
-                                value2modifier += -3 * mult * Max(Seesaw(value1, 13), Seesaw(value1, 11));
+                                value2modifier += -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11));
                             }
                             else if (tupel.Item1 == 4)
                             {
                                 float see1 = Sin(i + mod2 * 0.3f + 0.5f, 16);
                                 float see2 = Sin(j + mod2 * 0.3f + 0.5f, 16);
-                                valueToBeAdded = mult*Min(0, 20 * (see1 + see2) - 10);
+                                valueToBeAdded = mult * Min(0, 20 * (see1 + see2) - 10);
                                 value2modifier += valueToBeAdded;
                                 value1modifier += valueToBeAdded + 2;
                             }
@@ -204,7 +203,7 @@ namespace Cave
                                 value2modifier += mult * value2PREmodifier;
                                 mod2divider += mult * 1.5f;
                             }
-                            else { value2modifier += mult*(value1 % 16); }
+                            else { value2modifier += mult * (value1 % 16); }
 
                             (int, int, int) tupel2 = biomeDict[tupel.Item1];
                             colorArray[0] += (int)(mult * tupel2.Item1);
@@ -218,7 +217,7 @@ namespace Cave
                         else if (value1 > 122 - mod2 * mod2 * 0.0003f + value1modifier && value1 < 133 + mod2 * mod2 * 0.0003f - value1modifier) { fillStates[i, j] = false; }
                         else { fillStates[i, j] = true; }
 
-                        
+
                         for (int k = 0; k < 3; k++)
                         {
                             colorArray[k] = (int)(colorArray[k] * 0.15f);
@@ -243,7 +242,7 @@ namespace Cave
                     {
                         if (!fillStates[i, j])
                         {
-                            int[] colorArray = { colors[i, j].R, colors[i, j].G , colors[i, j].B };
+                            int[] colorArray = { colors[i, j].R, colors[i, j].G, colors[i, j].B };
                             for (int k = 0; k < 3; k++)
                             {
                                 colorArray[k] += 70;
@@ -295,27 +294,27 @@ namespace Cave
                     line = f.ReadLine();
                     int idx = 0;
                     int length = 0;
-                    if(line != null)
+                    if (line != null)
                     {
                         List<string> listo = new List<string>();
-                        for(int i = 0; i < line.Length; i++)
+                        for (int i = 0; i < line.Length; i++)
                         {
                             if (line[i] == ';')
                             {
                                 listo.Add(line.Substring(idx, length));
-                                idx = i+1;
+                                idx = i + 1;
                                 length = -1;
                             }
                             length++;
                         }
-                        for(int i = 0; i < listo.Count()/6; i++)
+                        for (int i = 0; i < listo.Count() / 6; i++)
                         {
-                            int posXt = Int32.Parse(listo[i*6]);
-                            int posYt = Int32.Parse(listo[i*6+1]);
-                            int typet = Int32.Parse(listo[i*6+2]);
-                            int rt = Int32.Parse(listo[i*6+3]);
-                            int gt = Int32.Parse(listo[i*6+4]);
-                            int bt = Int32.Parse(listo[i*6+5]);
+                            int posXt = Int32.Parse(listo[i * 6]);
+                            int posYt = Int32.Parse(listo[i * 6 + 1]);
+                            int typet = Int32.Parse(listo[i * 6 + 2]);
+                            int rt = Int32.Parse(listo[i * 6 + 3]);
+                            int gt = Int32.Parse(listo[i * 6 + 4]);
+                            int bt = Int32.Parse(listo[i * 6 + 5]);
                             screen.activeEntites.Add(new Entity(posXt, posYt, typet, rt, gt, bt));
                         }
                     }
@@ -323,11 +322,11 @@ namespace Cave
                     if (line[0] != 'x' && line.Count() >= 64)
                     {
                         modificationCount = 1;
-                        for(int i = 0; i < 16; i++)
+                        for (int i = 0; i < 16; i++)
                         {
-                            for(int j = 0; j < 16; j++)
+                            for (int j = 0; j < 16; j++)
                             {
-                                fillStates[i,j] = line[i*16+j] != '0';
+                                fillStates[i, j] = line[i * 16 + j] != '0';
                             }
                         }
                     }
@@ -345,13 +344,13 @@ namespace Cave
                         stringo += entity.color.R + ";" + entity.color.G + ";" + entity.color.B + ";";
                     }
                     stringo += "\n";
-                    if(modificationCount == 0)
+                    if (modificationCount == 0)
                     {
                         stringo += "x\n";
                     }
                     else
                     {
-                        foreach(bool boolo in fillStates)
+                        foreach (bool boolo in fillStates)
                         {
                             stringo += (Convert.ToInt32(boolo)).ToString();
                         }
@@ -373,7 +372,7 @@ namespace Cave
             public List<Player> playerList = new List<Player>();
             public List<Entity> activeEntites = new List<Entity>();
             public List<Entity> entitesToRemove = new List<Entity>();
-            
+
             public Screen(long posX, long posY, int chunkResolutionToPut, long seedo)
             {
                 loadedChunkOffsetX = 0; //(((int)posX %chunkResolutionToPut) + chunkResolutionToPut) %chunkResolutionToPut;
@@ -397,22 +396,22 @@ namespace Cave
             }
             public void LCGCacheInit()
             {
-                LCGCacheListMatrix = new List<long>[2,5];
+                LCGCacheListMatrix = new List<long>[2, 5];
                 long longo;
                 long longo2;
                 for (int i = 0; i < 5; i++)
                 {
-                    LCGCacheListMatrix[0,i] = new List<long>();
-                    LCGCacheListMatrix[1,i] = new List<long>();
+                    LCGCacheListMatrix[0, i] = new List<long>();
+                    LCGCacheListMatrix[1, i] = new List<long>();
                 }
                 longo = seed;
                 longo2 = LCGz(seed);
-                for(int j = 0; j < 10000; j++)
+                for (int j = 0; j < 10000; j++)
                 {
                     if (j % 50 == 0)
                     {
-                        LCGCacheListMatrix[0,0].Add(longo);
-                        LCGCacheListMatrix[1,0].Add(longo2);
+                        LCGCacheListMatrix[0, 0].Add(longo);
+                        LCGCacheListMatrix[1, 0].Add(longo2);
                     }
                     longo = LCGxPos(longo);
                     longo2 = LCGxPos(longo);
@@ -422,8 +421,8 @@ namespace Cave
                 {
                     if (j % 50 == 0)
                     {
-                        LCGCacheListMatrix[0,1].Add(longo);
-                        LCGCacheListMatrix[1,1].Add(longo2);
+                        LCGCacheListMatrix[0, 1].Add(longo);
+                        LCGCacheListMatrix[1, 1].Add(longo2);
                     }
                     longo = LCGxNeg(longo);
                     longo2 = LCGxNeg(longo);
@@ -433,8 +432,8 @@ namespace Cave
                 {
                     if (j % 50 == 0)
                     {
-                        LCGCacheListMatrix[0,2].Add(longo);
-                        LCGCacheListMatrix[1,2].Add(longo2);
+                        LCGCacheListMatrix[0, 2].Add(longo);
+                        LCGCacheListMatrix[1, 2].Add(longo2);
                     }
                     longo = LCGyPos(longo);
                     longo2 = LCGyPos(longo);
@@ -444,8 +443,8 @@ namespace Cave
                 {
                     if (j % 50 == 0)
                     {
-                        LCGCacheListMatrix[0,3].Add(longo);
-                        LCGCacheListMatrix[1,3].Add(longo2);
+                        LCGCacheListMatrix[0, 3].Add(longo);
+                        LCGCacheListMatrix[1, 3].Add(longo2);
                     }
                     longo = LCGyNeg(longo);
                     longo2 = LCGyNeg(longo);
@@ -455,8 +454,8 @@ namespace Cave
                 {
                     if (j % 50 == 0)
                     {
-                        LCGCacheListMatrix[0,4].Add(longo);
-                        LCGCacheListMatrix[1,4].Add(longo2);
+                        LCGCacheListMatrix[0, 4].Add(longo);
+                        LCGCacheListMatrix[1, 4].Add(longo2);
                     }
                     longo = LCGz(longo);
                     longo2 = LCGz(longo);
@@ -469,11 +468,11 @@ namespace Cave
                 {
                     for (int j = 0; j < chunkResolution; j++)
                     {
-                        loadedChunks[(i+ chunkResolution) % chunkResolution, (j+chunkResolution)%chunkResolution] = new Chunk(posX + i, posY + j, seed, this, false);
-                        loadedChunks[(i+ chunkResolution) % chunkResolution, (j+chunkResolution)%chunkResolution] = new Chunk(posX + i, posY + j, seed, this, false);
+                        loadedChunks[(i + chunkResolution) % chunkResolution, (j + chunkResolution) % chunkResolution] = new Chunk(posX + i, posY + j, seed, this, false);
+                        loadedChunks[(i + chunkResolution) % chunkResolution, (j + chunkResolution) % chunkResolution] = new Chunk(posX + i, posY + j, seed, this, false);
                     }
                 }
-                bitmap = new Bitmap(64* (chunkResolution - 1), 64* (chunkResolution - 1));
+                bitmap = new Bitmap(64 * (chunkResolution - 1), 64 * (chunkResolution - 1));
             }
             public void updateLoadedChunks(int posX, int posY, long seed, int screenSlideX, int screenSlideY)
             {
@@ -482,7 +481,7 @@ namespace Cave
 
                 (int, int) chunkIndex;
                 Chunk chunk;
-                foreach(Chunk chunko in loadedChunks)
+                foreach (Chunk chunko in loadedChunks)
                 {
                     chunko.entityList = new List<Entity>();
                 }
@@ -496,10 +495,10 @@ namespace Cave
 
                 while (screenSlideX > 0)
                 {
-                    for(int j = 0; j < chunkResolution; j++)
+                    for (int j = 0; j < chunkResolution; j++)
                     {
-                        loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY+j)% chunkResolution].saveChunk(this);
-                        loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY+j)% chunkResolution] = new Chunk((posX-screenSlideX)+ chunkResolution, (posY-screenSlideY) + j, seed, this, false);
+                        loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY + j) % chunkResolution].saveChunk(this);
+                        loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY + j) % chunkResolution] = new Chunk((posX - screenSlideX) + chunkResolution, (posY - screenSlideY) + j, seed, this, false);
                     }
                     loadedChunkOffsetX = (loadedChunkOffsetX + 1) % chunkResolution;
                     screenSlideX -= 1;
@@ -508,10 +507,10 @@ namespace Cave
                 {
                     for (int j = 0; j < chunkResolution; j++)
                     {
-                        loadedChunks[(loadedChunkOffsetX+ chunkResolution-1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution].saveChunk(this);
-                        loadedChunks[(loadedChunkOffsetX+ chunkResolution-1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution] = new Chunk((posX-screenSlideX) - 1, (posY-screenSlideY) + j, seed, this, false);
+                        loadedChunks[(loadedChunkOffsetX + chunkResolution - 1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution].saveChunk(this);
+                        loadedChunks[(loadedChunkOffsetX + chunkResolution - 1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution] = new Chunk((posX - screenSlideX) - 1, (posY - screenSlideY) + j, seed, this, false);
                     }
-                    loadedChunkOffsetX = (loadedChunkOffsetX + chunkResolution-1) % chunkResolution;
+                    loadedChunkOffsetX = (loadedChunkOffsetX + chunkResolution - 1) % chunkResolution;
                     screenSlideX += 1;
                 }
                 while (screenSlideY > 0)
@@ -519,7 +518,7 @@ namespace Cave
                     for (int i = 0; i < chunkResolution; i++)
                     {
                         loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY].saveChunk(this);
-                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY] = new Chunk((posX-screenSlideX) + i, (posY-screenSlideY)+chunkResolution, seed, this, false);
+                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY] = new Chunk((posX - screenSlideX) + i, (posY - screenSlideY) + chunkResolution, seed, this, false);
                     }
                     loadedChunkOffsetY = (loadedChunkOffsetY + 1) % chunkResolution;
                     screenSlideY -= 1;
@@ -528,10 +527,10 @@ namespace Cave
                 {
                     for (int i = 0; i < chunkResolution; i++)
                     {
-                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution-1) % chunkResolution].saveChunk(this);
-                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution-1) % chunkResolution] = new Chunk((posX-screenSlideX) + i, (posY-screenSlideY)-1, seed, this, false);
+                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution].saveChunk(this);
+                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution] = new Chunk((posX - screenSlideX) + i, (posY - screenSlideY) - 1, seed, this, false);
                     }
-                    loadedChunkOffsetY = (loadedChunkOffsetY + chunkResolution-1) % chunkResolution;
+                    loadedChunkOffsetY = (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution;
                     screenSlideY += 1;
                 }
 
@@ -550,18 +549,18 @@ namespace Cave
                 int chunkPosY = Floor(pixelPosY, 16) / 16;
                 return (chunkPosX, chunkPosY);
             }
-            public (int,int) findChunkScreenRelativeIndex(int pixelPosX, int pixelPosY)
+            public (int, int) findChunkScreenRelativeIndex(int pixelPosX, int pixelPosY)
             {
-                int chunkPosX = Floor(pixelPosX,16)/16;
-                int chunkPosY = Floor(pixelPosY,16)/16;
-                chunkPosX = ((chunkPosX % chunkResolution) + 2*chunkResolution + 0*loadedChunkOffsetX) % chunkResolution;
-                chunkPosY = ((chunkPosY % chunkResolution) + 2*chunkResolution + 0*loadedChunkOffsetY) % chunkResolution;
-                return(chunkPosX, chunkPosY);
+                int chunkPosX = Floor(pixelPosX, 16) / 16;
+                int chunkPosY = Floor(pixelPosY, 16) / 16;
+                chunkPosX = ((chunkPosX % chunkResolution) + 2 * chunkResolution + 0 * loadedChunkOffsetX) % chunkResolution;
+                chunkPosY = ((chunkPosY % chunkResolution) + 2 * chunkResolution + 0 * loadedChunkOffsetY) % chunkResolution;
+                return (chunkPosX, chunkPosY);
             }
             public void checkStructuresPlayerSpawn(Player player)
             {
                 player.CheckStructurePosChange();
-                for(int i = -1; i < 2; i++)
+                for (int i = -1; i < 2; i++)
                 {
                     for (int j = -1; j < 2; j++)
                     {
@@ -573,17 +572,17 @@ namespace Cave
             public void checkStructures(Player player)
             {
                 (int, int) oldStructurePos = (player.structureX, player.structureY);
-                if(player.CheckStructurePosChange())
+                if (player.CheckStructurePosChange())
                 {
                     int changeX = player.structureX - oldStructurePos.Item1;
                     int changeY = player.structureY - oldStructurePos.Item2;
-                    if(Abs(changeX) > 0)
+                    if (Abs(changeX) > 0)
                     {
                         createStructures(player.structureX + changeX, player.structureY + 1);
                         createStructures(player.structureX + changeX, player.structureY);
                         createStructures(player.structureX + changeX, player.structureY - 1);
                     }
-                    if(Abs(changeY) > 0)
+                    if (Abs(changeY) > 0)
                     {
                         createStructures(player.structureX + 1, player.structureY + changeY);
                         createStructures(player.structureX, player.structureY + changeY);
@@ -593,12 +592,12 @@ namespace Cave
             }
             public void createStructures(int posX, int posY)
             {
-                if(!Directory.Exists($"{currentDirectory}\\StructureData\\{seed}\\{posX}.{posY}"))
+                if (!Directory.Exists($"{currentDirectory}\\StructureData\\{seed}\\{posX}.{posY}"))
                 {
                     Directory.CreateDirectory($"{currentDirectory}\\StructureData\\{seed}\\{posX}.{posY}");
-                    int x = posY%10+5;
+                    int x = posY % 10 + 15;
                     long seedX = seed + posX;
-                    int y = posX % 10 + 5;
+                    int y = posX % 10 + 15;
                     long seedY = seed + posY;
                     while (x > 0)
                     {
@@ -610,12 +609,12 @@ namespace Cave
                         seedY = LCGyPos(seedY);
                         y--;
                     }
-                    long structuresAmount = (seedX + seedY )% 10 + 1;
-                    for(int i = 0; i < structuresAmount; i++)
+                    long structuresAmount = (seedX + seedY) % 10 + 1 + 50;
+                    for (int i = 0; i < structuresAmount; i++)
                     {
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
                         seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
-                        Structure newStructure = new Structure(posX*1024 + 32+(int)(seedX%960), posY*1024 + 32+(int)(seedY%960), seedX, seedY, this);
+                        Structure newStructure = new Structure(posX * 1024 + 32 + (int)(seedX % 960), posY * 1024 + 32 + (int)(seedY % 960), seedX, seedY, this);
                         newStructure.drawStructure();
                         newStructure.imprintChunks();
                         newStructure.saveInFile();
@@ -627,25 +626,25 @@ namespace Cave
                 int pixelPosX;
                 int pixelPosY;
 
-                for (int i = 0; i < chunkResolution*16; i++)
+                for (int i = 0; i < chunkResolution * 16; i++)
                 {
-                    for (int j = 0; j < chunkResolution*16; j++)
+                    for (int j = 0; j < chunkResolution * 16; j++)
                     {
-                        pixelPosX = ((i + (-loadedChunkOffsetX + chunkResolution) * 16) % (chunkResolution * 16)) - ((camPosX % 16) + 16)%16;
-                        pixelPosY = ((j + (-loadedChunkOffsetY + chunkResolution) * 16) % (chunkResolution * 16)) - ((camPosY % 16) + 16)%16;
+                        pixelPosX = ((i + (-loadedChunkOffsetX + chunkResolution) * 16) % (chunkResolution * 16)) - ((camPosX % 16) + 16) % 16;
+                        pixelPosY = ((j + (-loadedChunkOffsetY + chunkResolution) * 16) % (chunkResolution * 16)) - ((camPosY % 16) + 16) % 16;
 
-                        if (pixelPosX < 0 || pixelPosX >= (chunkResolution-1) * 16 || pixelPosY < 0 || pixelPosY >= (chunkResolution-1) * 16)
+                        if (pixelPosX < 0 || pixelPosX >= (chunkResolution - 1) * 16 || pixelPosY < 0 || pixelPosY >= (chunkResolution - 1) * 16)
                         {
                             continue;
                         }
 
-                        Color color = loadedChunks[i/16, j/16].colors[i%16, j%16];
+                        Color color = loadedChunks[i / 16, j / 16].colors[i % 16, j % 16];
 
                         for (int i2 = 0; i2 < 4; i2++)
                         {
                             for (int j2 = 0; j2 < 4; j2++)
                             {
-                                bitmap.SetPixel(pixelPosX*4+i2, pixelPosY*4+j2, color);
+                                bitmap.SetPixel(pixelPosX * 4 + i2, pixelPosY * 4 + j2, color);
                             }
                         }
                     }
@@ -654,7 +653,7 @@ namespace Cave
                 pixelPosX = player.posX - camPosX;
                 pixelPosY = player.posY - camPosY;
 
-                if (pixelPosX >= 0 && pixelPosX < (chunkResolution-1) * 16 && pixelPosY >= 0 && pixelPosY < (chunkResolution-1) * 16)
+                if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 16 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 16)
                 {
                     Color color = Color.Green;
                     (int, int) chunkRelativePos = this.findChunkScreenRelativeIndex(player.posX, player.posY);
@@ -667,12 +666,12 @@ namespace Cave
                     {
                         for (int j2 = 0; j2 < 4; j2++)
                         {
-                            bitmap.SetPixel(pixelPosX*4+i2, pixelPosY*4+j2, color);
+                            bitmap.SetPixel(pixelPosX * 4 + i2, pixelPosY * 4 + j2, color);
                         }
                     }
                 }
 
-                foreach(Entity entity in activeEntites)
+                foreach (Entity entity in activeEntites)
                 {
                     pixelPosX = entity.posX - camPosX;
                     pixelPosY = entity.posY - camPosY;
@@ -710,6 +709,7 @@ namespace Cave
         public class Structure
         {
             public string name;
+            public int type;
             public Screen screen;
             public long seedX;
             public long seedY;
@@ -724,13 +724,37 @@ namespace Cave
                 seedY = seedYToPut;
                 screen = screenToPut;
                 centerPos = (posX, posY);
-                centerChunkPos = (Floor(posX, 16)/16, Floor(posY, 16) /16);
-                int sizeX = (int)(seedX%5)+1;
-                int sizeY = (int)(seedY%5)+1;
-                int posoX = centerChunkPos.Item1-Floor(sizeX,2)/2;
-                int posoY = centerChunkPos.Item2-Floor(sizeY,2)/2;
-                size = (sizeX, sizeY);
-                chunkBounds = (posoX, posoX + sizeX, posoY, posoX + sizeY);
+                centerChunkPos = (Floor(posX, 16) / 16, Floor(posY, 16) / 16);
+
+                long seedo = (seedX/2+seedY/2)%79461537;
+                if (Abs(seedo) % 200 < 50) // cubeAmalgam
+                {
+                    type = 0;
+                    int sizeX = (int)(seedX % 5) + 1;
+                    int sizeY = (int)(seedY % 5) + 1;
+                    int posoX = centerChunkPos.Item1 - Floor(sizeX, 2) / 2;
+                    int posoY = centerChunkPos.Item2 - Floor(sizeY, 2) / 2;
+                    size = (sizeX, sizeY);
+                    chunkBounds = (posoX, posoX + sizeX, posoY, posoY + sizeY);
+                }
+                else if (Abs(seedo) % 200 < 150)// circularBlade
+                {
+                    type = 1;
+                    int sizeX = (int)(seedX % 5) + 1;
+                    int posoX = centerChunkPos.Item1 - Floor(sizeX, 2) / 2;
+                    int posoY = centerChunkPos.Item2 - Floor(sizeX, 2) / 2;
+                    size = (sizeX, sizeX);
+                    chunkBounds = (posoX, posoX + sizeX, posoY, posoY + sizeX);
+                }
+                else // star 
+                {
+                    type = 2;
+                    int sizeX = (int)(seedX % 5) + 1;
+                    int posoX = centerChunkPos.Item1 - Floor(sizeX, 2) / 2;
+                    int posoY = centerChunkPos.Item2 - Floor(sizeX, 2) / 2;
+                    size = (sizeX, sizeX);
+                    chunkBounds = (posoX, posoX + sizeX, posoY, posoY + sizeX);
+                }
             }
             public void drawStructure()
             {
@@ -739,7 +763,7 @@ namespace Cave
                 {
                     for (int j = 0; j < size.Item2; j++)
                     {
-                        structureArray[i,j] = new int[16,16];
+                        structureArray[i, j] = new int[16, 16];
                         for (int k = 0; k < 16; k++)
                         {
                             for (int l = 0; l < 16; l++)
@@ -749,42 +773,179 @@ namespace Cave
                         }
                     }
                 }
-                int squaresToDig = (int)(seedX%(10+(size.Item1*size.Item2))) + (int)(size.Item1*size.Item2*0.2f) + 1;
+
+                if (type == 0) { cubeAmalgam(); }
+                else if (type == 1) { circularBlade(); }
+                else if (type == 2) { star(); }
+            }
+            public void cubeAmalgam()
+            {
+                int squaresToDig = (int)(seedX % (10 + (size.Item1 * size.Item2))) + (int)(size.Item1 * size.Item2 * 0.2f) + 1;
                 long seedoX = seedX;
                 long seedoY = seedY;
                 for (int gu = 0; gu < squaresToDig; gu++)
                 {
                     seedoX = LCGxNeg(seedoX);
                     seedoY = LCGyNeg(seedoY);
-                    int sizo = (int)((LCGxNeg(seedoY))%7+7)%7+1;
-                    int relativeCenterX = (int)(sizo+seedoX%(size.Item1*16-2*sizo));
-                    int relativeCenterY = (int)(sizo+seedoY%(size.Item2*16-2*sizo));
-                    for(int i = 1-sizo; i < sizo; i++)
+                    int sizo = (int)((LCGxNeg(seedoY)) % 7 + 7) % 7 + 1;
+                    int relativeCenterX = (int)(sizo + seedoX % (size.Item1 * 16 - 2 * sizo));
+                    int relativeCenterY = (int)(sizo + seedoY % (size.Item2 * 16 - 2 * sizo));
+                    for (int i = 1 - sizo; i < sizo; i++)
                     {
                         for (int j = -sizo; j <= sizo; j++)
                         {
                             int ii = relativeCenterX + i;
                             int jj = relativeCenterY + j;
-                            structureArray[ii/16, jj/16][ii%16, jj%16] = 0; 
+                            structureArray[ii / 16, jj / 16][ii % 16, jj % 16] = 0;
                         }
                     }
-                    for (int i = -sizo; i <= sizo; i+=2*sizo)
+                    for (int i = -sizo; i <= sizo; i += 2 * sizo)
                     {
                         for (int j = -sizo; j <= sizo; j++)
                         {
                             int ii = relativeCenterX + i;
                             int jj = relativeCenterY + j;
-                            structureArray[ii/16, jj/16][ii%16, jj%16] = 1;
+                            structureArray[ii / 16, jj / 16][ii % 16, jj % 16] = 1;
                         }
                     }
                     for (int i = -sizo; i <= sizo; i++)
                     {
-                        for (int j = -sizo; j <= sizo; j+=2*sizo)
+                        for (int j = -sizo; j <= sizo; j += 2 * sizo)
                         {
                             int ii = relativeCenterX + i;
                             int jj = relativeCenterY + j;
-                            structureArray[ii/16, jj/16][ii%16, jj%16] = 1;
+                            structureArray[ii / 16, jj / 16][ii % 16, jj % 16] = 1;
                         }
+                    }
+                }
+            }
+            public void circularBlade()
+            {
+                long seedoX = seedX;
+                long seedoY = seedY;
+
+                int angleOfShape = (int)LCGz(seedoX + seedoY) % 360;
+                (int,int) centerCoords = (size.Item1*8, size.Item2*8);
+
+                for (int i = 0; i < size.Item1*16; i++)
+                {
+                    for (int j = 0; j < size.Item2*16; j++)
+                    {
+                        int posToCenterX = i - centerCoords.Item1;
+                        int posToCenterY = j - centerCoords.Item2;
+                        int angleMod = (int)(Math.Atan2(posToCenterY,posToCenterX)*180/Math.PI);
+                        int angle = (360 + angleOfShape - angleMod)%360;
+                        float distance = (float)Math.Sqrt(posToCenterX*posToCenterX+posToCenterY*posToCenterY);
+
+                        float sizo = (size.Item1*(8 - sawBladeSeesaw(angle, 72)*0.1f));
+
+                        if(distance < sizo)
+                        {
+                            structureArray[i / 16, j / 16][i % 16, j % 16] = 0;
+
+
+                            //outline
+
+                            int newi = i - 1;
+                            int newj = j;
+                            if (newi>=0 && newi<size.Item1*16 && newj>=0 && newj<size.Item1*16 && structureArray[newi / 16, newj / 16][newi % 16, newj % 16] == -999)
+                            {
+                                structureArray[newi / 16, newj / 16][newi % 16, newj % 16] = 1;
+                            }
+                            newi = i + 1;
+                            newj = j;
+                            if (newi>=0 && newi<size.Item1*16 && newj>=0 && newj<size.Item1*16 && structureArray[newi / 16, newj / 16][newi % 16, newj % 16] == -999)
+                            {
+                                structureArray[newi / 16, newj / 16][newi % 16, newj % 16] = 1;
+                            }
+                            newi = i;
+                            newj = j - 1;
+                            if (newi>=0 && newi<size.Item1*16 && newj>=0 && newj<size.Item1*16 && structureArray[newi / 16, newj / 16][newi % 16, newj % 16] == -999)
+                            {
+                                structureArray[newi / 16, newj / 16][newi % 16, newj % 16] = 1;
+                            }
+                            newi = i;
+                            newj = j + 1;
+                            if (newi>=0 && newi<size.Item1*16 && newj>=0 && newj<size.Item1*16 && structureArray[newi / 16, newj / 16][newi % 16, newj % 16] == -999)
+                            {
+                                structureArray[newi / 16, newj / 16][newi % 16, newj % 16] = 1;
+                            }
+                        }
+
+                    }
+                }
+                (int,int) tupelo = (centerCoords.Item1-1, centerCoords.Item2-1);
+                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 1;
+                tupelo = (centerCoords.Item1, centerCoords.Item2-1);
+                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 0;
+                tupelo = (centerCoords.Item1+1, centerCoords.Item2-1);
+                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 1;
+                tupelo = (centerCoords.Item1-1, centerCoords.Item2);
+                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 0;
+                tupelo = (centerCoords.Item1, centerCoords.Item2);
+                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 1;
+                tupelo = (centerCoords.Item1+1, centerCoords.Item2);
+                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 0;
+                tupelo = (centerCoords.Item1-1, centerCoords.Item2+1);
+                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 1;
+                tupelo = (centerCoords.Item1, centerCoords.Item2+1);
+                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 0;
+                tupelo = (centerCoords.Item1+1, centerCoords.Item2+1);
+                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 1;
+            }
+            public void star()
+            {
+                long seedoX = seedX;
+                long seedoY = seedY;
+
+                int angleOfShape = (int)LCGz(seedoX + seedoY) % 360;
+                (int, int) centerCoords = (size.Item1 * 8, size.Item2 * 8);
+
+                for (int i = 0; i < size.Item1 * 16; i++)
+                {
+                    for (int j = 0; j < size.Item2 * 16; j++)
+                    {
+                        int posToCenterX = i - centerCoords.Item1;
+                        int posToCenterY = j - centerCoords.Item2;
+                        int angleMod = (int)(Math.Atan2(posToCenterY, posToCenterX) * 180 / Math.PI);
+                        int angle = (3600 + angleOfShape - angleMod) % 360;
+                        float distance = (float)Math.Sqrt(posToCenterX * posToCenterX + posToCenterY * posToCenterY);
+
+                        float sizo = (size.Item1 * (8 - Seesaw(angle, 72) * 0.1f));
+
+                        if (distance < sizo)
+                        {
+                            structureArray[i / 16, j / 16][i % 16, j % 16] = 0;
+
+
+                            //outline
+
+                            int newi = i - 1;
+                            int newj = j;
+                            if (newi >= 0 && newi < size.Item1 * 16 && newj >= 0 && newj < size.Item1 * 16 && structureArray[newi / 16, newj / 16][newi % 16, newj % 16] == -999)
+                            {
+                                structureArray[newi / 16, newj / 16][newi % 16, newj % 16] = 1;
+                            }
+                            newi = i + 1;
+                            newj = j;
+                            if (newi >= 0 && newi < size.Item1 * 16 && newj >= 0 && newj < size.Item1 * 16 && structureArray[newi / 16, newj / 16][newi % 16, newj % 16] == -999)
+                            {
+                                structureArray[newi / 16, newj / 16][newi % 16, newj % 16] = 1;
+                            }
+                            newi = i;
+                            newj = j - 1;
+                            if (newi >= 0 && newi < size.Item1 * 16 && newj >= 0 && newj < size.Item1 * 16 && structureArray[newi / 16, newj / 16][newi % 16, newj % 16] == -999)
+                            {
+                                structureArray[newi / 16, newj / 16][newi % 16, newj % 16] = 1;
+                            }
+                            newi = i;
+                            newj = j + 1;
+                            if (newi >= 0 && newi < size.Item1 * 16 && newj >= 0 && newj < size.Item1 * 16 && structureArray[newi / 16, newj / 16][newi % 16, newj % 16] == -999)
+                            {
+                                structureArray[newi / 16, newj / 16][newi % 16, newj % 16] = 1;
+                            }
+                        }
+
                     }
                 }
             }
@@ -794,14 +955,14 @@ namespace Cave
                 {
                     for (int j = 0; j < size.Item2; j++)
                     {
-                        int ii = chunkBounds.Item1+i;
-                        int jj = chunkBounds.Item3+j;
+                        int ii = chunkBounds.Item1 + i;
+                        int jj = chunkBounds.Item3 + j;
                         Chunk chunko = new Chunk(ii, jj, screen.seed, screen, true);
                         for (int k = 0; k < 16; k++)
                         {
                             for (int l = 0; l < 16; l++)
                             {
-                                if(structureArray[i, j][k, l] != -999)
+                                if (structureArray[i, j][k, l] != -999)
                                 {
                                     if (structureArray[i, j][k, l] == 0)
                                     {
@@ -818,7 +979,7 @@ namespace Cave
                         chunko.saveChunk(screen);
                     }
                 }
-                
+
             }
             public void saveInFile()
             {
@@ -838,7 +999,7 @@ namespace Cave
 
             public float timeAtLastDig = -9999;
             public float timeAtLastPlace = -9999;
-            public (int,int) findIntPos(float positionX, float positionY)
+            public (int, int) findIntPos(float positionX, float positionY)
             {
                 return ((int)Floor(positionX, 1), (int)Floor(positionY, 1));
             }
@@ -850,7 +1011,7 @@ namespace Cave
                     int randX = rand.Next((ChunkLength - 1) * 16);
                     int randY = rand.Next((ChunkLength - 1) * 16);
                     Chunk randChunk = screen.loadedChunks[randX / 16, randY / 16];
-                    if (!randChunk.fillStates[randX%16, randY%16])
+                    if (!randChunk.fillStates[randX % 16, randY % 16])
                     {
                         posX = randX;
                         realPosX = randX;
@@ -862,26 +1023,26 @@ namespace Cave
             }
             public void movePlayer(Screen screen)
             {
-                (int, int) newPos = findIntPos(realPosX+speedX, realPosY+speedY);
+                (int, int) newPos = findIntPos(realPosX + speedX, realPosY + speedY);
                 int toMoveX = newPos.Item1 - posX;
                 int toMoveY = newPos.Item2 - posY;
-                if(digPress && timeElapsed > timeAtLastDig + 0.5f)
+                if (digPress && timeElapsed > timeAtLastDig + 0.5f)
                 {
                     if (arrowKeysState[0] && !arrowKeysState[1])
                     {
-                        Dig(posX+1, posY, screen);
+                        Dig(posX + 1, posY, screen);
                     }
-                    else if (arrowKeysState[1] && !arrowKeysState[0])  
+                    else if (arrowKeysState[1] && !arrowKeysState[0])
                     {
-                        Dig(posX-1, posY, screen);
+                        Dig(posX - 1, posY, screen);
                     }
                     else if (arrowKeysState[2] && !arrowKeysState[3])
                     {
-                        Dig(posX, posY+1, screen);
+                        Dig(posX, posY + 1, screen);
                     }
                     else if (arrowKeysState[3] && !arrowKeysState[2])
                     {
-                        Dig(posX, posY-1, screen);
+                        Dig(posX, posY - 1, screen);
                     }
                 }
                 if ((placePress[0] || placePress[1]) && timeElapsed > timeAtLastPlace + 0.5f)
@@ -907,11 +1068,11 @@ namespace Cave
                 {
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX + Sign(toMoveX), posY);
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                    if (!chunkToTest.fillStates[(posX%16+32+Sign(toMoveX))%16, (posY%16+32)%16])
+                    if (!chunkToTest.fillStates[(posX % 16 + 32 + Sign(toMoveX)) % 16, (posY % 16 + 32) % 16])
                     {
                         posX += Sign(toMoveX);
                         realPosX += Sign(toMoveX);
-                        toMoveX = Sign(toMoveX)*(Abs(toMoveX)-1);
+                        toMoveX = Sign(toMoveX) * (Abs(toMoveX) - 1);
                     }
                     else
                     {
@@ -919,15 +1080,15 @@ namespace Cave
                         break;
                     }
                 }
-                while(Abs(toMoveY) > 0)
+                while (Abs(toMoveY) > 0)
                 {
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + Sign(toMoveY));
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                    if (!chunkToTest.fillStates[(posX%16+32)%16, (posY%16+32+Sign(toMoveY))%16])
+                    if (!chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32 + Sign(toMoveY)) % 16])
                     {
                         posY += Sign(toMoveY);
                         realPosY += Sign(toMoveY);
-                        toMoveY = Sign(toMoveY)*(Abs(toMoveY)-1);
+                        toMoveY = Sign(toMoveY) * (Abs(toMoveY) - 1);
                     }
                     else
                     {
@@ -938,18 +1099,18 @@ namespace Cave
             }
             public bool CheckStructurePosChange()
             {
-                (int,int) oldStructurePos = (structureX,structureY);
-                structureX = Floor(posX,1024) / 1024;
-                structureY = Floor(posY,1024) / 1024;
-                if(oldStructurePos == (structureX, structureY)) { return false; }
+                (int, int) oldStructurePos = (structureX, structureY);
+                structureX = Floor(posX, 1024) / 1024;
+                structureY = Floor(posY, 1024) / 1024;
+                if (oldStructurePos == (structureX, structureY)) { return false; }
                 return true;
-                
+
             }
             public void Dig(int posToDigX, int posToDigY, Screen screen)
             {
                 (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posToDigX, posToDigY);
                 Chunk chunkToDig = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                if (chunkToDig.fillStates[(posToDigX%16+32)%16, (posToDigY%16+32)%16])
+                if (chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16])
                 {
                     chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = false;
                     chunkToDig.updateColorAfterDig((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16, true);
@@ -985,19 +1146,19 @@ namespace Cave
             {
                 int hueVar = rand.Next(101) - 50;
                 int shadeVar = rand.Next(61) - 30;
-                int biome = chunk.biomeIndex[(posX%16+16)%16, (posY%16+16)%16][0].Item1;
+                int biome = chunk.biomeIndex[(posX % 16 + 16) % 16, (posY % 16 + 16) % 16][0].Item1;
                 if (biome == 5)
                 {
                     type = 0;
                     return Color.FromArgb(130 + hueVar + shadeVar, 130 - hueVar + shadeVar, 210 + shadeVar);
                 }
-                else if(biome == 6)
+                else if (biome == 6)
                 {
                     type = 0;
                     return Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar);
                 }
                 type = 1;
-                return Color.FromArgb(90 + hueVar+shadeVar, 210+shadeVar, 110 - hueVar + shadeVar);
+                return Color.FromArgb(90 + hueVar + shadeVar, 210 + shadeVar, 110 - hueVar + shadeVar);
             }
             public Entity(int posXt, int posYt, int typet, int rt, int gt, int bt)
             {
@@ -1026,9 +1187,9 @@ namespace Cave
                     int randY = rand.Next(16);
                     if (!chunk.fillStates[randX, randY])
                     {
-                        posX = (int)chunk.position.Item1*16 + randX;
+                        posX = (int)chunk.position.Item1 * 16 + randX;
                         realPosX = posX;
-                        posY = (int)chunk.position.Item2*16 + randY;
+                        posY = (int)chunk.position.Item2 * 16 + randY;
                         realPosY = posY;
                         break;
                     }
@@ -1042,10 +1203,10 @@ namespace Cave
                     speedX += rand.Next(3) - 1;
                     speedY += rand.Next(3) - 1;
                 }
-                else if(type == 1)
+                else if (type == 1)
                 {
                     speedY += 1;
-                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY+1); // +1 cause coordinates are inverted lol
+                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + 1); // +1 cause coordinates are inverted lol
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
                     if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 33) % 16])
                     {
@@ -1065,7 +1226,7 @@ namespace Cave
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + Sign(toMoveY));
                     (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX, posY + Sign(toMoveY));
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                    if(chunkAbsolutePos.Item2 < chunkY || chunkAbsolutePos.Item2 >= chunkY+screen.chunkResolution)
+                    if (chunkAbsolutePos.Item2 < chunkY || chunkAbsolutePos.Item2 >= chunkY + screen.chunkResolution)
                     {
                         posY += Sign(toMoveY);
                         saveEntity(screen);
@@ -1111,7 +1272,7 @@ namespace Cave
             }
             public void saveEntity(Screen screen)
             {
-                (int, int) position = (Floor(posX,16)/16, Floor(posY, 16)/ 16);
+                (int, int) position = (Floor(posX, 16) / 16, Floor(posY, 16) / 16);
                 if (System.IO.File.Exists($"{currentDirectory}\\ChunkData\\{screen.seed}\\{position.Item1}.{position.Item2}.txt"))
                 {
                     List<String> lines = new List<String>();
@@ -1174,7 +1335,7 @@ namespace Cave
             {
                 seed = (long)rand.Next(1000000);
                 int counto = rand.Next(1000);
-                while(counto > 0)
+                while (counto > 0)
                 {
                     seed = LCGxPos(seed);
                     counto -= 1;
@@ -1183,9 +1344,9 @@ namespace Cave
             if (updatePNG)
             {
                 int rando = -10;
-                camPosX = -50*16;
-                camPosY = rando*16;
-                mainScreen = new Screen(-PNGsize/2, rando, PNGsize, seed);
+                camPosX = -50 * 16;
+                camPosY = rando * 16;
+                mainScreen = new Screen(-PNGsize / 2, rando, PNGsize, seed);
                 mainScreen.updateScreen();
                 Bitmap bmp = mainScreen.bitmap;
                 Bitmap bmp2 = new Bitmap(512, 512);
@@ -1198,8 +1359,8 @@ namespace Cave
             player.placePlayer(mainScreen);
             mainScreen.playerList = new List<Player> { player };
             mainScreen.activeEntites = new List<Entity>();
-            camPosX = player.posX-(int)(ChunkLength*0.5f);
-            camPosY = player.posY-(int)(ChunkLength*0.5f);
+            camPosX = player.posX - (int)(ChunkLength * 0.5f);
+            camPosY = player.posY - (int)(ChunkLength * 0.5f);
             timer1.Tag = mainScreen;
             timeAtLauch = DateTime.Now;
         }
@@ -1210,7 +1371,7 @@ namespace Cave
             long seedX;
             if (x >= 0)
             {
-                seedX = screen.LCGCacheListMatrix[layer,0][(int)(x/50)];
+                seedX = screen.LCGCacheListMatrix[layer, 0][(int)(x / 50)];
                 x = x % 50;
                 while (x > 0)
                 {
@@ -1221,7 +1382,7 @@ namespace Cave
             else
             {
                 x = -x;
-                seedX = screen.LCGCacheListMatrix[layer,1][(int)(x / 50)];
+                seedX = screen.LCGCacheListMatrix[layer, 1][(int)(x / 50)];
                 x = x % 50;
                 while (x > 0)
                 {
@@ -1232,7 +1393,7 @@ namespace Cave
             long seedY;
             if (y >= 0)
             {
-                seedY = screen.LCGCacheListMatrix[layer,2][(int)(y / 50)];
+                seedY = screen.LCGCacheListMatrix[layer, 2][(int)(y / 50)];
                 y = y % 50;
                 while (y > 0)
                 {
@@ -1243,7 +1404,7 @@ namespace Cave
             else
             {
                 y = -y;
-                seedY = screen.LCGCacheListMatrix[layer,3][(int)(y / 50)];
+                seedY = screen.LCGCacheListMatrix[layer, 3][(int)(y / 50)];
                 y = y % 50;
                 while (y > 0)
                 {
@@ -1252,7 +1413,7 @@ namespace Cave
                 }
             }
             int z = (int)((256 + seedX % 256 + seedY % 256) % 256);
-            long seedZ = screen.LCGCacheListMatrix[layer,4][(int)(z / 50)];
+            long seedZ = screen.LCGCacheListMatrix[layer, 4][(int)(z / 50)];
             z = z % 50;
             while (z > 0)
             {
@@ -1267,7 +1428,7 @@ namespace Cave
             long x = posX;
             long y = posY;
             int counto = 0;
-            while(counto < 10 + layer*10)
+            while (counto < 10 + layer * 10)
             {
                 seed = LCGz(seed);
                 counto += 1;
@@ -1322,26 +1483,26 @@ namespace Cave
         public static int findSecondaryNoiseValue(Chunk chunk, int varX, int varY, int layer)
         {
             int modulo = 32;
-            int modX = (int)((chunk.position.Item1*16+varX)%modulo+modulo)%modulo;
-            int modY = (int)((chunk.position.Item2*16+varY)%modulo+modulo)%modulo;
+            int modX = (int)((chunk.position.Item1 * 16 + varX) % modulo + modulo) % modulo;
+            int modY = (int)((chunk.position.Item2 * 16 + varY) % modulo + modulo) % modulo;
             int[,] values = chunk.primaryFillValues;
             int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
             int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX;
             int fY = fX1 * (modulo - modY) + fX2 * modY;
-            return fY / (modulo*modulo);
+            return fY / (modulo * modulo);
         }
         public static int findSecondaryBiomeValue(Chunk chunk, int varX, int varY, int layer)
         {
             int modulo = 256;
-            int modX = (int)((chunk.position.Item1*16+varX)%modulo+modulo)%modulo;
-            int modY = (int)((chunk.position.Item2*16+varY)%modulo+modulo)%modulo;
+            int modX = (int)((chunk.position.Item1 * 16 + varX) % modulo + modulo) % modulo;
+            int modY = (int)((chunk.position.Item2 * 16 + varY) % modulo + modulo) % modulo;
             int[,] values = chunk.primaryBiomeValues;
             int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
             int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX;
             int fY = fX1 * (modulo - modY) + fX2 * modY;
-            return fY / (modulo*modulo);
+            return fY / (modulo * modulo);
         }
-        public static (int,int)[] findBiome(int[,,] values, int posX, int posY)
+        public static (int, int)[] findBiome(int[,,] values, int posX, int posY)
         {
             // arrite so... 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
             int temperature = values[posX, posY, 0];
@@ -1351,10 +1512,10 @@ namespace Cave
             List<(int, int)> listo = new List<(int, int)>();
             int percentageFree = 100;
 
-            if(temperature > 180)
+            if (temperature > 180)
             {
-                int hotness = Min((temperature-180)*10, 100);
-                if(temperature > 210 && humidity > 150)
+                int hotness = Min((temperature - 180) * 10, 100);
+                if (temperature > 210 && humidity > 150)
                 {
                     int minimo = Min(temperature - 210, humidity - 150);
                     int obsidianess = minimo * 4;
@@ -1363,27 +1524,27 @@ namespace Cave
                     listo.Add((6, obsidianess));
                     percentageFree -= obsidianess;
                 }
-                if(hotness > 0)
+                if (hotness > 0)
                 {
                     listo.Add((2, hotness));
                     percentageFree -= hotness;
                 }
             }
-            else if(temperature < 110)
+            else if (temperature < 110)
             {
-                int coldness = Min((110-temperature) * 10, 100);
-                if(acidity < 110)
+                int coldness = Min((110 - temperature) * 10, 100);
+                if (acidity < 110)
                 {
-                    int acidness = (int)(Min((110-acidity)*10, 100)*coldness*0.01f);
+                    int acidness = (int)(Min((110 - acidity) * 10, 100) * coldness * 0.01f);
                     coldness -= acidness;
                     listo.Add((1, acidness));
                     percentageFree -= acidness;
                 }
-                if(humidity > toxicity)
+                if (humidity > toxicity)
                 {
-                    int fairyness = (int)(Min((humidity-toxicity)*10,100)*coldness*0.01f);
+                    int fairyness = (int)(Min((humidity - toxicity) * 10, 100) * coldness * 0.01f);
                     coldness -= fairyness;
-                    if(fairyness > 0)
+                    if (fairyness > 0)
                     {
                         listo.Add((5, fairyness));
                         percentageFree -= fairyness;
@@ -1397,7 +1558,7 @@ namespace Cave
 
             }
 
-            if(percentageFree > 0)
+            if (percentageFree > 0)
             {
                 int slimeness = (int)(Clamp((toxicity - humidity + 5) * 10, 0, 100) * percentageFree * 0.01f);
                 int forestness = (int)(Clamp((humidity - toxicity + 5) * 10, 0, 100) * percentageFree * 0.01f);
@@ -1415,7 +1576,7 @@ namespace Cave
 
             Sort(listo, false);
             (int, int)[] arrayo = new (int, int)[listo.Count];
-            for(int i = 0; i < arrayo.Length; i++)
+            for (int i = 0; i < arrayo.Length; i++)
             {
                 arrayo[i] = listo[i];
             }
@@ -1431,8 +1592,8 @@ namespace Cave
             timeElapsed = (float)((DateTime.Now - timeAtLauch).TotalSeconds);
             accCamX = 0;
             accCamY = 0;
-            player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.75f)-0.25f));
-            player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.75f)-0.25f));
+            player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.75f) - 0.25f));
+            player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.75f) - 0.25f));
             if (arrowKeysState[0]) { player.speedX += 1; }
             if (arrowKeysState[1]) { player.speedX -= 1; }
             if (arrowKeysState[2]) { player.speedY += 1; }
@@ -1443,7 +1604,7 @@ namespace Cave
                 player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.5f) - 1.2f));
                 player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.5f) - 1.2f));
             }
-            foreach(Player playor in screen.playerList)
+            foreach (Player playor in screen.playerList)
             {
                 playor.movePlayer(screen);
                 screen.checkStructures(playor);
@@ -1457,17 +1618,17 @@ namespace Cave
             {
                 screen.activeEntites.Remove(entity);
             }
-            int posDiffX = player.posX - (camPosX+8*(ChunkLength-1));
-            int posDiffY = player.posY - (camPosY+8*(ChunkLength-1));
-            accCamX = Sign(posDiffX) * Max(0,Sqrt(Abs(posDiffX))-2);
-            accCamY = Sign(posDiffY) * Max(0,Sqrt(Abs(posDiffY))- 2);
-            if (accCamX == 0 || Sign(accCamX) != Sign(speedCamX) )
+            int posDiffX = player.posX - (camPosX + 8 * (ChunkLength - 1));
+            int posDiffY = player.posY - (camPosY + 8 * (ChunkLength - 1));
+            accCamX = Sign(posDiffX) * Max(0, Sqrt(Abs(posDiffX)) - 2);
+            accCamY = Sign(posDiffY) * Max(0, Sqrt(Abs(posDiffY)) - 2);
+            if (accCamX == 0 || Sign(accCamX) != Sign(speedCamX))
             {
-                speedCamX = Sign(speedCamX) *(Max(Abs(speedCamX) -1,0));
+                speedCamX = Sign(speedCamX) * (Max(Abs(speedCamX) - 1, 0));
             }
             if (accCamY == 0 || Sign(accCamY) != Sign(speedCamY))
             {
-                speedCamY = Sign(speedCamY) *(Max(Abs(speedCamY) -1,0));
+                speedCamY = Sign(speedCamY) * (Max(Abs(speedCamY) - 1, 0));
             }
             speedCamX = Clamp(speedCamX + accCamX, -15f, 15f);
             speedCamY = Clamp(speedCamY + accCamY, -15f, 15f);
@@ -1479,8 +1640,8 @@ namespace Cave
             int oldChunkY = chunkY;
             chunkX = Floor(camPosX, 16) / 16;
             chunkY = Floor(camPosY, 16) / 16;
-            int chunkVariationX = chunkX-oldChunkX;
-            int chunkVariationY = chunkY-oldChunkY;
+            int chunkVariationX = chunkX - oldChunkX;
+            int chunkVariationY = chunkY - oldChunkY;
             if (chunkVariationX != 0 || chunkVariationY != 0)
             {
                 screen.updateLoadedChunks(chunkX, chunkY, screen.seed, chunkVariationX, chunkVariationY);
@@ -1506,7 +1667,7 @@ namespace Cave
             {
                 arrowKeysState[3] = true;
             }
-            if(e.KeyCode == Keys.X)
+            if (e.KeyCode == Keys.X)
             {
                 digPress = true;
             }
@@ -1582,17 +1743,17 @@ namespace Cave
             return (long)((121525) * seed + (long)6763) % (long)4294967291;
         }
 
-        public static void Sort(List<(int,int)> listo, bool sortByFirstInt)
+        public static void Sort(List<(int, int)> listo, bool sortByFirstInt)
         {
-            if(sortByFirstInt)
+            if (sortByFirstInt)
             {
                 int idx = 0;
-                while(idx < listo.Count-1)
+                while (idx < listo.Count - 1)
                 {
-                    if (listo[idx+1].Item1 > listo[idx].Item1 || (listo[idx+1].Item1 == listo[idx].Item1 && listo[idx + 1].Item2 > listo[idx].Item2))
+                    if (listo[idx + 1].Item1 > listo[idx].Item1 || (listo[idx + 1].Item1 == listo[idx].Item1 && listo[idx + 1].Item2 > listo[idx].Item2))
                     {
-                        listo.Insert(idx, listo[idx+1]);
-                        listo.RemoveAt(idx+2);
+                        listo.Insert(idx, listo[idx + 1]);
+                        listo.RemoveAt(idx + 2);
                         idx -= 2;
                     }
                     idx += 1;
@@ -1601,15 +1762,15 @@ namespace Cave
             else
             {
                 int idx = 0;
-                while(idx < listo.Count-1)
+                while (idx < listo.Count - 1)
                 {
-                    if (listo[idx+1].Item2 > listo[idx].Item2 || (listo[idx+1].Item2 == listo[idx].Item2 && listo[idx + 1].Item1 > listo[idx].Item1))
+                    if (listo[idx + 1].Item2 > listo[idx].Item2 || (listo[idx + 1].Item2 == listo[idx].Item2 && listo[idx + 1].Item1 > listo[idx].Item1))
                     {
-                        listo.Insert(idx, listo[idx+1]);
-                        listo.RemoveAt(idx+2);
+                        listo.Insert(idx, listo[idx + 1]);
+                        listo.RemoveAt(idx + 2);
                         idx -= 2;
                     }
-                    idx = Max(0, idx+1);
+                    idx = Max(0, idx + 1);
                 }
             }
             if (listo.Count >= 3)
@@ -1652,7 +1813,7 @@ namespace Cave
         }
         public static int Floor(int value, int modulo)
         {
-            return value - (((value % modulo) + modulo)%modulo);
+            return value - (((value % modulo) + modulo) % modulo);
         }
         public static long Floor(long value, long modulo)
         {
@@ -1664,7 +1825,7 @@ namespace Cave
         }
         public static int Sign(int a)
         {
-            if(a >= 0) { return 1; }
+            if (a >= 0) { return 1; }
             return -1;
         }
         public static float Sign(float a)
@@ -1698,16 +1859,24 @@ namespace Cave
             return sq;
         }
 
-        public static int Seesaw(int n, int mod)
+        //star see saw is the function used to make the*... circular blades
+        public static int sawBladeSeesaw(int n, int mod)
         {
-            n = ((n%mod)+n)%mod;
+            n = ((n % mod) + n) % mod; // additional "+ n" that has falsifies the seesaw (frequency*2) but we'll leave it for sawblades for now lol
             int n2 = n % (mod / 2);
-            if(n == n2) { return n; }
+            if (n == n2) { return n; }
             return n - n2;
         }
-        public static float Seesaw(float n, float mod)
+        public static int Seesaw(int n, int mod)
         {
-            n = ((n%mod)+n)%mod;
+            n = n % mod;
+            int n2 = n % (mod / 2);
+            if (n == n2) { return n; }
+            return n - n2*2;
+        }
+        public static float sawBladeSeesaw(float n, float mod)
+        {
+            n = ((n % mod) + n) % mod; // additional "+ n" that has falsifies the seesaw (frequency*2) but we'll leave it for sawblades for now lol
             float n2 = n % (mod / 2);
             if (n == n2) { return n; }
             return n - n2*2;
@@ -1716,14 +1885,14 @@ namespace Cave
         {
             n = ((n % mod) + n) % mod;
             float n2 = n % (mod / 2);
-            if (n*3 > mod && n*3 < mod*2) { return mod*0.33f; }
+            if (n * 3 > mod && n * 3 < mod * 2) { return mod * 0.33f; }
             if (n == n2) { return n; }
             return n - n2 * 2;
         }
         public static float Sin(float n, float period)
         {
-            n = Seesaw(n, period);
-            return (n*n)/(period*period*0.25f);
+            n = sawBladeSeesaw(n, period);
+            return (n * n) / (period * period * 0.25f);
         }
         public static float Obs(float n, float period)
         {
