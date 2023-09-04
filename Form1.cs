@@ -55,7 +55,8 @@ namespace Cave
                 { 3, (Color.Green.R,Color.Green.G,Color.Green.B)}, // plant biome
                 { 4, (Color.GreenYellow.R,Color.GreenYellow.G,Color.GreenYellow.B) }, // toxic biome
                 { 5, (Color.LightPink.R,Color.LightPink.G,Color.LightPink.B) }, // fairy biome !
-                { 6, (-100,-100,-100) } // obsidian biome...
+                { 6, (-100,-100,-100) }, // obsidian biome...
+                { 7, (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) }, // very cold biome
             };
         }
         public class CaveSystem
@@ -67,8 +68,10 @@ namespace Cave
             public (long, long) position;
             public int[,] primaryFillValues;
             public int[,] primaryBiomeValues;
+            public int[,] primaryBigBiomeValues; // the biome trends that are bigger than biomes
             public int[,,] secondaryFillValues;
             public int[,,] secondaryBiomeValues;
+            public int[,,] secondaryBigBiomeValues;
             public (int, int)[,][] biomeIndex;
             public bool[,] fillStates;
             public Color[,] colors;
@@ -76,6 +79,7 @@ namespace Cave
             public int modificationCount = 0;
             public Chunk(long posX, long posY, long seed, Screen screen, bool structureGenerated)
             {
+                long bigBiomeSeed = LCGxNeg(LCGz(LCGyPos(LCGxNeg(seed))));
                 position = (posX, posY);
                 long chunkX = (long)(Floor(posX, 2) * 0.5f);
                 long chunkY = (long)(Floor(posY, 2) * 0.5f);
@@ -137,8 +141,52 @@ namespace Cave
                     }
                 };
                 primaryBiomeValues = biomeValues;
+
+                chunkX = Floor(posX, 64) / 64;
+                chunkY = Floor(posY, 64) / 64;
+                int[,] bigBiomeValues =
+                {
+                    {
+                        findPrimaryBiomeValue(chunkX, chunkY, bigBiomeSeed, 0),
+                        findPrimaryBiomeValue(chunkX+1, chunkY, bigBiomeSeed, 0),
+                        findPrimaryBiomeValue(chunkX, chunkY+1, bigBiomeSeed, 0),
+                        findPrimaryBiomeValue(chunkX+1, chunkY+1, bigBiomeSeed, 0)
+                    },
+                    {
+                        findPrimaryBiomeValue(chunkX, chunkY, bigBiomeSeed, 1),
+                        findPrimaryBiomeValue(chunkX+1, chunkY, bigBiomeSeed, 1),
+                        findPrimaryBiomeValue(chunkX, chunkY+1, bigBiomeSeed, 1),
+                        findPrimaryBiomeValue(chunkX+1, chunkY+1, bigBiomeSeed, 1)
+                    },
+                    {
+                        findPrimaryBiomeValue(chunkX, chunkY, bigBiomeSeed, 2),
+                        findPrimaryBiomeValue(chunkX+1, chunkY, bigBiomeSeed, 2),
+                        findPrimaryBiomeValue(chunkX, chunkY+1, bigBiomeSeed, 2),
+                        findPrimaryBiomeValue(chunkX+1, chunkY+1, bigBiomeSeed, 2)
+                    },
+                    {
+                        findPrimaryBiomeValue(chunkX, chunkY, bigBiomeSeed, 3),
+                        findPrimaryBiomeValue(chunkX+1, chunkY, bigBiomeSeed, 3),
+                        findPrimaryBiomeValue(chunkX, chunkY+1, bigBiomeSeed, 3),
+                        findPrimaryBiomeValue(chunkX+1, chunkY+1, bigBiomeSeed, 3)
+                    },
+                    {
+                        findPrimaryBiomeValue(chunkX, chunkY, bigBiomeSeed, 4),
+                        findPrimaryBiomeValue(chunkX+1, chunkY, bigBiomeSeed, 4),
+                        findPrimaryBiomeValue(chunkX, chunkY+1, bigBiomeSeed, 4),
+                        findPrimaryBiomeValue(chunkX+1, chunkY+1, bigBiomeSeed, 4)
+                    },
+                    {
+                        findPrimaryBiomeValue(chunkX, chunkY, bigBiomeSeed, 5),
+                        findPrimaryBiomeValue(chunkX+1, chunkY, bigBiomeSeed, 5),
+                        findPrimaryBiomeValue(chunkX, chunkY+1, bigBiomeSeed, 5),
+                        findPrimaryBiomeValue(chunkX+1, chunkY+1, bigBiomeSeed, 5)
+                    }
+                };
+                primaryBigBiomeValues = bigBiomeValues;
                 secondaryFillValues = new int[2, 16, 16];
                 secondaryBiomeValues = new int[16, 16, 6];
+                secondaryBigBiomeValues = new int[16, 16, 6];
                 biomeIndex = new (int, int)[16, 16][];
                 fillStates = new bool[16, 16];
                 colors = new Color[16, 16];
@@ -151,8 +199,10 @@ namespace Cave
                         {
                             value = findSecondaryBiomeValue(this, i, j, k);
                             secondaryBiomeValues[i, j, k] = value;
+                            value = findSecondaryBigBiomeValue(this, i, j, k);
+                            secondaryBigBiomeValues[i, j, k] = value;
                         }
-                        (int, int)[] valueTupleArray = findBiome(secondaryBiomeValues, i, j);
+                        (int, int)[] valueTupleArray = findBiome(secondaryBiomeValues, secondaryBigBiomeValues, i, j);
                         biomeIndex[i, j] = valueTupleArray;
                         value = findSecondaryNoiseValue(this, i, j, 0);
                         secondaryFillValues[0, i, j] = value;
@@ -368,16 +418,18 @@ namespace Cave
             public long seed;
             public int loadedChunkOffsetX;
             public int loadedChunkOffsetY;
+            public bool isPngToBeExported;
             public Bitmap bitmap;
             public List<Player> playerList = new List<Player>();
             public List<Entity> activeEntites = new List<Entity>();
             public List<Entity> entitesToRemove = new List<Entity>();
 
-            public Screen(long posX, long posY, int chunkResolutionToPut, long seedo)
+            public Screen(long posX, long posY, int chunkResolutionToPut, long seedo, bool isPngToExport)
             {
                 loadedChunkOffsetX = 0; //(((int)posX %chunkResolutionToPut) + chunkResolutionToPut) %chunkResolutionToPut;
                 loadedChunkOffsetY = 0; //(((int)posY %chunkResolutionToPut) + chunkResolutionToPut) %chunkResolutionToPut;
                 seed = seedo;
+                isPngToBeExported = isPngToExport;
                 playerList = new List<Player>();
                 activeEntites = new List<Entity>();
                 chunkResolution = chunkResolutionToPut;
@@ -406,40 +458,31 @@ namespace Cave
                 }
                 longo = seed;
                 longo2 = LCGz(seed);
-                for (int j = 0; j < 10000; j++)
+                for (int j = 0; j < 10000; j+=50)
                 {
-                    if (j % 50 == 0)
-                    {
-                        LCGCacheListMatrix[0, 0].Add(longo);
-                        LCGCacheListMatrix[1, 0].Add(longo2);
-                    }
+                    LCGCacheListMatrix[0, 0].Add(longo);
+                    LCGCacheListMatrix[1, 0].Add(longo2);
                     longo = LCGxPos(longo);
                     longo2 = LCGxPos(longo);
                 }
                 longo = seed;
-                for (int j = 0; j < 10000; j++)
+                for (int j = 0; j < 10000; j+=50)
                 {
-                    if (j % 50 == 0)
-                    {
-                        LCGCacheListMatrix[0, 1].Add(longo);
-                        LCGCacheListMatrix[1, 1].Add(longo2);
-                    }
+                    LCGCacheListMatrix[0, 1].Add(longo);
+                    LCGCacheListMatrix[1, 1].Add(longo2);
                     longo = LCGxNeg(longo);
                     longo2 = LCGxNeg(longo);
                 }
                 longo = seed;
-                for (int j = 0; j < 10000; j++)
+                for (int j = 0; j < 10000; j+=50)
                 {
-                    if (j % 50 == 0)
-                    {
-                        LCGCacheListMatrix[0, 2].Add(longo);
-                        LCGCacheListMatrix[1, 2].Add(longo2);
-                    }
+                    LCGCacheListMatrix[0, 2].Add(longo);
+                    LCGCacheListMatrix[1, 2].Add(longo2);
                     longo = LCGyPos(longo);
                     longo2 = LCGyPos(longo);
                 }
                 longo = seed;
-                for (int j = 0; j < 10000; j++)
+                for (int j = 0; j < 10000; j+=50)
                 {
                     if (j % 50 == 0)
                     {
@@ -450,7 +493,7 @@ namespace Cave
                     longo2 = LCGyNeg(longo);
                 }
                 longo = seed;
-                for (int j = 0; j < 10000; j++)
+                for (int j = 0; j < 10000; j+=50)
                 {
                     if (j % 50 == 0)
                     {
@@ -472,7 +515,8 @@ namespace Cave
                         loadedChunks[(i + chunkResolution) % chunkResolution, (j + chunkResolution) % chunkResolution] = new Chunk(posX + i, posY + j, seed, this, false);
                     }
                 }
-                bitmap = new Bitmap(64 * (chunkResolution - 1), 64 * (chunkResolution - 1));
+                if (isPngToBeExported) { bitmap = new Bitmap(16 * (chunkResolution - 1), 16 * (chunkResolution - 1)); }
+                else { bitmap = new Bitmap(64 * (chunkResolution - 1), 64 * (chunkResolution - 1)); }
             }
             public void updateLoadedChunks(int posX, int posY, long seed, int screenSlideX, int screenSlideY)
             {
@@ -609,7 +653,7 @@ namespace Cave
                         seedY = LCGyPos(seedY);
                         y--;
                     }
-                    long structuresAmount = (seedX + seedY) % 10 + 1 + 50;
+                    long structuresAmount = (seedX + seedY) % 10 + 1;
                     for (int i = 0; i < structuresAmount; i++)
                     {
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
@@ -626,6 +670,9 @@ namespace Cave
                 int pixelPosX;
                 int pixelPosY;
 
+                int PNGmultiplicator = 4;
+                if(isPngToBeExported) { PNGmultiplicator = 1; }
+
                 for (int i = 0; i < chunkResolution * 16; i++)
                 {
                     for (int j = 0; j < chunkResolution * 16; j++)
@@ -640,12 +687,9 @@ namespace Cave
 
                         Color color = loadedChunks[i / 16, j / 16].colors[i % 16, j % 16];
 
-                        for (int i2 = 0; i2 < 4; i2++)
+                        using (var g = Graphics.FromImage(bitmap))
                         {
-                            for (int j2 = 0; j2 < 4; j2++)
-                            {
-                                bitmap.SetPixel(pixelPosX * 4 + i2, pixelPosY * 4 + j2, color);
-                            }
+                            g.FillRectangle(new SolidBrush(color), pixelPosX*PNGmultiplicator, pixelPosY*PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
                         }
                     }
                 }
@@ -662,12 +706,9 @@ namespace Cave
                     {
                         color = Color.Red;
                     }
-                    for (int i2 = 0; i2 < 4; i2++)
+                    using (var g = Graphics.FromImage(bitmap))
                     {
-                        for (int j2 = 0; j2 < 4; j2++)
-                        {
-                            bitmap.SetPixel(pixelPosX * 4 + i2, pixelPosY * 4 + j2, color);
-                        }
+                        g.FillRectangle(new SolidBrush(color), pixelPosX*PNGmultiplicator, pixelPosY*PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
                     }
                 }
 
@@ -685,12 +726,9 @@ namespace Cave
                         {
                             color = Color.Red;
                         }
-                        for (int i2 = 0; i2 < 4; i2++)
+                        using (var g = Graphics.FromImage(bitmap))
                         {
-                            for (int j2 = 0; j2 < 4; j2++)
-                            {
-                                bitmap.SetPixel(pixelPosX * 4 + i2, pixelPosY * 4 + j2, color);
-                            }
+                            g.FillRectangle(new SolidBrush(color), pixelPosX*PNGmultiplicator, pixelPosY*PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
                         }
                     }
                 }
@@ -1317,7 +1355,7 @@ namespace Cave
 
             Screen mainScreen;
 
-            bool updatePNG = false;
+            bool updatePNG = true;
             int PNGsize = 50; // in chunks
             bool randomSeed = true;
 
@@ -1346,7 +1384,7 @@ namespace Cave
                 int rando = -10;
                 camPosX = -50 * 16;
                 camPosY = rando * 16;
-                mainScreen = new Screen(-PNGsize / 2, rando, PNGsize, seed);
+                mainScreen = new Screen(-PNGsize / 2, -PNGsize / 2, PNGsize, seed, true);
                 mainScreen.updateScreen();
                 Bitmap bmp = mainScreen.bitmap;
                 Bitmap bmp2 = new Bitmap(512, 512);
@@ -1355,7 +1393,7 @@ namespace Cave
                 bmp2.Save($"{currentDirectory}\\caveNoise.png");
             }
 
-            mainScreen = new Screen(chunkX, chunkY, ChunkLength, seed);
+            mainScreen = new Screen(chunkX, chunkY, ChunkLength, seed, false);
             player.placePlayer(mainScreen);
             mainScreen.playerList = new List<Player> { player };
             mainScreen.activeEntites = new List<Entity>();
@@ -1502,13 +1540,24 @@ namespace Cave
             int fY = fX1 * (modulo - modY) + fX2 * modY;
             return fY / (modulo * modulo);
         }
-        public static (int, int)[] findBiome(int[,,] values, int posX, int posY)
+        public static int findSecondaryBigBiomeValue(Chunk chunk, int varX, int varY, int layer)
+        {
+            int modulo = 1024;
+            int modX = (int)((chunk.position.Item1 * 16 + varX) % modulo + modulo) % modulo;
+            int modY = (int)((chunk.position.Item2 * 16 + varY) % modulo + modulo) % modulo;
+            int[,] values = chunk.primaryBigBiomeValues;
+            int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
+            int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX;
+            int fY = fX1 * (modulo - modY) + fX2 * modY;
+            return fY / (modulo * modulo);
+        }
+        public static (int, int)[] findBiome(int[,,] values, int[,,] bigBiomeValues, int posX, int posY)
         {
             // arrite so... 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
-            int temperature = values[posX, posY, 0];
-            int humidity = values[posX, posY, 1];
-            int acidity = values[posX, posY, 2];
-            int toxicity = values[posX, posY, 3];
+            int temperature = values[posX, posY, 0] + bigBiomeValues[posX, posY, 0]-128;
+            int humidity = values[posX, posY, 1] + bigBiomeValues[posX, posY, 1]-128;
+            int acidity = values[posX, posY, 2] + bigBiomeValues[posX, posY, 2]-128;
+            int toxicity = values[posX, posY, 3] + bigBiomeValues[posX, posY, 3]-128;
             List<(int, int)> listo = new List<(int, int)>();
             int percentageFree = 100;
 
@@ -1533,6 +1582,18 @@ namespace Cave
             else if (temperature < 110)
             {
                 int coldness = Min((110 - temperature) * 10, 100);
+                if (temperature < 0)
+                {
+                    int bigColdness = (int)(Min((0 - temperature) * 10, 100) * coldness * 0.01f);
+                    coldness -= bigColdness;
+                    if (bigColdness > 0)
+                    {
+                        listo.Add((7, bigColdness));
+                        percentageFree -= bigColdness;
+                    }
+                }
+                int savedColdness = (int)(Min((30 - temperature) * 10, 100) * 0.01f);
+                coldness -= savedColdness;
                 if (acidity < 110)
                 {
                     int acidness = (int)(Min((110 - acidity) * 10, 100) * coldness * 0.01f);
@@ -1550,6 +1611,7 @@ namespace Cave
                         percentageFree -= fairyness;
                     }
                 }
+                coldness += savedColdness;
                 if (coldness > 0)
                 {
                     listo.Add((0, coldness));
