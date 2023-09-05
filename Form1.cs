@@ -1356,10 +1356,10 @@ namespace Cave
             Screen mainScreen;
 
             bool updatePNG = true;
-            int PNGsize = 50; // in chunks
-            bool randomSeed = true;
+            int PNGsize = 100; // in chunks
+            bool randomSeed = false;
 
-            long seed = 527503228;
+            long seed = 3496528327;
 
             //
             // cool seeds !!!! DO NOT DELETE
@@ -1367,6 +1367,7 @@ namespace Cave
             // 527503228 : spawn inside a giant obsidian biome !
             // 1115706211 : very cool spawn, with all the 7 current biomes types near and visitable and amazing looking caves
             // 947024425 : the biggest fucking obsidian biome i've ever seen. Not near the spawn, go FULL RIGHT, at around 130-140 chunks far right. What the actual fuck it's so big (that's what she said)
+            // 3496528327 : deep cold biome spawn
             //
 
             if (randomSeed)
@@ -1592,7 +1593,8 @@ namespace Cave
                         percentageFree -= bigColdness;
                     }
                 }
-                int savedColdness = (int)(Min((30 - temperature) * 10, 100) * 0.01f);
+                int savedColdness = (int)(Max(0,(Min((30 - temperature) * 10, 100))));
+                savedColdness = Min(savedColdness, coldness);
                 coldness -= savedColdness;
                 if (acidity < 110)
                 {
