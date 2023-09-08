@@ -56,7 +56,7 @@ namespace Cave
                 { 4, (Color.GreenYellow.R,Color.GreenYellow.G,Color.GreenYellow.B) }, // toxic biome
                 { 5, (Color.LightPink.R,Color.LightPink.G,Color.LightPink.B) }, // fairy biome !
                 { 6, (-100,-100,-100) }, // obsidian biome...
-                { 7, (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) }, // very cold biome
+                { 7, (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) }, // deep cold biome
             };
         }
         public class CaveSystem
@@ -73,7 +73,8 @@ namespace Cave
             public int[,,] secondaryBiomeValues;
             public int[,,] secondaryBigBiomeValues;
             public (int, int)[,][] biomeIndex;
-            public bool[,] fillStates;
+            public int[,] fillStates;
+            public (int,int,int)[,] baseColors;
             public Color[,] colors;
             public List<Entity> entityList = new List<Entity>();
             public int modificationCount = 0;
@@ -188,7 +189,8 @@ namespace Cave
                 secondaryBiomeValues = new int[16, 16, 6];
                 secondaryBigBiomeValues = new int[16, 16, 6];
                 biomeIndex = new (int, int)[16, 16][];
-                fillStates = new bool[16, 16];
+                fillStates = new int[16, 16];
+                baseColors = new (int,int,int)[16, 16];
                 colors = new Color[16, 16];
                 for (int i = 0; i < 16; i++)
                 {
@@ -263,9 +265,9 @@ namespace Cave
 
                         mod2 = (int)(mod2 / mod2divider);
 
-                        if (value2 > 200 + value2modifier) { fillStates[i, j] = false; }
-                        else if (value1 > 122 - mod2 * mod2 * 0.0003f + value1modifier && value1 < 133 + mod2 * mod2 * 0.0003f - value1modifier) { fillStates[i, j] = false; }
-                        else { fillStates[i, j] = true; }
+                        if (value2 > 200 + value2modifier) { fillStates[i, j] = 0; }
+                        else if (value1 > 122 - mod2 * mod2 * 0.0003f + value1modifier && value1 < 133 + mod2 * mod2 * 0.0003f - value1modifier) { fillStates[i, j] = 0; }
+                        else { fillStates[i, j] = 1; }
 
 
                         for (int k = 0; k < 3; k++)
@@ -273,7 +275,7 @@ namespace Cave
                             colorArray[k] = (int)(colorArray[k] * 0.15f);
                             colorArray[k] += 20;
                         }
-                        colors[i, j] = Color.FromArgb(colorArray[0], colorArray[1], colorArray[2]);
+                        baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
                     }
                 }
                 if (structureGenerated)
@@ -290,36 +292,29 @@ namespace Cave
                 {
                     for (int j = 0; j < 16; j++)
                     {
-                        if (!fillStates[i, j])
-                        {
-                            int[] colorArray = { colors[i, j].R, colors[i, j].G, colors[i, j].B };
-                            for (int k = 0; k < 3; k++)
-                            {
-                                colorArray[k] += 70;
-                            }
-                            colors[i, j] = Color.FromArgb(colorArray[0], colorArray[1], colorArray[2]);
-                        }
+                        colors[i, j] = findTileColor(i, j);
                     }
                 }
             }
-            public void updateColorAfterDig(int i, int j, bool hasBeenDugAndNotFilled)
+
+            public Color findTileColor(int i, int j)
             {
-                int[] colorArray = { colors[i, j].R, colors[i, j].G, colors[i, j].B };
-                if (hasBeenDugAndNotFilled)
+                int[] colorArray = { baseColors[i, j].Item1, baseColors[i, j].Item2, baseColors[i, j].Item3 };
+                if (fillStates[i, j] == 0)
                 {
                     for (int k = 0; k < 3; k++)
                     {
                         colorArray[k] += 70;
-                    }
+                    };
                 }
-                else
+                else if (fillStates[i, j] == 2)
                 {
                     for (int k = 0; k < 3; k++)
                     {
-                        colorArray[k] -= 70;
-                    }
+                        colorArray[k] = (int)(colorArray[k]*0.5f) + 120;
+                    };
                 }
-                colors[i, j] = Color.FromArgb(colorArray[0], colorArray[1], colorArray[2]);
+                return Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
             }
             public void spawnEntites(Screen screen)
             {
@@ -368,15 +363,30 @@ namespace Cave
                             screen.activeEntites.Add(new Entity(posXt, posYt, typet, rt, gt, bt));
                         }
                     }
+
+
                     line = f.ReadLine();
-                    if (line[0] != 'x' && line.Count() >= 64)
+                    idx = 0;
+                    length = 0;
+                    if (line[0] != 'x')
                     {
                         modificationCount = 1;
+                        List<string> listo = new List<string>();
+                        for (int i = 0; i < line.Length; i++)
+                        {
+                            if (line[i] == ';')
+                            {
+                                listo.Add(line.Substring(idx, length));
+                                idx = i + 1;
+                                length = -1;
+                            }
+                            length++;
+                        }
                         for (int i = 0; i < 16; i++)
                         {
                             for (int j = 0; j < 16; j++)
                             {
-                                fillStates[i, j] = line[i * 16 + j] != '0';
+                                fillStates[i, j] = Int32.Parse(listo[i * 16 + j]);
                             }
                         }
                     }
@@ -400,9 +410,9 @@ namespace Cave
                     }
                     else
                     {
-                        foreach (bool boolo in fillStates)
+                        foreach (int into in fillStates)
                         {
-                            stringo += (Convert.ToInt32(boolo)).ToString();
+                            stringo += (Convert.ToInt32(into)).ToString() + ";";
                         }
                         stringo += "\n";
                     }
@@ -702,7 +712,7 @@ namespace Cave
                     Color color = Color.Green;
                     (int, int) chunkRelativePos = this.findChunkScreenRelativeIndex(player.posX, player.posY);
                     Chunk chunkToTest = this.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                    if (chunkToTest.fillStates[(player.posX % 16 + 16) % 16, (player.posY % 16 + 16) % 16])
+                    if (chunkToTest.fillStates[(player.posX % 16 + 16) % 16, (player.posY % 16 + 16) % 16] != 0)
                     {
                         color = Color.Red;
                     }
@@ -722,7 +732,7 @@ namespace Cave
                         Color color = entity.color;
                         (int, int) chunkRelativePos = this.findChunkScreenRelativeIndex(entity.posX, entity.posY);
                         Chunk chunkToTest = this.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                        if (chunkToTest.fillStates[(entity.posX % 16 + 16) % 16, (entity.posY % 16 + 16) % 16])
+                        if (chunkToTest.fillStates[(entity.posX % 16 + 16) % 16, (entity.posY % 16 + 16) % 16] != 0)
                         {
                             color = Color.Red;
                         }
@@ -913,11 +923,11 @@ namespace Cave
                     }
                 }
                 (int,int) tupelo = (centerCoords.Item1-1, centerCoords.Item2-1);
-                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 1;
+                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 2;
                 tupelo = (centerCoords.Item1, centerCoords.Item2-1);
                 structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 0;
                 tupelo = (centerCoords.Item1+1, centerCoords.Item2-1);
-                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 1;
+                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 2;
                 tupelo = (centerCoords.Item1-1, centerCoords.Item2);
                 structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 0;
                 tupelo = (centerCoords.Item1, centerCoords.Item2);
@@ -925,11 +935,11 @@ namespace Cave
                 tupelo = (centerCoords.Item1+1, centerCoords.Item2);
                 structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 0;
                 tupelo = (centerCoords.Item1-1, centerCoords.Item2+1);
-                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 1;
+                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 2;
                 tupelo = (centerCoords.Item1, centerCoords.Item2+1);
                 structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 0;
                 tupelo = (centerCoords.Item1+1, centerCoords.Item2+1);
-                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 1;
+                structureArray[tupelo.Item1 / 16, tupelo.Item2 / 16][tupelo.Item1 % 16, tupelo.Item2 % 16] = 2;
             }
             public void star()
             {
@@ -1002,14 +1012,7 @@ namespace Cave
                             {
                                 if (structureArray[i, j][k, l] != -999)
                                 {
-                                    if (structureArray[i, j][k, l] == 0)
-                                    {
-                                        chunko.fillStates[k, l] = false;
-                                    }
-                                    else
-                                    {
-                                        chunko.fillStates[k, l] = true;
-                                    }
+                                    chunko.fillStates[k, l] = structureArray[i, j][k, l];
                                 }
                             }
                         }
@@ -1049,7 +1052,7 @@ namespace Cave
                     int randX = rand.Next((ChunkLength - 1) * 16);
                     int randY = rand.Next((ChunkLength - 1) * 16);
                     Chunk randChunk = screen.loadedChunks[randX / 16, randY / 16];
-                    if (!randChunk.fillStates[randX % 16, randY % 16])
+                    if (randChunk.fillStates[randX % 16, randY % 16] == 0)
                     {
                         posX = randX;
                         realPosX = randX;
@@ -1106,7 +1109,7 @@ namespace Cave
                 {
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX + Sign(toMoveX), posY);
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                    if (!chunkToTest.fillStates[(posX % 16 + 32 + Sign(toMoveX)) % 16, (posY % 16 + 32) % 16])
+                    if (chunkToTest.fillStates[(posX % 16 + 32 + Sign(toMoveX)) % 16, (posY % 16 + 32) % 16] == 0)
                     {
                         posX += Sign(toMoveX);
                         realPosX += Sign(toMoveX);
@@ -1122,7 +1125,7 @@ namespace Cave
                 {
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + Sign(toMoveY));
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                    if (!chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32 + Sign(toMoveY)) % 16])
+                    if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32 + Sign(toMoveY)) % 16] == 0)
                     {
                         posY += Sign(toMoveY);
                         realPosY += Sign(toMoveY);
@@ -1148,10 +1151,10 @@ namespace Cave
             {
                 (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posToDigX, posToDigY);
                 Chunk chunkToDig = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                if (chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16])
+                if (chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] != 0)
                 {
-                    chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = false;
-                    chunkToDig.updateColorAfterDig((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16, true);
+                    chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = 0;
+                    chunkToDig.colors[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = chunkToDig.findTileColor((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16);
                     chunkToDig.modificationCount += 1;
                     timeAtLastDig = timeElapsed;
                 }
@@ -1160,10 +1163,10 @@ namespace Cave
             {
                 (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posToDigX, posToDigY);
                 Chunk chunkToDig = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                if (!chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16])
+                if (chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] == 0)
                 {
-                    chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = true;
-                    chunkToDig.updateColorAfterDig((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16, false);
+                    chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = 2;
+                    chunkToDig.colors[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = chunkToDig.findTileColor((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16);
                     chunkToDig.modificationCount += 1;
                     timeAtLastPlace = timeElapsed;
                 }
@@ -1195,6 +1198,13 @@ namespace Cave
                     type = 0;
                     return Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar);
                 }
+                else if (biome == 7)
+                {
+                    type = 0;
+                    hueVar = Abs((int)(hueVar * 0.4f));
+                    shadeVar = Abs(shadeVar);
+                    return Color.FromArgb(255 - hueVar - shadeVar, 255 - hueVar - shadeVar, 255 - shadeVar);
+                }
                 type = 1;
                 return Color.FromArgb(90 + hueVar + shadeVar, 210 + shadeVar, 110 - hueVar + shadeVar);
             }
@@ -1223,7 +1233,7 @@ namespace Cave
                 {
                     int randX = rand.Next(16);
                     int randY = rand.Next(16);
-                    if (!chunk.fillStates[randX, randY])
+                    if (chunk.fillStates[randX, randY] == 0)
                     {
                         posX = (int)chunk.position.Item1 * 16 + randX;
                         realPosX = posX;
@@ -1246,7 +1256,7 @@ namespace Cave
                     speedY += 1;
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + 1); // +1 cause coordinates are inverted lol
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                    if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 33) % 16])
+                    if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 33) % 16] != 0)
                     {
                         speedX = Sign(speedX) * (Max(0, Abs(speedX) * (0.75f) - 0.25f));
                         if (rand.NextDouble() > 0.05f)
@@ -1271,7 +1281,7 @@ namespace Cave
                         screen.entitesToRemove.Add(this);
                         return;
                     }
-                    if (!chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32 + Sign(toMoveY)) % 16])
+                    if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32 + Sign(toMoveY)) % 16] == 0)
                     {
                         posY += Sign(toMoveY);
                         realPosY += Sign(toMoveY);
@@ -1295,7 +1305,7 @@ namespace Cave
                         screen.entitesToRemove.Add(this);
                         return;
                     }
-                    if (!chunkToTest.fillStates[(posX % 16 + 32 + Sign(toMoveX)) % 16, (posY % 16 + 32) % 16])
+                    if (chunkToTest.fillStates[(posX % 16 + 32 + Sign(toMoveX)) % 16, (posY % 16 + 32) % 16] == 0)
                     {
                         posX += Sign(toMoveX);
                         realPosX += Sign(toMoveX);
@@ -1355,11 +1365,11 @@ namespace Cave
 
             Screen mainScreen;
 
-            bool updatePNG = true;
-            int PNGsize = 100; // in chunks
+            bool updatePNG = false;
+            int PNGsize = 200; // in chunks
             bool randomSeed = false;
 
-            long seed = 3496528327;
+            long seed = 3253271960;
 
             //
             // cool seeds !!!! DO NOT DELETE
@@ -1368,6 +1378,7 @@ namespace Cave
             // 1115706211 : very cool spawn, with all the 7 current biomes types near and visitable and amazing looking caves
             // 947024425 : the biggest fucking obsidian biome i've ever seen. Not near the spawn, go FULL RIGHT, at around 130-140 chunks far right. What the actual fuck it's so big (that's what she said)
             // 3496528327 : deep cold biome spawn
+            // 3253271960 : another deep cold biome spawn
             //
 
             if (randomSeed)
@@ -1873,6 +1884,12 @@ namespace Cave
         {
             if (value > max) { return max; }
             if (value < min) { return min; }
+            return value;
+        }
+        public static int ColorClamp(int value)
+        {
+            if (value > 255) { return 255; }
+            if (value < 0) { return 0; }
             return value;
         }
         public static int Floor(int value, int modulo)
