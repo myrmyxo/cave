@@ -9,6 +9,7 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using static Cave.Form1;
 using static Cave.Form1.Globals;
 using static Cave.MathF;
@@ -30,7 +31,9 @@ namespace Cave
             public static bool[] arrowKeysState = { false, false, false, false };
             public static bool digPress = false;
             public static bool[] placePress = { false, false };
+            public static bool[] zoomPress = { false, false };
             public static bool shiftPress = false;
+            public static float lastZoom = 0;
             public static DateTime timeAtLauch;
             public static float timeElapsed;
 
@@ -66,6 +69,8 @@ namespace Cave
         }
         public class Chunk
         {
+            public Screen screen;
+
             public (long, long) position;
             public int[,] primaryFillValues;
             public int[,] primaryBiomeValues;
@@ -81,8 +86,9 @@ namespace Cave
             public int modificationCount = 0;
             public int liquidCount = 0;
             public bool isUnstable = false;
-            public Chunk(long posX, long posY, long seed, Screen screen, bool structureGenerated)
+            public Chunk(long posX, long posY, long seed, bool structureGenerated, Screen screenToPut)
             {
+                screen = screenToPut;
                 long bigBiomeSeed = LCGxNeg(LCGz(LCGyPos(LCGxNeg(seed))));
                 position = (posX, posY);
                 long chunkX = (long)(Floor(posX, 2) * 0.5f);
@@ -433,187 +439,188 @@ namespace Cave
             }
             public void moveLiquids(Screen screen)
             {
-                (int, int) chunkCoords = screen.findChunkScreenRelativeIndex((int)position.Item1 * 16, (int)position.Item2 * 16);
-                {
-                    int j = 15;
-                    Chunk bottomChunk = screen.loadedChunks[chunkCoords.Item1, (chunkCoords.Item2 + ChunkLength + 2 * UnloadedChunksAmount + 1) % (ChunkLength + 2 * UnloadedChunksAmount)];
-                    {
-                        int i = 0;
-                        Chunk chunkToTest = screen.loadedChunks[(chunkCoords.Item1+ChunkLength+2*UnloadedChunksAmount-1)%(ChunkLength+2*UnloadedChunksAmount), (chunkCoords.Item2 + ChunkLength + 2 * UnloadedChunksAmount + 1) % (ChunkLength + 2 * UnloadedChunksAmount)];
+                (int, int) chunkCoords = screen.findChunkScreenRelativeIndex((int)position.Item1 * 16 - 16, (int)position.Item2 * 16);
+                Chunk leftChunk = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
+                chunkCoords = screen.findChunkScreenRelativeIndex((int)position.Item1 * 16 - 16, (int)position.Item2 * 16 + 16);
+                Chunk bottomLeftChunk = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
+                chunkCoords = screen.findChunkScreenRelativeIndex((int)position.Item1 * 16, (int)position.Item2 * 16 + 16);
+                Chunk bottomChunk = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
+                chunkCoords = screen.findChunkScreenRelativeIndex((int)position.Item1 * 16 + 16, (int)position.Item2 * 16 + 16);
+                Chunk bottomRightChunk = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
+                chunkCoords = screen.findChunkScreenRelativeIndex((int)position.Item1 * 16 + 16, (int)position.Item2 * 16);
+                Chunk rightChunk = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
 
-                        if (fillStates[i, j] < 0)
-                        {
-                            if (bottomChunk.fillStates[i, 0] == 0)
-                            {
-                                bottomChunk.fillStates[i, 0] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                bottomChunk.findTileColor(i, 0);
-                            }
-                            else if (bottomChunk.fillStates[i+1, 0] == 0)
-                            {
-                                bottomChunk.fillStates[i+1, 0] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                bottomChunk.findTileColor(i+1, 0);
-                            }
-                            else if (chunkToTest.fillStates[15, 0] == 0)
-                            {
-                                chunkToTest.fillStates[15, 0] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                chunkToTest.findTileColor(15, 0);
-                            }
-                        }
-                    }
-                    for (int i = 1; i < 15; i++)
+                for (int j = 15; j >= 0; j--)
                     {
-                        if (fillStates[i, j] < 0)
-                        {
-                            if (bottomChunk.fillStates[i, 0] == 0)
-                            {
-                                bottomChunk.fillStates[i, 0] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                bottomChunk.findTileColor(i, 0);
-                            }
-                            else if (bottomChunk.fillStates[i+1, 0] == 0)
-                            {
-                                bottomChunk.fillStates[i+1, 0] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                bottomChunk.findTileColor(i+1, 0);
-                            }
-                            else if (bottomChunk.fillStates[i-1, 0] == 0)
-                            {
-                                bottomChunk.fillStates[i-1, 0] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                bottomChunk.findTileColor(i-1, 0);
-                            }
-                        }
-                    }
+                    for (int i = 0; i < 16; i++)
                     {
-                        int i = 15;
-                        Chunk chunkToTest = screen.loadedChunks[(chunkCoords.Item1 + ChunkLength + 2 * UnloadedChunksAmount + 1) % (ChunkLength + 2 * UnloadedChunksAmount), (chunkCoords.Item2 + ChunkLength + 2 * UnloadedChunksAmount + 1) % (ChunkLength + 2 * UnloadedChunksAmount)];
-
-                        if (fillStates[i, j] < 0)
-                        {
-                            if (bottomChunk.fillStates[i, 0] == 0)
-                            {
-                                bottomChunk.fillStates[i, 0] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                bottomChunk.findTileColor(i, 0);
-                            }
-                            else if (chunkToTest.fillStates[0, 0] == 0)
-                            {
-                                chunkToTest.fillStates[0, 0] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                chunkToTest.findTileColor(0, 0);
-                            }
-                            else if (bottomChunk.fillStates[i - 1, 0] == 0)
-                            {
-                                bottomChunk.fillStates[i - 1, 0] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                bottomChunk.findTileColor(i - 1, 0);
-                            }
-                        }
-                    }
-
-                }
-                for(int j = 14; j >= 0; j--)
-                {
-                    {
-                        int i = 0;
-                        Chunk chunkToTest = screen.loadedChunks[(chunkCoords.Item1+ChunkLength+2*UnloadedChunksAmount-1)%(ChunkLength+2*UnloadedChunksAmount), chunkCoords.Item2];
-
-                        if (fillStates[i, j] < 0)
-                        {
-                            if (fillStates[i, j+1] == 0)
-                            {
-                                fillStates[i, j+1] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                findTileColor(i, j+1);
-                            }
-                            else if (fillStates[i+1, j+1] == 0)
-                            {
-                                fillStates[i+1, j+1] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                findTileColor(i+1, j+1);
-                            }
-                            else if (chunkToTest.fillStates[15, j+1] == 0)
-                            {
-                                chunkToTest.fillStates[15, j+1] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                chunkToTest.findTileColor(15, j+1);
-                            }
-                        }
-                    }
-                    for (int i = 1; i < 15; i++)
-                    {
-                        if (fillStates[i, j] < 0)
-                        {
-                            if (fillStates[i, j+1] == 0)
-                            {
-                                fillStates[i, j+1] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                findTileColor(i, j+1);
-                            }
-                            else if (fillStates[i+1, j+1] == 0)
-                            {
-                                fillStates[i+1, j+1] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                findTileColor(i+1, j+1);
-                            }
-                            else if (fillStates[i-1, j+1] == 0)
-                            {
-                                fillStates[i-1, j+1] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                findTileColor(i-1, j+1);
-                            }
-                        }
-                    }
-                    {
-                        int i = 15;
-                        Chunk chunkToTest = screen.loadedChunks[(chunkCoords.Item1 + ChunkLength + 2 * UnloadedChunksAmount + 1) % (ChunkLength + 2 * UnloadedChunksAmount), chunkCoords.Item2];
-
-                        if (fillStates[i, j] < 0)
-                        {
-                            if (fillStates[i, j + 1] == 0)
-                            {
-                                fillStates[i, j + 1] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                findTileColor(i, j + 1);
-                            }
-                            else if (chunkToTest.fillStates[0, j + 1] == 0)
-                            {
-                                chunkToTest.fillStates[0, j + 1] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                chunkToTest.findTileColor(0, j + 1);
-                            }
-                            else if (fillStates[i - 1, j + 1] == 0)
-                            {
-                                fillStates[i - 1, j + 1] = fillStates[i, j];
-                                fillStates[i, j] = 0;
-                                findTileColor(i, j);
-                                findTileColor(i - 1, j + 1);
-                            }
-                        }
+                        moveOneLiquid(i, j, leftChunk, bottomLeftChunk, bottomChunk, bottomRightChunk, rightChunk);
                     }
                 }
             }
-        
+            public void moveOneLiquid(int i, int j, Chunk leftChunk, Chunk bottomLeftChunk, Chunk bottomChunk, Chunk bottomRightChunk, Chunk rightChunk)
+            {
+                Chunk leftTestPositionChunk;
+                Chunk middleTestPositionChunk;
+                Chunk rightTestPositionChunk;
+
+                int jb = (j + 1) % 16;
+                int il = (i + 15) % 16;
+                int ir = (i + 1) % 16;
+
+                if (j == 15)
+                {
+                    middleTestPositionChunk = bottomChunk;
+                    if (i == 0)
+                    {
+                        leftTestPositionChunk = bottomLeftChunk;
+                        rightTestPositionChunk = bottomChunk;
+                    }
+                    else if (i == 15)
+                    {
+                        leftTestPositionChunk = bottomChunk;
+                        rightTestPositionChunk = bottomRightChunk;
+                    }
+                    else
+                    {
+                        leftTestPositionChunk = bottomChunk;
+                        rightTestPositionChunk = bottomChunk;
+                    }
+                }
+                else
+                {
+                    middleTestPositionChunk = this;
+                    if (i == 0)
+                    {
+                        leftTestPositionChunk = leftChunk;
+                        rightTestPositionChunk = this;
+                    }
+                    else if (i == 15)
+                    {
+                        leftTestPositionChunk = this;
+                        rightTestPositionChunk = rightChunk;
+                    }
+                    else
+                    {
+                        leftTestPositionChunk = this;
+                        rightTestPositionChunk = this;
+                    }
+                }
+
+                if (fillStates[i, j] < 0)
+                {
+                    if (middleTestPositionChunk.fillStates[i, jb] == 0)
+                    {
+                        middleTestPositionChunk.fillStates[i, jb] = fillStates[i, j];
+                        fillStates[i, j] = 0;
+                        findTileColor(i, j);
+                        middleTestPositionChunk.findTileColor(i, jb);
+                        goto endOfTest;
+                    }
+                    if (rightTestPositionChunk.fillStates[ir, jb] == 0)
+                    {
+                        rightTestPositionChunk.fillStates[ir, jb] = fillStates[i, j];
+                        fillStates[i, j] = 0;
+                        findTileColor(i, j);
+                        rightTestPositionChunk.findTileColor(ir, jb);
+                        goto endOfTest;
+                    }
+                    if (rightTestPositionChunk.fillStates[ir, jb] < 0)
+                    {
+                        if (testLiquidPushRight(i, j)){ goto endOfTest; }
+                    }
+                    if (leftTestPositionChunk.fillStates[il, jb] == 0)
+                    {
+                        leftTestPositionChunk.fillStates[il, jb] = fillStates[i, j];
+                        fillStates[i, j] = 0;
+                        findTileColor(i, j);
+                        leftTestPositionChunk.findTileColor(il, jb);
+                        goto endOfTest;
+                    }
+                    if (leftTestPositionChunk.fillStates[il, jb] < 0)
+                    {
+                        if (testLiquidPushLeft(i, j)){ goto endOfTest; }
+                    }
+
+                    endOfTest:;
+                }
+            }
+            bool testLiquidPushRight(int i, int j)
+            {
+                int iTested = i;
+                int jTested = j+1;
+
+                (int, int) chunkCoords = screen.findChunkScreenRelativeIndex((int)position.Item1 * 16, (int)position.Item2 * 16);
+                int chunkX = chunkCoords.Item1;
+                int chunkY = chunkCoords.Item2;
+                if (jTested >= 16) { jTested = 0; chunkY = (chunkY+1)%screen.chunkResolution; }
+                Chunk chunkToTest = screen.loadedChunks[chunkX, chunkY];
+
+                int repeatCounter = 0;
+                while(repeatCounter < 500)
+                {
+                    iTested++;
+                    if(iTested > 15)
+                    {
+                        chunkX++;
+                        chunkCoords = screen.findChunkScreenRelativeIndex(chunkX*16, chunkY*16);
+                        chunkToTest = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
+                        iTested -= 16;
+                    }
+                    if (chunkToTest.fillStates[iTested, jTested] > 0)
+                    {
+                        return false;
+                    }
+                    if (chunkToTest.fillStates[iTested, jTested] == 0)
+                    {
+                        chunkToTest.fillStates[iTested, jTested] = fillStates[i, j];
+                        fillStates[i, j] = 0;
+                        findTileColor(i, j);
+                        chunkToTest.findTileColor(iTested, jTested);
+                        return true;
+                    }
+                    repeatCounter++;
+                }
+                return false;
+            }
+            bool testLiquidPushLeft(int i, int j)
+            {
+                int iTested = i;
+                int jTested = j+1;
+
+                (int, int) chunkCoords = screen.findChunkScreenRelativeIndex((int)position.Item1 * 16, (int)position.Item2 * 16);
+                int chunkX = chunkCoords.Item1;
+                int chunkY = chunkCoords.Item2;
+                if (jTested >= 16) { jTested = 0; chunkY = (chunkY + 1) % screen.chunkResolution; }
+                Chunk chunkToTest = screen.loadedChunks[chunkX, chunkY];
+
+                int repeatCounter = 0;
+                while (repeatCounter < 500)
+                {
+                    iTested--;
+                    if (iTested < 0)
+                    {
+                        chunkX--;
+                        chunkCoords = screen.findChunkScreenRelativeIndex(chunkX * 16, chunkY * 16);
+                        chunkToTest = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
+                        iTested += 16;
+                    }
+                    if (chunkToTest.fillStates[iTested, jTested] > 0)
+                    {
+                        return false;
+                    }
+                    if (chunkToTest.fillStates[iTested, jTested] == 0)
+                    {
+                        chunkToTest.fillStates[iTested, jTested] = fillStates[i, j];
+                        fillStates[i, j] = 0;
+                        findTileColor(i, j);
+                        chunkToTest.findTileColor(iTested, jTested);
+                        return true;
+                    }
+                    repeatCounter++;
+                }
+                return false;
+            }
         }
         public class Screen
         {
@@ -716,12 +723,12 @@ namespace Cave
                 {
                     for (int j = 0; j < chunkResolution; j++)
                     {
-                        loadedChunks[(i + chunkResolution) % chunkResolution, (j + chunkResolution) % chunkResolution] = new Chunk(posX + i, posY + j, seed, this, false);
-                        loadedChunks[(i + chunkResolution) % chunkResolution, (j + chunkResolution) % chunkResolution] = new Chunk(posX + i, posY + j, seed, this, false);
+                        loadedChunks[(i + chunkResolution) % chunkResolution, (j + chunkResolution) % chunkResolution] = new Chunk(posX + i, posY + j, seed, false, this);
+                        loadedChunks[(i + chunkResolution) % chunkResolution, (j + chunkResolution) % chunkResolution] = new Chunk(posX + i, posY + j, seed, false, this);
                     }
                 }
-                if (isPngToBeExported) { bitmap = new Bitmap(16 * (chunkResolution - 2*UnloadedChunksAmount- 1), 16 * (chunkResolution - 2*UnloadedChunksAmount - 1)); }
-                else { bitmap = new Bitmap(64 * (chunkResolution - 2*UnloadedChunksAmount - 1), 64 * (chunkResolution - 2*UnloadedChunksAmount- 1)); }
+                if (isPngToBeExported) { bitmap = new Bitmap(16 * (ChunkLength - 1), 16 * (ChunkLength - 1)); }
+                else { bitmap = new Bitmap(64 * (ChunkLength - 1), 64 * (ChunkLength - 1)); }
             }
             public void updateLoadedChunks(int posX, int posY, long seed, int screenSlideX, int screenSlideY)
             {
@@ -747,7 +754,7 @@ namespace Cave
                     for (int j = 0; j < chunkResolution; j++)
                     {
                         loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY + j) % chunkResolution].saveChunk(this);
-                        loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY + j) % chunkResolution] = new Chunk((posX - screenSlideX) + chunkResolution, (posY - screenSlideY) + j, seed, this, false);
+                        loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY + j) % chunkResolution] = new Chunk((posX - screenSlideX) + chunkResolution, (posY - screenSlideY) + j, seed, false, this);
                     }
                     loadedChunkOffsetX = (loadedChunkOffsetX + 1) % chunkResolution;
                     screenSlideX -= 1;
@@ -757,7 +764,7 @@ namespace Cave
                     for (int j = 0; j < chunkResolution; j++)
                     {
                         loadedChunks[(loadedChunkOffsetX + chunkResolution - 1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution].saveChunk(this);
-                        loadedChunks[(loadedChunkOffsetX + chunkResolution - 1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution] = new Chunk((posX - screenSlideX) - 1, (posY - screenSlideY) + j, seed, this, false);
+                        loadedChunks[(loadedChunkOffsetX + chunkResolution - 1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution] = new Chunk((posX - screenSlideX) - 1, (posY - screenSlideY) + j, seed, false, this);
                     }
                     loadedChunkOffsetX = (loadedChunkOffsetX + chunkResolution - 1) % chunkResolution;
                     screenSlideX += 1;
@@ -767,7 +774,7 @@ namespace Cave
                     for (int i = 0; i < chunkResolution; i++)
                     {
                         loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY].saveChunk(this);
-                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY] = new Chunk((posX - screenSlideX) + i, (posY - screenSlideY) + chunkResolution, seed, this, false);
+                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY] = new Chunk((posX - screenSlideX) + i, (posY - screenSlideY) + chunkResolution, seed, false, this);
                     }
                     loadedChunkOffsetY = (loadedChunkOffsetY + 1) % chunkResolution;
                     screenSlideY -= 1;
@@ -777,7 +784,7 @@ namespace Cave
                     for (int i = 0; i < chunkResolution; i++)
                     {
                         loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution].saveChunk(this);
-                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution] = new Chunk((posX - screenSlideX) + i, (posY - screenSlideY) - 1, seed, this, false);
+                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution] = new Chunk((posX - screenSlideX) + i, (posY - screenSlideY) - 1, seed, false, this);
                     }
                     loadedChunkOffsetY = (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution;
                     screenSlideY += 1;
@@ -863,8 +870,18 @@ namespace Cave
                     {
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
                         seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
-                        Structure newStructure = new Structure(posX * 1024 + 32 + (int)(seedX % 960), posY * 1024 + 32 + (int)(seedY % 960), seedX, seedY, this);
+                        Structure newStructure = new Structure(posX * 1024 + 32 + (int)(seedX % 960), posY * 1024 + 32 + (int)(seedY % 960), seedX, seedY, false, this);
                         newStructure.drawStructure();
+                        newStructure.imprintChunks();
+                        newStructure.saveInFile();
+                    }
+                    long waterLakesAmount = (seedX + seedY) % 30 + 10;
+                    for (int i = 0; i < structuresAmount; i++)
+                    {
+                        seedX = LCGyPos(seedX); // on porpoise x    /\_/\
+                        seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
+                        Structure newStructure = new Structure(posX * 1024 + 32 + (int)(seedX % 960), posY * 1024 + 32 + (int)(seedY % 960), seedX, seedY, true, this);
+                        newStructure.drawLake();
                         newStructure.imprintChunks();
                         newStructure.saveInFile();
                     }
@@ -948,6 +965,29 @@ namespace Cave
                 }*/
                 return bitmap;
             }
+            public void zoom(bool isZooming)
+            {
+                if(isZooming)
+                {
+                    if(ChunkLength > 2)
+                    {
+                        ChunkLength -= 2;
+                        UnloadedChunksAmount++;
+                        bitmap = new Bitmap(64 * (ChunkLength - 1), 64 * (ChunkLength - 1));
+                    }
+                }
+                else
+                {
+                    if (UnloadedChunksAmount > 1)
+                    {
+                        ChunkLength += 2;
+                        UnloadedChunksAmount--;
+                        bitmap = new Bitmap(64 * (ChunkLength - 1), 64 * (ChunkLength - 1));
+                    }
+
+                }
+                lastZoom = timeElapsed;
+            }
         }
         public class Structure
         {
@@ -961,7 +1001,7 @@ namespace Cave
             public (int, int) size;
             public (int, int, int, int) chunkBounds; // (Start X, end X not included, Start Y, end Y not included)
             public int[,][,] structureArray;
-            public Structure(int posX, int posY, long seedXToPut, long seedYToPut, Screen screenToPut)
+            public Structure(int posX, int posY, long seedXToPut, long seedYToPut, bool isLake, Screen screenToPut)
             {
                 seedX = seedXToPut;
                 seedY = seedYToPut;
@@ -969,35 +1009,85 @@ namespace Cave
                 centerPos = (posX, posY);
                 centerChunkPos = (Floor(posX, 16) / 16, Floor(posY, 16) / 16);
 
-                long seedo = (seedX/2+seedY/2)%79461537;
-                if (Abs(seedo) % 200 < 50) // cubeAmalgam
+                if(isLake)
                 {
-                    type = 0;
-                    int sizeX = (int)(seedX % 5) + 1;
-                    int sizeY = (int)(seedY % 5) + 1;
-                    int posoX = centerChunkPos.Item1 - Floor(sizeX, 2) / 2;
-                    int posoY = centerChunkPos.Item2 - Floor(sizeY, 2) / 2;
-                    size = (sizeX, sizeY);
-                    chunkBounds = (posoX, posoX + sizeX, posoY, posoY + sizeY);
+                    // waterLake
+                    {
+                        type = 3;
+                        int sizeX = 0;
+                        int sizeY = 0;
+                        int posoX = centerChunkPos.Item1 - Floor(sizeX, 2) / 2;
+                        int posoY = centerChunkPos.Item2 - Floor(sizeY, 2) / 2;
+                        size = (sizeX, sizeY);
+                        chunkBounds = (posoX, posoX + sizeX, posoY, posoY + sizeY);
+                    }
                 }
-                else if (Abs(seedo) % 200 < 150)// circularBlade
+                else
                 {
-                    type = 1;
-                    int sizeX = (int)(seedX % 5) + 1;
-                    int posoX = centerChunkPos.Item1 - Floor(sizeX, 2) / 2;
-                    int posoY = centerChunkPos.Item2 - Floor(sizeX, 2) / 2;
-                    size = (sizeX, sizeX);
-                    chunkBounds = (posoX, posoX + sizeX, posoY, posoY + sizeX);
+                    long seedo = (seedX / 2 + seedY / 2) % 79461537;
+                    if (Abs(seedo) % 200 < 50) // cubeAmalgam
+                    {
+                        type = 0;
+                        int sizeX = (int)(seedX % 5) + 1;
+                        int sizeY = (int)(seedY % 5) + 1;
+                        int posoX = centerChunkPos.Item1 - Floor(sizeX, 2) / 2;
+                        int posoY = centerChunkPos.Item2 - Floor(sizeY, 2) / 2;
+                        size = (sizeX, sizeY);
+                        chunkBounds = (posoX, posoX + sizeX, posoY, posoY + sizeY);
+                    }
+                    else if (Abs(seedo) % 200 < 150)// circularBlade
+                    {
+                        type = 1;
+                        int sizeX = (int)(seedX % 5) + 1;
+                        int posoX = centerChunkPos.Item1 - Floor(sizeX, 2) / 2;
+                        int posoY = centerChunkPos.Item2 - Floor(sizeX, 2) / 2;
+                        size = (sizeX, sizeX);
+                        chunkBounds = (posoX, posoX + sizeX, posoY, posoY + sizeX);
+                    }
+                    else // star 
+                    {
+                        type = 2;
+                        int sizeX = (int)(seedX % 5) + 1;
+                        int posoX = centerChunkPos.Item1 - Floor(sizeX, 2) / 2;
+                        int posoY = centerChunkPos.Item2 - Floor(sizeX, 2) / 2;
+                        size = (sizeX, sizeX);
+                        chunkBounds = (posoX, posoX + sizeX, posoY, posoY + sizeX);
+                    }
                 }
-                else // star 
+            }
+            public void drawLake()
+            {
+                List<List<int>>[,] listArray = new List<List<int>>[2, 2];
+                int minX = 10;
+                int maxX = 10;
+                int minY = 10;
+                int maxY = 10;
+                listArray[0, 0] = new List<List<int>>();
+                listArray[1, 0] = new List<List<int>>();
+                listArray[0, 1] = new List<List<int>>();
+                listArray[1, 1] = new List<List<int>>();
+                for(int i = 0; i < 10; i++)
                 {
-                    type = 2;
-                    int sizeX = (int)(seedX % 5) + 1;
-                    int posoX = centerChunkPos.Item1 - Floor(sizeX, 2) / 2;
-                    int posoY = centerChunkPos.Item2 - Floor(sizeX, 2) / 2;
-                    size = (sizeX, sizeX);
-                    chunkBounds = (posoX, posoX + sizeX, posoY, posoY + sizeX);
+                    listArray[0, 0].Add(new List<int>());
+                    listArray[0, 1].Add(new List<int>());
+                    listArray[1, 0].Add(new List<int>());
+                    listArray[1, 1].Add(new List<int>());
+                    for (int j = 0; j < 10; j++)
+                    {
+                        listArray[0, 0][i].Add(-999);
+                        listArray[1, 0][i].Add(-999);
+                        listArray[0, 1][i].Add(-999);
+                        listArray[1, 1][i].Add(-999);
+                    }
                 }
+                int posX = chunkBounds.Item1;
+                int posY = chunkBounds.Item3;
+                long seedo = (seedX / 2 + seedY / 2) % 79461537;
+                // find a tile in the base chunk, try going down till ground is found, if not found soon enough cancel
+                // if bottom found check if it's at the bottom or not, try to find the bottom for a bit, if not cancel.
+                // when it is found, fill up layer by layer using brute force pathfinding.
+                // when it stops going up and goes down, look around for a bit, while putting all new tiles in a buffer. If it's too much down, delete the buffer, return, if not, continue filling.
+                // from this, make the actual structure map and return. Good luck to me.
             }
             public void drawStructure()
             {
@@ -1020,6 +1110,7 @@ namespace Cave
                 if (type == 0) { cubeAmalgam(); }
                 else if (type == 1) { circularBlade(); }
                 else if (type == 2) { star(); }
+                else if (type == 3) { waterLake(); }
             }
             public void cubeAmalgam()
             {
@@ -1192,6 +1283,10 @@ namespace Cave
                     }
                 }
             }
+            public void waterLake()
+            {
+
+            }
             public void imprintChunks()
             {
                 for (int i = 0; i < size.Item1; i++)
@@ -1200,7 +1295,7 @@ namespace Cave
                     {
                         int ii = chunkBounds.Item1 + i;
                         int jj = chunkBounds.Item3 + j;
-                        Chunk chunko = new Chunk(ii, jj, screen.seed, screen, true);
+                        Chunk chunko = new Chunk(ii, jj, screen.seed, true, screen);
                         for (int k = 0; k < 16; k++)
                         {
                             for (int l = 0; l < 16; l++)
@@ -1589,6 +1684,7 @@ namespace Cave
             // 947024425 : the biggest fucking obsidian biome i've ever seen. Not near the spawn, go FULL RIGHT, at around 130-140 chunks far right. What the actual fuck it's so big (that's what she said)
             // 3496528327 : deep cold biome spawn
             // 3253271960 : another deep cold biome spawn
+            // 1561562999 : onion san head... amazing
             //
 
             if (randomSeed)
@@ -1874,6 +1970,8 @@ namespace Cave
         private void timer1_Tick(object sender, EventArgs e)
         {
             Screen screen = (Screen)timer1.Tag;
+            if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { screen.zoom(true); }
+            if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
             timeElapsed = (float)((DateTime.Now - timeAtLauch).TotalSeconds);
             accCamX = 0;
             accCamY = 0;
@@ -1905,17 +2003,17 @@ namespace Cave
             }
             int ii;
             int jj;
-            for(int j = 1; j < ChunkLength + 2*UnloadedChunksAmount - 1; j++)
+            for(int j = screen.chunkResolution - 2; j >= 0; j--)
             {
-                for (int i = 1; i < ChunkLength + 2*UnloadedChunksAmount - 1; i++)
+                for (int i = 1; i < screen.chunkResolution - 1; i++)
                 {
-                    ii = (i + (screen.loadedChunkOffsetX + screen.chunkResolution)) % (screen.chunkResolution);
-                    jj = (j + (screen.loadedChunkOffsetY + screen.chunkResolution)) % (screen.chunkResolution);
+                    ii = (i + screen.loadedChunkOffsetX + screen.chunkResolution) % (screen.chunkResolution);
+                    jj = (j + screen.loadedChunkOffsetY + screen.chunkResolution) % (screen.chunkResolution);
                     screen.loadedChunks[ii, jj].moveLiquids(screen);
                 }
             }
-            int posDiffX = player.posX - (camPosX + 8 * (ChunkLength + 2*UnloadedChunksAmount - 1)); //*2 is needed cause there's only *8 and not *16 before
-            int posDiffY = player.posY - (camPosY + 8 * (ChunkLength + 2*UnloadedChunksAmount - 1));
+            int posDiffX = player.posX - (camPosX + 8 * (screen.chunkResolution - 1)); //*2 is needed cause there's only *8 and not *16 before
+            int posDiffY = player.posY - (camPosY + 8 * (screen.chunkResolution - 1));
             accCamX = Sign(posDiffX) * Max(0, Sqrt(Abs(posDiffX)) - 2);
             accCamY = Sign(posDiffY) * Max(0, Sqrt(Abs(posDiffY)) - 2);
             if (accCamX == 0 || Sign(accCamX) != Sign(speedCamX))
@@ -1975,6 +2073,14 @@ namespace Cave
             {
                 placePress[1] = true;
             }
+            if (e.KeyCode == Keys.S)
+            {
+                zoomPress[0] = true;
+            }
+            if (e.KeyCode == Keys.D)
+            {
+                zoomPress[1] = true;
+            }
             if ((Control.ModifierKeys & Keys.Shift) != 0)
             {
                 shiftPress = true;
@@ -2009,6 +2115,14 @@ namespace Cave
             if (e.KeyCode == Keys.W)
             {
                 placePress[1] = false;
+            }
+            if (e.KeyCode == Keys.S)
+            {
+                zoomPress[0] = false;
+            }
+            if (e.KeyCode == Keys.D)
+            {
+                zoomPress[1] = false;
             }
             if ((Control.ModifierKeys & Keys.Shift) == 0)
             {
