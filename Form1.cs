@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -295,7 +296,7 @@ namespace Cave
                 {
                     loadChunk(screen);
                 }
-                else { spawnEntites(screen); }
+                else { spawnEntites(screen);}
 
                 for (int i = 0; i < 16; i++)
                 {
@@ -461,8 +462,10 @@ namespace Cave
             public void moveOneLiquid(int i, int j, Chunk leftChunk, Chunk bottomLeftChunk, Chunk bottomChunk, Chunk bottomRightChunk, Chunk rightChunk)
             {
                 Chunk leftTestPositionChunk;
+                Chunk leftDiagTestPositionChunk;
                 Chunk middleTestPositionChunk;
                 Chunk rightTestPositionChunk;
+                Chunk rightDiagTestPositionChunk;
 
                 int jb = (j + 1) % 16;
                 int il = (i + 15) % 16;
@@ -473,18 +476,24 @@ namespace Cave
                     middleTestPositionChunk = bottomChunk;
                     if (i == 0)
                     {
-                        leftTestPositionChunk = bottomLeftChunk;
-                        rightTestPositionChunk = bottomChunk;
+                        leftTestPositionChunk = leftChunk;
+                        leftDiagTestPositionChunk = bottomLeftChunk;
+                        rightDiagTestPositionChunk = bottomChunk;
+                        rightTestPositionChunk = this;
                     }
                     else if (i == 15)
                     {
-                        leftTestPositionChunk = bottomChunk;
-                        rightTestPositionChunk = bottomRightChunk;
+                        leftTestPositionChunk = this;
+                        leftDiagTestPositionChunk = bottomChunk;
+                        rightDiagTestPositionChunk = bottomRightChunk;
+                        rightTestPositionChunk = rightChunk;
                     }
                     else
                     {
-                        leftTestPositionChunk = bottomChunk;
-                        rightTestPositionChunk = bottomChunk;
+                        leftTestPositionChunk = this;
+                        leftDiagTestPositionChunk = bottomChunk;
+                        rightDiagTestPositionChunk = bottomChunk;
+                        rightTestPositionChunk = this;
                     }
                 }
                 else
@@ -493,16 +502,22 @@ namespace Cave
                     if (i == 0)
                     {
                         leftTestPositionChunk = leftChunk;
+                        leftDiagTestPositionChunk = leftChunk;
+                        rightDiagTestPositionChunk = this;
                         rightTestPositionChunk = this;
                     }
                     else if (i == 15)
                     {
                         leftTestPositionChunk = this;
+                        leftDiagTestPositionChunk = this;
+                        rightDiagTestPositionChunk = rightChunk;
                         rightTestPositionChunk = rightChunk;
                     }
                     else
                     {
                         leftTestPositionChunk = this;
+                        leftDiagTestPositionChunk = this;
+                        rightDiagTestPositionChunk = this;
                         rightTestPositionChunk = this;
                     }
                 }
@@ -517,27 +532,27 @@ namespace Cave
                         middleTestPositionChunk.findTileColor(i, jb);
                         goto endOfTest;
                     }
-                    if (rightTestPositionChunk.fillStates[ir, jb] == 0)
+                    if ((rightTestPositionChunk.fillStates[ir, j] == 0 || middleTestPositionChunk.fillStates[i, jb] < 0) && rightDiagTestPositionChunk.fillStates[ir, jb] == 0)
                     {
-                        rightTestPositionChunk.fillStates[ir, jb] = fillStates[i, j];
+                        rightDiagTestPositionChunk.fillStates[ir, jb] = fillStates[i, j];
                         fillStates[i, j] = 0;
                         findTileColor(i, j);
-                        rightTestPositionChunk.findTileColor(ir, jb);
+                        rightDiagTestPositionChunk.findTileColor(ir, jb);
                         goto endOfTest;
                     }
-                    if (rightTestPositionChunk.fillStates[ir, jb] < 0)
+                    if ((rightTestPositionChunk.fillStates[ir, j] == 0 || middleTestPositionChunk.fillStates[i, jb] < 0) && rightDiagTestPositionChunk.fillStates[ir, jb] < 0)
                     {
                         if (testLiquidPushRight(i, j)){ goto endOfTest; }
                     }
-                    if (leftTestPositionChunk.fillStates[il, jb] == 0)
+                    if ((leftTestPositionChunk.fillStates[il, j] == 0 || middleTestPositionChunk.fillStates[i, jb] < 0) && leftDiagTestPositionChunk.fillStates[il, jb] == 0)
                     {
-                        leftTestPositionChunk.fillStates[il, jb] = fillStates[i, j];
+                        leftDiagTestPositionChunk.fillStates[il, jb] = fillStates[i, j];
                         fillStates[i, j] = 0;
                         findTileColor(i, j);
-                        leftTestPositionChunk.findTileColor(il, jb);
+                        leftDiagTestPositionChunk.findTileColor(il, jb);
                         goto endOfTest;
                     }
-                    if (leftTestPositionChunk.fillStates[il, jb] < 0)
+                    if ((leftTestPositionChunk.fillStates[il, j] == 0 || middleTestPositionChunk.fillStates[i, jb] < 0) && leftDiagTestPositionChunk.fillStates[il, jb] < 0)
                     {
                         if (testLiquidPushLeft(i, j)){ goto endOfTest; }
                     }
@@ -875,14 +890,13 @@ namespace Cave
                         newStructure.imprintChunks();
                         newStructure.saveInFile();
                     }
-                    long waterLakesAmount = (seedX + seedY) % 30 + 10;
-                    for (int i = 0; i < structuresAmount; i++)
+                    long waterLakesAmount = 50;// (seedX + seedY) % 30 + 10;
+                    for (int i = 0; i < waterLakesAmount; i++)
                     {
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
                         seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
                         Structure newStructure = new Structure(posX * 1024 + 32 + (int)(seedX % 960), posY * 1024 + 32 + (int)(seedY % 960), seedX, seedY, true, this);
                         newStructure.drawLake();
-                        newStructure.imprintChunks();
                         newStructure.saveInFile();
                     }
                 }
@@ -1055,39 +1069,334 @@ namespace Cave
                     }
                 }
             }
-            public void drawLake()
+            public void extendLakeArrays(int startingChunkX, int startingChunkY, List<List<int>> tileList, List<List<Chunk>> chunkList, int x, int y)
             {
-                List<List<int>>[,] listArray = new List<List<int>>[2, 2];
-                int minX = 10;
-                int maxX = 10;
-                int minY = 10;
-                int maxY = 10;
-                listArray[0, 0] = new List<List<int>>();
-                listArray[1, 0] = new List<List<int>>();
-                listArray[0, 1] = new List<List<int>>();
-                listArray[1, 1] = new List<List<int>>();
-                for(int i = 0; i < 10; i++)
+                if(x > 0)
                 {
-                    listArray[0, 0].Add(new List<int>());
-                    listArray[0, 1].Add(new List<int>());
-                    listArray[1, 0].Add(new List<int>());
-                    listArray[1, 1].Add(new List<int>());
-                    for (int j = 0; j < 10; j++)
+                    int lenX = chunkList.Count();
+                    int lenY = chunkList[0].Count();
+
+                    chunkList.Add(new List<Chunk>());
+
+                    for (int j = 0; j < lenY; j++)
                     {
-                        listArray[0, 0][i].Add(-999);
-                        listArray[1, 0][i].Add(-999);
-                        listArray[0, 1][i].Add(-999);
-                        listArray[1, 1][i].Add(-999);
+                        chunkList[lenX].Add(new Chunk(startingChunkX+lenX, startingChunkY + j, screen.seed, true, screen));
+                    }
+
+                    for (int i = 0; i < 16; i++)
+                    {
+                        tileList.Add(new List<int>());
+                        for(int j = 0; j < lenY*16; j++)
+                        {
+                            tileList[lenX*16+i].Add(chunkList[lenX][j/16].fillStates[i, j%16]);
+                        }
                     }
                 }
-                int posX = chunkBounds.Item1;
-                int posY = chunkBounds.Item3;
+                else if (x < 0)
+                {
+                    startingChunkX = startingChunkX-1;
+
+                    int lenX = chunkList.Count();
+                    int lenY = chunkList[0].Count();
+
+                    chunkList.Insert(0, new List<Chunk>());
+
+                    for (int j = 0; j < lenY; j++)
+                    {
+                        chunkList[0].Add(new Chunk(startingChunkX, startingChunkY + j, screen.seed, true, screen));
+                    }
+
+                    for (int i = 0; i < 16; i++)
+                    {
+                        tileList.Insert(i, new List<int>());
+                        for (int j = 0; j < lenY * 16; j++)
+                        {
+                            tileList[i].Add(chunkList[0][j/16].fillStates[i, j%16]);
+                        }
+                    }
+                }
+
+                if(y > 0)
+                {
+                    int lenX = chunkList.Count();
+                    int lenY = chunkList[0].Count();
+
+                    for (int i = 0; i < lenX; i++)
+                    {
+                        chunkList[i].Add(new Chunk(startingChunkX+i, startingChunkY + lenY, screen.seed, true, screen));
+                    }
+
+                    for (int i = 0; i < lenX*16; i++)
+                    {
+                        for(int j = 0; j < 16; j++)
+                        {
+                            tileList[i].Add(chunkList[i/16][lenY].fillStates[i%16, j]);
+                        }
+                    }
+                }
+                else if (y < 0)
+                {
+                    startingChunkY = startingChunkY-1;
+
+                    int lenX = chunkList.Count();
+                    int lenY = chunkList[0].Count();
+
+                    for (int i = 0; i < lenX; i++)
+                    {
+                        chunkList[i].Insert(0, new Chunk(startingChunkX+i, startingChunkY, screen.seed, true, screen));
+                    }
+
+                    for (int i = 0; i < lenX*16; i++)
+                    {
+                        for (int j = 0; j < 16; j++)
+                        {
+                            tileList[i].Insert(j, chunkList[i/16][0].fillStates[i%16, j]);
+                        }
+                    }
+                }
+            }
+            public void drawLake()
+            {
+                int startChunkX = chunkBounds.Item1;
+                int startChunkY = chunkBounds.Item3;
                 long seedo = (seedX / 2 + seedY / 2) % 79461537;
-                // find a tile in the base chunk, try going down till ground is found, if not found soon enough cancel
-                // if bottom found check if it's at the bottom or not, try to find the bottom for a bit, if not cancel.
-                // when it is found, fill up layer by layer using brute force pathfinding.
+
+                List<List<Chunk>> chunkList = new List<List<Chunk>>();
+                chunkList.Add(new List<Chunk>());
+                chunkList[0].Add(new Chunk(startChunkX, startChunkY, screen.seed, true, screen));
+
+                List<List<int>> tileList = new List<List<int>>();
+                for (int i = 0; i < 16; i++)
+                {
+                    tileList.Add(new List<int>());
+                    for (int j = 0; j < 16; j++)
+                    {
+                        tileList[i].Add(chunkList[0][0].fillStates[i, j]);
+                    }
+                }
+
+                int[] testPos = new int[2]{(int)(seedo % 16), (int)((seedo / 16) % 16)};
+                int[] testPosLeft; 
+                int[] testPosRight;
+                bool[] hitWallArray = new bool[2] { false, false };
+
+                // Loop 1 : find a tile in the base chunk, try going down till ground is found, if not found soon enough cancel
+                // Loop 2 : bottom found : check if it's really the bottom or not (water can't possibly flow out by the sides), try to find the real bottom for a bit if not, if not foudn cancel.
+
+                if (tileList[testPos[0]][testPos[1]] == 1) // if in the wall/ceiling abandon the lake
+                {
+                    goto abandonLake;
+                }
+                int repeatCounter = 0;
+                while(repeatCounter < 100)
+                {
+                    if (tileList[testPos[0]][testPos[1]] == 1) // ground has been attained, will happen almost everytime
+                    {
+                        testPos[1] -= 1;
+                        if (testPos[1] < 0)
+                        {
+                            extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, 0, -1);
+                            testPos[1] += 16;
+                        }
+                        testPosLeft = new int[2] { testPos[0], testPos[1] };
+                        testPosRight = new int[2] { testPos[0], testPos[1] };
+
+                        while (!hitWallArray[0] || !hitWallArray[1]) // looop that sees if the ground attained is the lowest ground : checks on every side if water could fall lower
+                        {
+                            if(!hitWallArray[0])
+                            {
+                                testPosLeft[0] -= 1;
+                                if (testPosLeft[0] < 0)
+                                {
+                                    extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, -1, 0);
+                                    testPos[0] += 16;
+                                    testPosLeft[0] += 16;
+                                    testPosRight[0] += 16;
+                                }
+                                if (tileList[testPosLeft[0]][testPosLeft[1]] != 0)
+                                {
+                                    hitWallArray[0] = true;
+                                    testPosLeft[0] += 1;
+                                }
+                                if (tileList[testPosLeft[0]][testPosLeft[1]+1] == 0)
+                                {
+                                    testPos[0] = testPosLeft[0];
+                                    testPos[1] = testPosLeft[1]+1;
+                                    break;
+                                }
+                            }
+                            if(!hitWallArray[1])
+                            {
+                                testPosRight[0] += 1;
+                                if (testPosRight[0] >= chunkList.Count * 16)
+                                {
+                                    extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, 1, 0);
+                                }
+                                if (tileList[testPosRight[0]][testPosRight[1]] != 0)
+                                {
+                                    hitWallArray[1] = true;
+                                    testPosRight[0] -= 1;
+                                }
+                                if (tileList[testPosRight[0]][testPosRight[1]+1] == 0)
+                                {
+                                    testPos[0] = testPosRight[0];
+                                    testPos[1] = testPosRight[1]+1;
+                                    break;
+                                }
+                            }
+                            repeatCounter++;
+                        }
+                        if (hitWallArray[0] && hitWallArray[1])
+                        {
+                            //yahoooooooo it's the bottom :)
+                            goto outOfLoop;
+                        }
+                        //else if not real bottom : do nothing lol just needs to continue checking
+                    }
+                    else
+                    {
+                        testPos[1]++;
+                        if (testPos[1] >= chunkList[0].Count*16)
+                        {
+                            extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, 0, 1);
+                        }
+                    }
+                    repeatCounter++;
+                }
+
+                goto abandonLake; // the loop ran too much, too hard to find a place to put lake, abandon the shit
+
+                outOfLoop:;
+
+                // Bottom has been found ! fill up layer by layer using brute force pathfinding.
+
+                int tilesToFill = Min((int)(seedo%1009), (int)(seedo%1277))+1;
+                int tilesFilled = 0;
+                List<(int,int)> tilesToAdd;
+                testPos[1] += 1; // needed to counteract the first -= 1 just under
+                while(tilesFilled < tilesToFill) // it can overfill, that's not a problem
+                {
+                    testPos[1] -= 1; // no need to check for out of bounds array cause the first test is always negative : at least 1 tile above loaded
+                    if (testPos[1] < 0)
+                    {
+                        extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, 0, -1);
+                        testPos[1] += 16;
+                    }
+                    if(tileList[testPos[0]][testPos[1]] != 0 && tileList[testPos[0]][testPos[1]] != -2)
+                    {
+                        goto fillAndSaveLake;
+                    }
+                    testPosLeft = new int[2] { testPos[0], testPos[1] };
+                    testPosRight = new int[2] { testPos[0], testPos[1] };
+
+                    tilesToAdd = new List<(int, int)>();
+                    tilesToAdd.Add((testPos[0], testPos[1]));
+                    hitWallArray = new bool[2] { false, false };
+
+                    while (!hitWallArray[0] || !hitWallArray[1]) // looop that sees if the ground attained is the lowest ground : checks on every side if water could fall lower
+                    {
+                        if(!hitWallArray[0])
+                        {
+                            testPosLeft[0] -= 1;
+                            if (testPosLeft[0] < 0)
+                            {
+                                extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, -1, 0);
+                                for(int i = 0; i < tilesToAdd.Count; i++)
+                                {
+                                    tilesToAdd[i] = (tilesToAdd[i].Item1+16, tilesToAdd[i].Item2);
+                                }
+                                testPos[0] += 16;
+                                testPosLeft[0] += 16;
+                                testPosRight[0] += 16;
+                            }
+                            if (tileList[testPosLeft[0]][testPosLeft[1]+1] == 0)
+                            {
+                                goto fillAndSaveLake;
+                            }
+                            if (tileList[testPosLeft[0]][testPosLeft[1]] != 0)
+                            {
+                                hitWallArray[0] = true;
+                                testPosLeft[0] += 1;
+                            }
+                            else
+                            {
+                                tilesToAdd.Add((testPosLeft[0], testPosLeft[1]));
+                            }
+                        }
+                        if(!hitWallArray[1])
+                        {
+                            testPosRight[0] += 1;
+                            if (testPosRight[0] >= chunkList.Count * 16)
+                            {
+                                extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, 1, 0);
+                            }
+                            if (tileList[testPosRight[0]][testPosRight[1]+1] == 0)
+                            {
+                                goto fillAndSaveLake;
+                            }
+                            if (tileList[testPosRight[0]][testPosRight[1]] != 0)
+                            {
+                                hitWallArray[1] = true;
+                                testPosRight[0] -= 1;
+                            }
+                            else
+                            {
+                                tilesToAdd.Add((testPosRight[0], testPosRight[1]));
+                            }
+                        }
+                        repeatCounter++;
+                    }
+                    if (hitWallArray[0] && hitWallArray[1])
+                    {
+                        // no water leakage, continue. Fill the array.
+                        for(int i = 0; i < tilesToAdd.Count; i++)
+                        {
+                            tileList[tilesToAdd[i].Item1][tilesToAdd[i].Item2] = -1;
+                        }
+                        tilesFilled += tilesToAdd.Count;
+                    }
+                    else
+                    {
+                        goto fillAndSaveLake; // do not update water array, as uhhh it'd overflow lol. No writing of the lil numbers :)
+                    }
+                }
+
+                fillAndSaveLake:;
+
+                Bitmap bitmapo = new Bitmap(tileList.Count, tileList[0].Count);
+
+                for(int i = 0; i < tileList.Count; i++)
+                {
+                    for (int j = 0; j < tileList[0].Count; j++)
+                    {
+                        Color color = Color.Green;
+                        if (tileList[i][j] == 0) { color = Color.Gray; }
+                        if (tileList[i][j] == 1) { color = Color.Black; }
+                        if (tileList[i][j] == -1) { color = Color.Blue; }
+
+                        bitmapo.SetPixel(i, j, color);
+                        if(tileList[i][j] == -1)
+                        {
+                            chunkList[i/16][j/16].fillStates[i%16,j%16] = -1;
+                            chunkList[i/16][j/16].modificationCount = 1;
+                        }
+                    }
+                }
+
+                bitmapo.Save($"{currentDirectory}\\bitmapo{rand.Next(10000)}.png");
+
+                foreach (List<Chunk> chunko in chunkList)
+                {
+                    foreach (Chunk chunk in chunko)
+                    {
+                        chunk.saveChunk(screen);
+                    }
+                }
+
                 // when it stops going up and goes down, look around for a bit, while putting all new tiles in a buffer. If it's too much down, delete the buffer, return, if not, continue filling.
                 // from this, make the actual structure map and return. Good luck to me.
+
+                abandonLake:;
             }
             public void drawStructure()
             {
@@ -1110,7 +1419,6 @@ namespace Cave
                 if (type == 0) { cubeAmalgam(); }
                 else if (type == 1) { circularBlade(); }
                 else if (type == 2) { star(); }
-                else if (type == 3) { waterLake(); }
             }
             public void cubeAmalgam()
             {
@@ -1282,10 +1590,6 @@ namespace Cave
 
                     }
                 }
-            }
-            public void waterLake()
-            {
-
             }
             public void imprintChunks()
             {
@@ -2182,10 +2486,6 @@ namespace Cave
                     }
                     idx = Max(0, idx + 1);
                 }
-            }
-            if (listo.Count >= 3)
-            {
-                string stringo = "";
             }
         }
 
