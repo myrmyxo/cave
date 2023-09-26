@@ -1069,7 +1069,7 @@ namespace Cave
                     }
                 }
             }
-            public void extendLakeArrays(int startingChunkX, int startingChunkY, List<List<int>> tileList, List<List<Chunk>> chunkList, int x, int y)
+            public void extendLakeArrays(int[] startingChunk, List<List<int>> tileList, List<List<Chunk>> chunkList, int x, int y)
             {
                 if(x > 0)
                 {
@@ -1080,7 +1080,7 @@ namespace Cave
 
                     for (int j = 0; j < lenY; j++)
                     {
-                        chunkList[lenX].Add(new Chunk(startingChunkX+lenX, startingChunkY + j, screen.seed, true, screen));
+                        chunkList[lenX].Add(new Chunk(startingChunk[0]+lenX, startingChunk[1] + j, screen.seed, true, screen));
                     }
 
                     for (int i = 0; i < 16; i++)
@@ -1094,17 +1094,18 @@ namespace Cave
                 }
                 else if (x < 0)
                 {
-                    startingChunkX = startingChunkX-1;
+                    startingChunk[0]--;
 
                     int lenX = chunkList.Count();
                     int lenY = chunkList[0].Count();
 
-                    chunkList.Insert(0, new List<Chunk>());
+                    List<Chunk> listo = new List<Chunk>();
 
                     for (int j = 0; j < lenY; j++)
                     {
-                        chunkList[0].Add(new Chunk(startingChunkX, startingChunkY + j, screen.seed, true, screen));
+                        listo.Add(new Chunk(startingChunk[0], startingChunk[1] + j, screen.seed, true, screen));
                     }
+                    chunkList.Insert(0, listo);
 
                     for (int i = 0; i < 16; i++)
                     {
@@ -1123,7 +1124,7 @@ namespace Cave
 
                     for (int i = 0; i < lenX; i++)
                     {
-                        chunkList[i].Add(new Chunk(startingChunkX+i, startingChunkY + lenY, screen.seed, true, screen));
+                        chunkList[i].Add(new Chunk(startingChunk[0] + i, startingChunk[1] + lenY, screen.seed, true, screen));
                     }
 
                     for (int i = 0; i < lenX*16; i++)
@@ -1136,14 +1137,14 @@ namespace Cave
                 }
                 else if (y < 0)
                 {
-                    startingChunkY = startingChunkY-1;
+                    startingChunk[1]--;
 
                     int lenX = chunkList.Count();
                     int lenY = chunkList[0].Count();
 
                     for (int i = 0; i < lenX; i++)
                     {
-                        chunkList[i].Insert(0, new Chunk(startingChunkX+i, startingChunkY, screen.seed, true, screen));
+                        chunkList[i].Insert(0, new Chunk(startingChunk[0] + i, startingChunk[1], screen.seed, true, screen));
                     }
 
                     for (int i = 0; i < lenX*16; i++)
@@ -1157,13 +1158,12 @@ namespace Cave
             }
             public void drawLake()
             {
-                int startChunkX = chunkBounds.Item1;
-                int startChunkY = chunkBounds.Item3;
+                int[] startChunk = new int[2] { chunkBounds.Item1, chunkBounds.Item3 };
                 long seedo = (seedX / 2 + seedY / 2) % 79461537;
 
                 List<List<Chunk>> chunkList = new List<List<Chunk>>();
                 chunkList.Add(new List<Chunk>());
-                chunkList[0].Add(new Chunk(startChunkX, startChunkY, screen.seed, true, screen));
+                chunkList[0].Add(new Chunk(startChunk[0], startChunk[1], screen.seed, true, screen));
 
                 List<List<int>> tileList = new List<List<int>>();
                 for (int i = 0; i < 16; i++)
@@ -1195,7 +1195,7 @@ namespace Cave
                         testPos[1] -= 1;
                         if (testPos[1] < 0)
                         {
-                            extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, 0, -1);
+                            extendLakeArrays(startChunk, tileList, chunkList, 0, -1);
                             testPos[1] += 16;
                         }
                         testPosLeft = new int[2] { testPos[0], testPos[1] };
@@ -1208,7 +1208,7 @@ namespace Cave
                                 testPosLeft[0] -= 1;
                                 if (testPosLeft[0] < 0)
                                 {
-                                    extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, -1, 0);
+                                    extendLakeArrays(startChunk, tileList, chunkList, -1, 0);
                                     testPos[0] += 16;
                                     testPosLeft[0] += 16;
                                     testPosRight[0] += 16;
@@ -1230,7 +1230,7 @@ namespace Cave
                                 testPosRight[0] += 1;
                                 if (testPosRight[0] >= chunkList.Count * 16)
                                 {
-                                    extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, 1, 0);
+                                    extendLakeArrays(startChunk, tileList, chunkList, 1, 0);
                                 }
                                 if (tileList[testPosRight[0]][testPosRight[1]] != 0)
                                 {
@@ -1258,7 +1258,7 @@ namespace Cave
                         testPos[1]++;
                         if (testPos[1] >= chunkList[0].Count*16)
                         {
-                            extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, 0, 1);
+                            extendLakeArrays(startChunk, tileList, chunkList, 0, 1);
                         }
                     }
                     repeatCounter++;
@@ -1279,7 +1279,7 @@ namespace Cave
                     testPos[1] -= 1; // no need to check for out of bounds array cause the first test is always negative : at least 1 tile above loaded
                     if (testPos[1] < 0)
                     {
-                        extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, 0, -1);
+                        extendLakeArrays(startChunk, tileList, chunkList, 0, -1);
                         testPos[1] += 16;
                     }
                     if(tileList[testPos[0]][testPos[1]] != 0 && tileList[testPos[0]][testPos[1]] != -2)
@@ -1300,7 +1300,7 @@ namespace Cave
                             testPosLeft[0] -= 1;
                             if (testPosLeft[0] < 0)
                             {
-                                extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, -1, 0);
+                                extendLakeArrays(startChunk, tileList, chunkList, -1, 0);
                                 for(int i = 0; i < tilesToAdd.Count; i++)
                                 {
                                     tilesToAdd[i] = (tilesToAdd[i].Item1+16, tilesToAdd[i].Item2);
@@ -1328,7 +1328,7 @@ namespace Cave
                             testPosRight[0] += 1;
                             if (testPosRight[0] >= chunkList.Count * 16)
                             {
-                                extendLakeArrays(startChunkX, startChunkY, tileList, chunkList, 1, 0);
+                                extendLakeArrays(startChunk, tileList, chunkList, 1, 0);
                             }
                             if (tileList[testPosRight[0]][testPosRight[1]+1] == 0)
                             {
