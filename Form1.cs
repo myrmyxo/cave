@@ -742,7 +742,7 @@ namespace Cave
                         loadedChunks[(i + chunkResolution) % chunkResolution, (j + chunkResolution) % chunkResolution] = new Chunk(posX + i, posY + j, seed, false, this);
                     }
                 }
-                if (isPngToBeExported) { bitmap = new Bitmap(16 * (ChunkLength - 1), 16 * (ChunkLength - 1)); }
+                if (isPngToBeExported) { bitmap = new Bitmap(16 * (chunkResolution - 1), 16 * (chunkResolution - 1)); }
                 else { bitmap = new Bitmap(64 * (ChunkLength - 1), 64 * (ChunkLength - 1)); }
             }
             public void updateLoadedChunks(int posX, int posY, long seed, int screenSlideX, int screenSlideY)
@@ -890,7 +890,7 @@ namespace Cave
                         newStructure.imprintChunks();
                         newStructure.saveInFile();
                     }
-                    long waterLakesAmount = 50;// (seedX + seedY) % 30 + 10;
+                    long waterLakesAmount = 150 + 500;// (seedX + seedY) % 30 + 10;
                     for (int i = 0; i < waterLakesAmount; i++)
                     {
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
@@ -1775,7 +1775,8 @@ namespace Cave
         }
         public class Entity
         {
-            public int type; // 0 = fairy , 1 = frog
+            public int type; // 0 = fairy , 1 = frog , 2 = fish
+            public int state; // 0 = idle I guess idk
             public float realPosX = 0;
             public float realPosY = 0;
             public int posX = 0;
@@ -1789,7 +1790,16 @@ namespace Cave
                 int hueVar = rand.Next(101) - 50;
                 int shadeVar = rand.Next(61) - 30;
                 int biome = chunk.biomeIndex[(posX % 16 + 16) % 16, (posY % 16 + 16) % 16][0].Item1;
-                if (biome == 5)
+
+                type = 2;
+                return Color.FromArgb(190 + shadeVar, 90 - hueVar + shadeVar, 90 + hueVar + shadeVar);
+
+                if (chunk.fillStates[(posX % 16 + 16) % 16, (posY % 16 + 16) % 16] < 0)
+                {
+                    type = 2;
+                    return Color.FromArgb(190 + shadeVar, 70 - hueVar + shadeVar, 70 + hueVar + shadeVar);
+                }
+                else if (biome == 5)
                 {
                     type = 0;
                     return Color.FromArgb(130 + hueVar + shadeVar, 130 - hueVar + shadeVar, 210 + shadeVar);
@@ -1816,6 +1826,7 @@ namespace Cave
                 realPosY = posYt;
                 posY = posYt;
                 type = typet;
+                state = 0;
                 color = Color.FromArgb(rt, gt, bt);
             }
             public Entity(Chunk chunk)
@@ -1834,7 +1845,7 @@ namespace Cave
                 {
                     int randX = rand.Next(16);
                     int randY = rand.Next(16);
-                    if (chunk.fillStates[randX, randY] == 0)
+                    if (chunk.fillStates[randX, randY] <= 0)
                     {
                         posX = (int)chunk.position.Item1 * 16 + randX;
                         realPosX = posX;
@@ -1849,8 +1860,72 @@ namespace Cave
             {
                 if (type == 0)
                 {
-                    speedX += rand.Next(3) - 1;
-                    speedY += rand.Next(3) - 1;
+                    if(state == 0) // idle
+                    {
+                        if(Abs(speedX) > 0)
+                        {
+                            if(Abs(speedX) > 1)
+                            {
+                                speedX = speedX - Sign(speedX);
+                            }
+                            else
+                            {
+                                speedX = 0;
+                            }
+                        }
+                        if (Abs(speedY) > 0)
+                        {
+                            if (Abs(speedY) > 1)
+                            {
+                                speedY = speedY - Sign(speedY);
+                            }
+                            else
+                            {
+                                speedY = 0;
+                            }
+                        }
+                        if (rand.Next(100) == 0)
+                        {
+                            state = 1;
+                        }
+                    }
+                    else if (state == 1) // moving in the air
+                    {
+                        speedX += rand.Next(3) - 1;
+                        speedY += rand.Next(3) - 1;
+                        if (rand.Next(1000) < 3)
+                        {
+                            state = 0;
+                        }
+                    }
+                    else if (state == 2) // moving in the water
+                    {
+                        if (Abs(speedX) > 0)
+                        {
+                            if (Abs(speedX) > 1)
+                            {
+                                speedX = speedX - Sign(speedX);
+                            }
+                            else
+                            {
+                                speedX = 0;
+                            }
+                        }
+                        if (Abs(speedY) > 0)
+                        {
+                            if (Abs(speedY) > 1)
+                            {
+                                speedY = speedY - Sign(speedY);
+                            }
+                            else
+                            {
+                                speedY = 0;
+                            }
+                        }
+                        speedX += rand.Next(3) - 1;
+                        speedY += rand.Next(3);
+                    }
+                    else { state = 0; }
                 }
                 else if (type == 1)
                 {
@@ -1867,64 +1942,170 @@ namespace Cave
                         }
                     }
                 }
+                else if (type == 2) // fish
+                {
+                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY); // +1 cause coordinates are inverted lol
+                    Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
+                    if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32) % 16] < 0)
+                    {
+                        if (state >= 2)
+                        {
+                            state = 1;
+                        }
+                    }
+                    else
+                    {
+                        state = 2;
+                    }
+                    if (state == 0) // idle
+                    {
+                        if (Abs(speedX) > 0)
+                        {
+                            if (Abs(speedX) > 1)
+                            {
+                                speedX = speedX - Sign(speedX);
+                            }
+                            else
+                            {
+                                speedX = 0;
+                            }
+                        }
+                        if (Abs(speedY) > 0)
+                        {
+                            if (Abs(speedY) > 1)
+                            {
+                                speedY = speedY - Sign(speedY);
+                            }
+                            else
+                            {
+                                speedY = 0;
+                            }
+                        }
+                        if (rand.Next(50) == 0)
+                        {
+                            state = 1;
+                        }
+                    }
+                    else if (state == 1) // moving in water
+                    {
+                        speedX = speedX * 0.8f - Sign(speedX)*0.2f;
+                        speedY = speedY * 0.8f - Sign(speedY)*0.2f;
+
+                        speedX += rand.Next(3) - 1;
+                        speedY += rand.Next(3) - 1;
+                        if (rand.Next(100) == 0)
+                        {
+                            speedX = rand.Next(7) - 3;
+                            speedY = rand.Next(7) - 3;
+                        }
+                        else if (rand.Next(1000) == 0)
+                        {
+                            state = 0;
+                        }
+                    }
+                    else if (state == 2) // outside water
+                    {
+                        speedY++;
+                        chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + 1); // +1 cause coordinates are inverted lol
+                        chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
+                        if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 33) % 16] > 0)
+                        {
+                            speedX = speedX * 0.8f - Sign(speedX) * 0.2f;
+                            if (rand.NextDouble() > 0.05f)
+                            {
+                                speedX += rand.Next(5) - 2;
+                                speedY += rand.Next(4);
+                            }
+                        }
+                    }
+                }
+                if(type != 2)
                 {
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY);
                     if (screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2].fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32) % 16] < 0)
                     {
-                        speedX = (int)(speedX * 0.5f - Sqrt(Max((int)speedX - 1, 0)) + 0.6f);
-                        speedY = (int)(speedY * 0.5f - Sqrt(Max((int)speedY - 1, 0)) + 0.6f);
+                        speedX = speedX * 0.7f - Sign(speedX)*0.25f;
+                        speedY = speedY * 0.7f - Sign(speedY)*0.25f;
                     }
                 }
-                (int, int) newPos = findIntPos(realPosX + speedX, realPosY + speedY);
-                int toMoveX = newPos.Item1 - posX;
-                int toMoveY = newPos.Item2 - posY;
-                while (Abs(toMoveY) > 0)
+                float toMoveX = speedX;
+                float toMoveY = speedY;
+                
+                while (Abs(toMoveY) >= 1 || (Abs(toMoveY) > 0 && (toMoveY + (realPosY%1 + 1)%1 >= 1 || toMoveY + (realPosY % 1 + 1) % 1 < 0)))
                 {
-                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + Sign(toMoveY));
-                    (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX, posY + Sign(toMoveY));
+                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + (int)Sign(toMoveY));
+                    (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX, posY + (int)Sign(toMoveY));
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                    if (chunkAbsolutePos.Item2 < chunkY || chunkAbsolutePos.Item2 >= chunkY + screen.chunkResolution)
+                    if (chunkAbsolutePos.Item1 < chunkY || chunkAbsolutePos.Item1 >= chunkY + screen.chunkResolution)
                     {
-                        posY += Sign(toMoveY);
+                        posY += Sign((int)toMoveY);
                         saveEntity(screen);
                         screen.entitesToRemove.Add(this);
                         return;
                     }
-                    if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32 + Sign(toMoveY)) % 16] <= 0)
+                    if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32 + (int)Sign(toMoveY)) % 16] <= 0)
                     {
-                        posY += Sign(toMoveY);
-                        realPosY += Sign(toMoveY);
-                        toMoveY = Sign(toMoveY) * (Abs(toMoveY) - 1);
+                        if (Abs(toMoveY) >= 1)
+                        {
+                            posY += (int)Sign(toMoveY);
+                            realPosY += Sign(toMoveY);
+                            toMoveY = Sign(toMoveY) * (Abs(toMoveY) - 1);
+                        }
+                        else
+                        {
+                            realPosY += toMoveY;
+                            posY = (int)Floor(realPosY, 1);
+                            toMoveY = 0;
+                        }
                     }
                     else
                     {
                         speedY = 0;
+                        toMoveY = 0;
                         break;
                     }
                 }
-                while (Abs(toMoveX) > 0)
+                if (Abs(toMoveY) > 0)
                 {
-                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX + Sign(toMoveX), posY);
-                    (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX + Sign(toMoveX), posY);
+                    realPosY += toMoveY;
+                }
+                while (Abs(toMoveX) >= 1 || (Abs(toMoveX) > 0 && (toMoveX + (realPosX%1 + 1)%1 >= 1 || toMoveX + (realPosX % 1 + 1) % 1 < 0)))
+                {
+                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX + Sign((int)toMoveX), posY);
+                    (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX + Sign((int)toMoveX), posY);
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
                     if (chunkAbsolutePos.Item1 < chunkX || chunkAbsolutePos.Item1 >= chunkX + screen.chunkResolution)
                     {
-                        posX += Sign(toMoveX);
+                        posX += Sign((int)toMoveX);
                         saveEntity(screen);
                         screen.entitesToRemove.Add(this);
                         return;
                     }
-                    if (chunkToTest.fillStates[(posX % 16 + 32 + Sign(toMoveX)) % 16, (posY % 16 + 32) % 16] <= 0)
+                    if (chunkToTest.fillStates[(posX % 16 + 32 + Sign((int)toMoveX)) % 16, (posY % 16 + 32) % 16] <= 0)
                     {
-                        posX += Sign(toMoveX);
-                        realPosX += Sign(toMoveX);
-                        toMoveX = Sign(toMoveX) * (Abs(toMoveX) - 1);
+                        if (Abs(toMoveX) >= 1)
+                        {
+                            posX += Sign((int)toMoveX);
+                            realPosX += Sign(toMoveX);
+                            toMoveX = Sign(toMoveX) * (Abs(toMoveX) - 1);
+                        }
+                        else
+                        {
+                            realPosX += toMoveX;
+                            posX = (int)Floor(realPosX, 1);
+                            toMoveX = 0;
+                        }
                     }
                     else
                     {
                         speedX = 0;
+                        toMoveX = 0;
                         break;
                     }
+                }
+                if (Abs(toMoveX) > 0)
+                {
+                    realPosX += toMoveX;
                 }
             }
             public void saveEntity(Screen screen)
@@ -1975,7 +2156,7 @@ namespace Cave
             Screen mainScreen;
 
             bool updatePNG = false;
-            int PNGsize = 50; // in chunks
+            int PNGsize = 100; // in chunks
             bool randomSeed = true;
 
             long seed = 3253271960;
@@ -2003,6 +2184,7 @@ namespace Cave
             }
             if (updatePNG)
             {
+                int oldChunkRes;
                 int rando = -10;
                 camPosX = -50 * 16;
                 camPosY = rando * 16;
