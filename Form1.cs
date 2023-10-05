@@ -341,6 +341,7 @@ namespace Cave
             }
             public void loadChunk(Screen screen)
             {
+                bool willSpawnEntities;
                 using (StreamReader f = new StreamReader($"{currentDirectory}\\ChunkData\\{screen.seed}\\{position.Item1}.{position.Item2}.txt"))
                 {
                     string line = f.ReadLine();
@@ -348,9 +349,11 @@ namespace Cave
                     {
                         if (line[0] == '0')
                         {
-                            spawnEntites(screen);
+                            willSpawnEntities = true;
                         }
+                        else { willSpawnEntities = false; }
                     }
+                    else { willSpawnEntities = false; }
                     line = f.ReadLine();
                     int idx = 0;
                     int length = 0;
@@ -409,13 +412,17 @@ namespace Cave
                             }
                         }
                     }
+
+                    if (willSpawnEntities) { spawnEntites(screen); }
                 }
             }
-            public void saveChunk(Screen screen)
+            public void saveChunk(Screen screen, bool creaturesSpawned)
             {
                 using (StreamWriter f = new StreamWriter($"{currentDirectory}\\ChunkData\\{screen.seed}\\{position.Item1}.{position.Item2}.txt", false))
                 {
-                    string stringo = "1;\n";
+                    string stringo;
+                    if (creaturesSpawned) { stringo = "1;\n"; }
+                    else { stringo = "0;\n"; }
                     foreach (Entity entity in entityList)
                     {
                         stringo += entity.posX + ";" + entity.posY + ";";
@@ -768,7 +775,7 @@ namespace Cave
                 {
                     for (int j = 0; j < chunkResolution; j++)
                     {
-                        loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY + j) % chunkResolution].saveChunk(this);
+                        loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY + j) % chunkResolution].saveChunk(this, true);
                         loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY + j) % chunkResolution] = new Chunk((posX - screenSlideX) + chunkResolution, (posY - screenSlideY) + j, seed, false, this);
                     }
                     loadedChunkOffsetX = (loadedChunkOffsetX + 1) % chunkResolution;
@@ -778,7 +785,7 @@ namespace Cave
                 {
                     for (int j = 0; j < chunkResolution; j++)
                     {
-                        loadedChunks[(loadedChunkOffsetX + chunkResolution - 1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution].saveChunk(this);
+                        loadedChunks[(loadedChunkOffsetX + chunkResolution - 1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution].saveChunk(this, true);
                         loadedChunks[(loadedChunkOffsetX + chunkResolution - 1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution] = new Chunk((posX - screenSlideX) - 1, (posY - screenSlideY) + j, seed, false, this);
                     }
                     loadedChunkOffsetX = (loadedChunkOffsetX + chunkResolution - 1) % chunkResolution;
@@ -788,7 +795,7 @@ namespace Cave
                 {
                     for (int i = 0; i < chunkResolution; i++)
                     {
-                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY].saveChunk(this);
+                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY].saveChunk(this, true);
                         loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY] = new Chunk((posX - screenSlideX) + i, (posY - screenSlideY) + chunkResolution, seed, false, this);
                     }
                     loadedChunkOffsetY = (loadedChunkOffsetY + 1) % chunkResolution;
@@ -798,7 +805,7 @@ namespace Cave
                 {
                     for (int i = 0; i < chunkResolution; i++)
                     {
-                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution].saveChunk(this);
+                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution].saveChunk(this, true);
                         loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution] = new Chunk((posX - screenSlideX) + i, (posY - screenSlideY) - 1, seed, false, this);
                     }
                     loadedChunkOffsetY = (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution;
@@ -890,11 +897,11 @@ namespace Cave
                         newStructure.imprintChunks();
                         newStructure.saveInFile();
                     }
-                    long waterLakesAmount = 150;// (seedX + seedY) % 30 + 10;
+                    long waterLakesAmount = 150 + 500;// (seedX + seedY) % 30 + 10;
                     for (int i = 0; i < waterLakesAmount; i++)
                     {
-                        seedX = LCGyPos(seedX); // on porpoise x    /\_/\
-                        seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
+                        seedX = LCGyNeg(seedX); // on porpoise x    /\_/\
+                        seedY = LCGxNeg(seedY); // and y switched  ( ^o^ )
                         Structure newStructure = new Structure(posX * 1024 + 32 + (int)(seedX % 960), posY * 1024 + 32 + (int)(seedY % 960), seedX, seedY, true, this);
                         newStructure.drawLake();
                         newStructure.saveInFile();
@@ -1190,7 +1197,7 @@ namespace Cave
                 int repeatCounter = 0;
                 while(repeatCounter < 100)
                 {
-                    if (tileList[testPos[0]][testPos[1]] == 1) // ground has been attained, will happen almost everytime
+                    if (tileList[testPos[0]][testPos[1]] != 0) // ground has been attained, will happen almost everytime
                     {
                         testPos[1] -= 1;
                         if (testPos[1] < 0)
@@ -1389,7 +1396,7 @@ namespace Cave
                 {
                     foreach (Chunk chunk in chunko)
                     {
-                        chunk.saveChunk(screen);
+                        chunk.saveChunk(screen, false);
                     }
                 }
 
@@ -1611,7 +1618,7 @@ namespace Cave
                             }
                         }
                         chunko.modificationCount = 1;
-                        chunko.saveChunk(screen);
+                        chunko.saveChunk(screen, false);
                     }
                 }
             }
@@ -1859,13 +1866,10 @@ namespace Cave
                 int shadeVar = rand.Next(61) - 30;
                 int biome = chunk.biomeIndex[(posX % 16 + 16) % 16, (posY % 16 + 16) % 16][0].Item1;
 
-                type = 2;
-                return Color.FromArgb(190 + shadeVar, 90 - hueVar + shadeVar, 90 + hueVar + shadeVar);
-
                 if (chunk.fillStates[(posX % 16 + 16) % 16, (posY % 16 + 16) % 16] < 0)
                 {
                     type = 2;
-                    return Color.FromArgb(190 + shadeVar, 70 - hueVar + shadeVar, 70 + hueVar + shadeVar);
+                    return Color.FromArgb(190 + shadeVar, 80 - hueVar + shadeVar, 80 + hueVar + shadeVar);
                 }
                 else if (biome == 5)
                 {
