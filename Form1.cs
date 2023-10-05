@@ -890,7 +890,7 @@ namespace Cave
                         newStructure.imprintChunks();
                         newStructure.saveInFile();
                     }
-                    long waterLakesAmount = 150 + 500;// (seedX + seedY) % 30 + 10;
+                    long waterLakesAmount = 150;// (seedX + seedY) % 30 + 10;
                     for (int i = 0; i < waterLakesAmount; i++)
                     {
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
@@ -1706,7 +1706,7 @@ namespace Cave
                         speedY = (int)(speedY * 0.5f - Sqrt(Max((int)speedY-1,0)) + 0.6f);
                     }
                 }
-                while (Abs(toMoveX) > 0)
+                /*while (Abs(toMoveX) > 0)
                 {
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX + Sign(toMoveX), posY);
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
@@ -1737,6 +1737,74 @@ namespace Cave
                         speedY = 0;
                         break;
                     }
+                }*/
+
+
+
+
+
+
+                while (Abs(toMoveY) >= 1 || (Abs(toMoveY) > 0 && (toMoveY + (realPosY % 1 + 1) % 1 >= 1 || toMoveY + (realPosY % 1 + 1) % 1 < 0)))
+                {
+                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + (int)Sign(toMoveY));
+                    (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX, posY + (int)Sign(toMoveY));
+                    Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
+                    if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32 + (int)Sign(toMoveY)) % 16] <= 0)
+                    {
+                        if (Abs(toMoveY) >= 1)
+                        {
+                            posY += (int)Sign(toMoveY);
+                            realPosY += Sign(toMoveY);
+                            toMoveY = Sign(toMoveY) * (Abs(toMoveY) - 1);
+                        }
+                        else
+                        {
+                            realPosY += toMoveY;
+                            posY = (int)Floor(realPosY, 1);
+                            toMoveY = 0;
+                        }
+                    }
+                    else
+                    {
+                        speedY = 0;
+                        toMoveY = 0;
+                        break;
+                    }
+                }
+                if (Abs(toMoveY) > 0)
+                {
+                    realPosY += toMoveY;
+                }
+                while (Abs(toMoveX) >= 1 || (Abs(toMoveX) > 0 && (toMoveX + (realPosX % 1 + 1) % 1 >= 1 || toMoveX + (realPosX % 1 + 1) % 1 < 0)))
+                {
+                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX + Sign((int)toMoveX), posY);
+                    (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX + Sign((int)toMoveX), posY);
+                    Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
+                    if (chunkToTest.fillStates[(posX % 16 + 32 + Sign((int)toMoveX)) % 16, (posY % 16 + 32) % 16] <= 0)
+                    {
+                        if (Abs(toMoveX) >= 1)
+                        {
+                            posX += Sign((int)toMoveX);
+                            realPosX += Sign(toMoveX);
+                            toMoveX = Sign(toMoveX) * (Abs(toMoveX) - 1);
+                        }
+                        else
+                        {
+                            realPosX += toMoveX;
+                            posX = (int)Floor(realPosX, 1);
+                            toMoveX = 0;
+                        }
+                    }
+                    else
+                    {
+                        speedX = 0;
+                        toMoveX = 0;
+                        break;
+                    }
+                }
+                if (Abs(toMoveX) > 0)
+                {
+                    realPosX += toMoveX;
                 }
             }
             public bool CheckStructurePosChange()
@@ -2031,14 +2099,14 @@ namespace Cave
                 float toMoveX = speedX;
                 float toMoveY = speedY;
                 
-                while (Abs(toMoveY) >= 1 || (Abs(toMoveY) > 0 && (toMoveY + (realPosY%1 + 1)%1 >= 1 || toMoveY + (realPosY % 1 + 1) % 1 < 0)))
+                while (Abs(toMoveY) > 0)
                 {
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + (int)Sign(toMoveY));
                     (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX, posY + (int)Sign(toMoveY));
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                    if (chunkAbsolutePos.Item1 < chunkY || chunkAbsolutePos.Item1 >= chunkY + screen.chunkResolution)
+                    if (chunkAbsolutePos.Item2 < chunkY || chunkAbsolutePos.Item2 >= chunkY + screen.chunkResolution)
                     {
-                        posY += Sign((int)toMoveY);
+                        posY += (int)Sign(toMoveY);
                         saveEntity(screen);
                         screen.entitesToRemove.Add(this);
                         return;
@@ -2065,27 +2133,23 @@ namespace Cave
                         break;
                     }
                 }
-                if (Abs(toMoveY) > 0)
+                while (Abs(toMoveX) > 0)
                 {
-                    realPosY += toMoveY;
-                }
-                while (Abs(toMoveX) >= 1 || (Abs(toMoveX) > 0 && (toMoveX + (realPosX%1 + 1)%1 >= 1 || toMoveX + (realPosX % 1 + 1) % 1 < 0)))
-                {
-                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX + Sign((int)toMoveX), posY);
-                    (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX + Sign((int)toMoveX), posY);
+                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX + (int)Sign(toMoveX), posY);
+                    (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX + (int)Sign(toMoveX), posY);
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
                     if (chunkAbsolutePos.Item1 < chunkX || chunkAbsolutePos.Item1 >= chunkX + screen.chunkResolution)
                     {
-                        posX += Sign((int)toMoveX);
+                        posX += (int)Sign(toMoveX);
                         saveEntity(screen);
                         screen.entitesToRemove.Add(this);
                         return;
                     }
-                    if (chunkToTest.fillStates[(posX % 16 + 32 + Sign((int)toMoveX)) % 16, (posY % 16 + 32) % 16] <= 0)
+                    if (chunkToTest.fillStates[(posX % 16 + 32 + (int)Sign(toMoveX)) % 16, (posY % 16 + 32) % 16] <= 0)
                     {
                         if (Abs(toMoveX) >= 1)
                         {
-                            posX += Sign((int)toMoveX);
+                            posX += (int)Sign(toMoveX);
                             realPosX += Sign(toMoveX);
                             toMoveX = Sign(toMoveX) * (Abs(toMoveX) - 1);
                         }
@@ -2102,10 +2166,6 @@ namespace Cave
                         toMoveX = 0;
                         break;
                     }
-                }
-                if (Abs(toMoveX) > 0)
-                {
-                    realPosX += toMoveX;
                 }
             }
             public void saveEntity(Screen screen)
