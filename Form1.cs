@@ -325,9 +325,21 @@ namespace Cave
                 }
                 else if (fillStates[i, j] == -1)
                 {
+                    colorArray[0] = (int)(colorArray[0] * 0.8f) + 100;
+                    colorArray[1] = (int)(colorArray[1] * 0.8f) + 100;
+                    colorArray[2] = (int)(colorArray[2] * 0.8f) + 60;
+                }
+                else if (fillStates[i, j] == -2)
+                {
                     colorArray[0] = (int)(colorArray[0]*0.8f) + 60;
                     colorArray[1] = (int)(colorArray[1]*0.8f) + 60;
                     colorArray[2] = (int)(colorArray[2]*0.8f) + 100;
+                }
+                else if (fillStates[i, j] == -3)
+                {
+                    colorArray[0] = (int)(colorArray[0] * 0.8f) + 85;
+                    colorArray[1] = (int)(colorArray[1] * 0.8f) + 60;
+                    colorArray[2] = (int)(colorArray[2] * 0.8f) + 100;
                 }
                 colors[i, j] = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
             }
@@ -653,7 +665,8 @@ namespace Cave
             public int loadedChunkOffsetX;
             public int loadedChunkOffsetY;
             public bool isPngToBeExported;
-            public Bitmap bitmap;
+            public Bitmap gameBitmap;
+            public Bitmap overlayBitmap;
             public List<Player> playerList = new List<Player>();
             public List<Entity> activeEntites = new List<Entity>();
             public List<Entity> entitesToRemove = new List<Entity>();
@@ -675,10 +688,13 @@ namespace Cave
                 {
                     Directory.CreateDirectory($"{currentDirectory}\\StructureData\\{seed}");
                 }
+                if (!Directory.Exists($"{currentDirectory}\\bitmapos"))
+                {
+                    Directory.CreateDirectory($"{currentDirectory}\\bitmapos");
+                }
                 LCGCacheInit();
                 checkStructuresPlayerSpawn(player);
                 loadChunks(posX, posY, seed);
-
             }
             public void LCGCacheInit()
             {
@@ -749,8 +765,8 @@ namespace Cave
                         loadedChunks[(i + chunkResolution) % chunkResolution, (j + chunkResolution) % chunkResolution] = new Chunk(posX + i, posY + j, seed, false, this);
                     }
                 }
-                if (isPngToBeExported) { bitmap = new Bitmap(16 * (chunkResolution - 1), 16 * (chunkResolution - 1)); }
-                else { bitmap = new Bitmap(64 * (ChunkLength - 1), 64 * (ChunkLength - 1)); }
+                if (isPngToBeExported) { gameBitmap = new Bitmap(16 * (chunkResolution - 1), 16 * (chunkResolution - 1)); }
+                else { gameBitmap = new Bitmap(64 * (ChunkLength - 1), 64 * (ChunkLength - 1)); }
             }
             public void updateLoadedChunks(int posX, int posY, long seed, int screenSlideX, int screenSlideY)
             {
@@ -930,7 +946,7 @@ namespace Cave
 
                         Color color = loadedChunks[i / 16, j / 16].colors[i % 16, j % 16];
 
-                        using (var g = Graphics.FromImage(bitmap))
+                        using (var g = Graphics.FromImage(gameBitmap))
                         {
                             g.FillRectangle(new SolidBrush(color), (pixelPosX)*PNGmultiplicator, (pixelPosY)*PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
                         }
@@ -949,7 +965,7 @@ namespace Cave
                     {
                         color = Color.Red;
                     }
-                    using (var g = Graphics.FromImage(bitmap))
+                    using (var g = Graphics.FromImage(gameBitmap))
                     {
                         g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
                     }
@@ -969,7 +985,7 @@ namespace Cave
                         {
                             color = Color.Red;
                         }
-                        using (var g = Graphics.FromImage(bitmap))
+                        using (var g = Graphics.FromImage(gameBitmap))
                         {
                             g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
                         }
@@ -984,7 +1000,7 @@ namespace Cave
                         //bitmap.SetPixel((i2 +(-loadedChunkOffsetX + ChunkLength) * 64) % (ChunkLength * 64), (j2 + (-loadedChunkOffsetY + ChunkLength) * 64) % (ChunkLength * 64), Color.Green);
                     }
                 }*/
-                return bitmap;
+                return gameBitmap;
             }
             public void zoom(bool isZooming)
             {
@@ -994,7 +1010,7 @@ namespace Cave
                     {
                         ChunkLength -= 2;
                         UnloadedChunksAmount++;
-                        bitmap = new Bitmap(64 * (ChunkLength - 1), 64 * (ChunkLength - 1));
+                        gameBitmap = new Bitmap(64 * (ChunkLength - 1), 64 * (ChunkLength - 1));
                     }
                 }
                 else
@@ -1003,7 +1019,7 @@ namespace Cave
                     {
                         ChunkLength += 2;
                         UnloadedChunksAmount--;
-                        bitmap = new Bitmap(64 * (ChunkLength - 1), 64 * (ChunkLength - 1));
+                        gameBitmap = new Bitmap(64 * (ChunkLength - 1), 64 * (ChunkLength - 1));
                     }
 
                 }
@@ -1276,6 +1292,15 @@ namespace Cave
                 outOfLoop:;
 
                 // Bottom has been found ! fill up layer by layer using brute force pathfinding.
+                // find the type of lake (if it is in fairy biome it is fairy liquid etc).
+
+
+                int liquidTypeToFill;
+                if ( chunkList[testPos[0]/16][testPos[1]/16].biomeIndex[testPos[0]%16, testPos[1]%16][0].Item1 == 5)
+                {
+                    liquidTypeToFill = -3;
+                }
+                else { liquidTypeToFill = -2; }
 
                 int tilesToFill = Min((int)(seedo%1009), (int)(seedo%1277))+1;
                 int tilesFilled = 0;
@@ -1372,6 +1397,10 @@ namespace Cave
 
                 Bitmap bitmapo = new Bitmap(tileList.Count, tileList[0].Count);
 
+                seedo = LCGyNeg(LCGxNeg(seedo));
+                if(seedo % 1000 == 0) { liquidTypeToFill = -1; }
+                else if (seedo % 1000 < 5) { liquidTypeToFill = -3; }
+
                 for(int i = 0; i < tileList.Count; i++)
                 {
                     for (int j = 0; j < tileList[0].Count; j++)
@@ -1384,13 +1413,13 @@ namespace Cave
                         bitmapo.SetPixel(i, j, color);
                         if(tileList[i][j] == -1)
                         {
-                            chunkList[i/16][j/16].fillStates[i%16,j%16] = -1;
+                            chunkList[i/16][j/16].fillStates[i%16,j%16] = liquidTypeToFill;
                             chunkList[i/16][j/16].modificationCount = 1;
                         }
                     }
                 }
 
-                bitmapo.Save($"{currentDirectory}\\bitmapo{rand.Next(10000)}.png");
+                bitmapo.Save($"{currentDirectory}\\bitmapos\\bitmapo{rand.Next(10000)}.png");
 
                 foreach (List<Chunk> chunko in chunkList)
                 {
@@ -2171,6 +2200,19 @@ namespace Cave
                         break;
                     }
                 }
+
+                // test what happens if in fairy lake
+
+                (int, int) chunkRelativePoso = screen.findChunkScreenRelativeIndex(posX + (int)Sign(toMoveX), posY);
+                Chunk chunkToTesto = screen.loadedChunks[chunkRelativePoso.Item1, chunkRelativePoso.Item2];
+                if (type != 0 && chunkToTesto.fillStates[(posX%16 + 32)%16, (posY%16 + 32)%16] == -3)
+                {
+                    if (rand.Next(10) == 0)
+                    {
+                        type = 0;
+                        this.color = Color.Purple;
+                    }
+                }
             }
             public void saveEntity(Screen screen)
             {
@@ -2220,7 +2262,7 @@ namespace Cave
             Screen mainScreen;
 
             bool updatePNG = false;
-            int PNGsize = 100; // in chunks
+            int PNGsize = 200; // in chunks
             bool randomSeed = true;
 
             long seed = 3253271960;
@@ -2229,10 +2271,11 @@ namespace Cave
             // cool seeds !!!! DO NOT DELETE
             // 		
             // 527503228 : spawn inside a giant obsidian biome !
-            // 1115706211 : very cool spawn, with all the 7 current biomes types near and visitable and amazing looking caves
+            // 1115706211 : very cool spawn, with all the 7 current biomes types near and visitable and amazing looking caves (hahaha 7 different biomes... i'm old)
             // 947024425 : the biggest fucking obsidian biome i've ever seen. Not near the spawn, go FULL RIGHT, at around 130-140 chunks far right. What the actual fuck it's so big (that's what she said)
             // 3496528327 : deep cold biome spawn
             // 3253271960 : another deep cold biome spawn
+            // 1349831907 : enormous deep cold biome spawn
             // 1561562999 : onion san head... amazing
             //
 
@@ -2254,7 +2297,7 @@ namespace Cave
                 camPosY = rando * 16;
                 mainScreen = new Screen(-PNGsize / 2, -PNGsize / 2, PNGsize, seed, true);
                 mainScreen.updateScreen();
-                Bitmap bmp = mainScreen.bitmap;
+                Bitmap bmp = mainScreen.gameBitmap;
                 Bitmap bmp2 = new Bitmap(512, 512);
 
                 mainScreen.updateScreen().Save($"{currentDirectory}\\cavee.png");
@@ -2590,8 +2633,8 @@ namespace Cave
             {
                 screen.updateLoadedChunks(chunkX, chunkY, screen.seed, chunkVariationX, chunkVariationY);
             }
-            pictureBox1.Image = screen.updateScreen();
-            pictureBox1.Refresh();
+            gamePictureBox.Image = screen.updateScreen();
+            gamePictureBox.Refresh();
         }
         private void KeyIsDown(object sender, KeyEventArgs e)
         {
