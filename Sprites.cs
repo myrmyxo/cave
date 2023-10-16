@@ -14,12 +14,34 @@ using System.Windows.Forms;
 using static Cave.Form1;
 using static Cave.Form1.Globals;
 using static Cave.MathF;
+using static Cave.Sprites;
 
 namespace Cave
 {
     public class Sprites
     {
-        //
+        public static Dictionary<int, OneSprite> entitySprites;
+        public static Dictionary<int, OneSprite> compoundSprites;
+        public static OneSprite overlayBackground = new OneSprite("OverlayBackground", true);
+        public static void loadSpriteDictionaries()
+        {
+            entitySprites = new Dictionary<int, OneSprite>
+            {
+                { 0, new OneSprite("Fairy", true)},
+                { 1, new OneSprite("Frog", true)},
+                { 2, new OneSprite("Fish", true)}
+            };
+            compoundSprites = new Dictionary<int, OneSprite>
+            {
+                { -3, new OneSprite("FairyLiquid", true)},
+                { -2, new OneSprite("Water", true)},
+                { -1, new OneSprite("Piss", true)},
+                { 0, new OneSprite("BasicTile", true)},
+            };
+            overlayBackground = new OneSprite("OverlayBackground", true);
+        }
+
+
         public class OneSprite
         {
             public Color[] palette;
@@ -184,7 +206,15 @@ namespace Cave
             {
                 resizedBitmap = smallBitmap;
             }
-            else { resizedBitmap = new Bitmap(smallBitmap, new Size(smallBitmap.Width * scaleFactor, smallBitmap.Height * scaleFactor)); }
+            else
+            {
+                resizedBitmap = new Bitmap(smallBitmap.Width*scaleFactor, smallBitmap.Height*scaleFactor);
+                using (Graphics g = Graphics.FromImage(resizedBitmap))
+                {
+                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                    g.DrawImage(smallBitmap, 0, 0, resizedBitmap.Width, resizedBitmap.Height);
+                }
+            }
 
             // remplace les valeurs du sprite
             using (Graphics grD = Graphics.FromImage(bigBitmap)) //thanks Amen Ayach on stack overfloww w w

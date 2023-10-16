@@ -665,7 +665,6 @@ namespace Cave
             public bool isPngToBeExported;
             public Bitmap gameBitmap;
             public Bitmap overlayBitmap;
-            public List<OneSprite> loadedSprites = new List<OneSprite>();
             public List<Player> playerList = new List<Player>();
             public List<Entity> activeEntites = new List<Entity>();
             public List<Entity> entitesToRemove = new List<Entity>();
@@ -2259,12 +2258,21 @@ namespace Cave
         {
             currentDirectory = System.IO.Directory.GetCurrentDirectory();
 
-            turnPngIntoString("FishTest");
+            turnPngIntoString("OverlayBackground");
+            turnPngIntoString("BasicTile");
+            turnPngIntoString("Fairy");
+            turnPngIntoString("Frog");
+            turnPngIntoString("Fish");
+            turnPngIntoString("Piss");
+            turnPngIntoString("Water");
+            turnPngIntoString("FairyLiquid");
+
+            loadSpriteDictionaries();
 
             Screen mainScreen;
 
-            bool updatePNG = false;
-            int PNGsize = 200; // in chunks
+            bool updatePNG = true;
+            int PNGsize = 300; // in chunks
             bool randomSeed = true;
 
             long seed = 3253271960;
@@ -2307,7 +2315,6 @@ namespace Cave
             }
 
             mainScreen = new Screen(chunkX, chunkY, ChunkLength, seed, false);
-            mainScreen.loadedSprites.Add(new OneSprite("FishTest", true));
             player.placePlayer(mainScreen);
             mainScreen.playerList = new List<Player> { player };
             mainScreen.activeEntites = new List<Entity>();
@@ -2638,11 +2645,9 @@ namespace Cave
             }
             gamePictureBox.Image = screen.updateScreen();
             gamePictureBox.Refresh();
-            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, screen.loadedSprites[0].bitmap, (10, 10), 1, false);
-            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, screen.loadedSprites[0].bitmap, (50, 10), 2, false);
-            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, screen.loadedSprites[0].bitmap, (150, 10), 4, false);
-            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, screen.loadedSprites[0].bitmap, (250, 10), 4, true);
             overlayPictureBox.Image = screen.overlayBitmap;
+            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, overlayBackground.bitmap, (0, 0), 4, false);
+            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, entitySprites[2].bitmap, (64, 32), 4, false);
             overlayPictureBox.Refresh();
         }
         private void KeyIsDown(object sender, KeyEventArgs e)

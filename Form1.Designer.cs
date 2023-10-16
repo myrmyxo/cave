@@ -72,7 +72,7 @@
             // Form1
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
-            this.ClientSize = new System.Drawing.Size(511, 640);
+            this.ClientSize = new System.Drawing.Size(506, 636);
             this.Controls.Add(this.overlayPictureBox);
             this.Controls.Add(this.gamePictureBox);
             this.Name = "Form1";
