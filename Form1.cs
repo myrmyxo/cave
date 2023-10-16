@@ -13,10 +13,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static Cave.Form1;
 using static Cave.Form1.Globals;
+using static Cave.Sprites;
 using static Cave.MathF;
-using static System.Net.WebRequestMethods;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
-
 namespace Cave
 {
     public partial class Form1 : Form
@@ -667,6 +665,7 @@ namespace Cave
             public bool isPngToBeExported;
             public Bitmap gameBitmap;
             public Bitmap overlayBitmap;
+            public List<OneSprite> loadedSprites = new List<OneSprite>();
             public List<Player> playerList = new List<Player>();
             public List<Entity> activeEntites = new List<Entity>();
             public List<Entity> entitesToRemove = new List<Entity>();
@@ -695,6 +694,7 @@ namespace Cave
                 LCGCacheInit();
                 checkStructuresPlayerSpawn(player);
                 loadChunks(posX, posY, seed);
+                overlayBitmap = new Bitmap(512, 128);
             }
             public void LCGCacheInit()
             {
@@ -2259,6 +2259,8 @@ namespace Cave
         {
             currentDirectory = System.IO.Directory.GetCurrentDirectory();
 
+            turnPngIntoString("FishTest");
+
             Screen mainScreen;
 
             bool updatePNG = false;
@@ -2305,6 +2307,7 @@ namespace Cave
             }
 
             mainScreen = new Screen(chunkX, chunkY, ChunkLength, seed, false);
+            mainScreen.loadedSprites.Add(new OneSprite("FishTest", true));
             player.placePlayer(mainScreen);
             mainScreen.playerList = new List<Player> { player };
             mainScreen.activeEntites = new List<Entity>();
@@ -2635,6 +2638,12 @@ namespace Cave
             }
             gamePictureBox.Image = screen.updateScreen();
             gamePictureBox.Refresh();
+            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, screen.loadedSprites[0].bitmap, (10, 10), 1, false);
+            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, screen.loadedSprites[0].bitmap, (50, 10), 2, false);
+            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, screen.loadedSprites[0].bitmap, (150, 10), 4, false);
+            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, screen.loadedSprites[0].bitmap, (250, 10), 4, true);
+            overlayPictureBox.Image = screen.overlayBitmap;
+            overlayPictureBox.Refresh();
         }
         private void KeyIsDown(object sender, KeyEventArgs e)
         {

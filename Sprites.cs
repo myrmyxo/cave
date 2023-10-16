@@ -1,30 +1,130 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Data.OleDb;
+using System.ComponentModel;
+using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using static Cave.Form1;
+using static Cave.Form1.Globals;
+using static Cave.MathF;
 
 namespace Cave
 {
-    internal class Sprites
+    public class Sprites
     {
         //
         public class OneSprite
         {
-            public (int, int, int, int)[] palette;
-            public int[,] colors;
+            public Color[] palette;
             public (int, int) dimensions;
             public Bitmap bitmap;
-
-            OneSprite(string contentString) // read string content, and put it in the variables I guess
+            public OneSprite(string contentString, bool isFileName)
             {
-                // contentString, ligne 1 dimensions, x puis y séparés par un point-virgule.
-                // ligne 2 palette, int tous séparés par un point-virgule, format RGBA, 4 à la suite = 1 couleur.
-                // ligne 3 chaque case, int tous séparés par un point-virgule, avec int = l'emplacement dans la palette.
+                if (isFileName)
+                {
+                    contentString = (findSpritesPath() + $"\\{contentString}.txt");
+                    using (StreamReader f = new StreamReader(contentString))
+                    {
+                        contentString = f.ReadToEnd();
+                    }
+                }
+                makeBitmapFromContentString(contentString);
             }
-            public void drawBitmap()
+            public void makeBitmapFromContentString(string contentString) // read string content, and put it in the variables I guess
+            {
+                // contenu du contentString :
+                // ligne 1 dimensions, x puis y séparés par un *.
+                // ligne 2 palette, ints chacun suivis d'un ; ( se finit par x; ), format RGBA, 4 à la suite = 1 couleur.
+                // ligne 3 chaque case, int tous suivis d'un ; ( se finit par x; ), avec int = l'emplacement dans la palette.
+
+                int currentIdx = 0;
+                int startIdx = 0;
+                int lengthOfSub = 0;
+                List<string> subStrings = new List<string>();
+                while (currentIdx < contentString.Length)
+                {
+                    if (contentString[currentIdx] == '\n')
+                    {
+                        subStrings.Add(contentString.Substring(startIdx, lengthOfSub));
+                        startIdx = currentIdx+1; // current idx not yet +1ed
+                        lengthOfSub = -1; // it will get +1ed after
+                    }
+                    currentIdx++;
+                    lengthOfSub++;
+                }
+                subStrings.Add(contentString.Substring(startIdx));
+                string firstLine = subStrings[0];
+                string secondLine = subStrings[1];
+                string thirdLine = subStrings[2];
+
+                currentIdx = 0;
+                while (currentIdx < firstLine.Length)
+                {
+                    if (firstLine[currentIdx] == '*')
+                    {
+                        dimensions = (int.Parse(firstLine.Substring(0, currentIdx)), int.Parse(firstLine.Substring(currentIdx+1)));
+                        break;
+                    }
+                    currentIdx++;
+                }
+
+                currentIdx = 0;
+                startIdx = 0;
+                lengthOfSub = 0;
+                List<int> secondLineInts = new List<int>();
+                while (currentIdx < secondLine.Length)
+                {
+                    if (secondLine[currentIdx] == ';')
+                    {
+                        secondLineInts.Add(int.Parse(secondLine.Substring(startIdx, lengthOfSub)));
+                        startIdx = currentIdx + 1; // current idx not yet +1ed
+                        lengthOfSub = -1; // it will get +1ed after
+                    }
+                    currentIdx++;
+                    lengthOfSub++;
+                }
+
+                currentIdx = 0;
+                startIdx = 0;
+                lengthOfSub = 0;
+                int currentArrayIdx = 0;
+                int[] thirdLineInts = new int[dimensions.Item1*dimensions.Item2];
+                while (currentIdx < thirdLine.Length)
+                {
+                    if (thirdLine[currentIdx] == ';')
+                    {
+                        thirdLineInts[currentArrayIdx] = int.Parse(thirdLine.Substring(startIdx, lengthOfSub));
+                        startIdx = currentIdx + 1; // current idx not yet +1ed
+                        lengthOfSub = -1; // it will get +1ed after
+                        currentArrayIdx++;
+                    }
+                    currentIdx++;
+                    lengthOfSub++;
+                }
+
+                palette = new Color[secondLineInts.Count/4];
+                for (int i = 0; i < secondLineInts.Count/4; i++)
+                {
+                    palette[i] = Color.FromArgb(secondLineInts[i*4 + 3], secondLineInts[i*4], secondLineInts[i*4 + 1], secondLineInts[i*4 + 2]);
+                }
+
+                bitmap = new Bitmap(dimensions.Item1, dimensions.Item2);
+                for (int i = 0; i < dimensions.Item1; i ++)
+                {
+                    for (int j = 0; j < dimensions.Item2; j++)
+                    {
+                        bitmap.SetPixel(i, j, palette[thirdLineInts[i+j*dimensions.Item1]]);
+                    }
+                }
+            }
+            /*public void drawBitmap() // not use anymore but I'll keed it cuz idk
             {
                 bitmap = new Bitmap(dimensions.Item1, dimensions.Item2);
                 for (int i = 0; i < dimensions.Item1; i++)
@@ -34,15 +134,130 @@ namespace Cave
                         bitmap.SetPixel(i, j, Color.FromArgb(palette[colors[i, j]].Item1, palette[colors[i, j]].Item2, palette[colors[i, j]].Item3, palette[colors[i, j]].Item4));
                     }
                 }
-            }
-            public void drawSpriteOnCanvas(Bitmap bigBitmap, (int, int) posToDraw, int scaleFactor, bool centeredDraw)
+            }*/
+        }
+        public static void drawSpriteOnCanvas(Bitmap bigBitmap, Bitmap smallBitmap, (int, int) posToDraw, int scaleFactor, bool centeredDraw)
+        {
+            if (scaleFactor <= 0) { return; }
+            int[] drawRange = new int[4]; //OF THE SMALL SPRITE, startX (if cropped) (0-length), stopX (0-length), startY, stopY. Example, if it is [0,8,4,8], it will go from beginning on sprite to 8th pixel of sprite not included, and from 4th pixel of sprite (vertical) to 8th pixel of sprite not included
+                                          // test les positions si ça dépasse pas
+            if (centeredDraw)
             {
-                // test les positions si ça dépasse pas
+                posToDraw = ((int)(posToDraw.Item1 - (smallBitmap.Width * scaleFactor * 0.5f)), (int)(posToDraw.Item2 - (smallBitmap.Height * scaleFactor * 0.5f)));
+            }
+            drawRange[0] = -Min(posToDraw.Item1, 0);
+            drawRange[1] = Min(bigBitmap.Width - posToDraw.Item1, smallBitmap.Width * scaleFactor);
+            drawRange[2] = -Min(posToDraw.Item2, 0); ;
+            drawRange[3] = Min(bigBitmap.Height - posToDraw.Item2, smallBitmap.Height * scaleFactor);
+            if (drawRange[0] >= drawRange[1] || drawRange[2] >= drawRange[3])
+            {
+                return;
+            }
 
-                // remplace les valeurs du sprite
+            // NEED TO SCALE BEFOOORE I mean i'll just rectangle fill manuatlly instead of thing below it'll be easier
+            /*int pixelPosX;
+            int pixelPosY;
+            for (int i = drawRange[0]; i < (int)(((drawRange[1]-drawRange[0])/scaleFactor)+0.99f); i++)
+            {
+                for (int j = drawRange[2]; j < (int)(((drawRange[3]-drawRange[2])/scaleFactor)+0.99f); j++)
+                {
+                    pixelPosX = posToDraw.Item1+i*scaleFactor;
+                    pixelPosY = posToDraw.Item2+j*scaleFactor;
 
+                    if (pixelPosX < 0 || pixelPosX >= bigBitmap.Width || pixelPosY < 0 || pixelPosY >= bigBitmap.Height)
+                    {
+                        continue;
+                    }
+
+                    Color color = smallBitmap.GetPixel(i, j);
+
+                    using (var g = Graphics.FromImage(bigBitmap))
+                    {
+                        g.FillRectangle(new SolidBrush(color), pixelPosX, pixelPosY, scaleFactor, scaleFactor);
+                    }
+                }
+            }*/
+
+            // Resizing
+            Bitmap resizedBitmap;
+            if (scaleFactor == 1)
+            {
+                resizedBitmap = smallBitmap;
+            }
+            else { resizedBitmap = new Bitmap(smallBitmap, new Size(smallBitmap.Width * scaleFactor, smallBitmap.Height * scaleFactor)); }
+
+            // remplace les valeurs du sprite
+            using (Graphics grD = Graphics.FromImage(bigBitmap)) //thanks Amen Ayach on stack overfloww w w
+            {
+                Rectangle srcRegion = new Rectangle(drawRange[0], drawRange[2], drawRange[1] - drawRange[0], drawRange[3] - drawRange[2]);
+                Rectangle destRegion = new Rectangle(posToDraw.Item1 + drawRange[0], posToDraw.Item2 + drawRange[2], drawRange[1] - drawRange[0], drawRange[3] - drawRange[2]);
+                grD.DrawImage(resizedBitmap, destRegion, srcRegion, GraphicsUnit.Pixel);
             }
         }
-
+        public static string findSpritesPath()
+        {
+            string filepath = currentDirectory;
+            int foundo = 0;
+            int idx = filepath.Length - 1;
+            while (foundo < 2)
+            {
+                if (filepath[idx] == '\\')
+                {
+                    filepath = filepath.Substring(0, idx);
+                    foundo++;
+                }
+                idx--;
+            }
+            return (filepath + $"\\Sprites");
+        }
+        public static void turnPngIntoString(string filename)
+        {
+            string filepath = findSpritesPath() + $"\\{filename}";
+            turnPngIntoStringFromFilepath(filepath);
+        }
+        public static void turnPngIntoStringFromFilepath(string filepath)
+        {
+            if (!System.IO.File.Exists(filepath+".png"))
+            {
+                return;
+            }
+            Bitmap bitmap = new Bitmap(filepath+".png");
+            (int, int) dimensions = (bitmap.Width, bitmap.Height);
+            string firstLine = dimensions.Item1.ToString()+"*"+dimensions.Item2.ToString();
+            List<Color> palette = new List<Color>();
+            string thirdLine = "";
+            for (int j = 0; j < dimensions.Item2; j++)
+            {
+                for (int i = 0; i < dimensions.Item1; i++)
+                {
+                    int colorIdx = -1;
+                    Color pixelColor = bitmap.GetPixel(i, j);
+                    for (int k = 0; k < palette.Count(); k++)
+                    {
+                        if (pixelColor == palette[k])
+                        {
+                            colorIdx = k;
+                            goto afterTest;
+                        }
+                    }
+                    colorIdx = palette.Count();
+                    palette.Add(pixelColor);
+                    afterTest:;
+                    thirdLine = thirdLine + colorIdx.ToString() + ";";
+                }
+            }
+            string secondLine = "";
+            for (int i = 0; i < palette.Count; i++)
+            {
+                secondLine = secondLine + palette[i].R.ToString() + ";";
+                secondLine = secondLine + palette[i].G.ToString() + ";";
+                secondLine = secondLine + palette[i].B.ToString() + ";";
+                secondLine = secondLine + palette[i].A.ToString() + ";";
+            }
+            using (StreamWriter f = new StreamWriter(filepath+".txt", false))
+            {
+                f.Write(firstLine + "\n" + secondLine + "\n" + thirdLine);
+            }
+        }
     }
 }

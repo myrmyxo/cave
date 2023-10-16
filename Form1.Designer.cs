@@ -37,11 +37,12 @@
             ((System.ComponentModel.ISupportInitialize)(this.overlayPictureBox)).BeginInit();
             this.SuspendLayout();
             // 
-            // pictureBox1
+            // gamePictureBox
             // 
-            this.gamePictureBox.Location = new System.Drawing.Point(12, 12);
-            this.gamePictureBox.Name = "pictureBox1";
-            this.gamePictureBox.Size = new System.Drawing.Size(500, 500);
+            this.gamePictureBox.Location = new System.Drawing.Point(0, 0);
+            this.gamePictureBox.Margin = new System.Windows.Forms.Padding(0);
+            this.gamePictureBox.Name = "gamePictureBox";
+            this.gamePictureBox.Size = new System.Drawing.Size(512, 512);
             this.gamePictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.gamePictureBox.TabIndex = 0;
             this.gamePictureBox.TabStop = false;
@@ -58,11 +59,12 @@
             this.contextMenuStrip1.Name = "contextMenuStrip1";
             this.contextMenuStrip1.Size = new System.Drawing.Size(61, 4);
             // 
-            // pictureBox2
+            // overlayPictureBox
             // 
-            this.overlayPictureBox.Location = new System.Drawing.Point(12, 518);
-            this.overlayPictureBox.Name = "pictureBox2";
-            this.overlayPictureBox.Size = new System.Drawing.Size(500, 74);
+            this.overlayPictureBox.Location = new System.Drawing.Point(0, 511);
+            this.overlayPictureBox.Margin = new System.Windows.Forms.Padding(0);
+            this.overlayPictureBox.Name = "overlayPictureBox";
+            this.overlayPictureBox.Size = new System.Drawing.Size(512, 128);
             this.overlayPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.overlayPictureBox.TabIndex = 1;
             this.overlayPictureBox.TabStop = false;
@@ -70,7 +72,7 @@
             // Form1
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
-            this.ClientSize = new System.Drawing.Size(525, 604);
+            this.ClientSize = new System.Drawing.Size(511, 640);
             this.Controls.Add(this.overlayPictureBox);
             this.Controls.Add(this.gamePictureBox);
             this.Name = "Form1";
