@@ -22,6 +22,8 @@ namespace Cave
     {
         public static Dictionary<int, OneSprite> entitySprites;
         public static Dictionary<int, OneSprite> compoundSprites;
+        public static OneSprite numbersSprite;
+        public static Dictionary<int, OneSprite> numberSprites;
         public static OneSprite overlayBackground = new OneSprite("OverlayBackground", true);
         public static void loadSpriteDictionaries()
         {
@@ -36,9 +38,16 @@ namespace Cave
                 { -3, new OneSprite("FairyLiquid", true)},
                 { -2, new OneSprite("Water", true)},
                 { -1, new OneSprite("Piss", true)},
-                { 0, new OneSprite("BasicTile", true)},
+                { 1, new OneSprite("BasicTile", true)},
             };
             overlayBackground = new OneSprite("OverlayBackground", true);
+            numbersSprite = new OneSprite("Numbers", true);
+            Bitmap[] numberBitmapArray = numbersSprite.slice(11, 1);
+            numberSprites = new Dictionary<int, OneSprite>();
+            for (int i = 0; i < numberBitmapArray.Count(); i++)
+            {
+                numberSprites.Add(i, new OneSprite(numberBitmapArray[i]));
+            }
         }
 
 
@@ -47,6 +56,33 @@ namespace Cave
             public Color[] palette;
             public (int, int) dimensions;
             public Bitmap bitmap;
+            public OneSprite(Bitmap bitmapToPut)
+            {
+                bitmap = bitmapToPut;
+                dimensions = (bitmapToPut.Width, bitmapToPut.Height);
+                List<Color> paletteList = new List<Color>();
+                for (int j = 0; j < dimensions.Item2; j++)
+                {
+                    for (int i = 0; i < dimensions.Item1; i++)
+                    {
+                        Color pixelColor = bitmapToPut.GetPixel(i, j);
+                        for (int k = 0; k < paletteList.Count(); k++)
+                        {
+                            if (pixelColor == paletteList[k])
+                            {
+                                goto afterTest;
+                            }
+                        }
+                        paletteList.Add(pixelColor);
+                        afterTest:;
+                    }
+                }
+                palette = new Color[paletteList.Count];
+                for (int i = 0; i < paletteList.Count; i++)
+                {
+                    palette[i] = paletteList[i];
+                }
+            }
             public OneSprite(string contentString, bool isFileName)
             {
                 if (isFileName)
@@ -157,6 +193,27 @@ namespace Cave
                     }
                 }
             }*/
+            public Bitmap[] slice(int columnAmount, int lineAmount)
+            {
+                (int x, int y) dimensionsChild = (bitmap.Width / columnAmount, bitmap.Height / lineAmount);
+                Bitmap[] tempArray = new Bitmap[columnAmount * lineAmount];
+                for (int j = 0; j < lineAmount; j++)
+                {
+                    for (int i = 0; i < columnAmount; i++)
+                    {
+                        tempArray[i + columnAmount * j] = new Bitmap(dimensionsChild.x, dimensionsChild.y);
+                        Bitmap Child = tempArray[i + columnAmount * j];
+                        // remplace les valeurs du sprite
+                        using (Graphics grD = Graphics.FromImage(Child)) //thanks Amen Ayach on stack overfloww w w
+                        {
+                            Rectangle srcRegion = new Rectangle(dimensionsChild.x * i, dimensionsChild.y * j, dimensionsChild.x, dimensionsChild.y);
+                            Rectangle destRegion = new Rectangle(0, 0, dimensionsChild.x, dimensionsChild.y);
+                            grD.DrawImage(bitmap, destRegion, srcRegion, GraphicsUnit.Pixel);
+                        }
+                    }
+                }
+                return tempArray;
+            }
         }
         public static void drawSpriteOnCanvas(Bitmap bigBitmap, Bitmap smallBitmap, (int, int) posToDraw, int scaleFactor, bool centeredDraw)
         {

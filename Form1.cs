@@ -15,6 +15,10 @@ using static Cave.Form1;
 using static Cave.Form1.Globals;
 using static Cave.Sprites;
 using static Cave.MathF;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
+
 namespace Cave
 {
     public partial class Form1 : Form
@@ -31,6 +35,7 @@ namespace Cave
             public static bool digPress = false;
             public static bool[] placePress = { false, false };
             public static bool[] zoomPress = { false, false };
+            public static bool[] inventoryChangePress = { false, false };
             public static bool shiftPress = false;
             public static float lastZoom = 0;
             public static DateTime timeAtLauch;
@@ -1668,6 +1673,10 @@ namespace Cave
 
             public float timeAtLastDig = -9999;
             public float timeAtLastPlace = -9999;
+
+            public Dictionary<(int index, bool isEntity), int> inventoryQuantities;
+            public List<(int index, bool isEntity)> inventoryElements;
+            public int inventoryCursor = 0;
             public (int, int) findIntPos(float positionX, float positionY)
             {
                 return ((int)Floor(positionX, 1), (int)Floor(positionY, 1));
@@ -1689,13 +1698,27 @@ namespace Cave
                         break;
                     }
                 }
-            }
+                inventoryQuantities = new Dictionary<(int index, bool isEntity), int>
+                {
+                    {(0, true), -999 },
+                    {(1, true), -999 },
+                    {(2, true), -999 },
+                    {(-1, false), -999 }
+                };
+                inventoryElements = new List<(int index, bool isEntity)>
+                {
+                    (0, true),
+                    (1, true),
+                    (2, true),
+                    (-1, false)
+                };
+        }
             public void movePlayer(Screen screen)
             {
                 (int, int) newPos = findIntPos(realPosX + speedX, realPosY + speedY);
                 int toMoveX = newPos.Item1 - posX;
                 int toMoveY = newPos.Item2 - posY;
-                if (digPress && timeElapsed > timeAtLastDig + 0.5f)
+                if (digPress && timeElapsed > timeAtLastDig + 0.2f)
                 {
                     if (arrowKeysState[0] && !arrowKeysState[1])
                     {
@@ -1774,11 +1797,6 @@ namespace Cave
                     }
                 }*/
 
-
-
-
-
-
                 while (Abs(toMoveY) >= 1 || (Abs(toMoveY) > 0 && (toMoveY + (realPosY % 1 + 1) % 1 >= 1 || toMoveY + (realPosY % 1 + 1) % 1 < 0)))
                 {
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + (int)Sign(toMoveY));
@@ -1849,14 +1867,30 @@ namespace Cave
                 structureY = Floor(posY, 1024) / 1024;
                 if (oldStructurePos == (structureX, structureY)) { return false; }
                 return true;
-
             }
             public void Dig(int posToDigX, int posToDigY, Screen screen)
             {
                 (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posToDigX, posToDigY);
                 Chunk chunkToDig = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                if (chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] != 0)
+                int tileContent = chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16];
+                if (tileContent != 0)
                 {
+                    (int index, bool isEntity)[] inventoryKeys = inventoryQuantities.Keys.ToArray();
+                    for (int i = 0; i < inventoryKeys.Length; i++)
+                    {
+                        if (inventoryKeys[i].index == tileContent && !inventoryKeys[i].isEntity)
+                        {
+                            if (inventoryQuantities[(tileContent, false)] != -999)
+                            {
+                                inventoryQuantities[(tileContent, false)]++;
+                            }
+                            goto AfterTest;
+                        }
+                    }
+                    // there was none of the thing present in the inventory already so gotta create it
+                    inventoryQuantities.Add((tileContent, false), 1);
+                    inventoryElements.Add((tileContent, false));
+                    AfterTest:;
                     chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = 0;
                     chunkToDig.findTileColor((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16);
                     chunkToDig.modificationCount += 1;
@@ -1867,12 +1901,69 @@ namespace Cave
             {
                 (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posToDigX, posToDigY);
                 Chunk chunkToDig = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
+                (int index, bool isEntity) tileContent = inventoryElements[inventoryCursor];
                 if (chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] == 0)
                 {
-                    chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = -1;
-                    chunkToDig.findTileColor((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16);
-                    chunkToDig.modificationCount += 1;
-                    timeAtLastPlace = timeElapsed;
+                    if (inventoryQuantities[tileContent] != -999)
+                        {
+                            inventoryQuantities[tileContent]--;
+                            if (inventoryQuantities[tileContent] <= 0)
+                            {
+                                inventoryQuantities.Remove(tileContent);
+                                inventoryElements.Remove(tileContent);
+                                moveInventoryCursor(0);
+                            }
+                        }
+                    if(tileContent.isEntity)
+                    {
+                        Entity newEntity = new Entity(chunkToDig, (posToDigX, posToDigY), tileContent.index);
+                        screen.activeEntites.Add(newEntity);
+                        timeAtLastPlace = timeElapsed;
+                    }
+                    else
+                    {
+                        chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = tileContent.index;
+                        chunkToDig.findTileColor((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16);
+                        chunkToDig.modificationCount += 1;
+                        timeAtLastPlace = timeElapsed;
+                    }
+                }
+            }
+            public void moveInventoryCursor(int value)
+            {
+                inventoryCursor = ((inventoryCursor + value)%inventoryElements.Count + inventoryElements.Count)% inventoryElements.Count;
+            }
+            public void drawInventory(Screen screen)
+            {
+                if (inventoryElements.Count > 0)
+                {
+                    (int index, bool isEntity) element = inventoryElements[inventoryCursor];
+                    if (element.isEntity)
+                    {
+                        Sprites.drawSpriteOnCanvas(screen.overlayBitmap, entitySprites[element.index].bitmap, (340, 64), 4, true);
+                    }
+                    else
+                    {
+                        Sprites.drawSpriteOnCanvas(screen.overlayBitmap, compoundSprites[element.index].bitmap, (340, 64), 4, true);
+                    }
+                    int quantity = inventoryQuantities[element];
+                    if(quantity == -999)
+                    {
+                        Sprites.drawSpriteOnCanvas(screen.overlayBitmap, numberSprites[10].bitmap, (408, 64), 4, true);
+                    }
+                    else
+                    {
+                        List<int> numberList = new List<int>();
+                        for (int i = 0; quantity > 0; i++)
+                        {
+                            numberList.Insert(0, quantity%10);
+                            quantity = quantity/10;
+                        }
+                        for (int i = 0; i < numberList.Count; i++)
+                        {
+                            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, numberSprites[numberList[i]].bitmap, (408+i*32, 64), 4, true);
+                        }
+                    }
                 }
             }
         }
@@ -1888,36 +1979,55 @@ namespace Cave
             public float speedY = 0;
             public Color color;
 
+            public void findType(Chunk chunk)
+            {
+                int biome = chunk.biomeIndex[(posX % 16 + 16) % 16, (posY % 16 + 16) % 16][0].Item1;
+                if (chunk.fillStates[(posX % 16 + 16) % 16, (posY % 16 + 16) % 16] < 0)
+                {
+                    type = 2;
+                }
+                else if (biome == 5)
+                {
+                    type = 0;
+                }
+                else if (biome == 6)
+                {
+                    type = 0;
+                }
+                else if (biome == 7)
+                {
+                    type = 0;
+                }
+                else { type = 1; }
+            }
             public Color findColor(Chunk chunk)
             {
                 int hueVar = rand.Next(101) - 50;
                 int shadeVar = rand.Next(61) - 30;
                 int biome = chunk.biomeIndex[(posX % 16 + 16) % 16, (posY % 16 + 16) % 16][0].Item1;
-
-                if (chunk.fillStates[(posX % 16 + 16) % 16, (posY % 16 + 16) % 16] < 0)
+                if (type == 0)
                 {
-                    type = 2;
+                    if (biome == 6)
+                    {
+                        return Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar);
+                    }
+                    if (biome == 7)
+                    {
+                        hueVar = Abs((int)(hueVar * 0.4f));
+                        shadeVar = Abs(shadeVar);
+                        return Color.FromArgb(255 - hueVar - shadeVar, 255 - hueVar - shadeVar, 255 - shadeVar);
+                    }
+                    /* if (biome == 5)*/return Color.FromArgb(130 + hueVar + shadeVar, 130 - hueVar + shadeVar, 210 + shadeVar);
+                }
+                if (type == 1)
+                {
+                    return Color.FromArgb(90 + hueVar + shadeVar, 210 + shadeVar, 110 - hueVar + shadeVar);
+                }
+                if (type == 2)
+                {
                     return Color.FromArgb(190 + shadeVar, 80 - hueVar + shadeVar, 80 + hueVar + shadeVar);
                 }
-                else if (biome == 5)
-                {
-                    type = 0;
-                    return Color.FromArgb(130 + hueVar + shadeVar, 130 - hueVar + shadeVar, 210 + shadeVar);
-                }
-                else if (biome == 6)
-                {
-                    type = 0;
-                    return Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar);
-                }
-                else if (biome == 7)
-                {
-                    type = 0;
-                    hueVar = Abs((int)(hueVar * 0.4f));
-                    shadeVar = Abs(shadeVar);
-                    return Color.FromArgb(255 - hueVar - shadeVar, 255 - hueVar - shadeVar, 255 - shadeVar);
-                }
-                type = 1;
-                return Color.FromArgb(90 + hueVar + shadeVar, 210 + shadeVar, 110 - hueVar + shadeVar);
+                return Color.Red;
             }
             public Entity(int posXt, int posYt, int typet, int rt, int gt, int bt)
             {
@@ -1932,6 +2042,16 @@ namespace Cave
             public Entity(Chunk chunk)
             {
                 placeEntity(chunk);
+                findType(chunk);
+                color = findColor(chunk);
+            }
+            public Entity(Chunk chunk, (int, int) positionToPut, int typeToPut)
+            {
+                posX = positionToPut.Item1;
+                realPosX = posX;
+                posY = positionToPut.Item2;
+                realPosY = posY;
+                type = typeToPut;
                 color = findColor(chunk);
             }
             public (int, int) findIntPos(float positionX, float positionY)
@@ -2259,6 +2379,7 @@ namespace Cave
             currentDirectory = System.IO.Directory.GetCurrentDirectory();
 
             turnPngIntoString("OverlayBackground");
+            turnPngIntoString("Numbers");
             turnPngIntoString("BasicTile");
             turnPngIntoString("Fairy");
             turnPngIntoString("Frog");
@@ -2271,7 +2392,7 @@ namespace Cave
 
             Screen mainScreen;
 
-            bool updatePNG = true;
+            bool updatePNG = false;
             int PNGsize = 300; // in chunks
             bool randomSeed = true;
 
@@ -2575,6 +2696,8 @@ namespace Cave
             Screen screen = (Screen)timer1.Tag;
             if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { screen.zoom(true); }
             if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
+            if (inventoryChangePress[0]) { inventoryChangePress[0] = false; player.moveInventoryCursor(-1); }
+            if (inventoryChangePress[1]) { inventoryChangePress[1] = false; player.moveInventoryCursor(1); }
             timeElapsed = (float)((DateTime.Now - timeAtLauch).TotalSeconds);
             accCamX = 0;
             accCamY = 0;
@@ -2647,7 +2770,7 @@ namespace Cave
             gamePictureBox.Refresh();
             overlayPictureBox.Image = screen.overlayBitmap;
             Sprites.drawSpriteOnCanvas(screen.overlayBitmap, overlayBackground.bitmap, (0, 0), 4, false);
-            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, entitySprites[2].bitmap, (64, 32), 4, false);
+            player.drawInventory(screen);
             overlayPictureBox.Refresh();
         }
         private void KeyIsDown(object sender, KeyEventArgs e)
@@ -2687,6 +2810,14 @@ namespace Cave
             if (e.KeyCode == Keys.D)
             {
                 zoomPress[1] = true;
+            }
+            if (e.KeyCode == Keys.C)
+            {
+                inventoryChangePress[0] = true;
+            }
+            if (e.KeyCode == Keys.V)
+            {
+                inventoryChangePress[1] = true;
             }
             if ((Control.ModifierKeys & Keys.Shift) != 0)
             {
@@ -2730,6 +2861,14 @@ namespace Cave
             if (e.KeyCode == Keys.D)
             {
                 zoomPress[1] = false;
+            }
+            if (e.KeyCode == Keys.C)
+            {
+                inventoryChangePress[0] = false;
+            }
+            if (e.KeyCode == Keys.V)
+            {
+                inventoryChangePress[1] = false;
             }
             if ((Control.ModifierKeys & Keys.Shift) == 0)
             {
