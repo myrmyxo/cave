@@ -31,14 +31,17 @@ namespace Cave
             {
                 { 0, new OneSprite("Fairy", true)},
                 { 1, new OneSprite("Frog", true)},
-                { 2, new OneSprite("Fish", true)}
+                { 2, new OneSprite("Fish", true)},
+                { 3, new OneSprite("Hornet", true)}
             };
             compoundSprites = new Dictionary<int, OneSprite>
             {
+                { -4, new OneSprite("Lava", true)},
                 { -3, new OneSprite("FairyLiquid", true)},
                 { -2, new OneSprite("Water", true)},
                 { -1, new OneSprite("Piss", true)},
                 { 1, new OneSprite("BasicTile", true)},
+                { 2, new OneSprite("BasicTile", true)},
             };
             overlayBackground = new OneSprite("OverlayBackground", true);
             numbersSprite = new OneSprite("Numbers", true);
