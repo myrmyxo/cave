@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Security.Policy;
@@ -271,6 +272,7 @@ namespace Cave
                 resizedBitmap = new Bitmap(smallBitmap.Width*scaleFactor, smallBitmap.Height*scaleFactor);
                 using (Graphics g = Graphics.FromImage(resizedBitmap))
                 {
+                    g.PixelOffsetMode = PixelOffsetMode.HighQuality;
                     g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
                     g.DrawImage(smallBitmap, 0, 0, resizedBitmap.Width, resizedBitmap.Height);
                 }

@@ -18,6 +18,7 @@ using static Cave.MathF;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
+using System.Drawing.Drawing2D;
 
 namespace Cave
 {
@@ -26,7 +27,7 @@ namespace Cave
         public class Globals
         {
             public static int ChunkLength = 6;
-            public static int UnloadedChunksAmount = 2;
+            public static int UnloadedChunksAmount = 6;
 
             public static Random rand = new Random();
             public static Player player = new Player();
@@ -88,6 +89,8 @@ namespace Cave
             public int modificationCount = 0;
             public int liquidCount = 0;
             public bool isUnstable = false;
+
+            public Bitmap bitmap;
             public Chunk(long posX, long posY, long seed, bool structureGenerated, Screen screenToPut)
             {
                 screen = screenToPut;
@@ -203,6 +206,7 @@ namespace Cave
                 fillStates = new int[16, 16];
                 baseColors = new (int,int,int)[16, 16];
                 colors = new Color[16, 16];
+                bitmap = new Bitmap(16, 16);
                 for (int i = 0; i < 16; i++)
                 {
                     for (int j = 0; j < 16; j++)
@@ -352,6 +356,7 @@ namespace Cave
                     colorArray[2] = (int)(colorArray[2] * 0.8f) + 60;
                 }
                 colors[i, j] = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
+                bitmap.SetPixel(i, j, colors[i, j]);
             }
             public void spawnEntites(Screen screen)
             {
@@ -928,22 +933,22 @@ namespace Cave
                         seedY = LCGyPos(seedY);
                         y--;
                     }
-                    long structuresAmount = (seedX + seedY) % 10 + 1;
+                    long structuresAmount = (seedX + seedY) % 3 + 1;
                     for (int i = 0; i < structuresAmount; i++)
                     {
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
                         seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
-                        Structure newStructure = new Structure(posX * 1024 + 32 + (int)(seedX % 960), posY * 1024 + 32 + (int)(seedY % 960), seedX, seedY, false, this);
+                        Structure newStructure = new Structure(posX * 512 + 16 + (int)(seedX % 480), posY * 512 + 16 + (int)(seedY % 480), seedX, seedY, false, this);
                         newStructure.drawStructure();
                         newStructure.imprintChunks();
                         newStructure.saveInFile();
                     }
-                    long waterLakesAmount = 150 + 500;// (seedX + seedY) % 30 + 10;
+                    long waterLakesAmount = 15 + (seedX + seedY) % 150;
                     for (int i = 0; i < waterLakesAmount; i++)
                     {
                         seedX = LCGyNeg(seedX); // on porpoise x    /\_/\
                         seedY = LCGxNeg(seedY); // and y switched  ( ^o^ )
-                        Structure newStructure = new Structure(posX * 1024 + 32 + (int)(seedX % 960), posY * 1024 + 32 + (int)(seedY % 960), seedX, seedY, true, this);
+                        Structure newStructure = new Structure(posX * 512 + 16 + (int)(seedX % 480), posY * 512 + 16 + (int)(seedY % 480), seedX, seedY, true, this);
                         newStructure.drawLake();
                         newStructure.saveInFile();
                     }
@@ -957,23 +962,30 @@ namespace Cave
                 int PNGmultiplicator = 4;
                 if(isPngToBeExported) { PNGmultiplicator = 1; }
 
-                for (int i = 0; i < chunkResolution*16; i++)
+                for (int i = 0; i < chunkResolution; i++)
                 {
-                    for (int j = 0; j < chunkResolution*16; j++)
+                    for (int j = 0; j < chunkResolution; j++)
                     {
-                        pixelPosX = ((i + (-loadedChunkOffsetX + chunkResolution) * 16) % (chunkResolution * 16)) - ((camPosX % 16) + 16) % 16 - UnloadedChunksAmount * 16;
-                        pixelPosY = ((j + (-loadedChunkOffsetY + chunkResolution) * 16) % (chunkResolution * 16)) - ((camPosY % 16) + 16) % 16 - UnloadedChunksAmount * 16;
+                        pixelPosX = ((i*16 + (-loadedChunkOffsetX + chunkResolution) * 16) % (chunkResolution * 16)) - ((camPosX % 16) + 16) % 16 - UnloadedChunksAmount * 16;
+                        pixelPosY = ((j*16 + (-loadedChunkOffsetY + chunkResolution) * 16) % (chunkResolution * 16)) - ((camPosY % 16) + 16) % 16 - UnloadedChunksAmount * 16;
 
-                        if (pixelPosX < 0 || pixelPosX >= (chunkResolution - 1) * 16 || pixelPosY < 0 || pixelPosY >= (chunkResolution - 1) * 16)
+                        if (pixelPosX < -15 || pixelPosX >= (chunkResolution) * 16 || pixelPosY < -15 || pixelPosY >= (chunkResolution) * 16)
                         {
                             continue;
                         }
 
                         Color color = loadedChunks[i / 16, j / 16].colors[i % 16, j % 16];
 
-                        using (var g = Graphics.FromImage(gameBitmap))
+                        /*using (var g = Graphics.FromImage(gameBitmap))
                         {
                             g.FillRectangle(new SolidBrush(color), (pixelPosX)*PNGmultiplicator, (pixelPosY)*PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
+                        }*/
+
+                        using (Graphics g = Graphics.FromImage(gameBitmap))
+                        {
+                            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                            g.DrawImage(loadedChunks[i, j].bitmap, pixelPosX*PNGmultiplicator, pixelPosY*PNGmultiplicator, 16*PNGmultiplicator, 16*PNGmultiplicator);
                         }
                     }
                 }
@@ -1894,8 +1906,8 @@ namespace Cave
             public bool CheckStructurePosChange()
             {
                 (int, int) oldStructurePos = (structureX, structureY);
-                structureX = Floor(posX, 1024) / 1024;
-                structureY = Floor(posY, 1024) / 1024;
+                structureX = Floor(posX, 512) / 512;
+                structureY = Floor(posY, 512) / 512;
                 if (oldStructurePos == (structureX, structureY)) { return false; }
                 return true;
             }
