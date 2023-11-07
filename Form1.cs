@@ -1758,9 +1758,6 @@ namespace Cave
         }
             public void movePlayer(Screen screen)
             {
-                (int, int) newPos = findIntPos(realPosX + speedX, realPosY + speedY);
-                int toMoveX = newPos.Item1 - posX;
-                int toMoveY = newPos.Item2 - posY;
                 if (digPress && timeElapsed > timeAtLastDig + 0.2f)
                 {
                     if (arrowKeysState[0] && !arrowKeysState[1])
@@ -1803,8 +1800,8 @@ namespace Cave
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY);
                     if (screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2].fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32) % 16] < 0)
                     {
-                        speedX = (int)(speedX * 0.5f - Sqrt(Max((int)speedX-1,0)) + 0.6f);
-                        speedY = (int)(speedY * 0.5f - Sqrt(Max((int)speedY-1,0)) + 0.6f);
+                        speedX = speedX * 0.8f - Sign(speedX)*Sqrt(Max((int)speedX-1,0));
+                        speedY = speedY * 0.8f - Sign(speedY)*Sqrt(Max((int)speedY-1,0));
                     }
                 }
                 /*while (Abs(toMoveX) > 0)
@@ -1840,7 +1837,11 @@ namespace Cave
                     }
                 }*/
 
-                while (Abs(toMoveY) >= 1 || (Abs(toMoveY) > 0 && (toMoveY + (realPosY % 1 + 1) % 1 >= 1 || toMoveY + (realPosY % 1 + 1) % 1 < 0)))
+
+                float toMoveX = speedX;
+                float toMoveY = speedY;
+
+                while (Abs(toMoveY) > 0)
                 {
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + (int)Sign(toMoveY));
                     (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX, posY + (int)Sign(toMoveY));
@@ -1867,20 +1868,16 @@ namespace Cave
                         break;
                     }
                 }
-                if (Abs(toMoveY) > 0)
+                while (Abs(toMoveX) > 0)
                 {
-                    realPosY += toMoveY;
-                }
-                while (Abs(toMoveX) >= 1 || (Abs(toMoveX) > 0 && (toMoveX + (realPosX % 1 + 1) % 1 >= 1 || toMoveX + (realPosX % 1 + 1) % 1 < 0)))
-                {
-                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX + Sign((int)toMoveX), posY);
-                    (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX + Sign((int)toMoveX), posY);
+                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX + (int)Sign(toMoveX), posY);
+                    (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX + (int)Sign(toMoveX), posY);
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                    if (chunkToTest.fillStates[(posX % 16 + 32 + Sign((int)toMoveX)) % 16, (posY % 16 + 32) % 16] <= 0)
+                    if (chunkToTest.fillStates[(posX % 16 + 32 + (int)Sign(toMoveX)) % 16, (posY % 16 + 32) % 16] <= 0)
                     {
                         if (Abs(toMoveX) >= 1)
                         {
-                            posX += Sign((int)toMoveX);
+                            posX += (int)Sign(toMoveX);
                             realPosX += Sign(toMoveX);
                             toMoveX = Sign(toMoveX) * (Abs(toMoveX) - 1);
                         }
@@ -1897,10 +1894,6 @@ namespace Cave
                         toMoveX = 0;
                         break;
                     }
-                }
-                if (Abs(toMoveX) > 0)
-                {
-                    realPosX += toMoveX;
                 }
             }
             public bool CheckStructurePosChange()
@@ -2166,9 +2159,9 @@ namespace Cave
                     {
                         if(Abs(speedX) > 0)
                         {
-                            if(Abs(speedX) > 1)
+                            if(Abs(speedX) > 0.5f)
                             {
-                                speedX = speedX - Sign(speedX);
+                                speedX = speedX - Sign(speedX)*0.5f;
                             }
                             else
                             {
@@ -2177,9 +2170,9 @@ namespace Cave
                         }
                         if (Abs(speedY) > 0)
                         {
-                            if (Abs(speedY) > 1)
+                            if (Abs(speedY) > 0.5f)
                             {
-                                speedY = speedY - Sign(speedY);
+                                speedY = speedY - Sign(speedY)*0.5f;
                             }
                             else
                             {
@@ -2193,8 +2186,8 @@ namespace Cave
                     }
                     else if (state == 1) // moving in the air
                     {
-                        speedX += rand.Next(3) - 1;
-                        speedY += rand.Next(3) - 1;
+                        speedX += (float)(rand.NextDouble()) - 0.5f;
+                        speedY += (float)(rand.NextDouble()) - 0.5f;
                         if (rand.Next(1000) < 3)
                         {
                             state = 0;
@@ -2204,9 +2197,9 @@ namespace Cave
                     {
                         if (Abs(speedX) > 0)
                         {
-                            if (Abs(speedX) > 1)
+                            if (Abs(speedX) > 0.5f)
                             {
-                                speedX = speedX - Sign(speedX);
+                                speedX = speedX - Sign(speedX)*0.5f;
                             }
                             else
                             {
@@ -2215,32 +2208,32 @@ namespace Cave
                         }
                         if (Abs(speedY) > 0)
                         {
-                            if (Abs(speedY) > 1)
+                            if (Abs(speedY) > 0.5f)
                             {
-                                speedY = speedY - Sign(speedY);
+                                speedY = speedY - Sign(speedY)*0.5f;
                             }
                             else
                             {
                                 speedY = 0;
                             }
                         }
-                        speedX += rand.Next(3) - 1;
-                        speedY += rand.Next(3);
+                        speedX += (float)(rand.NextDouble()) - 0.5f;
+                        speedY += (float)(rand.NextDouble());
                     }
                     else { state = 0; }
                 }
                 else if (type == 1)
                 {
-                    speedY += 1;
+                    speedY += 0.5f;
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + 1); // +1 cause coordinates are inverted lol
                     Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
                     if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 33) % 16] > 0)
                     {
-                        speedX = Sign(speedX) * (Max(0, Abs(speedX) * (0.75f) - 0.25f));
+                        speedX = Sign(speedX) * (Max(0, Abs(speedX) * (0.85f) - 0.2f));
                         if (rand.NextDouble() > 0.05f)
                         {
-                            speedX += rand.Next(11) - 5;
-                            speedY += rand.Next(11) - 5;
+                            speedX += (float)(rand.NextDouble())*5 - 2.5f;
+                            speedY += (float)(rand.NextDouble())*5 - 2.5f;
                         }
                     }
                 }
@@ -2263,9 +2256,9 @@ namespace Cave
                     {
                         if (Abs(speedX) > 0)
                         {
-                            if (Abs(speedX) > 1)
+                            if (Abs(speedX) > 0.5f)
                             {
-                                speedX = speedX - Sign(speedX);
+                                speedX = speedX - Sign(speedX)*0.5f;
                             }
                             else
                             {
@@ -2274,9 +2267,9 @@ namespace Cave
                         }
                         if (Abs(speedY) > 0)
                         {
-                            if (Abs(speedY) > 1)
+                            if (Abs(speedY) > 0.5f)
                             {
-                                speedY = speedY - Sign(speedY);
+                                speedY = speedY - Sign(speedY)*0.5f;
                             }
                             else
                             {
@@ -2290,15 +2283,15 @@ namespace Cave
                     }
                     else if (state == 1) // moving in water
                     {
-                        speedX = speedX * 0.8f - Sign(speedX)*0.2f;
-                        speedY = speedY * 0.8f - Sign(speedY)*0.2f;
+                        speedX = speedX * 0.9f - Sign(speedX)*0.12f;
+                        speedY = speedY * 0.9f - Sign(speedY)*0.12f;
 
-                        speedX += rand.Next(3) - 1;
-                        speedY += rand.Next(3) - 1;
+                        speedX += (float)(rand.NextDouble()) - 0.5f;
+                        speedY += (float)(rand.NextDouble()) - 0.5f;
                         if (rand.Next(100) == 0)
                         {
-                            speedX = rand.Next(7) - 3;
-                            speedY = rand.Next(7) - 3;
+                            speedX = (float)(rand.NextDouble())*3 - 1.5f;
+                            speedY = (float)(rand.NextDouble())*3 - 1.5f;
                         }
                         else if (rand.Next(1000) == 0)
                         {
@@ -2307,16 +2300,16 @@ namespace Cave
                     }
                     else if (state == 2) // outside water
                     {
-                        speedY++;
+                        speedY += 0.5f;
                         chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + 1); // +1 cause coordinates are inverted lol
                         chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
                         if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 33) % 16] > 0)
                         {
-                            speedX = speedX * 0.8f - Sign(speedX) * 0.2f;
+                            speedX = speedX * 0.9f - Sign(speedX) * 0.12f;
                             if (rand.NextDouble() > 0.05f)
                             {
-                                speedX += rand.Next(5) - 2;
-                                speedY += rand.Next(4);
+                                speedX += (float)(rand.NextDouble())*2 - 1;
+                                speedY = -(float)(rand.NextDouble())*1.5f + 0.5f;
                             }
                         }
                     }
@@ -2326,8 +2319,8 @@ namespace Cave
                     (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY);
                     if (screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2].fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32) % 16] < 0)
                     {
-                        speedX = speedX * 0.7f - Sign(speedX)*0.25f;
-                        speedY = speedY * 0.7f - Sign(speedY)*0.25f;
+                        speedX = speedX * 0.85f - Sign(speedX)*0.15f;
+                        speedY = speedY * 0.85f - Sign(speedY)*0.15f;
                     }
                 }
                 float toMoveX = speedX;
@@ -2878,17 +2871,17 @@ namespace Cave
             timeElapsed = (float)((DateTime.Now - timeAtLauch).TotalSeconds);
             accCamX = 0;
             accCamY = 0;
-            player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.75f) - 0.25f));
-            player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.75f) - 0.25f));
-            if (arrowKeysState[0]) { player.speedX += 1; }
-            if (arrowKeysState[1]) { player.speedX -= 1; }
-            if (arrowKeysState[2]) { player.speedY += 1; }
-            if (arrowKeysState[3]) { player.speedY -= 2; }
-            player.speedY += 1;
+            player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.85f) - 0.2f));
+            player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.85f) - 0.2f));
+            if (arrowKeysState[0]) { player.speedX += 0.5f; }
+            if (arrowKeysState[1]) { player.speedX -= 0.5f; }
+            if (arrowKeysState[2]) { player.speedY += 0.5f; }
+            if (arrowKeysState[3]) { player.speedY -= 1; }
+            player.speedY += 0.5f;
             if (shiftPress)
             {
-                player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.5f) - 1.2f));
-                player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.5f) - 1.2f));
+                player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.75f) - 0.7f));
+                player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.75f) - 0.7f));
             }
             foreach (Player playor in screen.playerList)
             {
