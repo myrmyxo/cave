@@ -16,6 +16,8 @@ using static Cave.Form1;
 using static Cave.Form1.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
+using static Cave.Structures;
+using static Cave.Entities;
 
 namespace Cave
 {
