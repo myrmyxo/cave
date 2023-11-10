@@ -576,7 +576,8 @@ namespace Cave
             public int posY = 0;
             public Color color;
 
-
+            public Bitmap bitmap;
+            public int[] posOffset;
 
             public bool isDeadAndShouldDisappear = false;
             public Plant(int posXt, int posYt, int typet, long seedt, Chunk chunkToPut, Form1.Screen screenToPut)
@@ -590,16 +591,18 @@ namespace Cave
                 seed = seedt;
                 growthLevel = 1 + (int)(seedt % 5);
                 color = findColor();
+                makeBitmap();
             }
             public Plant(long seedToPut, Chunk chunkToPut, Form1.Screen screenToPut)
             {
                 screen = screenToPut;
                 chunk = chunkToPut;
                 seed = LCGyNeg(seedToPut);
-                placeEntity();
+                placePlant();
                 findType();
                 color = findColor();
                 growthLevel = 1 + (int)(seed%5);
+                makeBitmap();
             }
             public Plant(Chunk chunkToPut, (int, int) positionToPut, int typeToPut, Form1.Screen screenToPut)
             {
@@ -610,6 +613,7 @@ namespace Cave
                 type = typeToPut;
                 findType();
                 color = findColor();
+                makeBitmap();
             }
             public void findType()
             {
@@ -622,9 +626,17 @@ namespace Cave
                 {
                     if (rand.Next(2) == 0)
                     {
+                        type = 0;
+                    }
+                    else { type = 1; }
+                }
+                else if (biome == 6)
+                {
+                    if (rand.Next(100) == 0)
+                    {
                         type = 1;
                     }
-                    else { type = 0; }
+                    else { type = 3; }
                 }
                 else { type = 0; }
             }
@@ -647,9 +659,161 @@ namespace Cave
                 {
                     return Color.FromArgb(30 - shadeVar, 90 - shadeVar + hueVar, 140 - shadeVar - hueVar);
                 }
+                if (type == 3)
+                {
+                    return Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar);
+                }
                 return Color.Red;
             }
-            public void placeEntity()
+
+            public void extendBitmapList(int[] startingPos, List<List<int>> intList, int x, int y)
+            {
+                if (x > 0)
+                {
+                    int lenX = intList.Count();
+                    int lenY = intList[0].Count();
+
+                    intList.Add(new List<int>());
+
+                    for (int j = 0; j < lenY; j++)
+                    {
+                        intList[lenX].Add(0);
+                    }
+                }
+                else if (x < 0)
+                {
+                    startingPos[0]--;
+
+                    int lenX = intList.Count();
+                    int lenY = intList[0].Count();
+
+                    List<int> listo = new List<int>();
+
+                    for (int j = 0; j < lenY; j++)
+                    {
+                        listo.Add(0);
+                    }
+                    intList.Insert(0, listo);
+                }
+
+                if (y > 0)
+                {
+                    startingPos[1]--;
+
+                    int lenX = intList.Count();
+                    int lenY = intList[0].Count();
+
+                    for (int i = 0; i < lenX; i++)
+                    {
+                        intList[i].Add(0);
+                    }
+                }
+                else if (y < 0)
+                {
+                    int lenX = intList.Count();
+                    int lenY = intList[0].Count();
+
+                    for (int i = 0; i < lenX; i++)
+                    {
+                        intList[i].Insert(0, 0);
+                    }
+                }
+            }
+            public void makeBitmap() // 0 = nothing, 1 = plantMatter, 2 = wood, 3 = aquaticPlantMatter, 4 = obsidianPlant
+            {
+                List<List<int>> listo = new List<List<int>>();
+                int[] bounds = new int[4] { 0, 1, 0, 1 };
+                posOffset = new int[2] { 0, 0 };
+
+                listo.Add(new List<int>());
+                listo[0].Add(0); 
+                
+                if (type == 0) // normal plant
+                {
+                    listo[0][0] = 1;
+
+                    for (int i = 0; i < growthLevel; i++)
+                    {
+                        extendBitmapList(posOffset, listo, 0, 1);
+
+                        listo[0][listo[0].Count - 1] = 1;
+                    }
+                }
+                else if (type == 1) // woody
+                {
+                    listo[0][0] = 2;
+
+                    for (int i = 0; i < growthLevel; i++)
+                    {
+                        extendBitmapList(posOffset, listo, 0, 1);
+
+                        listo[0][listo[0].Count - 1] = 2;
+                    }
+                }
+                else if (type == 2) // kelp
+                {
+                    growthLevel += 5;
+                    listo[0][0] = 3;
+                    int startingPoint;
+                    if (seed%2 == 0)
+                    {
+                        startingPoint = 0;
+                        extendBitmapList(posOffset, listo, 1, 0);
+                    }
+                    else
+                    {
+                        startingPoint = 1;
+                        extendBitmapList(posOffset, listo, -1, 0);
+                    }
+                    for (int i = 1; i < growthLevel; i++)
+                    {
+                        int fillState1 = (i + startingPoint + 1)%2;
+                        int fillState2 = (i + startingPoint)%2;
+
+                        extendBitmapList(posOffset, listo, 0, 1);
+
+                        listo[0][listo[0].Count-1] = fillState1*3;
+                        listo[1][listo[1].Count-1] = fillState2*3;
+                    }
+                }
+
+                else if (type == 3) // obsidian plant
+                {
+                    listo[0][0] = 4;
+
+                    for (int i = 0; i < growthLevel; i++)
+                    {
+                        extendBitmapList(posOffset, listo, 0, 1);
+
+                        listo[0][listo[0].Count - 1] = 4;
+                    }
+                }
+
+                else if (type == 4) // mushroom
+                {
+                    listo[0][0] = 5;
+
+                    for (int i = 0; i < growthLevel; i++)
+                    {
+                        extendBitmapList(posOffset, listo, 0, 1);
+
+                        listo[0][listo[0].Count - 1] = 4;
+                    }
+                }
+
+                bitmap = new Bitmap(listo.Count(), listo[0].Count());
+                for (int i = 0; i < bitmap.Width; i++)
+                {
+                    for (int j = 0; j < bitmap.Height; j++)
+                    {
+                        if (listo[i][j] != 0)
+                        {
+                            bitmap.SetPixel(i, bitmap.Height-j-1, color);
+                        }
+                    }
+                }
+            }
+            public void placePlant()
             {
                 int counto = 0;
                 while (counto < 10000)
