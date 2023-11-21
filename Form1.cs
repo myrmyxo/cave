@@ -477,7 +477,7 @@ namespace Cave
                             int posXt = Int32.Parse(listo[i]);
                             int posYt = Int32.Parse(listo[i + 1]);
                             int typet = Int32.Parse(listo[i + 2]);
-                            long seedt = long.Parse(listo[i + 3]);
+                            int seedt = Int32.Parse(listo[i + 3]);
                             screen.activePlants.Add(new Plant(posXt, posYt, typet, seedt, this, screen));
                         }
                     }
@@ -1043,7 +1043,7 @@ namespace Cave
                         seedX = LCGyNeg(seedX); // on porpoise x    /\_/\
                         seedY = LCGxNeg(seedY); // and y switched  ( ^o^ )
                         Structure newStructure = new Structure(posX * 512 + 16 + (int)(seedX % 480), posY * 512 + 16 + (int)(seedY % 480), seedX, seedY, true, (posX, posY), this);
-                        newStructure.drawLake();
+                        newStructure.drawLakePapa();
                         newStructure.saveInFile();
                     }
                 }
@@ -1090,11 +1090,10 @@ namespace Cave
                     pixelPosY = plant.posY - camPosY - UnloadedChunksAmount * 16;
 
                     if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 16 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 16)
-                    {
-                        Color color = plant.color;
+                    {;
                         (int, int) chunkRelativePos = this.findChunkScreenRelativeIndex(plant.posX, plant.posY);
                         Chunk chunkToTest = this.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                        if (chunkToTest.fillStates[(plant.posX % 16 + 16) % 16, (plant.posY % 16 + 16) % 16] <= 0)
+                        if ( true/*chunkToTest.fillStates[(plant.posX % 16 + 16) % 16, (plant.posY % 16 + 16) % 16] <= 0*/)
                         {
                             using (Graphics g = Graphics.FromImage(gameBitmap))
                             {
@@ -1503,13 +1502,14 @@ namespace Cave
             turnPngIntoString("Water");
             turnPngIntoString("FairyLiquid");
             turnPngIntoString("Lava");
+            turnPngIntoString("Honey");
 
             loadSpriteDictionaries();
 
             Screen mainScreen;
 
-            bool updatePNG = false;
-            int PNGsize = 250; // in chunks
+            bool updatePNG = true;
+            int PNGsize = 100; // in chunks
             bool randomSeed = true;
 
             long seed = 1809684240;
@@ -1520,6 +1520,7 @@ namespace Cave
             // 527503228 : spawn inside a giant obsidian biome !
             // 1115706211 : very cool spawn, with all the 7 current biomes types near and visitable and amazing looking caves (hahaha 7 different biomes... i'm old)
             // 947024425 : the biggest fucking obsidian biome i've ever seen. Not near the spawn, go FULL RIGHT, at around 130-140 chunks far right. What the actual fuck it's so big (that's what she said)
+            // 2483676441 : what the ACTUAL fuck this obsidian biome is like 4 screens high ???????? holy fuck. Forest at the bottom.
             // 3496528327 : deep cold biome spawn
             // 3253271960 : another deep cold biome spawn
             // 1349831907 : enormous deep cold biome spawn
@@ -2084,6 +2085,10 @@ namespace Cave
         public static long LCGz(long seed)
         {
             return (long)((121525) * seed + (long)6763) % (long)4294967291;
+        }
+        public static int LCGint1(int seed)
+        {
+            return Abs((121525 * seed + 6763) % 999983); // VERY SMALL HAVE TO REDO IT
         }
 
         public static void Sort(List<(int, int)> listo, bool sortByFirstInt)

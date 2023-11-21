@@ -568,19 +568,19 @@ namespace Cave
             public Form1.Screen screen;
             public Chunk chunk;
 
-            public long seed;
+            public int seed;
             public int type;
             public int state;
             public int growthLevel;
             public int posX = 0;
             public int posY = 0;
-            public Color color;
+            public Dictionary<int, Color> colorDict;
 
             public Bitmap bitmap;
             public int[] posOffset;
 
             public bool isDeadAndShouldDisappear = false;
-            public Plant(int posXt, int posYt, int typet, long seedt, Chunk chunkToPut, Form1.Screen screenToPut)
+            public Plant(int posXt, int posYt, int typet, int seedt, Chunk chunkToPut, Form1.Screen screenToPut)
             {
                 screen = screenToPut;
                 chunk = chunkToPut;
@@ -589,19 +589,17 @@ namespace Cave
                 type = typet;
                 state = 0;
                 seed = seedt;
-                growthLevel = 1 + (int)(seedt % 5);
-                color = findColor();
+                findColors();
                 makeBitmap();
             }
             public Plant(long seedToPut, Chunk chunkToPut, Form1.Screen screenToPut)
             {
                 screen = screenToPut;
                 chunk = chunkToPut;
-                seed = LCGyNeg(seedToPut);
+                seed = LCGint1(Abs((int)seedToPut));
                 placePlant();
                 findType();
-                color = findColor();
-                growthLevel = 1 + (int)(seed%5);
+                findColors();
                 makeBitmap();
             }
             public Plant(Chunk chunkToPut, (int, int) positionToPut, int typeToPut, Form1.Screen screenToPut)
@@ -612,7 +610,7 @@ namespace Cave
                 posY = positionToPut.Item2;
                 type = typeToPut;
                 findType();
-                color = findColor();
+                findColors();
                 makeBitmap();
             }
             public void findType()
@@ -630,6 +628,10 @@ namespace Cave
                     }
                     else { type = 1; }
                 }
+                else if (biome == 5)
+                {
+                    type = 4;
+                }
                 else if (biome == 6)
                 {
                     if (rand.Next(100) == 0)
@@ -640,30 +642,55 @@ namespace Cave
                 }
                 else { type = 0; }
             }
-            public Color findColor()
+            public void findColors()
             {
-                long seedo = LCGxPos(seed);
+                colorDict = new Dictionary<int, Color>();
+                int seedo = LCGint1(seed);
                 int hueVar = (int)(seedo%101) - 50;
-                seedo = LCGxPos(seed);
+                seedo = LCGint1(seed);
                 int shadeVar = (int)(seedo%61) - 30;
                 int biome = chunk.biomeIndex[(posX % 16 + 16) % 16, (posY % 16 + 16) % 16][0].Item1;
-                if (type == 0)
+                if (type == 0) // normal
                 {
-                    return Color.FromArgb(50 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar);
+                    colorDict.Add(1, Color.FromArgb(50 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
+                    return;
                 }
-                if (type == 1)
+                if (type == 1) // woody
                 {
-                    return Color.FromArgb(140 + (int)(hueVar*0.3f) - shadeVar, 140 - (int)(hueVar * 0.3f) - shadeVar, 50 - shadeVar);
+                    colorDict.Add(1, Color.FromArgb(50 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
+                    colorDict.Add(2, Color.FromArgb(140 + (int)(hueVar*0.3f) - shadeVar, 140 - (int)(hueVar * 0.3f) - shadeVar, 50 - shadeVar));
+                    return;
                 }
-                if (type == 2)
+                if (type == 2) // kelp
                 {
-                    return Color.FromArgb(30 - shadeVar, 90 - shadeVar + hueVar, 140 - shadeVar - hueVar);
+                    colorDict.Add(3, Color.FromArgb(30 - shadeVar, 90 - shadeVar + hueVar, 140 - shadeVar - hueVar));
+                    return;
                 }
-                if (type == 3)
+                if (type == 3) // obsidian
                 {
-                    return Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar);
+                    colorDict.Add(1, Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar));
+                    return;
                 }
-                return Color.Red;
+                if (type == 4) // mushroom
+                {
+                    colorDict.Add(4, Color.FromArgb(180 + shadeVar, 160 + shadeVar, 165 + shadeVar));
+                    colorDict.Add(5, Color.FromArgb(140 - shadeVar, 120 + hueVar, 170 - hueVar));
+                    return;
+                }
+            }
+            public void leftitizeArrayList(List<int[]> listo)
+            {
+                foreach (int[] arrayo in listo)
+                {
+                    arrayo[0]++;
+                }
+            }
+            public void downerizeArrayList(List<int[]> listo)
+            {
+                foreach (int[] arrayo in listo)
+                {
+                    arrayo[1]++;
+                }
             }
 
             public void extendBitmapList(int[] startingPos, List<List<int>> intList, int x, int y)
@@ -726,36 +753,183 @@ namespace Cave
                 posOffset = new int[2] { 0, 0 };
 
                 listo.Add(new List<int>());
-                listo[0].Add(0); 
-                
+                listo[0].Add(0);
+                int seedo = seed;
+
                 if (type == 0) // normal plant
                 {
+                    growthLevel = 1 + (int)(seed % 5);
                     listo[0][0] = 1;
+                    int[] drawPos = new int[2] { 0, 0 };
 
                     for (int i = 0; i < growthLevel; i++)
                     {
-                        extendBitmapList(posOffset, listo, 0, 1);
+                        seedo = LCGint1(seedo);
+                        int resulto = seedo % 3;
+                        if (resulto == 0 && i % 2 == 1)
+                        {
+                            drawPos[0]--;
+                            if (drawPos[0] < 0)
+                            {
+                                extendBitmapList(posOffset, listo, -1, 0);
+                                drawPos[0]++;
+                            }
+                        }
+                        else if (resulto == 2 && i % 2 == 1)
+                        {
+                            drawPos[0]++;
+                            if (drawPos[0] >= listo.Count)
+                            {
+                                extendBitmapList(posOffset, listo, 1, 0);
+                            }
+                        }
 
-                        listo[0][listo[0].Count - 1] = 1;
+                        extendBitmapList(posOffset, listo, 0, 1);
+                        drawPos[1] += 1;
+
+                        listo[drawPos[0]][drawPos[1]] = 1;
                     }
                 }
                 else if (type == 1) // woody
                 {
-                    listo[0][0] = 2;
+                    growthLevel = 10 + seed % 40;
+                    listo[0][0] = 1;
+                    int[] drawPos = new int[2] { 0, 0 };
+                    List<int[]> drawnPos = new List<int[]> { new int[2] { 0, 0 } };
 
                     for (int i = 0; i < growthLevel; i++)
                     {
-                        extendBitmapList(posOffset, listo, 0, 1);
+                        seedo = LCGint1(seedo);
+                        int resulto = seedo % 3;
+                        if (resulto == 0 && i == 2)
+                        {
+                            drawPos[0]--;
+                            if (drawPos[0] < 0)
+                            {
+                                extendBitmapList(posOffset, listo, -1, 0);
+                                drawPos[0]++;
+                                leftitizeArrayList(drawnPos);
+                            }
+                        }
+                        else if (resulto == 2 && i == 2)
+                        {
+                            drawPos[0]++;
+                            if (drawPos[0] >= listo.Count)
+                            {
+                                extendBitmapList(posOffset, listo, 1, 0);
+                            }
+                        }
 
-                        listo[0][listo[0].Count - 1] = 2;
+                        extendBitmapList(posOffset, listo, 0, 1);
+                        drawPos[1] += 1;
+
+                        listo[drawPos[0]][drawPos[1]] = 2;
+                        drawnPos.Add(new int[2] { drawPos[0], drawPos[1] });
+                    }
+
+                    int numberOfBranches = Max(1 + seedo%(growthLevel/6), growthLevel/6);
+                    List<int[]> endOfBranchesPos = new List<int[]> { new int[2] { drawPos[0], drawPos[1] } }; ;
+
+                    for (int rep = 0; rep < numberOfBranches; rep+=1)
+                    {
+                        int direction; // -1 = left, 1 = right
+                        direction = (seedo%2)*2 - 1;
+
+                        seedo = LCGint1(seedo);
+                        drawPos[1] = 1+rep*5+seedo%5;
+                        drawPos[0] = drawnPos[drawPos[1]][0];
+                        seedo = LCGint1(seedo);
+
+                        if (drawPos[0] < 0)
+                        {
+                            extendBitmapList(posOffset, listo, -1, 0);
+                            drawPos[0]++;
+                            leftitizeArrayList(drawnPos);
+                            leftitizeArrayList(endOfBranchesPos);
+                        }
+                        else if (drawPos[0] >= listo.Count)
+                        {
+                            extendBitmapList(posOffset, listo, 1, 0);
+                        }
+
+                        for (int i = 0; i < seedo%(5 + growthLevel - (rep*6)); i++)
+                        {
+                            seedo = LCGint1(seedo);
+                            int resulto = seedo % 3;
+                            if (direction == -1 && (i < 3 || resulto == 0))
+                            {
+                                drawPos[0]--;
+                                if (drawPos[0] < 0)
+                                {
+                                    extendBitmapList(posOffset, listo, -1, 0);
+                                    drawPos[0]++;
+                                    leftitizeArrayList(drawnPos);
+                                    leftitizeArrayList(endOfBranchesPos);
+                                }
+                            }
+                            else if (direction == 1 && (i < 3 || resulto == 0))
+                            {
+                                drawPos[0]++;
+                                if (drawPos[0] >= listo.Count)
+                                {
+                                    extendBitmapList(posOffset, listo, 1, 0);
+                                }
+                            }
+
+                            extendBitmapList(posOffset, listo, 0, 1);
+                            drawPos[1] += 1;
+
+                            listo[drawPos[0]][drawPos[1]] = 2;
+                        }
+                        endOfBranchesPos.Add(new int[2] { drawPos[0], drawPos[1] });
+                    }
+
+                    foreach (int[] tempPos in endOfBranchesPos)
+                    {
+                        tempPos[0] -= 2;
+                        tempPos[1] += 2;
+
+                        while (tempPos[0] < 0)
+                        {
+                            extendBitmapList(posOffset, listo, -1, 0);
+                            tempPos[0]++;
+                            leftitizeArrayList(drawnPos);
+                            leftitizeArrayList(endOfBranchesPos);
+                        }
+                        while (tempPos[1] >= listo[0].Count)
+                        {
+                            extendBitmapList(posOffset, listo, 0, 1);
+                        }
+
+                        for (int i = 0; i < 5; i++)
+                        {
+                            for (int j = 0; j < 5; j++)
+                            {
+                                drawPos[0] = tempPos[0]+i;
+                                if (drawPos[0] >= listo.Count)
+                                {
+                                    extendBitmapList(posOffset, listo, 1, 0);
+                                }
+                                drawPos[1] = tempPos[1]-j;
+                                if (drawPos[1] < 0)
+                                {
+                                    extendBitmapList(posOffset, listo, 0, -1);
+                                    drawPos[1]++;
+                                    downerizeArrayList(drawnPos);
+                                    downerizeArrayList(endOfBranchesPos);
+                                }
+
+                                if (Abs(i-2) != 2 || Abs(j-2) != 2) { listo[drawPos[0]][drawPos[1]] = 1; }
+                            }
+                        }
                     }
                 }
                 else if (type == 2) // kelp
                 {
-                    growthLevel += 5;
+                    growthLevel = 1 + (seed % 10);
                     listo[0][0] = 3;
                     int startingPoint;
-                    if (seed%2 == 0)
+                    if (seed % 2 == 0)
                     {
                         startingPoint = 0;
                         extendBitmapList(posOffset, listo, 1, 0);
@@ -767,37 +941,63 @@ namespace Cave
                     }
                     for (int i = 1; i < growthLevel; i++)
                     {
-                        int fillState1 = (i + startingPoint + 1)%2;
-                        int fillState2 = (i + startingPoint)%2;
+                        int fillState1 = (i + startingPoint + 1) % 2;
+                        int fillState2 = (i + startingPoint) % 2;
 
                         extendBitmapList(posOffset, listo, 0, 1);
 
-                        listo[0][listo[0].Count-1] = fillState1*3;
-                        listo[1][listo[1].Count-1] = fillState2*3;
+                        listo[0][listo[0].Count - 1] = fillState1 * 3;
+                        listo[1][listo[1].Count - 1] = fillState2 * 3;
                     }
                 }
 
                 else if (type == 3) // obsidian plant
                 {
-                    listo[0][0] = 4;
+                    growthLevel = 2 + (seed % 3);
+                    listo[0][0] = 1;
 
-                    for (int i = 0; i < growthLevel; i++)
+                    for (int i = 0; i < growthLevel - 1; i++)
                     {
                         extendBitmapList(posOffset, listo, 0, 1);
 
-                        listo[0][listo[0].Count - 1] = 4;
+                        listo[0][listo[0].Count - 1] = 1;
                     }
                 }
 
                 else if (type == 4) // mushroom
                 {
-                    listo[0][0] = 5;
+                    growthLevel = 1 + (int)(seed % 6);
+                    listo[0][0] = 4;
 
-                    for (int i = 0; i < growthLevel; i++)
+                    for (int i = 0; i < growthLevel - 1; i++)
                     {
                         extendBitmapList(posOffset, listo, 0, 1);
 
                         listo[0][listo[0].Count - 1] = 4;
+                    }
+                    extendBitmapList(posOffset, listo, 1, 1);
+                    extendBitmapList(posOffset, listo, -1, 0);
+
+                    listo[0][listo[0].Count - 1] = 5;
+                    listo[1][listo[0].Count - 1] = 5;
+                    listo[2][listo[0].Count - 1] = 5;
+
+                    if (growthLevel > seed % 6 + 2)
+                    {
+                        extendBitmapList(posOffset, listo, 1, 0);
+                        extendBitmapList(posOffset, listo, -1, 0);
+
+                        listo[0][listo[0].Count - 1] = 5;
+                        listo[4][listo[0].Count - 1] = 5;
+
+                        if (growthLevel > seed % 4 + 3)
+                        {
+                            extendBitmapList(posOffset, listo, 0, 1);
+
+                            listo[1][listo[0].Count - 1] = 5;
+                            listo[2][listo[0].Count - 1] = 5;
+                            listo[3][listo[0].Count - 1] = 5;
+                        }
                     }
                 }
 
@@ -808,7 +1008,7 @@ namespace Cave
                     {
                         if (listo[i][j] != 0)
                         {
-                            bitmap.SetPixel(i, bitmap.Height-j-1, color);
+                            bitmap.SetPixel(i, bitmap.Height-j-1, colorDict[listo[i][j]]);
                         }
                     }
                 }

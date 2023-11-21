@@ -110,7 +110,14 @@ namespace Cave
                         tileList.Add(new List<int>());
                         for (int j = 0; j < lenY * 16; j++)
                         {
-                            tileList[lenX * 16 + i].Add(chunkList[lenX][j / 16].fillStates[i, j % 16]);
+                            if(chunkList[lenX][j / 16].fillStates[i, j % 16] == 0)
+                            {
+                                tileList[lenX * 16 + i].Add(0);
+                            }
+                            else
+                            {
+                                tileList[lenX * 16 + i].Add(1);
+                            }
                         }
                     }
                 }
@@ -134,7 +141,14 @@ namespace Cave
                         tileList.Insert(i, new List<int>());
                         for (int j = 0; j < lenY * 16; j++)
                         {
-                            tileList[i].Add(chunkList[0][j / 16].fillStates[i, j % 16]);
+                            if (chunkList[0][j / 16].fillStates[i, j % 16] == 0)
+                            {
+                                tileList[i].Add(0);
+                            }
+                            else
+                            {
+                                tileList[i].Add(1);
+                            }
                         }
                     }
                 }
@@ -153,7 +167,14 @@ namespace Cave
                     {
                         for (int j = 0; j < 16; j++)
                         {
-                            tileList[i].Add(chunkList[i / 16][lenY].fillStates[i % 16, j]);
+                            if (chunkList[i / 16][lenY].fillStates[i % 16, j] == 0)
+                            {
+                                tileList[i].Add(0);
+                            }
+                            else
+                            {
+                                tileList[i].Add(1);
+                            }
                         }
                     }
                 }
@@ -173,7 +194,14 @@ namespace Cave
                     {
                         for (int j = 0; j < 16; j++)
                         {
-                            tileList[i].Insert(j, chunkList[i / 16][0].fillStates[i % 16, j]);
+                            if (chunkList[i / 16][0].fillStates[i % 16, j] == 0)
+                            {
+                                tileList[i].Insert(j, 0);
+                            }
+                            else
+                            {
+                                tileList[i].Insert(j, 1);
+                            }
                         }
                     }
                 }
@@ -202,6 +230,14 @@ namespace Cave
                 int[] testPosRight;
                 bool[] hitWallArray = new bool[2] { false, false };
 
+                int tilesToFill = Min((int)(seedo % 1009), (int)(seedo % 1277)) + 1;
+                tilesToFill = 5000;
+                int tilesFilled = 0;
+
+                int liquidTypeToFill = -2;
+                int numberOfSubLakes = 0; // the total number of mini lakes, connected or not, basically the amount of times the code passed through "searchForBottom"
+                int numberOfConnectedSubLakes = 1; // the total number of mini lakes, that are touching the first minilake (basically those that are connected only, to not make separated lakes when saving and ignoring the non connected ones)
+
                 // Loop 1 : find a tile in the base chunk, try going down till ground is found, if not found soon enough cancel
                 // Loop 2 : bottom found : check if it's really the bottom or not (water can't possibly flow out by the sides), try to find the real bottom for a bit if not, if not foudn cancel.
 
@@ -209,6 +245,8 @@ namespace Cave
                 {
                     goto abandonLake;
                 }
+            searchForBottom:; // if the lake was not fully filled, go back here to try and test if it's possible to fill it more
+                numberOfSubLakes++;
                 int repeatCounter = 0;
                 while (repeatCounter < 100)
                 {
@@ -286,31 +324,39 @@ namespace Cave
                     repeatCounter++;
                 }
 
-                goto abandonLake; // the loop ran too much, too hard to find a place to put lake, abandon the shit
+                if (tilesFilled == 0)  // the loop ran too much, too hard to find a place to put lake, abandon the shit
+                {
+                    goto abandonLake;
+                }
+                else
+                {
+                    goto fillAndSaveLake;
+                }
+
 
                 outOfLoop:;
 
                 // Bottom has been found ! fill up layer by layer using brute force pathfinding.
                 // find the type of lake (if it is in fairy biome it is fairy liquid etc).
 
-                Chunk chunkToTest = chunkList[testPos[0] / 16][testPos[1] / 16];
-                (int, int) chunkTestPos = (testPos[0] % 16, testPos[1] % 16);
+                if (tilesFilled == 0) //only do that if lake hasn't started to be filled
+                {
+                    Chunk chunkToTest = chunkList[testPos[0] / 16][testPos[1] / 16];
+                    (int, int) chunkTestPos = (testPos[0] % 16, testPos[1] % 16);
 
-                int liquidTypeToFill = -2;
-                if (chunkToTest.biomeIndex[chunkTestPos.Item1, chunkTestPos.Item2][0].Item1 == 5)
-                {
-                    liquidTypeToFill = -3;
-                }
-                if (chunkToTest.biomeIndex[chunkTestPos.Item1, chunkTestPos.Item2][0].Item1 == 2)
-                {
-                    if (chunkToTest.secondaryBiomeValues[chunkTestPos.Item1, chunkTestPos.Item2, 0] + chunkToTest.secondaryBigBiomeValues[chunkTestPos.Item1, chunkTestPos.Item2, 0] - 128 + rand.Next(200) - 200 > 100)
+                    if (chunkToTest.biomeIndex[chunkTestPos.Item1, chunkTestPos.Item2][0].Item1 == 5)
                     {
-                        liquidTypeToFill = -4;
+                        liquidTypeToFill = -3;
+                    }
+                    if (chunkToTest.biomeIndex[chunkTestPos.Item1, chunkTestPos.Item2][0].Item1 == 2)
+                    {
+                        if (chunkToTest.secondaryBiomeValues[chunkTestPos.Item1, chunkTestPos.Item2, 0] + chunkToTest.secondaryBigBiomeValues[chunkTestPos.Item1, chunkTestPos.Item2, 0] - 128 + rand.Next(200) - 200 > 100)
+                        {
+                            liquidTypeToFill = -4;
+                        }
                     }
                 }
 
-                int tilesToFill = Min((int)(seedo % 1009), (int)(seedo % 1277)) + 1;
-                int tilesFilled = 0;
                 List<(int, int)> tilesToAdd;
                 testPos[1] += 1; // needed to counteract the first -= 1 just under
                 while (tilesFilled < tilesToFill) // it can overfill, that's not a problem
@@ -348,9 +394,11 @@ namespace Cave
                                 testPosLeft[0] += 16;
                                 testPosRight[0] += 16;
                             }
-                            if (tileList[testPosLeft[0]][testPosLeft[1] + 1] == 0)
+                            if (tileList[testPosLeft[0]][testPosLeft[1]] == 0 && tileList[testPosLeft[0]][testPosLeft[1] + 1] == 0)
                             {
-                                goto fillAndSaveLake;
+                                testPos[0] = testPosLeft[0];
+                                testPos[1] = testPosLeft[1] + 1;
+                                goto searchForBottom;
                             }
                             if (tileList[testPosLeft[0]][testPosLeft[1]] != 0)
                             {
@@ -369,9 +417,11 @@ namespace Cave
                             {
                                 extendLakeArrays(startChunk, tileList, chunkList, 1, 0);
                             }
-                            if (tileList[testPosRight[0]][testPosRight[1] + 1] == 0)
+                            if (tileList[testPosRight[0]][testPosRight[1]] == 0 && tileList[testPosRight[0]][testPosRight[1] + 1] == 0)
                             {
-                                goto fillAndSaveLake;
+                                testPos[0] = testPosRight[0];
+                                testPos[1] = testPosRight[1] + 1;
+                                goto searchForBottom;
                             }
                             if (tileList[testPosRight[0]][testPosRight[1]] != 0)
                             {
@@ -390,19 +440,19 @@ namespace Cave
                         // no water leakage, continue. Fill the array.
                         for (int i = 0; i < tilesToAdd.Count; i++)
                         {
-                            tileList[tilesToAdd[i].Item1][tilesToAdd[i].Item2] = -1;
+                            tileList[tilesToAdd[i].Item1][tilesToAdd[i].Item2] = -numberOfSubLakes;
                         }
                         tilesFilled += tilesToAdd.Count;
                     }
                     else
                     {
-                        goto fillAndSaveLake; // do not update water array, as uhhh it'd overflow lol. No writing of the lil numbers :)
+                        goto searchForBottom; // do not update water array, as uhhh it'd overflow lol. No writing of the lil numbers :) //unreachable...
                     }
                 }
 
                 fillAndSaveLake:;
 
-                Bitmap bitmapo = new Bitmap(tileList.Count, tileList[0].Count);
+                Bitmap bitmapo = new Bitmap(tileList.Count*2, tileList[0].Count*2);
 
                 seedo = LCGyNeg(LCGxNeg(seedo));
                 if (seedo % 1000 == 0) { liquidTypeToFill = -1; }
@@ -415,10 +465,13 @@ namespace Cave
                         Color color = Color.Green;
                         if (tileList[i][j] == 0) { color = Color.Gray; }
                         if (tileList[i][j] == 1) { color = Color.Black; }
-                        if (tileList[i][j] == -1) { color = Color.Blue; }
+                        if (tileList[i][j] < 0 ) { color = ColorFromHSV((36000+230+tileList[i][j]*12)%360, 1+tileList[i][j]*0.01, 1); }
 
-                        bitmapo.SetPixel(i, j, color);
-                        if (tileList[i][j] == -1)
+                        using (var g = Graphics.FromImage(bitmapo))
+                        {
+                            g.FillRectangle(new SolidBrush(color), i*2, j*2, 2, 2);
+                        }
+                        if (tileList[i][j] < 0 && tileList[i][j] >= -numberOfSubLakes)
                         {
                             chunkList[i / 16][j / 16].fillStates[i % 16, j % 16] = liquidTypeToFill;
                             chunkList[i / 16][j / 16].modificationCount = 1;
@@ -448,6 +501,284 @@ namespace Cave
             // from this, make the actual structure map and return. Good luck to me.
 
             abandonLake:;
+            }
+            public class testPosForLakes
+            {
+                public int x;
+                public int y;
+                public List<(int x, int y)> previouslyFilledPositions;
+
+            }
+            public void drawLake2()
+            {
+                int[] startChunk = new int[2] { chunkBounds.Item1, chunkBounds.Item3 };
+                long seedo = (seedX / 2 + seedY / 2) % 79461537;
+
+                int tilesToFill = Min((int)(seedo % 1009), (int)(seedo % 1277)) + 1;
+                tilesToFill = 5000;
+                int tilesFilled = 0;
+                int maximumY = 0;
+
+                int liquidTypeToFill = -2;
+
+                int numberOfSubLakes = 0; // the total number of mini lakes, connected or not, basically the amount of times the code passed through "searchForBottom"
+                int numberOfConnectedSubLakes = 1; // the total number of mini lakes, that are touching the first minilake (basically those that are connected only, to not make separated lakes when saving and ignoring the non connected ones)
+
+                List<List<Chunk>> chunkList = new List<List<Chunk>>();
+                chunkList.Add(new List<Chunk>());
+                chunkList[0].Add(new Chunk(startChunk[0], startChunk[1], screen.seed, true, screen));
+
+                List<List<int>> tileList = new List<List<int>>();
+                for (int i = 0; i < 16; i++)
+                {
+                    tileList.Add(new List<int>());
+                    for (int j = 0; j < 16; j++)
+                    {
+                        tileList[i].Add(chunkList[0][0].fillStates[i, j]);
+                    }
+                }
+
+                List<testPosForLakes> listTestPos = new List<testPosForLakes>();
+                testPosForLakes currentTestPos = new testPosForLakes();
+                currentTestPos.x = (int)(seedo % 16);
+                currentTestPos.y = (int)((seedo / 16) % 16);
+                listTestPos.Add(currentTestPos);
+
+                bool[] hitWallArray = new bool[2] { false, false };
+
+                // Loop 1 : find a tile in the base chunk, try going down till ground is found, if not found soon enough cancel
+                // Loop 2 : bottom found : check if it's really the bottom or not (water can't possibly flow out by the sides), try to find the real bottom for a bit if not, if not foudn cancel.
+
+                if (tileList[currentTestPos.x][currentTestPos.y] == 1) // if in the wall/ceiling abandon the lake
+                {
+                    goto abandonLake;
+                }
+            searchForBottom:; // if the lake was not fully filled, go back here to try and test if it's possible to fill it more
+                currentTestPos = listTestPos[listTestPos.Count - 1];
+                numberOfSubLakes++;
+                int repeatCounter = 0;
+                while (repeatCounter < 100)
+                {
+                    if (tileList[currentTestPos.x][currentTestPos.y] != 0) // ground has been attained, will happen almost everytime
+                    {
+                        currentTestPos.y -= 1;
+                        if (currentTestPos.y < 0)
+                        {
+                            extendLakeArrays(startChunk, tileList, chunkList, 0, -1);
+                            currentTestPos.y += 16;
+                        }
+                        int[] testPosLeft = new int[2] { currentTestPos.x, currentTestPos.y };
+                        int[] testPosRight = new int[2] { currentTestPos.x, currentTestPos.y };
+
+                        while (!hitWallArray[0] || !hitWallArray[1]) // looop that sees if the ground attained is the lowest ground : checks on every side if water could fall lower
+                        {
+                            if (!hitWallArray[0])
+                            {
+                                testPosLeft[0] -= 1;
+                                if (testPosLeft[0] < 0)
+                                {
+                                    extendLakeArrays(startChunk, tileList, chunkList, -1, 0);
+                                    currentTestPos.x += 16;
+                                    testPosLeft[0] += 16;
+                                    testPosRight[0] += 16;
+                                }
+                                if (tileList[testPosLeft[0]][testPosLeft[1]] != 0)
+                                {
+                                    hitWallArray[0] = true;
+                                    testPosLeft[0] += 1;
+                                }
+                                if (tileList[testPosLeft[0]][testPosLeft[1] + 1] == 0)
+                                {
+                                    currentTestPos.x = testPosLeft[0];
+                                    currentTestPos.y = testPosLeft[1] + 1;
+                                    break;
+                                }
+                            }
+                            if (!hitWallArray[1])
+                            {
+                                testPosRight[0] += 1;
+                                if (testPosRight[0] >= chunkList.Count * 16)
+                                {
+                                    extendLakeArrays(startChunk, tileList, chunkList, 1, 0);
+                                }
+                                if (tileList[testPosRight[0]][testPosRight[1]] != 0)
+                                {
+                                    hitWallArray[1] = true;
+                                    testPosRight[0] -= 1;
+                                }
+                                if (tileList[testPosRight[0]][testPosRight[1] + 1] == 0)
+                                {
+                                    currentTestPos.x = testPosRight[0];
+                                    currentTestPos.y = testPosRight[1] + 1;
+                                    break;
+                                }
+                            }
+                            repeatCounter++;
+                        }
+                        if (hitWallArray[0] && hitWallArray[1])
+                        {
+                            //yahoooooooo it's the bottom :)
+                            maximumY = currentTestPos.y;
+                            goto outOfLoop;
+                        }
+                        //else if not real bottom : do nothing lol just needs to continue checking
+                    }
+                    else
+                    {
+                        currentTestPos.y++;
+                        if (currentTestPos.y >= chunkList[0].Count * 16)
+                        {
+                            extendLakeArrays(startChunk, tileList, chunkList, 0, 1);
+                        }
+                    }
+                    repeatCounter++;
+                }
+
+                if (tilesFilled == 0)  // the loop ran too much, too hard to find a place to put lake, abandon the shit
+                {
+                    goto abandonLake;
+                }
+                else
+                {
+                    goto fillAndSaveLake;
+                }
+
+
+            outOfLoop:;
+
+                while (tilesFilled < tilesToFill)
+                {
+                    int listIdx = 0;
+                    //List<(int x, int y)> tilesToFill = new List<(int x, int y)>();
+                    while(listIdx < listTestPos.Count)
+                    {
+                        currentTestPos = listTestPos[listIdx];
+
+
+
+                        listIdx++;
+                    }
+                }
+
+
+
+
+            fillAndSaveLake:;
+
+                Bitmap bitmapo = new Bitmap(tileList.Count * 2, tileList[0].Count * 2);
+
+                seedo = LCGyNeg(LCGxNeg(seedo));
+                if (seedo % 1000 == 0) { liquidTypeToFill = -1; }
+                else if (seedo % 1000 < 5) { liquidTypeToFill = -3; }
+
+                for (int i = 0; i < tileList.Count; i++)
+                {
+                    for (int j = 0; j < tileList[0].Count; j++)
+                    {
+                        Color color = Color.Green;
+                        if (tileList[i][j] == 0) { color = Color.Gray; }
+                        if (tileList[i][j] == 1) { color = Color.Black; }
+                        if (tileList[i][j] < 0) { color = ColorFromHSV((36000 + 230 + tileList[i][j] * 12) % 360, 1 + tileList[i][j] * 0.01, 1); }
+
+                        using (var g = Graphics.FromImage(bitmapo))
+                        {
+                            g.FillRectangle(new SolidBrush(color), i * 2, j * 2, 2, 2);
+                        }
+                        if (tileList[i][j] < 0 && tileList[i][j] >= -numberOfSubLakes)
+                        {
+                            chunkList[i / 16][j / 16].fillStates[i % 16, j % 16] = liquidTypeToFill;
+                            chunkList[i / 16][j / 16].modificationCount = 1;
+                        }
+                    }
+                }
+
+                bitmapo.Save($"{currentDirectory}\\bitmapos\\bitmapo{rand.Next(10000)}.png");
+
+                foreach (List<Chunk> chunko in chunkList)
+                {
+                    foreach (Chunk chunk in chunko)
+                    {
+                        chunk.saveChunk(false);
+                    }
+                }
+
+                name = "";
+                int syllables = 2 + Min((int)(seedo % 13), (int)(seedo % 3));
+                for (int i = 0; i < syllables; i++)
+                {
+                    name += nameArray[seedo % nameArray.Length];
+                    seedo = LCGz(seedo);
+                }
+
+            abandonLake:;
+
+            }
+            public void drawLakePapa()
+            {
+                long seedo = (seedX / 2 + seedY / 2) % 79461537;
+
+                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
+                Dictionary<(int x, int y), bool> tilesToFill = new Dictionary<(int x, int y), bool>();
+                int[] tilesFilled = new int[]{0};
+                (int x, int y) testPos16 = ((int)(seedo % 16), (int)((seedo / 16) % 16));
+                (int x, int y) testPos = (testPos16.x + chunkBounds.Item1*16, testPos16.y + chunkBounds.Item3*16); 
+
+                floodPixel(testPos, testPos, tilesToFill, chunkDict, tilesFilled);
+
+                if (tilesFilled[0] <= 2000)
+                {
+                    int liquidTypeToFill = -2;
+                    Chunk chunkToTest = chunkDict[(Floor(testPos.x, 16) / 16, Floor(testPos.y, 16) / 16)];
+
+                    if (chunkToTest.biomeIndex[testPos16.Item1, testPos16.Item2][0].Item1 == 5)
+                    {
+                        liquidTypeToFill = -3;
+                    }
+                    if (chunkToTest.biomeIndex[testPos16.Item1, testPos16.Item2][0].Item1 == 2)
+                    {
+                        if (chunkToTest.secondaryBiomeValues[testPos16.Item1, testPos16.Item2, 0] + chunkToTest.secondaryBigBiomeValues[testPos16.Item1, testPos16.Item2, 0] - 128 + rand.Next(200) - 200 > 100)
+                        {
+                            liquidTypeToFill = -4;
+                        }
+                    }
+                    seedo = LCGyNeg(LCGxNeg(seedo));
+                    if (seedo % 1000 == 0) { liquidTypeToFill = -1; }
+                    else if (seedo % 1000 < 5) { liquidTypeToFill = -3; }
+
+                    foreach ((int x, int y) poso in tilesToFill.Keys)
+                    {
+                        chunkDict[(Floor(poso.x, 16)/16, Floor(poso.y, 16)/16)].fillStates[(poso.x%16 + 16) % 16, (poso.y%16 + 16) % 16] = liquidTypeToFill;
+                        chunkDict[(Floor(poso.x, 16)/16, Floor(poso.y, 16)/16)].modificationCount = 1;
+                    }
+
+                    foreach (Chunk chunk in chunkDict.Values)
+                    {
+                        chunk.saveChunk(false);
+                    }
+
+                    name = "";
+                    int syllables = 2 + Min((int)(seedo % 13), (int)(seedo % 3));
+                    for (int i = 0; i < syllables; i++)
+                    {
+                        name += nameArray[seedo % nameArray.Length];
+                        seedo = LCGz(seedo);
+                    }
+                }
+            }
+            void floodPixel((int x, int y) pos, (int x, int y) spawnPos, Dictionary<(int x, int y), bool> tilesToFill, Dictionary<(int x, int y), Chunk> chunkDict, int[] tilesFilled)
+            {
+                if (tilesFilled[0] > 2000) { return; }
+                (int x, int y) chunkPos = (Floor(pos.x, 16) / 16, Floor(pos.y, 16) / 16);
+                if (!chunkDict.ContainsKey(chunkPos)) { chunkDict.Add(chunkPos, new Chunk(chunkPos.x, chunkPos.y, screen.seed, true, screen)); }
+                if (!tilesToFill.ContainsKey(pos) && chunkDict[chunkPos].fillStates[(pos.x%16 + 16) % 16, (pos.y%16 + 16) % 16] == 0)
+                {
+                    tilesToFill[pos] = true;
+                    tilesFilled[0]++;
+                    floodPixel((pos.x + 1, pos.y), spawnPos, tilesToFill, chunkDict, tilesFilled);
+                    floodPixel((pos.x, pos.y + 1), spawnPos, tilesToFill, chunkDict, tilesFilled);
+                    floodPixel((pos.x - 1, pos.y), spawnPos, tilesToFill, chunkDict, tilesFilled);
+                    if (pos.y > spawnPos.y) { floodPixel((pos.x, pos.y - 1), spawnPos, tilesToFill, chunkDict, tilesFilled);}
+                }
             }
             public void drawStructure()
             {
