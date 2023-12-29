@@ -12,13 +12,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Newtonsoft.Json;
 using static Cave.Form1;
 using static Cave.Form1.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Entities;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
 
 namespace Cave
 {
@@ -48,8 +48,6 @@ namespace Cave
             public static float realCamPosY = 0;
             public static int camPosX = 0;
             public static int camPosY = 0;
-            public static int screenChunkX = 0;
-            public static int screenChunkY = 0;
 
             public static float accCamX = 0;
             public static float accCamY = 0;
@@ -67,7 +65,8 @@ namespace Cave
                 { 4, (Color.GreenYellow.R,Color.GreenYellow.G,Color.GreenYellow.B) }, // toxic biome
                 { 5, (Color.LightPink.R,Color.LightPink.G,Color.LightPink.B) }, // fairy biome !
                 { 6, (-100,-100,-100) }, // obsidian biome...
-                { 7, (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) }, // deep cold biome
+                { 7, (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) }, // frost biome
+                { 8, (Color.LightBlue.R,Color.LightBlue.G+60,Color.LightBlue.B+130) }, // ocean biome !
             };
 
             public static string[] nameArray = new string[]
@@ -118,7 +117,7 @@ namespace Cave
 
             public long chunkSeed;
 
-            public (long, long) position;
+            public (int, int) position;
             public int[,] primaryFillValues;
             public int[,] primaryBiomeValues;
             public int[,] primaryBigBiomeValues; // the biome trends that are bigger than biomes
@@ -131,20 +130,20 @@ namespace Cave
             public Color[,] colors;
             public List<Entity> entityList = new List<Entity>();
             public List<Plant> plantList = new List<Plant>();
+            public List<Plant> exteriorPlantList = new List<Plant>();
             public int modificationCount = 0;
-            public int liquidCount = 0;
-            public bool isUnstable = false;
+            public int unstableLiquidCount = 1;
 
             public Bitmap bitmap;
             public int[,] plantFillStates;
             public Bitmap plantBitmap;
-            public Chunk(long posX, long posY, long seed, bool structureGenerated, Screen screenToPut)
+            public Chunk((int, int) posToPut, long seed, bool structureGenerated, Screen screenToPut)
             {
                 screen = screenToPut;
                 long bigBiomeSeed = LCGxNeg(LCGz(LCGyPos(LCGxNeg(seed))));
-                position = (posX, posY);
-                long chunkX = (long)(Floor(posX, 2) * 0.5f);
-                long chunkY = (long)(Floor(posY, 2) * 0.5f);
+                position = posToPut;
+                long chunkX = (long)(Floor(posToPut.Item1, 2) * 0.5f);
+                long chunkY = (long)(Floor(posToPut.Item2, 2) * 0.5f);
                 int[,] fillValues =
                 {
                     {
@@ -162,8 +161,8 @@ namespace Cave
                 };
                 chunkSeed = findPlantSeed(chunkX, chunkY, screen, 0);
                 primaryFillValues = fillValues;
-                chunkX = Floor(posX, 16) / 16;
-                chunkY = Floor(posY, 16) / 16;
+                chunkX = Floor(position.Item1, 16) / 16;
+                chunkY = Floor(position.Item2, 16) / 16;
                 int[,] biomeValues =
                 {
                     {
@@ -205,8 +204,8 @@ namespace Cave
                 };
                 primaryBiomeValues = biomeValues;
 
-                chunkX = Floor(posX, 64) / 64;
-                chunkY = Floor(posY, 64) / 64;
+                chunkX = Floor(position.Item1, 64) / 64;
+                chunkY = Floor(position.Item2, 64) / 64;
                 int[,] bigBiomeValues =
                 {
                     {
@@ -276,8 +275,8 @@ namespace Cave
                         secondaryFillValues[1, i, j] = value;
                         int value2 = value;
                         int temperature = secondaryBiomeValues[i, j, 0];
-                        int mod1 = secondaryBiomeValues[i, j, 4];
-                        int mod2 = secondaryBiomeValues[i, j, 5];
+                        int mod1 = (int)(secondaryBiomeValues[i, j, 4]*0.25);
+                        int mod2 = (int)(secondaryBiomeValues[i, j, 5]*0.25);
 
                         float valueToBeAdded;
                         float value1modifier = 0;
@@ -285,14 +284,21 @@ namespace Cave
                         float value2modifier = 0;
                         int[] colorArray = { 0, 0, 0 };
                         float mod2divider = 1;
+                        float foresto = 1;
+                        float oceano = 0;
+                        float oceanoSeeSaw = 0;
 
                         float mult;
                         foreach ((int, int) tupel in biomeIndex[i, j])
                         {
-                            mult = tupel.Item2 * 0.01f;
+                            mult = tupel.Item2 * 0.001f;
                             if (tupel.Item1 == 1)
                             {
                                 value2modifier += -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11));
+                            }
+                            else if (tupel.Item1 == 3)
+                            {
+                                foresto += mult;
                             }
                             else if (tupel.Item1 == 4)
                             {
@@ -304,8 +310,8 @@ namespace Cave
                             }
                             else if (tupel.Item1 == 6)
                             {
-                                float see1 = Obs((posX * 16) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
-                                float see2 = Obs((posY * 16) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
+                                float see1 = Obs((position.Item1 * 16) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
+                                float see2 = Obs((position.Item2 * 16) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
                                 if (false && (value2 < 50 || value2 > 200))
                                 {
                                     value2PREmodifier = 300;
@@ -318,6 +324,18 @@ namespace Cave
                                 value2modifier += mult * value2PREmodifier;
                                 mod2divider += mult * 1.5f;
                             }
+                            else if (tupel.Item1 == 8)
+                            {
+                                oceano = mult*10;
+                                oceanoSeeSaw = Min(Seesaw((int)oceano, 8), 8 - oceano);
+                                if (oceanoSeeSaw < 0)
+                                {
+                                    oceanoSeeSaw = oceanoSeeSaw*oceanoSeeSaw*oceanoSeeSaw;
+                                }
+                                else { oceanoSeeSaw = oceanoSeeSaw*Abs(oceanoSeeSaw); }
+                                oceano *= 10;
+                                oceanoSeeSaw *= 10;
+                            }
                             else { value2modifier += mult * (value1 % 16); }
 
                             (int, int, int) tupel2 = biomeDict[tupel.Item1];
@@ -328,8 +346,12 @@ namespace Cave
 
                         mod2 = (int)(mod2 / mod2divider);
 
-                        if (value2 > 200 + value2modifier) { fillStates[i, j] = 0; }
-                        else if (value1 > 122 - mod2 * mod2 * 0.0003f + value1modifier && value1 < 133 + mod2 * mod2 * 0.0003f - value1modifier) { fillStates[i, j] = 0; }
+                        int elementToFillVoidWith;
+                        if (biomeIndex[i, j][0].Item1 == 8) { elementToFillVoidWith = -2; }
+                        else { elementToFillVoidWith = 0; }
+
+                        if (value2 > 200 + value2modifier + oceano || value2 < (foresto-1)*75f - oceano) { fillStates[i, j] = elementToFillVoidWith; }
+                        else if (value1 > 122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw*0.1f) && value1 < 133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw) { fillStates[i, j] = elementToFillVoidWith; }
                         else { fillStates[i, j] = 1; }
 
 
@@ -341,6 +363,19 @@ namespace Cave
                         baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
                     }
                 }
+
+                testEntitySpawn(seed, structureGenerated);
+
+                for (int i = 0; i < 16; i++)
+                {
+                    for (int j = 0; j < 16; j++)
+                    {
+                        findTileColor(i, j);
+                    }
+                }
+            }
+            public void testEntitySpawn(long seed, bool structureGenerated)
+            {
                 if (structureGenerated)
                 {
                     if (System.IO.File.Exists($"{currentDirectory}\\ChunkData\\{seed}\\{position.Item1}.{position.Item2}.txt"))
@@ -353,14 +388,6 @@ namespace Cave
                     loadChunk(false);
                 }
                 else { spawnEntities();}
-
-                for (int i = 0; i < 16; i++)
-                {
-                    for (int j = 0; j < 16; j++)
-                    {
-                        findTileColor(i, j);
-                    }
-                }
             }
             public void findTileColor(int i, int j)
             {
@@ -409,9 +436,16 @@ namespace Cave
             public void spawnEntities()
             {
                 Entity newEntity = new Entity(this, screen);
-                if (!newEntity.isDeadAndShouldDisappear) { screen.activeEntities.Add(newEntity); }
-                Plant newPlant = new Plant(chunkSeed, this, screen);
-                if (!newEntity.isDeadAndShouldDisappear) { plantList.Add(newPlant); }
+                if (!newEntity.isDeadAndShouldDisappear)
+                {
+                    screen.activeEntities.Add(newEntity);
+                }
+                Plant newPlant = new Plant(this, screen);
+                if (!newPlant.isDeadAndShouldDisappear)
+                {
+                    screen.activePlants.Add(newPlant);
+                }
+
             }
             public void loadChunk(bool forceEntityPlantNotSpawning)
             {
@@ -431,7 +465,7 @@ namespace Cave
                     line = f.ReadLine();
                     int idx = 0;
                     int length = 0;
-                    if (line != null)
+                    if (line != null && !forceEntityPlantNotSpawning)
                     {
                         List<string> listo = new List<string>();
                         for (int i = 0; i < line.Length; i++)
@@ -444,22 +478,21 @@ namespace Cave
                             }
                             length++;
                         }
-                        for (int i = 0; i < listo.Count(); i+=6)
+                        for (int i = 0; i < listo.Count(); i += 5)
                         {
                             int posXt = Int32.Parse(listo[i]);
                             int posYt = Int32.Parse(listo[i + 1]);
                             int typet = Int32.Parse(listo[i + 2]);
-                            int rt = Int32.Parse(listo[i + 3]);
-                            int gt = Int32.Parse(listo[i + 4]);
-                            int bt = Int32.Parse(listo[i + 5]);
-                            screen.activeEntities.Add(new Entity(posXt, posYt, typet, rt, gt, bt, screen));
+                            int subTypet = Int32.Parse(listo[i + 3]);
+                            int seedt = Int32.Parse(listo[i + 4]);
+                            screen.activeEntities.Add(new Entity(posXt, posYt, typet, subTypet, seedt, screen));
                         }
                     }
 
                     line = f.ReadLine();
                     idx = 0;
                     length = 0;
-                    if (line != null)
+                    if (line != null && !forceEntityPlantNotSpawning)
                     {
                         List<string> listo = new List<string>();
                         for (int i = 0; i < line.Length; i++)
@@ -472,13 +505,14 @@ namespace Cave
                             }
                             length++;
                         }
-                        for (int i = 0; i < listo.Count(); i+=4)
+                        for (int i = 0; i < listo.Count(); i+=5)
                         {
                             int posXt = Int32.Parse(listo[i]);
                             int posYt = Int32.Parse(listo[i + 1]);
                             int typet = Int32.Parse(listo[i + 2]);
-                            int seedt = Int32.Parse(listo[i + 3]);
-                            screen.activePlants.Add(new Plant(posXt, posYt, typet, seedt, this, screen));
+                            int subTypet = Int32.Parse(listo[i + 3]);
+                            int seedt = Int32.Parse(listo[i + 4]);
+                            screen.activePlants.Add(new Plant(posXt, posYt, typet, subTypet, seedt, this, screen));
                         }
                     }
 
@@ -506,7 +540,7 @@ namespace Cave
                                 fillStates[i, j] = Int32.Parse(listo[i * 16 + j]);
                                 if (fillStates[i, j] < 0)
                                 {
-                                    liquidCount++;
+                                    unstableLiquidCount++;
                                 }
                             }
                         }
@@ -525,14 +559,14 @@ namespace Cave
                     foreach (Entity entity in entityList)
                     {
                         stringo += entity.posX + ";" + entity.posY + ";";
-                        stringo += entity.type + ";";
-                        stringo += entity.color.R + ";" + entity.color.G + ";" + entity.color.B + ";";
+                        stringo += entity.type + ";" + entity.subType + ";";
+                        stringo += entity.seed + ";";
                     }
                     stringo += "\n";
                     foreach (Plant plant in plantList)
                     {
                         stringo += plant.posX + ";" + plant.posY + ";";
-                        stringo += plant.type + ";";
+                        stringo += plant.type + ";" + plant.subType + ";";
                         stringo += plant.seed + ";";
                     }
                     stringo += "\n";
@@ -553,30 +587,34 @@ namespace Cave
             }
             public void moveLiquids()
             {
-                (int, int) chunkCoords = screen.findChunkScreenRelativeIndex((int)position.Item1 * 16 - 16, (int)position.Item2 * 16);
-                Chunk leftChunk = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
-                chunkCoords = screen.findChunkScreenRelativeIndex((int)position.Item1 * 16 - 16, (int)position.Item2 * 16 + 16);
-                Chunk bottomLeftChunk = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
-                chunkCoords = screen.findChunkScreenRelativeIndex((int)position.Item1 * 16, (int)position.Item2 * 16 + 16);
-                Chunk bottomChunk = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
-                chunkCoords = screen.findChunkScreenRelativeIndex((int)position.Item1 * 16 + 16, (int)position.Item2 * 16 + 16);
-                Chunk bottomRightChunk = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
-                chunkCoords = screen.findChunkScreenRelativeIndex((int)position.Item1 * 16 + 16, (int)position.Item2 * 16);
-                Chunk rightChunk = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
-
-                int jStart;
-                if (this.position.Item2 > bottomChunk.position.Item2) { jStart = 14;} // if it is the on the lowest line of the chunks loaded, don't test for bottom row of pixels (teleportation issue).
-                else { jStart = 15;}
-
-                for (int j = jStart; j >= 0; j--)
+                if (unstableLiquidCount > 0) //here
                 {
-                    for (int i = 0; i < 16; i++)
+                    (int, int) chunkCoords = screen.findChunkAbsoluteIndex(position.Item1 * 16 - 16, position.Item2 * 16);
+                    Chunk leftChunk = screen.tryToGetChunk(chunkCoords);
+                    chunkCoords = screen.findChunkAbsoluteIndex(position.Item1 * 16 - 16, position.Item2 * 16 - 16);
+                    Chunk bottomLeftChunk = screen.tryToGetChunk(chunkCoords);
+                    chunkCoords = screen.findChunkAbsoluteIndex(position.Item1 * 16, position.Item2 * 16 - 16);
+                    Chunk bottomChunk = screen.tryToGetChunk(chunkCoords);
+                    chunkCoords = screen.findChunkAbsoluteIndex(position.Item1 * 16 + 16, position.Item2 * 16 - 16);
+                    Chunk bottomRightChunk = screen.tryToGetChunk(chunkCoords);
+                    chunkCoords = screen.findChunkAbsoluteIndex(position.Item1 * 16 + 16, position.Item2 * 16);
+                    Chunk rightChunk = screen.tryToGetChunk(chunkCoords);
+
+                    unstableLiquidCount = 0;
+
+                    for (int j = 0; j < 16; j++)
                     {
-                        moveOneLiquid(i, j, leftChunk, bottomLeftChunk, bottomChunk, bottomRightChunk, rightChunk);
+                        for (int i = 0; i < 16; i++)
+                        {
+                            if (moveOneLiquid(i, j, leftChunk, bottomLeftChunk, bottomChunk, bottomRightChunk, rightChunk))
+                            {
+                                unstableLiquidCount++;
+                            }
+                        }
                     }
                 }
             }
-            public void moveOneLiquid(int i, int j, Chunk leftChunk, Chunk bottomLeftChunk, Chunk bottomChunk, Chunk bottomRightChunk, Chunk rightChunk)
+            public bool moveOneLiquid(int i, int j, Chunk leftChunk, Chunk bottomLeftChunk, Chunk bottomChunk, Chunk bottomRightChunk, Chunk rightChunk)
             {
                 Chunk leftTestPositionChunk;
                 Chunk leftDiagTestPositionChunk;
@@ -584,11 +622,11 @@ namespace Cave
                 Chunk rightTestPositionChunk;
                 Chunk rightDiagTestPositionChunk;
 
-                int jb = (j + 1) % 16;
+                int jb = (j + 15) % 16;
                 int il = (i + 15) % 16;
                 int ir = (i + 1) % 16;
 
-                if (j == 15)
+                if (j == 0)
                 {
                     middleTestPositionChunk = bottomChunk;
                     if (i == 0)
@@ -639,7 +677,7 @@ namespace Cave
                     }
                 }
 
-                if ((j < 15 || middleTestPositionChunk.position.Item2 > this.position.Item2) && fillStates[i, j] < 0)
+                if (fillStates[i, j] < 0)
                 {
                     if (middleTestPositionChunk.fillStates[i, jb] == 0)
                     {
@@ -647,7 +685,10 @@ namespace Cave
                         fillStates[i, j] = 0;
                         findTileColor(i, j);
                         middleTestPositionChunk.findTileColor(i, jb);
-                        goto endOfTest;
+                        testLiquidUnstableLiquid(middleTestPositionChunk.position.Item1*16 + i, middleTestPositionChunk.position.Item1 * 16 + jb);
+                        testLiquidUnstableAir(position.Item1 * 16 + i, position.Item1 * 16 + j);
+                        unstableLiquidCount++;
+                        return true;
                     } // THIS ONE WAS FUCKING BUGGYYYYY BRUH
                     if ((i < 15 || middleTestPositionChunk.position.Item1 < rightTestPositionChunk.position.Item1) && (rightTestPositionChunk.fillStates[ir, j] == 0 || middleTestPositionChunk.fillStates[i, jb] < 0) && rightDiagTestPositionChunk.fillStates[ir, jb] == 0)
                     {
@@ -655,11 +696,17 @@ namespace Cave
                         fillStates[i, j] = 0;
                         findTileColor(i, j);
                         rightDiagTestPositionChunk.findTileColor(ir, jb);
-                        goto endOfTest;
+                        testLiquidUnstableLiquid(rightDiagTestPositionChunk.position.Item1 * 16 + ir, rightDiagTestPositionChunk.position.Item1 * 16 + jb);
+                        testLiquidUnstableAir(position.Item1 * 16 + i, position.Item1 * 16 + j);
+                        unstableLiquidCount++;
+                        return true;
                     } //this ONE WAS BUGGY
                     if ((rightTestPositionChunk.fillStates[ir, j] == 0 || middleTestPositionChunk.fillStates[i, jb] < 0) && rightDiagTestPositionChunk.fillStates[ir, jb] < 0)
                     {
-                        if (testLiquidPushRight(i, j)){ goto endOfTest; }
+                        if (testLiquidPushRight(i, j))
+                        {
+                            return true;
+                        }
                     }
                     if ((i > 0 || leftTestPositionChunk.position.Item1 < middleTestPositionChunk.position.Item1) && (leftTestPositionChunk.fillStates[il, j] == 0 || middleTestPositionChunk.fillStates[i, jb] < 0) && leftDiagTestPositionChunk.fillStates[il, jb] == 0)
                     {
@@ -667,27 +714,30 @@ namespace Cave
                         fillStates[i, j] = 0;
                         findTileColor(i, j);
                         leftDiagTestPositionChunk.findTileColor(il, jb);
-                        goto endOfTest;
+                        testLiquidUnstableLiquid(leftDiagTestPositionChunk.position.Item1 * 16 + il, leftDiagTestPositionChunk.position.Item1 * 16 + jb);
+                        testLiquidUnstableAir(position.Item1 * 16 + i, position.Item1 * 16 + j);
+                        return true;
                     } // THIS ONE WAS ALSO BUGGY
                     if ((leftTestPositionChunk.fillStates[il, j] == 0 || middleTestPositionChunk.fillStates[i, jb] < 0) && leftDiagTestPositionChunk.fillStates[il, jb] < 0)
                     {
-                        if (testLiquidPushLeft(i, j)){ goto endOfTest; }
+                        if (testLiquidPushLeft(i, j))
+                        {
+                            return true;
+                        }
                     }
-
-                    endOfTest:;
                 }
+                return false;
             }
-            bool testLiquidPushRight(int i, int j)
+            public bool testLiquidPushRight(int i, int j)
             {
                 int iTested = i;
-                int jTested = j+1;
+                int jTested = j-1;
 
-                (int, int) AbsoluteChunkCoords = screen.findChunkAbsoluteIndex((int)position.Item1 * 16, (int)position.Item2 * 16);
-                int absChunkX = AbsoluteChunkCoords.Item1;
-                int absChunkY = AbsoluteChunkCoords.Item2;
-                if (jTested >= 16) { jTested -= 16; absChunkY++; }
-                (int, int) chunkCoords = screen.findChunkScreenRelativeIndex(absChunkX * 16, absChunkY * 16);
-                Chunk chunkToTest = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
+                int absChunkX = position.Item1;
+                int absChunkY = position.Item2;
+                if (jTested < 0) { jTested += 16; absChunkY--; }
+                (int, int) chunkCoords = screen.findChunkAbsoluteIndex(absChunkX * 16, absChunkY * 16);
+                Chunk chunkToTest = screen.tryToGetChunk(chunkCoords);
 
                 int repeatCounter = 0;
                 while(repeatCounter < 500)
@@ -696,11 +746,11 @@ namespace Cave
                     if(iTested > 15)
                     {
                         absChunkX++;
-                        chunkCoords = screen.findChunkScreenRelativeIndex(absChunkX * 16, absChunkY * 16);
-                        chunkToTest = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
+                        chunkCoords = screen.findChunkAbsoluteIndex(absChunkX * 16, absChunkY * 16);
+                        chunkToTest = screen.tryToGetChunk(chunkCoords);
                         iTested -= 16;
                     }
-                    if (absChunkX >= screenChunkX + screen.chunkResolution)
+                    if (absChunkX >= screen.chunkX + screen.chunkResolution)
                     {
                         return false;
                     }
@@ -714,23 +764,24 @@ namespace Cave
                         fillStates[i, j] = 0;
                         findTileColor(i, j);
                         chunkToTest.findTileColor(iTested, jTested);
+                        chunkToTest.testLiquidUnstableLiquid(chunkToTest.position.Item1 * 16 + iTested, chunkToTest.position.Item1 * 16 + jTested);
+                        testLiquidUnstableAir(position.Item1 * 16 + iTested, position.Item1 * 16 + jTested);
                         return true;
                     }
                     repeatCounter++;
                 }
                 return false;
             }
-            bool testLiquidPushLeft(int i, int j)
+            public bool testLiquidPushLeft(int i, int j)
             {
                 int iTested = i;
-                int jTested = j+1;
+                int jTested = j-1;
 
-                (int, int) AbsoluteChunkCoords = screen.findChunkAbsoluteIndex((int)position.Item1 * 16, (int)position.Item2 * 16);
-                int absChunkX = AbsoluteChunkCoords.Item1;
-                int absChunkY = AbsoluteChunkCoords.Item2;
-                if (jTested >= 16) { jTested -= 16; absChunkY++; }
-                (int, int) chunkCoords = screen.findChunkScreenRelativeIndex(absChunkX * 16, absChunkY * 16);
-                Chunk chunkToTest = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
+                int absChunkX = position.Item1;
+                int absChunkY = position.Item2;
+                if (jTested < 0) { jTested += 16; absChunkY--; }
+                (int, int) chunkCoords = screen.findChunkAbsoluteIndex(absChunkX * 16, absChunkY * 16);
+                Chunk chunkToTest = screen.tryToGetChunk(chunkCoords);
 
                 int repeatCounter = 0;
                 while (repeatCounter < 500)
@@ -739,11 +790,11 @@ namespace Cave
                     if (iTested < 0)
                     {
                         absChunkX--;
-                        chunkCoords = screen.findChunkScreenRelativeIndex(absChunkX * 16, absChunkY * 16);
-                        chunkToTest = screen.loadedChunks[chunkCoords.Item1, chunkCoords.Item2];
+                        chunkCoords = screen.findChunkAbsoluteIndex(absChunkX * 16, absChunkY * 16);
+                        chunkToTest = screen.tryToGetChunk(chunkCoords);
                         iTested += 16;
                     }
-                    if (absChunkX < screenChunkX)
+                    if (absChunkX < screen.chunkX)
                     {
                         return false;
                     }
@@ -757,21 +808,159 @@ namespace Cave
                         fillStates[i, j] = 0;
                         findTileColor(i, j);
                         chunkToTest.findTileColor(iTested, jTested);
+                        chunkToTest.testLiquidUnstableLiquid(chunkToTest.position.Item1 * 16 + iTested, chunkToTest.position.Item1 * 16 + jTested);
+                        testLiquidUnstableAir(position.Item1 * 16 + iTested, position.Item1 * 16 + jTested);
                         return true;
                     }
                     repeatCounter++;
                 }
                 return false;
             }
+            public void testLiquidUnstableAir(int posX, int posY)
+            {
+                (int, int) chunkPos;
+                Chunk chunkToTest;
+
+                chunkPos = screen.findChunkAbsoluteIndex(posX + 1, posY);
+                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                {
+                    chunkToTest = screen.loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[((posX + 1) % 16 + 32) % 16, ((posY) % 16 + 32) % 16] < 0)
+                    {
+                        chunkToTest.unstableLiquidCount++;
+                    }
+                }
+
+                chunkPos = screen.findChunkAbsoluteIndex(posX - 1, posY + 1);
+                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                {
+                    chunkToTest = screen.loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[((posX - 1) % 16 + 32) % 16, ((posY + 1) % 16 + 32) % 16] < 0)
+                    {
+                        chunkToTest.unstableLiquidCount++;
+                    }
+                }
+
+                chunkPos = screen.findChunkAbsoluteIndex(posX + 1, posY + 1);
+                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                {
+                    chunkToTest = screen.loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[((posX + 1) % 16 + 32) % 16, ((posY + 1) % 16 + 32) % 16] < 0)
+                    {
+                        chunkToTest.unstableLiquidCount++;
+                    }
+                }
+
+                chunkPos = screen.findChunkAbsoluteIndex(posX - 1, posY);
+                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                {;
+                    chunkToTest = screen.loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[((posX - 1) % 16 + 32) % 16, (posY % 16 + 32) % 16] < 0)
+                    {
+                        chunkToTest.unstableLiquidCount++;
+                    }
+                }
+
+                chunkPos = screen.findChunkAbsoluteIndex(posX, posY + 1);
+                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                {
+                    chunkToTest = screen.loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[((posX) % 16 + 32) % 16, ((posY + 1) % 16 + 32) % 16] < 0)
+                    {
+                        chunkToTest.unstableLiquidCount++;
+                    }
+                }
+
+                chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
+                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                {
+                    chunkToTest = screen.loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[((posX) % 16 + 32) % 16, ((posY - 1) % 16 + 32) % 16] < 0) // CHANGE THIS TOO FUCKER
+                    {
+                        chunkToTest.unstableLiquidCount++;
+                    }
+                }
+            }
+            public void testLiquidUnstableLiquid(int posX, int posY)
+            {
+                (int, int) chunkPos;
+                Chunk chunkToTest;
+
+                chunkPos = screen.findChunkAbsoluteIndex(posX + 1, posY);
+                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                {
+                    chunkToTest = screen.loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[((posX + 1) % 16 + 32) % 16, ((posY) % 16 + 32) % 16] <= 0)
+                    {
+                        chunkToTest.unstableLiquidCount++;
+                        unstableLiquidCount++;
+                    }
+                }
+
+                chunkPos = screen.findChunkAbsoluteIndex(posX - 1, posY - 1);
+                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                {
+                    chunkToTest = screen.loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[((posX - 1) % 16 + 32) % 16, ((posY - 1) % 16 + 32) % 16] <= 0)
+                    {
+                        chunkToTest.unstableLiquidCount++;
+                        unstableLiquidCount++;
+                    }
+                }
+
+                chunkPos = screen.findChunkAbsoluteIndex(posX + 1, posY - 1);
+                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                {
+                    chunkToTest = screen.loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[((posX + 1) % 16 + 32) % 16, ((posY - 1) % 16 + 32) % 16] <= 0)
+                    {
+                        chunkToTest.unstableLiquidCount++;
+                        unstableLiquidCount++;
+                    }
+                }
+
+                chunkPos = screen.findChunkAbsoluteIndex(posX - 1, posY);
+                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                {
+                    chunkToTest = screen.loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[((posX - 1) % 16 + 32) % 16, (posY % 16 + 32) % 16] <= 0)
+                    {
+                        chunkToTest.unstableLiquidCount++;
+                        unstableLiquidCount++;
+                    }
+                }
+
+                chunkPos = screen.findChunkAbsoluteIndex(posX, posY + 1);
+                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                {
+                    chunkToTest = screen.loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[((posX) % 16 + 32) % 16, ((posY + 1) % 16 + 32) % 16] <= 0)
+                    {
+                        chunkToTest.unstableLiquidCount++;
+                        unstableLiquidCount++;
+                    }
+                }
+
+                chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
+                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                {
+                    chunkToTest = screen.loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[((posX) % 16 + 32) % 16, ((posY - 1) % 16 + 32) % 16] <= 0)
+                    {
+                        chunkToTest.unstableLiquidCount++;
+                        unstableLiquidCount++;
+                    }
+                }
+            }
         }
         public class Screen
         {
-            public Chunk[,] loadedChunks;
+            public Chunk theFilledChunk;
+            public Dictionary<(int, int), Chunk> loadedChunks;
+            public Dictionary<(int, int), Chunk> extraLoadedChunks = new Dictionary<(int, int), Chunk>();
             public List<long>[,] LCGCacheListMatrix;
             public int chunkResolution;
             public long seed;
-            public int loadedChunkOffsetX;
-            public int loadedChunkOffsetY;
             public bool isPngToBeExported;
             public Bitmap gameBitmap;
             public Bitmap overlayBitmap;
@@ -779,11 +968,16 @@ namespace Cave
             public List<Entity> activeEntities = new List<Entity>();
             public List<Entity> entitesToRemove = new List<Entity>();
             public List<Plant> activePlants = new List<Plant>();
+            public Dictionary<(int, int), List<Plant>> outOfBoundsPlants = new Dictionary<(int, int), List<Plant>>();
+            public List<(int, int)> broadTestUnstableLiquidList = new List<(int, int)>();
 
-            public Screen(long posX, long posY, int chunkResolutionToPut, long seedo, bool isPngToExport)
+            public bool initialLoadFinished = false;
+
+            public int chunkX = 0;
+            public int chunkY = 0;
+
+            public Screen(int posX, int posY, int chunkResolutionToPut, long seedo, bool isPngToExport)
             {
-                loadedChunkOffsetX = 0; //(((int)posX %chunkResolutionToPut) + chunkResolutionToPut) %chunkResolutionToPut;
-                loadedChunkOffsetY = 0; //(((int)posY %chunkResolutionToPut) + chunkResolutionToPut) %chunkResolutionToPut;
                 seed = seedo;
                 isPngToBeExported = isPngToExport;
                 playerList = new List<Player>();
@@ -804,6 +998,7 @@ namespace Cave
                     Directory.CreateDirectory($"{currentDirectory}\\bitmapos");
                 }
                 LCGCacheInit();
+                makeTheFilledChunk();
                 checkStructuresPlayerSpawn(player);
                 loadChunks(posX, posY, seed);
                 overlayBitmap = new Bitmap(512, 128);
@@ -866,88 +1061,114 @@ namespace Cave
                     longo2 = LCGz(longo);
                 }
             }
-            public void loadChunks(long posX, long posY, long seed)
+            public void loadChunks(int posX, int posY, long seed)
             {
-                loadedChunks = new Chunk[chunkResolution, chunkResolution];
+                loadedChunks = new Dictionary<(int, int), Chunk>();
                 for (int i = 0; i < chunkResolution; i++)
                 {
                     for (int j = 0; j < chunkResolution; j++)
                     {
-                        loadedChunks[(i + chunkResolution) % chunkResolution, (j + chunkResolution) % chunkResolution] = new Chunk(posX + i, posY + j, seed, false, this);
+                        loadedChunks.Add((posX + i, posY + j), new Chunk((posX + i, posY + j), seed, false, this));
                     }
                 }
                 if (isPngToBeExported) { gameBitmap = new Bitmap(16 * (chunkResolution - 1), 16 * (chunkResolution - 1)); }
                 else { gameBitmap = new Bitmap(64 * (ChunkLength - 1), 64 * (ChunkLength - 1)); }
             }
-            public void updateLoadedChunks(int posX, int posY, long seed, int screenSlideX, int screenSlideY)
+            public void addPlantsToChunk(Chunk chunk)
             {
-
-                // Gone ! Forever now ! it's. fucking. BACKKKKKK     !! ! !! GONE AGAIN fuck it's backkkk WOOOOOOOOOHOOOOOOOOOOOO BUG IS GONE !!! It's 4am !!!! FUCK !!!! PROBLEM !!!!! The update loaded chuncks is lagging 8 (7?) chunkcs behind the actual normal loading... but only in the updated dimension
-
+                if (outOfBoundsPlants.ContainsKey((chunk.position.Item1, chunk.position.Item2)))
+                {
+                    chunk.exteriorPlantList = outOfBoundsPlants[(chunk.position.Item1, chunk.position.Item2)];
+                    outOfBoundsPlants.Remove((chunk.position.Item1, chunk.position.Item2));
+                }
+            }
+            public void removePlantsFromChunk(Chunk chunk)
+            {
+                if(chunk.exteriorPlantList.Count > 0)
+                {
+                    outOfBoundsPlants.Add((chunk.position.Item1, chunk.position.Item2), new List<Plant>());
+                }
+                foreach(Plant plant in chunk.exteriorPlantList)
+                {
+                    outOfBoundsPlants[(chunk.position.Item1, chunk.position.Item2)].Add(plant);
+                }
+            }
+            public void putEntitiesAndPlantsInChunks()
+            {
                 (int, int) chunkIndex;
                 Chunk chunk;
-                foreach (Chunk chunko in loadedChunks)
-                {
-                    chunko.entityList = new List<Entity>();
-                    chunko.plantList = new List<Plant>();
-                }
                 while (activeEntities.Count() > 0)
                 {
-                    chunkIndex = findChunkScreenRelativeIndex(activeEntities[0].posX, activeEntities[0].posY);
-                    chunk = loadedChunks[chunkIndex.Item1, chunkIndex.Item2];
+                    chunkIndex = findChunkAbsoluteIndex(activeEntities[0].posX, activeEntities[0].posY);
+                    chunk = loadedChunks[chunkIndex];
                     chunk.entityList.Add(activeEntities[0]);
                     activeEntities.RemoveAt(0);
                 }
                 while (activePlants.Count() > 0)
                 {
-                    chunkIndex = findChunkScreenRelativeIndex(activePlants[0].posX, activePlants[0].posY);
-                    chunk = loadedChunks[chunkIndex.Item1, chunkIndex.Item2];
+                    chunkIndex = findChunkAbsoluteIndex(activePlants[0].posX, activePlants[0].posY);
+                    chunk = loadedChunks[chunkIndex];
                     chunk.plantList.Add(activePlants[0]);
                     activePlants.RemoveAt(0);
                 }
+            }
+            public void updateLoadedChunks(long seed, int screenSlideXtoPut, int screenSlideYtoPut)
+            {
+                int screenSlideX = screenSlideXtoPut;
+                int screenSlideY = screenSlideYtoPut;
 
-                while (screenSlideX > 0)
+                // Okay I've changed shit to dictionary instead of array please don't bug bug please please please... . . Gone ! Forever now ! it's. fucking. BACKKKKKK     !! ! !! GONE AGAIN fuck it's backkkk WOOOOOOOOOHOOOOOOOOOOOO BUG IS GONE !!! It's 4am !!!! FUCK !!!! PROBLEM !!!!! The update loaded chuncks is lagging 8 (7?) chunkcs behind the actual normal loading... but only in the updated dimension
+
+                Dictionary<(int, int), bool> chunksToAdd = new Dictionary<(int, int), bool>();
+                Dictionary<(int, int), bool> chunksToDelete = new Dictionary<(int, int), bool>();
+
+                int addo = -1;
+                if (screenSlideX < 0) { addo = chunkResolution; }
+                while (Abs(screenSlideX) > 0)
                 {
-                    for (int j = 0; j < chunkResolution; j++)
+                    for (int j = chunkY; j < chunkY + chunkResolution; j++)
                     {
-                        loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY + j) % chunkResolution].saveChunk(true);
-                        loadedChunks[loadedChunkOffsetX, (loadedChunkOffsetY + j) % chunkResolution] = new Chunk((posX - screenSlideX) + chunkResolution, (posY - screenSlideY) + j, seed, false, this);
+                        chunksToDelete[(chunkX + addo + screenSlideX, j)] = true;
+                        chunksToAdd[(chunkX + addo + Sign(screenSlideX)*chunkResolution + screenSlideX, j + screenSlideYtoPut)] = true;
                     }
-                    loadedChunkOffsetX = (loadedChunkOffsetX + 1) % chunkResolution;
-                    screenSlideX -= 1;
+                    screenSlideX = Sign(screenSlideX)*(Abs(screenSlideX)-1);
                 }
-                while (screenSlideX < 0)
+                addo = -1;
+                if (screenSlideY < 0) { addo = chunkResolution; }
+                while (Abs(screenSlideY) > 0)
                 {
-                    for (int j = 0; j < chunkResolution; j++)
+                    for (int i = chunkX; i < chunkX + chunkResolution; i++)
                     {
-                        loadedChunks[(loadedChunkOffsetX + chunkResolution - 1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution].saveChunk(true);
-                        loadedChunks[(loadedChunkOffsetX + chunkResolution - 1) % chunkResolution, (loadedChunkOffsetY + j) % chunkResolution] = new Chunk((posX - screenSlideX) - 1, (posY - screenSlideY) + j, seed, false, this);
+                        chunksToDelete[(i, chunkY + addo + screenSlideY)] = true;
+                        chunksToAdd[(i + screenSlideXtoPut, chunkY + addo + Sign(screenSlideY)*chunkResolution + screenSlideY)] = true;
                     }
-                    loadedChunkOffsetX = (loadedChunkOffsetX + chunkResolution - 1) % chunkResolution;
-                    screenSlideX += 1;
+                    screenSlideY = Sign(screenSlideY) * (Abs(screenSlideY) - 1);
                 }
-                while (screenSlideY > 0)
+                chunkX += screenSlideXtoPut;
+                chunkY += screenSlideYtoPut;
+
+
+                foreach (Chunk chunko in loadedChunks.Values)
                 {
-                    for (int i = 0; i < chunkResolution; i++)
-                    {
-                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY].saveChunk(true);
-                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, loadedChunkOffsetY] = new Chunk((posX - screenSlideX) + i, (posY - screenSlideY) + chunkResolution, seed, false, this);
-                    }
-                    loadedChunkOffsetY = (loadedChunkOffsetY + 1) % chunkResolution;
-                    screenSlideY -= 1;
+                    chunko.entityList = new List<Entity>();
+                    chunko.plantList = new List<Plant>();
                 }
-                while (screenSlideY < 0)
+                putEntitiesAndPlantsInChunks();
+
+                foreach((int, int) chunkPos in chunksToDelete.Keys)
                 {
-                    for (int i = 0; i < chunkResolution; i++)
-                    {
-                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution].saveChunk(true);
-                        loadedChunks[(loadedChunkOffsetX + i) % chunkResolution, (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution] = new Chunk((posX - screenSlideX) + i, (posY - screenSlideY) - 1, seed, false, this);
-                    }
-                    loadedChunkOffsetY = (loadedChunkOffsetY + chunkResolution - 1) % chunkResolution;
-                    screenSlideY += 1;
+                    //removePlantsFromChunk(loadedChunks[chunkPos]);
+                    loadedChunks[chunkPos].saveChunk(true);
+                    loadedChunks.Remove(chunkPos);
+                }
+                foreach ((int, int) chunkPos in chunksToAdd.Keys)
+                {
+                    loadedChunks.Add(chunkPos, new Chunk(chunkPos, seed, false, this));
+                    //addPlantsToChunk(loadedChunks[chunkPos]);
+                    putEntitiesAndPlantsInChunks();
                 }
 
-                foreach (Chunk chunko in loadedChunks)
+                foreach (Chunk chunko in loadedChunks.Values)
                 {
                     foreach (Entity entity in chunko.entityList)
                     {
@@ -967,14 +1188,14 @@ namespace Cave
                 int chunkPosY = Floor(pixelPosY, 16) / 16;
                 return (chunkPosX, chunkPosY);
             }
-            public (int, int) findChunkScreenRelativeIndex(int pixelPosX, int pixelPosY)
+            /*public (int, int) findChunkScreenRelativeIndex(int pixelPosX, int pixelPosY)
             {
                 int chunkPosX = Floor(pixelPosX, 16) / 16;
                 int chunkPosY = Floor(pixelPosY, 16) / 16;
                 chunkPosX = ((chunkPosX % chunkResolution) + 2 * chunkResolution + 0 * loadedChunkOffsetX) % chunkResolution;
                 chunkPosY = ((chunkPosY % chunkResolution) + 2 * chunkResolution + 0 * loadedChunkOffsetY) % chunkResolution;
                 return (chunkPosX, chunkPosY);
-            }
+            }*/ // not gonna be used anymore since dictionary
             public void checkStructuresPlayerSpawn(Player player)
             {
                 player.CheckStructurePosChange();
@@ -1060,26 +1281,18 @@ namespace Cave
                 {
                     for (int j = 0; j < chunkResolution; j++)
                     {
-                        pixelPosX = ((i*16 + (-loadedChunkOffsetX + chunkResolution) * 16) % (chunkResolution * 16)) - ((camPosX % 16) + 16) % 16 - UnloadedChunksAmount * 16;
-                        pixelPosY = ((j*16 + (-loadedChunkOffsetY + chunkResolution) * 16) % (chunkResolution * 16)) - ((camPosY % 16) + 16) % 16 - UnloadedChunksAmount * 16;
+                        pixelPosX = i*16 - ((camPosX % 16) + 16) % 16 - UnloadedChunksAmount * 16;
+                        pixelPosY = j*16 - ((camPosY % 16) + 16) % 16 - UnloadedChunksAmount * 16;
 
                         if (pixelPosX < -15 || pixelPosX >= (chunkResolution) * 16 || pixelPosY < -15 || pixelPosY >= (chunkResolution) * 16)
                         {
                             continue;
                         }
-
-                        Color color = loadedChunks[i / 16, j / 16].colors[i % 16, j % 16];
-
-                        /*using (var g = Graphics.FromImage(gameBitmap))
-                        {
-                            g.FillRectangle(new SolidBrush(color), (pixelPosX)*PNGmultiplicator, (pixelPosY)*PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
-                        }*/
-
                         using (Graphics g = Graphics.FromImage(gameBitmap))
                         {
                             g.PixelOffsetMode = PixelOffsetMode.HighQuality;
                             g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                            g.DrawImage(loadedChunks[i, j].bitmap, pixelPosX*PNGmultiplicator, pixelPosY*PNGmultiplicator, 16*PNGmultiplicator, 16*PNGmultiplicator);
+                            g.DrawImage(loadedChunks[(chunkX + i, chunkY + j)].bitmap, pixelPosX*PNGmultiplicator, pixelPosY*PNGmultiplicator, 16*PNGmultiplicator, 16*PNGmultiplicator);
                         }
                     }
                 }
@@ -1091,8 +1304,8 @@ namespace Cave
 
                     if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 16 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 16)
                     {;
-                        (int, int) chunkRelativePos = this.findChunkScreenRelativeIndex(plant.posX, plant.posY);
-                        Chunk chunkToTest = this.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
+                        (int, int) chunkPos = findChunkAbsoluteIndex(plant.posX, plant.posY);
+                        Chunk chunkToTest = loadedChunks[chunkPos];
                         if ( true/*chunkToTest.fillStates[(plant.posX % 16 + 16) % 16, (plant.posY % 16 + 16) % 16] <= 0*/)
                         {
                             using (Graphics g = Graphics.FromImage(gameBitmap))
@@ -1113,8 +1326,8 @@ namespace Cave
                     if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 16 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 16)
                     {
                         Color color = entity.color;
-                        (int, int) chunkRelativePos = this.findChunkScreenRelativeIndex(entity.posX, entity.posY);
-                        Chunk chunkToTest = this.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
+                        (int, int) chunkPos = this.findChunkAbsoluteIndex(entity.posX, entity.posY);
+                        Chunk chunkToTest = this.loadedChunks[chunkPos];
                         if (chunkToTest.fillStates[(entity.posX % 16 + 16) % 16, (entity.posY % 16 + 16) % 16] > 0)
                         {
                             color = Color.Red;
@@ -1132,8 +1345,8 @@ namespace Cave
                 if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 16 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 16)
                 {
                     Color color = Color.Green;
-                    (int, int) chunkRelativePos = this.findChunkScreenRelativeIndex(player.posX, player.posY);
-                    Chunk chunkToTest = this.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
+                    (int, int) chunkPos = this.findChunkAbsoluteIndex(player.posX, player.posY);
+                    Chunk chunkToTest = this.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[(player.posX % 16 + 16) % 16, (player.posY % 16 + 16) % 16] > 0)
                     {
                         color = Color.Red;
@@ -1143,7 +1356,7 @@ namespace Cave
                         g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
                     }
                 }
-
+                gameBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 return gameBitmap;
             }
             public void zoom(bool isZooming)
@@ -1169,6 +1382,25 @@ namespace Cave
                 }
                 lastZoom = timeElapsed;
             }
+            public void makeTheFilledChunk()
+            {
+                theFilledChunk = new Chunk((0, 0), 0, true, this);
+                for (int i = 0; i < 16; i++)
+                {
+                    for (int j = 0; j < 16; j++)
+                    {
+                        theFilledChunk.fillStates[i,j] = 1;
+                    }
+                }
+            }
+            public Chunk tryToGetChunk((int, int) chunkCoords)
+            {
+                if (loadedChunks.TryGetValue(chunkCoords, out Chunk chunkToTest))
+                {
+                    return chunkToTest;
+                }
+                return theFilledChunk;
+            }
         }
         public class Player
         {
@@ -1186,9 +1418,9 @@ namespace Cave
             public float timeAtLastDig = -9999;
             public float timeAtLastPlace = -9999;
 
-            public Dictionary<(int index, bool isEntity), int> inventoryQuantities;
-            public List<(int index, bool isEntity)> inventoryElements;
-            public int inventoryCursor = 1;
+            public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
+            public List<(int index, int subType, int typeOfElement)> inventoryElements;
+            public int inventoryCursor = 3;
             public Player (Screen screenToPut)
             {
                 screen = screenToPut;
@@ -1204,7 +1436,7 @@ namespace Cave
                 {
                     int randX = rand.Next((ChunkLength - 1) * 16);
                     int randY = rand.Next((ChunkLength - 1) * 16);
-                    Chunk randChunk = screen.loadedChunks[randX / 16, randY / 16];
+                    Chunk randChunk = screen.loadedChunks[(randX / 16, randY / 16)];
                     if (randChunk.fillStates[randX % 16, randY % 16] == 0)
                     {
                         posX = randX;
@@ -1215,21 +1447,41 @@ namespace Cave
                     }
                     counto++;
                 }
-                inventoryQuantities = new Dictionary<(int index, bool isEntity), int>
+                inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
                 {
-                    {(0, true), -999 },
-                    {(1, true), -999 },
-                    {(2, true), -999 },
-                    {(3, true), -999 },
-                    {(-1, false), -999 }
+                    {(0, 0, 1), -999 },
+                    {(0, 1, 1), -999 },
+                    {(0, 2, 1), -999 },
+                    {(1, 0, 1), -999 },
+                    {(2, 0, 1), -999 },
+                    {(3, 0, 1), -999 },
+                    {(0, 0, 2), -999 },
+                    {(1, 0, 2), -999 },
+                    {(2, 0, 2), -999 },
+                    {(2, 1, 2), -999 },
+                    {(3, 0, 2), -999 },
+                    {(4, 0, 2), -999 },
+                    {(5, 0, 2), -999 },
+                    {(5, 1, 2), -999 },
+                    {(-1, 0, 0), -999 }
                 };
-                inventoryElements = new List<(int index, bool isEntity)>
+                inventoryElements = new List<(int index, int subType, int typeOfElement)>
                 {
-                    (0, true),
-                    (1, true),
-                    (2, true),
-                    (3, true),
-                    (-1, false)
+                    (0, 0, 1),
+                    (0, 1, 1),
+                    (0, 2, 1),
+                    (1, 0, 1),
+                    (2, 0, 1),
+                    (3, 0, 1),
+                    (0, 0, 2),
+                    (1, 0, 2),
+                    (2, 0, 2),
+                    (2, 1, 2),
+                    (3, 0, 2),
+                    (4, 0, 2),
+                    (5, 0, 2),
+                    (5, 1, 2),
+                    (-1, 0, 0)
                 };
         }
             public void movePlayer()
@@ -1246,14 +1498,14 @@ namespace Cave
                     }
                     else if (arrowKeysState[2] && !arrowKeysState[3])
                     {
-                        Dig(posX, posY + 1);
+                        Dig(posX, posY - 1);
                     }
                     else if (arrowKeysState[3] && !arrowKeysState[2])
                     {
-                        Dig(posX, posY - 1);
+                        Dig(posX, posY + 1);
                     }
                 }
-                if ((placePress[0] || placePress[1]) && timeElapsed > timeAtLastPlace + 0.01f)
+                if ((placePress[0] || placePress[1]) && ((inventoryElements[inventoryCursor].typeOfElement == 0 && timeElapsed > timeAtLastPlace + 0.01f) || (timeElapsed > timeAtLastPlace + 0.2f)))
                 {
                     if (arrowKeysState[0] && !arrowKeysState[1])
                     {
@@ -1265,16 +1517,16 @@ namespace Cave
                     }
                     else if (arrowKeysState[2] && !arrowKeysState[3])
                     {
-                        Place(posX, posY + 1);
+                        Place(posX, posY - 1);
                     }
                     else if (arrowKeysState[3] && !arrowKeysState[2])
                     {
-                        Place(posX, posY - 1);
+                        Place(posX, posY + 1);
                     }
                 }
                 {
-                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY);
-                    if (screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2].fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32) % 16] < 0)
+                    (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
+                    if (screen.loadedChunks[chunkPos].fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32) % 16] < 0)
                     {
                         speedX = speedX * 0.8f - Sign(speedX)*Sqrt(Max((int)speedX-1,0));
                         speedY = speedY * 0.8f - Sign(speedY)*Sqrt(Max((int)speedY-1,0));
@@ -1319,9 +1571,8 @@ namespace Cave
 
                 while (Abs(toMoveY) > 0)
                 {
-                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX, posY + (int)Sign(toMoveY));
-                    (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX, posY + (int)Sign(toMoveY));
-                    Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
+                    (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX, posY + (int)Sign(toMoveY));
+                    Chunk chunkToTest = screen.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32 + (int)Sign(toMoveY)) % 16] <= 0)
                     {
                         if (Abs(toMoveY) >= 1)
@@ -1346,9 +1597,8 @@ namespace Cave
                 }
                 while (Abs(toMoveX) > 0)
                 {
-                    (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posX + (int)Sign(toMoveX), posY);
-                    (int, int) chunkAbsolutePos = screen.findChunkAbsoluteIndex(posX + (int)Sign(toMoveX), posY);
-                    Chunk chunkToTest = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
+                    (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX + (int)Sign(toMoveX), posY);
+                    Chunk chunkToTest = screen.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[(posX % 16 + 32 + (int)Sign(toMoveX)) % 16, (posY % 16 + 32) % 16] <= 0)
                     {
                         if (Abs(toMoveX) >= 1)
@@ -1382,40 +1632,41 @@ namespace Cave
             }
             public void Dig(int posToDigX, int posToDigY)
             {
-                (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posToDigX, posToDigY);
-                Chunk chunkToDig = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                int tileContent = chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16];
+                (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
+                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return; }
+                int tileContent = chunkToTest.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16];
                 if (tileContent != 0)
                 {
-                    (int index, bool isEntity)[] inventoryKeys = inventoryQuantities.Keys.ToArray();
+                    (int index, int subType, int typeOfElement)[] inventoryKeys = inventoryQuantities.Keys.ToArray();
                     for (int i = 0; i < inventoryKeys.Length; i++)
                     {
-                        if (inventoryKeys[i].index == tileContent && !inventoryKeys[i].isEntity)
+                        if (inventoryKeys[i].index == tileContent && inventoryKeys[i].typeOfElement == 0)
                         {
-                            if (inventoryQuantities[(tileContent, false)] != -999)
+                            if (inventoryQuantities[(tileContent, 0, 0)] != -999)
                             {
-                                inventoryQuantities[(tileContent, false)]++;
+                                inventoryQuantities[(tileContent, 0, 0)]++;
                             }
                             goto AfterTest;
                         }
                     }
                     // there was none of the thing present in the inventory already so gotta create it
-                    inventoryQuantities.Add((tileContent, false), 1);
-                    inventoryElements.Add((tileContent, false));
+                    inventoryQuantities.Add((tileContent, 0, 0), 1);
+                    inventoryElements.Add((tileContent, 0, 0));
                     AfterTest:;
-                    chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = 0;
-                    chunkToDig.findTileColor((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16);
-                    chunkToDig.modificationCount += 1;
+                    chunkToTest.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = 0;
+                    chunkToTest.findTileColor((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16);
+                    chunkToTest.testLiquidUnstableAir(posToDigX, posToDigY);
+                    chunkToTest.modificationCount += 1;
                     timeAtLastDig = timeElapsed;
                 }
             }
             public void Place(int posToDigX, int posToDigY)
             {
-                (int, int) chunkRelativePos = screen.findChunkScreenRelativeIndex(posToDigX, posToDigY);
-                Chunk chunkToDig = screen.loadedChunks[chunkRelativePos.Item1, chunkRelativePos.Item2];
-                (int index, bool isEntity) tileContent = inventoryElements[inventoryCursor];
-                int tileState = chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16];
-                if (tileState == 0 || tileState < 0 && tileContent.isEntity)
+                (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
+                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return; }
+                (int index, int subType, int typeOfElement) tileContent = inventoryElements[inventoryCursor];
+                int tileState = chunkToTest.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16];
+                if (tileState == 0 || tileState < 0 && tileContent.typeOfElement > 0 )
                 {
                     if (inventoryQuantities[tileContent] != -999)
                     {
@@ -1427,17 +1678,24 @@ namespace Cave
                             moveInventoryCursor(0);
                         }
                     }
-                    if(tileContent.isEntity)
+                    if (tileContent.typeOfElement == 1)
                     {
-                        Entity newEntity = new Entity(chunkToDig, (posToDigX, posToDigY), tileContent.index, screen);
+                        Entity newEntity = new Entity(chunkToTest, (posToDigX, posToDigY), tileContent.index, tileContent.subType, screen);
                         screen.activeEntities.Add(newEntity);
                         timeAtLastPlace = timeElapsed;
                     }
-                    else
+                    else if (tileContent.typeOfElement == 2)
                     {
-                        chunkToDig.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = tileContent.index;
-                        chunkToDig.findTileColor((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16);
-                        chunkToDig.modificationCount += 1;
+                        Plant newPlant = new Plant(chunkToTest, (posToDigX, posToDigY), tileContent.index, tileContent.subType, screen);
+                        if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants.Add(newPlant); }
+                        timeAtLastPlace = timeElapsed;
+                    }
+                    else if (tileContent.typeOfElement == 0)
+                    {
+                        chunkToTest.fillStates[(posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16] = tileContent.index;
+                        chunkToTest.findTileColor((posToDigX % 16 + 32) % 16, (posToDigY % 16 + 32) % 16);
+                        chunkToTest.testLiquidUnstableLiquid(posToDigX, posToDigY);
+                        chunkToTest.modificationCount += 1;
                         timeAtLastPlace = timeElapsed;
                     }
                 }
@@ -1452,14 +1710,18 @@ namespace Cave
             {
                 if (inventoryElements.Count > 0)
                 {
-                    (int index, bool isEntity) element = inventoryElements[inventoryCursor];
-                    if (element.isEntity)
-                    {
-                        Sprites.drawSpriteOnCanvas(screen.overlayBitmap, entitySprites[element.index].bitmap, (340, 64), 4, true);
-                    }
-                    else
+                    (int index, int subType, int typeOfElement) element = inventoryElements[inventoryCursor];
+                    if (element.typeOfElement == 0)
                     {
                         Sprites.drawSpriteOnCanvas(screen.overlayBitmap, compoundSprites[element.index].bitmap, (340, 64), 4, true);
+                    }
+                    else if (element.typeOfElement == 1)
+                    {
+                        Sprites.drawSpriteOnCanvas(screen.overlayBitmap, entitySprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
+                    }
+                    else if (element.typeOfElement == 2)
+                    {
+                        Sprites.drawSpriteOnCanvas(screen.overlayBitmap, plantSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
                     }
                     int quantity = inventoryQuantities[element];
                     if(quantity == -999)
@@ -1485,7 +1747,6 @@ namespace Cave
         public Form1()
         {
             InitializeComponent();
-            //RunGame(new Screen(0, 0, 0), rand);
         }
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -1495,6 +1756,8 @@ namespace Cave
             turnPngIntoString("Numbers");
             turnPngIntoString("BasicTile");
             turnPngIntoString("Fairy");
+            turnPngIntoString("ObsidianFairy");
+            turnPngIntoString("FrostFairy");
             turnPngIntoString("Frog");
             turnPngIntoString("Fish");
             turnPngIntoString("Hornet");
@@ -1503,16 +1766,21 @@ namespace Cave
             turnPngIntoString("FairyLiquid");
             turnPngIntoString("Lava");
             turnPngIntoString("Honey");
+            turnPngIntoString("Pollen");
+            turnPngIntoString("PlantMatter");
+            turnPngIntoString("FlowerPetal");
+            turnPngIntoString("Wood");
+            turnPngIntoString("Kelp");
 
             loadSpriteDictionaries();
 
             Screen mainScreen;
 
-            bool updatePNG = true;
-            int PNGsize = 100; // in chunks
+            bool updatePNG = false;
+            int PNGsize = 250; // in chunks, 300 or more made it out of memory :( so put at 250 okok
             bool randomSeed = true;
 
-            long seed = 1809684240;
+            long seed = 2807443684;
 
             //
             // cool seeds !!!! DO NOT DELETE
@@ -1527,6 +1795,7 @@ namespace Cave
             // 3776667052 : yet again deep cold biome spawn
             // 1561562999 : onion san head... amazing
             // 1809684240 : go down, very very big water lake normally (don't forget to DELETE THE SAVE)
+            // 2807443684 ; the most FUCKING enormous OCEAN biome it is so fucking big... wtf
             //
 
             if (randomSeed)
@@ -1541,20 +1810,28 @@ namespace Cave
             }
             if (updatePNG)
             {
-                int oldChunkRes;
+                int oldChunkLength = ChunkLength;
                 int rando = -10;
                 camPosX = -50 * 16;
                 camPosY = rando * 16;
-                mainScreen = new Screen(-PNGsize / 2, -PNGsize / 2, PNGsize, seed, true);
-                mainScreen.updateScreen();
-                Bitmap bmp = mainScreen.gameBitmap;
-                Bitmap bmp2 = new Bitmap(512, 512);
+                ChunkLength = PNGsize;
+                mainScreen = new Screen(0, 0, ChunkLength, seed, true);
+                player.placePlayer();
+                camPosX = player.posX - ChunkLength * 24;
+                realCamPosX = camPosX;
+                camPosY = player.posY - ChunkLength * 24;
+                realCamPosY = camPosY;
+                mainScreen.playerList = new List<Player> { player };
+                timer1.Tag = mainScreen;
+                timeAtLauch = DateTime.Now;
+
+                timer1_Tick(new object(), new EventArgs());
 
                 mainScreen.updateScreen().Save($"{currentDirectory}\\cavee.png");
-                bmp2.Save($"{currentDirectory}\\caveNoise.png");
+                ChunkLength = oldChunkLength;
             }
 
-            mainScreen = new Screen(screenChunkX, screenChunkY, ChunkLength, seed, false);
+            mainScreen = new Screen(0, 0, ChunkLength, seed, false);
             player.placePlayer();
             camPosX = player.posX-ChunkLength*24;
             realCamPosX = camPosX;
@@ -1728,7 +2005,7 @@ namespace Cave
                     y--;
                 }
             }
-            int seedXY = (int)((2048 + seedX % 256 + seedY % 256) % 256);
+            int seedXY = (int)((8192 + seedX % 1024 + seedY % 1024) % 1024);
             long seedZ = Abs(3 + posX + posY * 11);
             int z = seedXY;
             while (z > 0)
@@ -1736,7 +2013,7 @@ namespace Cave
                 seedZ = LCGz(seedZ);
                 z--;
             }
-            return (int)((seedZ + seedXY) % 256);
+            return (int)((seedZ + seedXY) % 1024);
             //return ((int)(seedX%512)-256, (int)(seedY%512)-256);
         }
         public static int findSecondaryNoiseValue(Chunk chunk, int varX, int varY, int layer)
@@ -1774,78 +2051,94 @@ namespace Cave
         }
         public static (int, int)[] findBiome(int[,,] values, int[,,] bigBiomeValues, int posX, int posY)
         {
-            // arrite so... 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
-            int temperature = values[posX, posY, 0] + bigBiomeValues[posX, posY, 0]-128;
-            int humidity = values[posX, posY, 1] + bigBiomeValues[posX, posY, 1]-128;
-            int acidity = values[posX, posY, 2] + bigBiomeValues[posX, posY, 2]-128;
-            int toxicity = values[posX, posY, 3] + bigBiomeValues[posX, posY, 3]-128;
-            List<(int, int)> listo = new List<(int, int)>();
-            int percentageFree = 100;
+            //return new (int, int)[]{ (8, 1000) }; // use this to force a biome for debug (infite biome)
 
-            if (temperature > 180)
+
+            // arrite so... 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
+            int temperature = values[posX, posY, 0] + bigBiomeValues[posX, posY, 0] - 512;
+            int humidity = values[posX, posY, 1] + bigBiomeValues[posX, posY, 1] - 512;
+            int acidity = values[posX, posY, 2] + bigBiomeValues[posX, posY, 2] - 512;
+            int toxicity = values[posX, posY, 3] + bigBiomeValues[posX, posY, 3] - 512;
+            List<(int, int)> listo = new List<(int, int)>();
+            int percentageFree = 1000;
+
+            if (humidity > 720)
             {
-                int hotness = Min((temperature - 180) * 10, 100);
-                if (temperature > 210 && humidity > 150)
+                int oceanness = Min((humidity - 720) * 25, 1000);
+                if (oceanness > 0)
                 {
-                    int minimo = Min(temperature - 210, humidity - 150);
-                    int obsidianess = minimo * 4;
-                    obsidianess = Min(obsidianess, 100);
-                    hotness -= obsidianess;
-                    listo.Add((6, obsidianess));
-                    percentageFree -= obsidianess;
-                }
-                if (hotness > 0)
-                {
-                    listo.Add((2, hotness));
-                    percentageFree -= hotness;
+                    listo.Add((8, oceanness));
+                    percentageFree -= oceanness;
                 }
             }
-            else if (temperature < 110)
-            {
-                int coldness = Min((110 - temperature) * 10, 100);
-                if (temperature < 0)
-                {
-                    int bigColdness = (int)(Min((0 - temperature) * 10, 100) * coldness * 0.01f);
-                    coldness -= bigColdness;
-                    if (bigColdness > 0)
-                    {
-                        listo.Add((7, bigColdness));
-                        percentageFree -= bigColdness;
-                    }
-                }
-                int savedColdness = (int)(Max(0,(Min((30 - temperature) * 10, 100))));
-                savedColdness = Min(savedColdness, coldness);
-                coldness -= savedColdness;
-                if (acidity < 110)
-                {
-                    int acidness = (int)(Min((110 - acidity) * 10, 100) * coldness * 0.01f);
-                    coldness -= acidness;
-                    listo.Add((1, acidness));
-                    percentageFree -= acidness;
-                }
-                if (humidity > toxicity)
-                {
-                    int fairyness = (int)(Min((humidity - toxicity) * 10, 100) * coldness * 0.01f);
-                    coldness -= fairyness;
-                    if (fairyness > 0)
-                    {
-                        listo.Add((5, fairyness));
-                        percentageFree -= fairyness;
-                    }
-                }
-                coldness += savedColdness;
-                if (coldness > 0)
-                {
-                    listo.Add((0, coldness));
-                    percentageFree -= coldness;
-                }
 
+
+            if (percentageFree > 0)
+            {
+                if (temperature > 720)
+                {
+                    int hotness = (int)(Min((temperature - 720) * 25, 1000) * percentageFree * 0.001f);
+                    if (temperature > 840 && humidity > 600)
+                    {
+                        int minimo = Min(temperature - 840, humidity - 600);
+                        int obsidianess = minimo * 10;
+                        obsidianess = (int)(Min(obsidianess, 1000) * percentageFree * 0.001f);
+                        hotness -= obsidianess;
+                        listo.Add((6, obsidianess));
+                        percentageFree -= obsidianess;
+                    }
+                    if (hotness > 0)
+                    {
+                        listo.Add((2, hotness));
+                        percentageFree -= hotness;
+                    }
+                }
+                else if (temperature < 440)
+                {
+                    int coldness = (int)(Min((440 - temperature) * 10, 1000) * percentageFree * 0.001f);
+                    if (temperature < 0)
+                    {
+                        int bigColdness = (int)(Min((0 - temperature) * 10, 1000) * coldness * 0.001f);
+                        coldness -= bigColdness;
+                        if (bigColdness > 0)
+                        {
+                            listo.Add((7, bigColdness));
+                            percentageFree -= bigColdness;
+                        }
+                    }
+                    int savedColdness = (int)(Max(0, (Min((120 - temperature) * 10, 1000))) * percentageFree * 0.001f);
+                    savedColdness = Min(savedColdness, coldness);
+                    coldness -= savedColdness;
+                    if (acidity < 440)
+                    {
+                        int acidness = (int)(Min((440 - acidity) * 10, 1000) * coldness * 0.001f);
+                        coldness -= acidness;
+                        listo.Add((1, acidness));
+                        percentageFree -= acidness;
+                    }
+                    if (humidity > toxicity)
+                    {
+                        int fairyness = (int)(Min((humidity - toxicity) * 10, 1000) * coldness * 0.001f);
+                        coldness -= fairyness;
+                        if (fairyness > 0)
+                        {
+                            listo.Add((5, fairyness));
+                            percentageFree -= fairyness;
+                        }
+                    }
+                    coldness += savedColdness;
+                    if (coldness > 0)
+                    {
+                        listo.Add((0, coldness));
+                        percentageFree -= coldness;
+                    }
+                }
             }
 
             if (percentageFree > 0)
             {
-                int slimeness = (int)(Clamp((toxicity - humidity + 5) * 10, 0, 100) * percentageFree * 0.01f);
-                int forestness = (int)(Clamp((humidity - toxicity + 5) * 10, 0, 100) * percentageFree * 0.01f);
+                int slimeness = (int)(Clamp((toxicity - humidity + 20) * 10, 0, 1000) * percentageFree * 0.001f);
+                int forestness = (int)(Clamp((humidity - toxicity + 20) * 10, 0, 1000) * percentageFree * 0.001f);
                 if (forestness > 0)
                 {
                     listo.Add((3, forestness));
@@ -1873,6 +2166,9 @@ namespace Cave
         private void timer1_Tick(object sender, EventArgs e)
         {
             Screen screen = (Screen)timer1.Tag;
+            timeElapsed += 0.02f;
+            screen.extraLoadedChunks.Clear(); // this will make many bugs
+            screen.broadTestUnstableLiquidList = new List<(int, int)>();
             if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { screen.zoom(true); }
             if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
             if (inventoryChangePress[0]) { inventoryChangePress[0] = false; player.moveInventoryCursor(-1); }
@@ -1884,9 +2180,9 @@ namespace Cave
             player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.85f) - 0.2f));
             if (arrowKeysState[0]) { player.speedX += 0.5f; }
             if (arrowKeysState[1]) { player.speedX -= 0.5f; }
-            if (arrowKeysState[2]) { player.speedY += 0.5f; }
-            if (arrowKeysState[3]) { player.speedY -= 1; }
-            player.speedY += 0.5f;
+            if (arrowKeysState[2]) { player.speedY -= 0.5f; }
+            if (arrowKeysState[3]) { player.speedY += 1; }
+            player.speedY -= 0.5f;
             if (shiftPress)
             {
                 player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.75f) - 0.7f));
@@ -1917,15 +2213,13 @@ namespace Cave
             realCamPosY += speedCamY;
             camPosX = (int)(realCamPosX + 0.5f);
             camPosY = (int)(realCamPosY + 0.5f);
-            int oldChunkX = screenChunkX;
-            int oldChunkY = screenChunkY;
-            screenChunkX = Floor(camPosX, 16) / 16;
-            screenChunkY = Floor(camPosY, 16) / 16;
-            int chunkVariationX = screenChunkX - oldChunkX;
-            int chunkVariationY = screenChunkY - oldChunkY;
+            int oldChunkX = screen.chunkX;
+            int oldChunkY = screen.chunkY;
+            int chunkVariationX = Floor(camPosX, 16) / 16 - oldChunkX;
+            int chunkVariationY = Floor(camPosY, 16) / 16 - oldChunkY;
             if (chunkVariationX != 0 || chunkVariationY != 0)
             {
-                screen.updateLoadedChunks(screenChunkX, screenChunkY, screen.seed, chunkVariationX, chunkVariationY);
+                screen.updateLoadedChunks(screen.seed, chunkVariationX, chunkVariationY);
             }
 
 
@@ -1943,15 +2237,16 @@ namespace Cave
             {
                 screen.activeEntities.Remove(entity);
             }
-            int ii;
-            int jj;
-            for(int j = screen.chunkResolution - 1; j >= 0; j--)
+            foreach (Plant plant in screen.activePlants)
             {
-                for (int i = 0; i < screen.chunkResolution; i++)
+                plant.testPlantGrowth();
+            }
+            for (int j = screen.chunkY + screen.chunkResolution - 1; j >= screen.chunkY; j--)
+            {
+                for (int i = screen.chunkX; i < screen.chunkX + screen.chunkResolution; i++)
                 {
-                    ii = (i + screen.loadedChunkOffsetX + screen.chunkResolution) % (screen.chunkResolution);
-                    jj = (j + screen.loadedChunkOffsetY + screen.chunkResolution) % (screen.chunkResolution);
-                    screen.loadedChunks[ii, jj].moveLiquids();
+                    if (rand.Next(50) == 0) { screen.loadedChunks[(i, j)].unstableLiquidCount++; }
+                    screen.loadedChunks[(i, j)].moveLiquids();
                 }
             }
             gamePictureBox.Image = screen.updateScreen();
@@ -2090,6 +2385,10 @@ namespace Cave
         {
             return Abs((121525 * seed + 6763) % 999983); // VERY SMALL HAVE TO REDO IT
         }
+        public static int LCGint2(int seed)
+        {
+            return Abs((12616645 * seed + 8837) % 998947); // VERY SMALL HAVE TO REDO IT
+        }
 
         public static void Sort(List<(int, int)> listo, bool sortByFirstInt)
         {
@@ -2223,6 +2522,13 @@ namespace Cave
             int n2 = n % (mod / 2);
             if (n == n2) { return n; }
             return n - n2*2;
+        }
+        public static float Seesaw(float n, float mod)
+        {
+            n = n % mod;
+            float n2 = n % (mod*0.5f);
+            if (n == n2) { return n; }
+            return n - n2 * 2;
         }
         public static float sawBladeSeesaw(float n, float mod)
         {

@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Newtonsoft.Json;
 using static Cave.Form1;
 using static Cave.Form1.Globals;
 using static Cave.MathF;
@@ -23,20 +24,14 @@ namespace Cave
 {
     public class Sprites
     {
-        public static Dictionary<int, OneSprite> entitySprites;
         public static Dictionary<int, OneSprite> compoundSprites;
+        public static Dictionary<(int, int), OneSprite> entitySprites;
+        public static Dictionary<(int, int), OneSprite> plantSprites;
         public static OneSprite numbersSprite;
         public static Dictionary<int, OneSprite> numberSprites;
         public static OneSprite overlayBackground = new OneSprite("OverlayBackground", true);
         public static void loadSpriteDictionaries()
         {
-            entitySprites = new Dictionary<int, OneSprite>
-            {
-                { 0, new OneSprite("Fairy", true)},
-                { 1, new OneSprite("Frog", true)},
-                { 2, new OneSprite("Fish", true)},
-                { 3, new OneSprite("Hornet", true)}
-            };
             compoundSprites = new Dictionary<int, OneSprite>
             {
                 { -5, new OneSprite("Honey", true)},
@@ -46,6 +41,26 @@ namespace Cave
                 { -1, new OneSprite("Piss", true)},
                 { 1, new OneSprite("BasicTile", true)},
                 { 2, new OneSprite("BasicTile", true)},
+            };
+            entitySprites = new Dictionary<(int, int), OneSprite>
+            {
+                { (0, 0), new OneSprite("Fairy", true)},
+                { (0, 1), new OneSprite("ObsidianFairy", true)},
+                { (0, 2), new OneSprite("FrostFairy", true)},
+                { (1, 0), new OneSprite("Frog", true)},
+                { (2, 0), new OneSprite("Fish", true)},
+                { (3, 0), new OneSprite("Hornet", true)}
+            };
+            plantSprites = new Dictionary<(int, int), OneSprite>
+            {
+                { (0, 0), new OneSprite("PlantMatter", true)},
+                { (1, 0), new OneSprite("Wood", true)},
+                { (2, 0), new OneSprite("Kelp", true)},
+                { (2, 1), new OneSprite("Kelp", true)},
+                { (3, 0), new OneSprite("ObsidianFairy", true)},
+                { (4, 0), new OneSprite("Fairy", true)},
+                { (5, 0), new OneSprite("FlowerPetal", true)},
+                { (5, 1), new OneSprite("ObsidianFairy", true)}
             };
             overlayBackground = new OneSprite("OverlayBackground", true);
             numbersSprite = new OneSprite("Numbers", true);
