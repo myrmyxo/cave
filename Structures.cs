@@ -13,12 +13,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
+
 using static Cave.Form1;
 using static Cave.Form1.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Entities;
+using static Cave.Files;
 
 namespace Cave
 {
@@ -103,7 +105,7 @@ namespace Cave
 
                     for (int j = 0; j < lenY; j++)
                     {
-                        chunkList[lenX].Add(new Chunk((startingChunk[0] + lenX, startingChunk[1] + j), screen.seed, true, screen));
+                        chunkList[lenX].Add(new Chunk((startingChunk[0] + lenX, startingChunk[1] + j), true, screen));
                     }
 
                     for (int i = 0; i < 16; i++)
@@ -133,7 +135,7 @@ namespace Cave
 
                     for (int j = 0; j < lenY; j++)
                     {
-                        listo.Add(new Chunk((startingChunk[0], startingChunk[1] + j), screen.seed, true, screen));
+                        listo.Add(new Chunk((startingChunk[0], startingChunk[1] + j), true, screen));
                     }
                     chunkList.Insert(0, listo);
 
@@ -161,7 +163,7 @@ namespace Cave
 
                     for (int i = 0; i < lenX; i++)
                     {
-                        chunkList[i].Add(new Chunk((startingChunk[0] + i, startingChunk[1] + lenY), screen.seed, true, screen));
+                        chunkList[i].Add(new Chunk((startingChunk[0] + i, startingChunk[1] + lenY), true, screen));
                     }
 
                     for (int i = 0; i < lenX * 16; i++)
@@ -188,7 +190,7 @@ namespace Cave
 
                     for (int i = 0; i < lenX; i++)
                     {
-                        chunkList[i].Insert(0, new Chunk((startingChunk[0] + i, startingChunk[1]), screen.seed, true, screen));
+                        chunkList[i].Insert(0, new Chunk((startingChunk[0] + i, startingChunk[1]), true, screen));
                     }
 
                     for (int i = 0; i < lenX * 16; i++)
@@ -214,7 +216,7 @@ namespace Cave
 
                 List<List<Chunk>> chunkList = new List<List<Chunk>>();
                 chunkList.Add(new List<Chunk>());
-                chunkList[0].Add(new Chunk((startChunk[0], startChunk[1]), screen.seed, true, screen));
+                chunkList[0].Add(new Chunk((startChunk[0], startChunk[1]), true, screen));
 
                 List<List<int>> tileList = new List<List<int>>();
                 for (int i = 0; i < 16; i++)
@@ -486,7 +488,7 @@ namespace Cave
                 {
                     foreach (Chunk chunk in chunko)
                     {
-                        chunk.saveChunk(false);
+                        Files.saveChunk(chunk, false);
                     }
                 }
 
@@ -527,7 +529,7 @@ namespace Cave
 
                 List<List<Chunk>> chunkList = new List<List<Chunk>>();
                 chunkList.Add(new List<Chunk>());
-                chunkList[0].Add(new Chunk((startChunk[0], startChunk[1]), screen.seed, true, screen));
+                chunkList[0].Add(new Chunk((startChunk[0], startChunk[1]), true, screen));
 
                 List<List<int>> tileList = new List<List<int>>();
                 for (int i = 0; i < 16; i++)
@@ -699,7 +701,7 @@ namespace Cave
                 {
                     foreach (Chunk chunk in chunko)
                     {
-                        chunk.saveChunk(false);
+                        Files.saveChunk(chunk, false);
                     }
                 }
 
@@ -754,7 +756,7 @@ namespace Cave
 
                     foreach (Chunk chunk in chunkDict.Values)
                     {
-                        chunk.saveChunk(false);
+                        Files.saveChunk(chunk, false);
                     }
 
                     name = "";
@@ -770,7 +772,7 @@ namespace Cave
             {
                 if (tilesFilled[0] > 2000) { return; }
                 (int x, int y) chunkPos = (Floor(pos.x, 16) / 16, Floor(pos.y, 16) / 16);
-                if (!chunkDict.ContainsKey(chunkPos)) { chunkDict.Add(chunkPos, new Chunk(chunkPos, screen.seed, true, screen)); }
+                if (!chunkDict.ContainsKey(chunkPos)) { chunkDict.Add(chunkPos, new Chunk(chunkPos, true, screen)); }
                 if (!tilesToFill.ContainsKey(pos) && chunkDict[chunkPos].fillStates[(pos.x%16 + 16) % 16, (pos.y%16 + 16) % 16] == 0)
                 {
                     tilesToFill[pos] = true;
@@ -991,7 +993,7 @@ namespace Cave
                     {
                         int ii = chunkBounds.Item1 + i;
                         int jj = chunkBounds.Item3 + j;
-                        Chunk chunko = new Chunk((ii, jj), screen.seed, true, screen);
+                        Chunk chunko = new Chunk((ii, jj), true, screen);
                         for (int k = 0; k < 16; k++)
                         {
                             for (int l = 0; l < 16; l++)
@@ -1003,7 +1005,7 @@ namespace Cave
                             }
                         }
                         chunko.modificationCount = 1;
-                        chunko.saveChunk(false);
+                        Files.saveChunk(chunko, false);
                     }
                 }
             }

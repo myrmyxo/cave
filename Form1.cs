@@ -13,12 +13,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
 using static Cave.Form1;
 using static Cave.Form1.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Entities;
+using static Cave.Files;
+using Newtonsoft.Json.Linq;
 
 namespace Cave
 {
@@ -133,80 +137,86 @@ namespace Cave
             public List<Plant> exteriorPlantList = new List<Plant>();
             public int modificationCount = 0;
             public int unstableLiquidCount = 1;
+            public bool entitiesAndPlantsSpawned = false;
 
             public Bitmap bitmap;
             public int[,] plantFillStates;
             public Bitmap plantBitmap;
-            public Chunk((int, int) posToPut, long seed, bool structureGenerated, Screen screenToPut)
+            public Chunk((int, int) posToPut, bool structureGenerated, Screen screenToPut)
             {
                 screen = screenToPut;
-                long bigBiomeSeed = LCGxNeg(LCGz(LCGyPos(LCGxNeg(seed))));
                 position = posToPut;
                 long chunkX = (long)(Floor(posToPut.Item1, 2) * 0.5f);
                 long chunkY = (long)(Floor(posToPut.Item2, 2) * 0.5f);
-                int[,] fillValues =
-                {
-                    {
-                        findPrimaryNoiseValue(chunkX, chunkY, screen, 0),
-                        findPrimaryNoiseValue(chunkX + 1, chunkY, screen, 0),
-                        findPrimaryNoiseValue(chunkX, chunkY + 1, screen, 0),
-                        findPrimaryNoiseValue(chunkX + 1, chunkY + 1, screen, 0)
-                    },
-                    {
-                        findPrimaryNoiseValue(chunkX, chunkY, screen, 1),
-                        findPrimaryNoiseValue(chunkX + 1, chunkY, screen, 1),
-                        findPrimaryNoiseValue(chunkX, chunkY + 1, screen, 1),
-                        findPrimaryNoiseValue(chunkX + 1, chunkY + 1, screen, 1)
-                    }
-                };
+
+                bool filePresent = testLoadChunk(structureGenerated);
+
                 chunkSeed = findPlantSeed(chunkX, chunkY, screen, 0);
-                primaryFillValues = fillValues;
+
+                if (!filePresent)
+                {
+                    primaryFillValues = new int[,]
+                    {
+                        {
+                            findPrimaryNoiseValue(chunkX, chunkY, screen, 0),
+                            findPrimaryNoiseValue(chunkX + 1, chunkY, screen, 0),
+                            findPrimaryNoiseValue(chunkX, chunkY + 1, screen, 0),
+                            findPrimaryNoiseValue(chunkX + 1, chunkY + 1, screen, 0)
+                        },
+                        {
+                            findPrimaryNoiseValue(chunkX, chunkY, screen, 1),
+                            findPrimaryNoiseValue(chunkX + 1, chunkY, screen, 1),
+                            findPrimaryNoiseValue(chunkX, chunkY + 1, screen, 1),
+                            findPrimaryNoiseValue(chunkX + 1, chunkY + 1, screen, 1)
+                        }
+                    };
+                }
                 chunkX = Floor(position.Item1, 16) / 16;
                 chunkY = Floor(position.Item2, 16) / 16;
-                int[,] biomeValues =
+                primaryBiomeValues = new int[,]
                 {
                     {
-                        findPrimaryBiomeValue(chunkX, chunkY, seed, 0),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, seed, 0),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, seed, 0),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, seed, 0)
+                        findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 0),
+                        findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 0),
+                        findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 0),
+                        findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 0)
                     },
                     {
-                        findPrimaryBiomeValue(chunkX, chunkY, seed, 1),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, seed, 1),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, seed, 1),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, seed, 1)
+                        findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 1),
+                        findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 1),
+                        findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 1),
+                        findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 1)
                     },
                     {
-                        findPrimaryBiomeValue(chunkX, chunkY, seed, 2),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, seed, 2),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, seed, 2),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, seed, 2)
+                        findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 2),
+                        findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 2),
+                        findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 2),
+                        findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 2)
                     },
                     {
-                        findPrimaryBiomeValue(chunkX, chunkY, seed, 3),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, seed, 3),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, seed, 3),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, seed, 3)
+                        findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 3),
+                        findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 3),
+                        findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 3),
+                        findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 3)
                     },
                     {
-                        findPrimaryBiomeValue(chunkX, chunkY, seed, 4),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, seed, 4),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, seed, 4),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, seed, 4)
+                        findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 4),
+                        findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 4),
+                        findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 4),
+                        findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 4)
                     },
                     {
-                        findPrimaryBiomeValue(chunkX, chunkY, seed, 5),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, seed, 5),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, seed, 5),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, seed, 5)
+                        findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 5),
+                        findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 5),
+                        findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 5),
+                        findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 5)
                     }
                 };
-                primaryBiomeValues = biomeValues;
 
                 chunkX = Floor(position.Item1, 64) / 64;
                 chunkY = Floor(position.Item2, 64) / 64;
-                int[,] bigBiomeValues =
+                long bigBiomeSeed = LCGxNeg(LCGz(LCGyPos(LCGxNeg(screen.seed))));
+                primaryBigBiomeValues = new int[,]
                 {
                     {
                         findPrimaryBiomeValue(chunkX, chunkY, bigBiomeSeed, 0),
@@ -245,116 +255,35 @@ namespace Cave
                         findPrimaryBiomeValue(chunkX+1, chunkY+1, bigBiomeSeed, 5)
                     }
                 };
-                primaryBigBiomeValues = bigBiomeValues;
-                secondaryFillValues = new int[2, 16, 16];
                 secondaryBiomeValues = new int[16, 16, 6];
                 secondaryBigBiomeValues = new int[16, 16, 6];
                 biomeIndex = new (int, int)[16, 16][];
-                fillStates = new int[16, 16];
                 baseColors = new (int,int,int)[16, 16];
                 colors = new Color[16, 16];
                 bitmap = new Bitmap(16, 16);
+
                 for (int i = 0; i < 16; i++)
                 {
                     for (int j = 0; j < 16; j++)
                     {
-                        int value;
                         for (int k = 0; k < 6; k++)
                         {
-                            value = findSecondaryBiomeValue(this, i, j, k);
-                            secondaryBiomeValues[i, j, k] = value;
-                            value = findSecondaryBigBiomeValue(this, i, j, k);
-                            secondaryBigBiomeValues[i, j, k] = value;
+                            secondaryBiomeValues[i, j, k] = findSecondaryBiomeValue(this, i, j, k);
+                            secondaryBigBiomeValues[i, j, k] = findSecondaryBigBiomeValue(this, i, j, k);
                         }
-                        (int, int)[] valueTupleArray = findBiome(secondaryBiomeValues, secondaryBigBiomeValues, i, j);
-                        biomeIndex[i, j] = valueTupleArray;
-                        value = findSecondaryNoiseValue(this, i, j, 0);
-                        secondaryFillValues[0, i, j] = value;
-                        int value1 = value;
-                        value = findSecondaryNoiseValue(this, i, j, 1);
-                        secondaryFillValues[1, i, j] = value;
-                        int value2 = value;
-                        int temperature = secondaryBiomeValues[i, j, 0];
-                        int mod1 = (int)(secondaryBiomeValues[i, j, 4]*0.25);
-                        int mod2 = (int)(secondaryBiomeValues[i, j, 5]*0.25);
+                        biomeIndex[i, j] = findBiome(secondaryBiomeValues, secondaryBigBiomeValues, i, j);
 
-                        float valueToBeAdded;
-                        float value1modifier = 0;
-                        float value2PREmodifier;
-                        float value2modifier = 0;
                         int[] colorArray = { 0, 0, 0 };
-                        float mod2divider = 1;
-                        float foresto = 1;
-                        float oceano = 0;
-                        float oceanoSeeSaw = 0;
-
                         float mult;
                         foreach ((int, int) tupel in biomeIndex[i, j])
                         {
                             mult = tupel.Item2 * 0.001f;
-                            if (tupel.Item1 == 1)
-                            {
-                                value2modifier += -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11));
-                            }
-                            else if (tupel.Item1 == 3)
-                            {
-                                foresto += mult;
-                            }
-                            else if (tupel.Item1 == 4)
-                            {
-                                float see1 = Sin(i + mod2 * 0.3f + 0.5f, 16);
-                                float see2 = Sin(j + mod2 * 0.3f + 0.5f, 16);
-                                valueToBeAdded = mult * Min(0, 20 * (see1 + see2) - 10);
-                                value2modifier += valueToBeAdded;
-                                value1modifier += valueToBeAdded + 2;
-                            }
-                            else if (tupel.Item1 == 6)
-                            {
-                                float see1 = Obs((position.Item1 * 16) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
-                                float see2 = Obs((position.Item2 * 16) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
-                                if (false && (value2 < 50 || value2 > 200))
-                                {
-                                    value2PREmodifier = 300;
-                                }
-                                else
-                                {
-                                    value2PREmodifier = (Min(0, -40 * (see1 + see2) + 20) * 10 + value2 - 200);
-                                }
-                                value1modifier += 5 * mult;
-                                value2modifier += mult * value2PREmodifier;
-                                mod2divider += mult * 1.5f;
-                            }
-                            else if (tupel.Item1 == 8)
-                            {
-                                oceano = mult*10;
-                                oceanoSeeSaw = Min(Seesaw((int)oceano, 8), 8 - oceano);
-                                if (oceanoSeeSaw < 0)
-                                {
-                                    oceanoSeeSaw = oceanoSeeSaw*oceanoSeeSaw*oceanoSeeSaw;
-                                }
-                                else { oceanoSeeSaw = oceanoSeeSaw*Abs(oceanoSeeSaw); }
-                                oceano *= 10;
-                                oceanoSeeSaw *= 10;
-                            }
-                            else { value2modifier += mult * (value1 % 16); }
 
                             (int, int, int) tupel2 = biomeDict[tupel.Item1];
                             colorArray[0] += (int)(mult * tupel2.Item1);
                             colorArray[1] += (int)(mult * tupel2.Item2);
                             colorArray[2] += (int)(mult * tupel2.Item3);
                         }
-
-                        mod2 = (int)(mod2 / mod2divider);
-
-                        int elementToFillVoidWith;
-                        if (biomeIndex[i, j][0].Item1 == 8) { elementToFillVoidWith = -2; }
-                        else { elementToFillVoidWith = 0; }
-
-                        if (value2 > 200 + value2modifier + oceano || value2 < (foresto-1)*75f - oceano) { fillStates[i, j] = elementToFillVoidWith; }
-                        else if (value1 > 122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw*0.1f) && value1 < 133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw) { fillStates[i, j] = elementToFillVoidWith; }
-                        else { fillStates[i, j] = 1; }
-
-
                         for (int k = 0; k < 3; k++)
                         {
                             colorArray[k] = (int)(colorArray[k] * 0.15f);
@@ -364,7 +293,95 @@ namespace Cave
                     }
                 }
 
-                testEntitySpawn(seed, structureGenerated);
+                
+                if (!filePresent)
+                {
+                    secondaryFillValues = new int[2, 16, 16];
+                    fillStates = new int[16, 16];
+                    for (int i = 0; i < 16; i++)
+                    {
+                        for (int j = 0; j < 16; j++)
+                        {
+                            secondaryFillValues[0, i, j] = findSecondaryNoiseValue(this, i, j, 0);
+                            int value1 = secondaryFillValues[0, i, j];
+                            secondaryFillValues[1, i, j] = findSecondaryNoiseValue(this, i, j, 1);
+                            int value2 = secondaryFillValues[1, i, j];
+                            int temperature = secondaryBiomeValues[i, j, 0];
+                            int mod1 = (int)(secondaryBiomeValues[i, j, 4]*0.25);
+                            int mod2 = (int)(secondaryBiomeValues[i, j, 5]*0.25);
+
+                            float valueToBeAdded;
+                            float value1modifier = 0;
+                            float value2PREmodifier;
+                            float value2modifier = 0;
+                            float mod2divider = 1;
+                            float foresto = 1;
+                            float oceano = 0;
+                            float oceanoSeeSaw = 0;
+
+                            float mult;
+                            foreach ((int, int) tupel in biomeIndex[i, j])
+                            {
+                                mult = tupel.Item2 * 0.001f;
+                                if (tupel.Item1 == 1)
+                                {
+                                    value2modifier += -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11));
+                                }
+                                else if (tupel.Item1 == 3)
+                                {
+                                    foresto += mult;
+                                }
+                                else if (tupel.Item1 == 4)
+                                {
+                                    float see1 = Sin(i + mod2 * 0.3f + 0.5f, 16);
+                                    float see2 = Sin(j + mod2 * 0.3f + 0.5f, 16);
+                                    valueToBeAdded = mult * Min(0, 20 * (see1 + see2) - 10);
+                                    value2modifier += valueToBeAdded;
+                                    value1modifier += valueToBeAdded + 2;
+                                }
+                                else if (tupel.Item1 == 6)
+                                {
+                                    float see1 = Obs((position.Item1 * 16) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
+                                    float see2 = Obs((position.Item2 * 16) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
+                                    if (false && (value2 < 50 || value2 > 200))
+                                    {
+                                        value2PREmodifier = 300;
+                                    }
+                                    else
+                                    {
+                                        value2PREmodifier = (Min(0, -40 * (see1 + see2) + 20) * 10 + value2 - 200);
+                                    }
+                                    value1modifier += 5 * mult;
+                                    value2modifier += mult * value2PREmodifier;
+                                    mod2divider += mult * 1.5f;
+                                }
+                                else if (tupel.Item1 == 8)
+                                {
+                                    oceano = mult*10;
+                                    oceanoSeeSaw = Min(Seesaw((int)oceano, 8), 8 - oceano);
+                                    if (oceanoSeeSaw < 0)
+                                    {
+                                        oceanoSeeSaw = oceanoSeeSaw*oceanoSeeSaw*oceanoSeeSaw;
+                                    }
+                                    else { oceanoSeeSaw = oceanoSeeSaw*Abs(oceanoSeeSaw); }
+                                    oceano *= 10;
+                                    oceanoSeeSaw *= 10;
+                                }
+                                else { value2modifier += mult * (value1 % 16); }
+                            }
+
+                            mod2 = (int)(mod2 / mod2divider);
+
+                            int elementToFillVoidWith;
+                            if (biomeIndex[i, j][0].Item1 == 8) { elementToFillVoidWith = -2; }
+                            else { elementToFillVoidWith = 0; }
+
+                            if (value2 > 200 + value2modifier + oceano || value2 < (foresto-1)*75f - oceano) { fillStates[i, j] = elementToFillVoidWith; }
+                            else if (value1 > 122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw*0.1f) && value1 < 133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw) { fillStates[i, j] = elementToFillVoidWith; }
+                            else { fillStates[i, j] = 1; }
+                        }
+                    }
+                }
 
                 for (int i = 0; i < 16; i++)
                 {
@@ -373,21 +390,29 @@ namespace Cave
                         findTileColor(i, j);
                     }
                 }
+
+                if (!structureGenerated && !entitiesAndPlantsSpawned)
+                {
+                    spawnEntities();
+                    entitiesAndPlantsSpawned = true;
+                }
             }
-            public void testEntitySpawn(long seed, bool structureGenerated)
+            public bool testLoadChunk(bool structureGenerated)
             {
                 if (structureGenerated)
                 {
-                    if (System.IO.File.Exists($"{currentDirectory}\\ChunkData\\{seed}\\{position.Item1}.{position.Item2}.txt"))
+                    if (System.IO.File.Exists($"{currentDirectory}\\ChunkData\\{screen.seed}\\{position.Item1}.{position.Item2}.json"))
                     {
-                        loadChunk(true);
+                        loadChunk(this, false);
+                        return true;
                     }
                 }
-                else if (System.IO.File.Exists($"{currentDirectory}\\ChunkData\\{seed}\\{position.Item1}.{position.Item2}.txt"))
+                else if (System.IO.File.Exists($"{currentDirectory}\\ChunkData\\{screen.seed}\\{position.Item1}.{position.Item2}.json"))
                 {
-                    loadChunk(false);
+                    loadChunk(this, true);
+                    return true;
                 }
-                else { spawnEntities();}
+                return false;
             }
             public void findTileColor(int i, int j)
             {
@@ -435,155 +460,17 @@ namespace Cave
             }
             public void spawnEntities()
             {
-                Entity newEntity = new Entity(this, screen);
+                Entity newEntity = new Entity(this);
                 if (!newEntity.isDeadAndShouldDisappear)
                 {
                     screen.activeEntities.Add(newEntity);
                 }
-                Plant newPlant = new Plant(this, screen);
+                Plant newPlant = new Plant(this);
                 if (!newPlant.isDeadAndShouldDisappear)
                 {
                     screen.activePlants.Add(newPlant);
                 }
 
-            }
-            public void loadChunk(bool forceEntityPlantNotSpawning)
-            {
-                bool willSpawnEntities;
-                using (StreamReader f = new StreamReader($"{currentDirectory}\\ChunkData\\{screen.seed}\\{position.Item1}.{position.Item2}.txt"))
-                {
-                    string line = f.ReadLine();
-                    if (line != null && line.Length > 0 && line[line.Length - 1] == ';')
-                    {
-                        if (line[0] == '0')
-                        {
-                            willSpawnEntities = true;
-                        }
-                        else { willSpawnEntities = false; }
-                    }
-                    else { willSpawnEntities = false; }
-                    line = f.ReadLine();
-                    int idx = 0;
-                    int length = 0;
-                    if (line != null && !forceEntityPlantNotSpawning)
-                    {
-                        List<string> listo = new List<string>();
-                        for (int i = 0; i < line.Length; i++)
-                        {
-                            if (line[i] == ';')
-                            {
-                                listo.Add(line.Substring(idx, length));
-                                idx = i + 1;
-                                length = -1;
-                            }
-                            length++;
-                        }
-                        for (int i = 0; i < listo.Count(); i += 5)
-                        {
-                            int posXt = Int32.Parse(listo[i]);
-                            int posYt = Int32.Parse(listo[i + 1]);
-                            int typet = Int32.Parse(listo[i + 2]);
-                            int subTypet = Int32.Parse(listo[i + 3]);
-                            int seedt = Int32.Parse(listo[i + 4]);
-                            screen.activeEntities.Add(new Entity(posXt, posYt, typet, subTypet, seedt, screen));
-                        }
-                    }
-
-                    line = f.ReadLine();
-                    idx = 0;
-                    length = 0;
-                    if (line != null && !forceEntityPlantNotSpawning)
-                    {
-                        List<string> listo = new List<string>();
-                        for (int i = 0; i < line.Length; i++)
-                        {
-                            if (line[i] == ';')
-                            {
-                                listo.Add(line.Substring(idx, length));
-                                idx = i + 1;
-                                length = -1;
-                            }
-                            length++;
-                        }
-                        for (int i = 0; i < listo.Count(); i+=5)
-                        {
-                            int posXt = Int32.Parse(listo[i]);
-                            int posYt = Int32.Parse(listo[i + 1]);
-                            int typet = Int32.Parse(listo[i + 2]);
-                            int subTypet = Int32.Parse(listo[i + 3]);
-                            int seedt = Int32.Parse(listo[i + 4]);
-                            screen.activePlants.Add(new Plant(posXt, posYt, typet, subTypet, seedt, this, screen));
-                        }
-                    }
-
-                    line = f.ReadLine();
-                    idx = 0;
-                    length = 0;
-                    if (line[0] != 'x')
-                    {
-                        modificationCount = 1;
-                        List<string> listo = new List<string>();
-                        for (int i = 0; i < line.Length; i++)
-                        {
-                            if (line[i] == ';')
-                            {
-                                listo.Add(line.Substring(idx, length));
-                                idx = i + 1;
-                                length = -1;
-                            }
-                            length++;
-                        }
-                        for (int i = 0; i < 16; i++)
-                        {
-                            for (int j = 0; j < 16; j++)
-                            {
-                                fillStates[i, j] = Int32.Parse(listo[i * 16 + j]);
-                                if (fillStates[i, j] < 0)
-                                {
-                                    unstableLiquidCount++;
-                                }
-                            }
-                        }
-                    }
-
-                    if (willSpawnEntities && !forceEntityPlantNotSpawning) { spawnEntities(); }
-                }
-            }
-            public void saveChunk(bool creaturesSpawned)
-            {
-                using (StreamWriter f = new StreamWriter($"{currentDirectory}\\ChunkData\\{screen.seed}\\{position.Item1}.{position.Item2}.txt", false))
-                {
-                    string stringo;
-                    if (creaturesSpawned) { stringo = "1;\n"; }
-                    else { stringo = "0;\n"; }
-                    foreach (Entity entity in entityList)
-                    {
-                        stringo += entity.posX + ";" + entity.posY + ";";
-                        stringo += entity.type + ";" + entity.subType + ";";
-                        stringo += entity.seed + ";";
-                    }
-                    stringo += "\n";
-                    foreach (Plant plant in plantList)
-                    {
-                        stringo += plant.posX + ";" + plant.posY + ";";
-                        stringo += plant.type + ";" + plant.subType + ";";
-                        stringo += plant.seed + ";";
-                    }
-                    stringo += "\n";
-                    if (modificationCount == 0)
-                    {
-                        stringo += "x\n";
-                    }
-                    else
-                    {
-                        foreach (int into in fillStates)
-                        {
-                            stringo += (Convert.ToInt32(into)).ToString() + ";";
-                        }
-                        stringo += "\n";
-                    }
-                    f.Write(stringo);
-                }
             }
             public void moveLiquids()
             {
@@ -1068,7 +955,7 @@ namespace Cave
                 {
                     for (int j = 0; j < chunkResolution; j++)
                     {
-                        loadedChunks.Add((posX + i, posY + j), new Chunk((posX + i, posY + j), seed, false, this));
+                        loadedChunks.Add((posX + i, posY + j), new Chunk((posX + i, posY + j), false, this));
                     }
                 }
                 if (isPngToBeExported) { gameBitmap = new Bitmap(16 * (chunkResolution - 1), 16 * (chunkResolution - 1)); }
@@ -1158,12 +1045,12 @@ namespace Cave
                 foreach((int, int) chunkPos in chunksToDelete.Keys)
                 {
                     //removePlantsFromChunk(loadedChunks[chunkPos]);
-                    loadedChunks[chunkPos].saveChunk(true);
+                    Files.saveChunk(loadedChunks[chunkPos], true);
                     loadedChunks.Remove(chunkPos);
                 }
                 foreach ((int, int) chunkPos in chunksToAdd.Keys)
                 {
-                    loadedChunks.Add(chunkPos, new Chunk(chunkPos, seed, false, this));
+                    loadedChunks.Add(chunkPos, new Chunk(chunkPos, false, this));
                     //addPlantsToChunk(loadedChunks[chunkPos]);
                     putEntitiesAndPlantsInChunks();
                 }
@@ -1384,7 +1271,7 @@ namespace Cave
             }
             public void makeTheFilledChunk()
             {
-                theFilledChunk = new Chunk((0, 0), 0, true, this);
+                theFilledChunk = new Chunk((0, 0), true, this);
                 for (int i = 0; i < 16; i++)
                 {
                     for (int j = 0; j < 16; j++)
@@ -1572,54 +1459,60 @@ namespace Cave
                 while (Abs(toMoveY) > 0)
                 {
                     (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX, posY + (int)Sign(toMoveY));
-                    Chunk chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32 + (int)Sign(toMoveY)) % 16] <= 0)
+                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                     {
-                        if (Abs(toMoveY) >= 1)
+                        if (chunkToTest.fillStates[(posX % 16 + 32) % 16, (posY % 16 + 32 + (int)Sign(toMoveY)) % 16] <= 0)
                         {
-                            posY += (int)Sign(toMoveY);
-                            realPosY += Sign(toMoveY);
-                            toMoveY = Sign(toMoveY) * (Abs(toMoveY) - 1);
+                            if (Abs(toMoveY) >= 1)
+                            {
+                                posY += (int)Sign(toMoveY);
+                                realPosY += Sign(toMoveY);
+                                toMoveY = Sign(toMoveY) * (Abs(toMoveY) - 1);
+                            }
+                            else
+                            {
+                                realPosY += toMoveY;
+                                posY = (int)Floor(realPosY, 1);
+                                toMoveY = 0;
+                            }
                         }
                         else
                         {
-                            realPosY += toMoveY;
-                            posY = (int)Floor(realPosY, 1);
+                            speedY = 0;
                             toMoveY = 0;
+                            break;
                         }
                     }
-                    else
-                    {
-                        speedY = 0;
-                        toMoveY = 0;
-                        break;
-                    }
+                    else { break; }
                 }
                 while (Abs(toMoveX) > 0)
                 {
                     (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX + (int)Sign(toMoveX), posY);
-                    Chunk chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[(posX % 16 + 32 + (int)Sign(toMoveX)) % 16, (posY % 16 + 32) % 16] <= 0)
+                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                     {
-                        if (Abs(toMoveX) >= 1)
+                        if (chunkToTest.fillStates[(posX % 16 + 32 + (int)Sign(toMoveX)) % 16, (posY % 16 + 32) % 16] <= 0)
                         {
-                            posX += (int)Sign(toMoveX);
-                            realPosX += Sign(toMoveX);
-                            toMoveX = Sign(toMoveX) * (Abs(toMoveX) - 1);
+                            if (Abs(toMoveX) >= 1)
+                            {
+                                posX += (int)Sign(toMoveX);
+                                realPosX += Sign(toMoveX);
+                                toMoveX = Sign(toMoveX) * (Abs(toMoveX) - 1);
+                            }
+                            else
+                            {
+                                realPosX += toMoveX;
+                                posX = (int)Floor(realPosX, 1);
+                                toMoveX = 0;
+                            }
                         }
                         else
                         {
-                            realPosX += toMoveX;
-                            posX = (int)Floor(realPosX, 1);
+                            speedX = 0;
                             toMoveX = 0;
+                            break;
                         }
                     }
-                    else
-                    {
-                        speedX = 0;
-                        toMoveX = 0;
-                        break;
-                    }
+                    else { break; }
                 }
             }
             public bool CheckStructurePosChange()
@@ -1680,13 +1573,13 @@ namespace Cave
                     }
                     if (tileContent.typeOfElement == 1)
                     {
-                        Entity newEntity = new Entity(chunkToTest, (posToDigX, posToDigY), tileContent.index, tileContent.subType, screen);
+                        Entity newEntity = new Entity(chunkToTest, (posToDigX, posToDigY), tileContent.index, tileContent.subType);
                         screen.activeEntities.Add(newEntity);
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (tileContent.typeOfElement == 2)
                     {
-                        Plant newPlant = new Plant(chunkToTest, (posToDigX, posToDigY), tileContent.index, tileContent.subType, screen);
+                        Plant newPlant = new Plant(chunkToTest, (posToDigX, posToDigY), tileContent.index, tileContent.subType);
                         if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants.Add(newPlant); }
                         timeAtLastPlace = timeElapsed;
                     }
@@ -1780,7 +1673,11 @@ namespace Cave
             int PNGsize = 250; // in chunks, 300 or more made it out of memory :( so put at 250 okok
             bool randomSeed = true;
 
-            long seed = 2807443684;
+            long seed = 3452270044;
+
+            // cool ideas for later !
+            // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ?
+            // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
 
             //
             // cool seeds !!!! DO NOT DELETE
@@ -1795,7 +1692,9 @@ namespace Cave
             // 3776667052 : yet again deep cold biome spawn
             // 1561562999 : onion san head... amazing
             // 1809684240 : go down, very very big water lake normally (don't forget to DELETE THE SAVE)
-            // 2807443684 ; the most FUCKING enormous OCEAN biome it is so fucking big... wtf
+            // 2807443684 : the most FUCKING enormous OCEAN biome it is so fucking big... wtf
+            // 3548078961 : giant fish in oceaon omggggg also banger terrain like wtf
+            // 3452270044 : chill start frost inside ocean
             //
 
             if (randomSeed)
@@ -2387,7 +2286,7 @@ namespace Cave
         }
         public static int LCGint2(int seed)
         {
-            return Abs((12616645 * seed + 8837) % 998947); // VERY SMALL HAVE TO REDO IT
+            return Abs((12616645 * seed + 8837) % 998947); // For some reason it DOES NOT WORK ??? The RANDOM is NOT wroking
         }
 
         public static void Sort(List<(int, int)> listo, bool sortByFirstInt)
