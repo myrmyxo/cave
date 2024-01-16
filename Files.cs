@@ -216,6 +216,13 @@ namespace Cave
                 serializer.Serialize(writer, baby);
             }
         }
+        public static void saveAllChunks(Form1.Screen screen)
+        {
+            foreach (Chunk chunko in screen.loadedChunks.Values)
+            {
+                saveChunk(chunko, false);
+            }
+        }
         public static void loadChunk(Chunk chunk, bool loadEntitiesAndPlants)
         {
             bool willSpawnEntities;
@@ -251,7 +258,7 @@ namespace Cave
             serializer.NullValueHandling = NullValueHandling.Ignore;
 
             ChunkJson chunkJson;
-            (int, int) position = (Floor(entity.posX, 16) / 16, Floor(entity.posY, 16) / 16);
+            (int, int) position = (Floor(entity.posX, 32) / 32, Floor(entity.posY, 32) / 32);
 
             if (System.IO.File.Exists($"{currentDirectory}\\ChunkData\\{entity.screen.seed}\\{position.Item1}.{position.Item2}.json"))
             {
