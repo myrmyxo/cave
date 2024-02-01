@@ -24,6 +24,7 @@ using static Cave.Entities;
 using static Cave.Files;
 using Newtonsoft.Json.Linq;
 using System.Resources;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TreeView;
 
 namespace Cave
 {
@@ -1485,6 +1486,32 @@ namespace Cave
             public void Dig(int posToDigX, int posToDigY)
             {
                 (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
+                int value;
+                foreach (Plant plant in screen.activePlants)
+                {
+                    value = plant.testDig(posToDigX, posToDigY);
+                    if (value != 0)
+                    {
+                        (int index, int subType, int typeOfElement)[] inventoryKeys = inventoryQuantities.Keys.ToArray();
+                        for (int i = 0; i < inventoryKeys.Length; i++)
+                        {
+                            if (inventoryKeys[i].index == value && inventoryKeys[i].typeOfElement == 3)
+                            {
+                                if (inventoryQuantities[(value, 0, 3)] != -999)
+                                {
+                                    inventoryQuantities[(value, 0, 3)]++;
+                                }
+                                goto AfterTest;
+                            }
+                        }
+                        // there was none of the thing present in the inventory already so gotta create it
+                        inventoryQuantities.Add((value, 0, 3), 1);
+                        inventoryElements.Add((value, 0, 3));
+                    AfterTest:;
+                        timeAtLastDig = timeElapsed;
+                        return;
+                    }
+                }
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return; }
                 int tileContent = chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32];
                 if (tileContent != 0)
@@ -1520,17 +1547,15 @@ namespace Cave
                 int tileState = chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32];
                 if (tileState == 0 || tileState < 0 && tileContent.typeOfElement > 0 )
                 {
-                    if (inventoryQuantities[tileContent] != -999)
+                    if (tileContent.typeOfElement == 0)
                     {
-                        inventoryQuantities[tileContent]--;
-                        if (inventoryQuantities[tileContent] <= 0)
-                        {
-                            inventoryQuantities.Remove(tileContent);
-                            inventoryElements.Remove(tileContent);
-                            moveInventoryCursor(0);
-                        }
+                        chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = tileContent.index;
+                        chunkToTest.findTileColor((posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32);
+                        chunkToTest.testLiquidUnstableLiquid(posToDigX, posToDigY);
+                        chunkToTest.modificationCount += 1;
+                        timeAtLastPlace = timeElapsed;
                     }
-                    if (tileContent.typeOfElement == 1)
+                    else if (tileContent.typeOfElement == 1)
                     {
                         Entity newEntity = new Entity(chunkToTest, (posToDigX, posToDigY), tileContent.index, tileContent.subType);
                         screen.activeEntities.Add(newEntity);
@@ -1542,13 +1567,16 @@ namespace Cave
                         if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants.Add(newPlant); }
                         timeAtLastPlace = timeElapsed;
                     }
-                    else if (tileContent.typeOfElement == 0)
+                    else { return; }
+                    if (inventoryQuantities[tileContent] != -999)
                     {
-                        chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = tileContent.index;
-                        chunkToTest.findTileColor((posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32);
-                        chunkToTest.testLiquidUnstableLiquid(posToDigX, posToDigY);
-                        chunkToTest.modificationCount += 1;
-                        timeAtLastPlace = timeElapsed;
+                        inventoryQuantities[tileContent]--;
+                        if (inventoryQuantities[tileContent] <= 0)
+                        {
+                            inventoryQuantities.Remove(tileContent);
+                            inventoryElements.Remove(tileContent);
+                            moveInventoryCursor(0);
+                        }
                     }
                 }
             }
@@ -1574,6 +1602,10 @@ namespace Cave
                     else if (element.typeOfElement == 2)
                     {
                         Sprites.drawSpriteOnCanvas(screen.overlayBitmap, plantSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
+                    }
+                    else if (element.typeOfElement == 3)
+                    {
+                        Sprites.drawSpriteOnCanvas(screen.overlayBitmap, materialSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
                     }
                     int quantity = inventoryQuantities[element];
                     if(quantity == -999)
@@ -1607,22 +1639,36 @@ namespace Cave
             turnPngIntoString("OverlayBackground");
             turnPngIntoString("Numbers");
             turnPngIntoString("BasicTile");
+
             turnPngIntoString("Fairy");
             turnPngIntoString("ObsidianFairy");
             turnPngIntoString("FrostFairy");
             turnPngIntoString("Frog");
             turnPngIntoString("Fish");
             turnPngIntoString("Hornet");
+
             turnPngIntoString("Piss");
             turnPngIntoString("Water");
             turnPngIntoString("FairyLiquid");
             turnPngIntoString("Lava");
             turnPngIntoString("Honey");
+
+            turnPngIntoString("BasePlant");
+            turnPngIntoString("Tree");
+            turnPngIntoString("KelpUpwards");
+            turnPngIntoString("KelpDownwards");
+            turnPngIntoString("ObsidianPlant");
+            turnPngIntoString("Mushroom");
+            turnPngIntoString("Vines");
+            turnPngIntoString("ObsidianVines");
+
             turnPngIntoString("Pollen");
             turnPngIntoString("PlantMatter");
             turnPngIntoString("FlowerPetal");
             turnPngIntoString("Wood");
             turnPngIntoString("Kelp");
+            turnPngIntoString("MushroomCap");
+            turnPngIntoString("MushroomStem");
 
             loadSpriteDictionaries();
 
@@ -1637,6 +1683,7 @@ namespace Cave
             // cool ideas for later !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ?
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
+            // add a dimension with CANDLE TREES (arbres chandeliers) that could be banger
 
             //
             // cool seeds !!!! DO NOT DELETE

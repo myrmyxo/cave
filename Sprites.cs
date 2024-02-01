@@ -29,6 +29,7 @@ namespace Cave
         public static Dictionary<int, OneSprite> compoundSprites;
         public static Dictionary<(int, int), OneSprite> entitySprites;
         public static Dictionary<(int, int), OneSprite> plantSprites;
+        public static Dictionary<(int, int), OneSprite> materialSprites;
         public static OneSprite numbersSprite;
         public static Dictionary<int, OneSprite> numberSprites;
         public static OneSprite overlayBackground = new OneSprite("OverlayBackground", true);
@@ -55,14 +56,24 @@ namespace Cave
             };
             plantSprites = new Dictionary<(int, int), OneSprite>
             {
-                { (0, 0), new OneSprite("PlantMatter", true)},
-                { (1, 0), new OneSprite("Wood", true)},
-                { (2, 0), new OneSprite("Kelp", true)},
-                { (2, 1), new OneSprite("Kelp", true)},
-                { (3, 0), new OneSprite("ObsidianFairy", true)},
-                { (4, 0), new OneSprite("Fairy", true)},
-                { (5, 0), new OneSprite("FlowerPetal", true)},
-                { (5, 1), new OneSprite("ObsidianFairy", true)}
+                { (0, 0), new OneSprite("BasePlant", true)},
+                { (1, 0), new OneSprite("Tree", true)},
+                { (2, 0), new OneSprite("KelpUpwards", true)},
+                { (2, 1), new OneSprite("KelpDownwards", true)},
+                { (3, 0), new OneSprite("ObsidianPlant", true)},
+                { (4, 0), new OneSprite("Mushroom", true)},
+                { (5, 0), new OneSprite("Vines", true)},
+                { (5, 1), new OneSprite("ObsidianVines", true)}
+            };
+            materialSprites = new Dictionary<(int, int), OneSprite>
+            {
+                { (1, 0), new OneSprite("PlantMatter", true)},
+                { (2, 0), new OneSprite("Wood", true)},
+                { (3, 0), new OneSprite("Kelp", true)},
+                { (4, 0), new OneSprite("MushroomStem", true)},
+                { (5, 0), new OneSprite("MushroomCap", true)},
+                { (6, 0), new OneSprite("FlowerPetal", true)},
+                { (7, 0), new OneSprite("MushroomStem", true)},
             };
             overlayBackground = new OneSprite("OverlayBackground", true);
             numbersSprite = new OneSprite("Numbers", true);

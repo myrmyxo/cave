@@ -22,6 +22,7 @@ using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TreeView;
+using Newtonsoft.Json.Linq;
 
 namespace Cave
 {
@@ -1559,6 +1560,75 @@ namespace Cave
                     }
                 }
                 isDeadAndShouldDisappear = true;
+            }
+            public int testDig(int posToDigX, int posToDigY)
+            {
+                List<Branch> branchesToTest = new List<Branch>();
+                List<Flower> flowersToTest = new List<Flower>();
+                foreach (Branch branch in childBranches)
+                {
+                    branchesToTest.Add(branch);
+                }
+                foreach (Flower flower in childFlowers)
+                {
+                    flowersToTest.Add(flower);
+                }
+                for (int i = 0; i < branchesToTest.Count; i++)
+                {
+                    foreach (Branch branch in branchesToTest[i].childBranches)
+                    {
+                        branchesToTest.Add(branch);
+                    }
+                    foreach (Flower flower in branchesToTest[i].childFlowers)
+                    {
+                        flowersToTest.Add(flower);
+                    }
+                }
+
+
+                (int x, int y) posToTest;
+                foreach (Flower flower in flowersToTest)
+                {
+                    posToTest = (posToDigX - posX - flower.pos.x, posToDigY - posY - flower.pos.y);
+                    if (flower.fillStates.TryGetValue((posToTest.x, posToTest.y), out int value))
+                    {
+                        if (value != 0)
+                        {
+                            flower.fillStates.Remove((posToTest.x, posToTest.y));
+                            makeBitmap();
+                            return value;
+                        }
+                    }
+                }
+
+                foreach (Branch branch in branchesToTest)
+                {
+                    posToTest = (posToDigX - posX - branch.pos.x, posToDigY - posY - branch.pos.y);
+                    if (branch.fillStates.TryGetValue((posToTest.x, posToTest.y), out int value))
+                    {
+                        if (value != 0)
+                        {
+                            branch.fillStates.Remove((posToTest.x, posToTest.y));
+                            makeBitmap();
+                            return value;
+                        }
+                    }
+                }
+
+                {
+                    posToTest = (posToDigX - posX, posToDigY - posY);
+                    if (fillStates.TryGetValue((posToTest.x, posToTest.y), out int value))
+                    {
+                        if (value != 0)
+                        {
+                            fillStates.Remove((posToTest.x, posToTest.y));
+                            makeBitmap();
+                            return value;
+                        }
+                    }
+                }
+
+                return 0;
             }
         }
     }
