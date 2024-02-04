@@ -22,11 +22,20 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
+using static Cave.Plants;
 
 namespace Cave
 {
     public class Files
     {
+        public class SettingsJson
+        {
+            public (int x, int y) playerPosition;
+            public int currentNestId;
+            public int currentEntityId;
+            public int currentPlantId;
+            public int currentStructureId;
+        }
         public class ChunkJson
         {
             public long chunkSeed;
@@ -63,11 +72,9 @@ namespace Cave
             public (int, int) type;
             public int state;
             public (float, float) pos;
+            public (int, int) tPos;
             public (float, float) speed;
-
-            public Dictionary<(int index, int subType, int typeOfElement), int> invQ;
-            public List<(int index, int subType, int typeOfElement)> invE;
-
+            public int[,] inv;
             public (float, float) lastDP;
             public EntityJson(Entity entity)
             {
@@ -75,9 +82,9 @@ namespace Cave
                 type = (entity.type, entity.subType);
                 state = entity.state;
                 pos = (entity.realPosX, entity.realPosY);
+                tPos = entity.targetPos;
                 speed = (entity.speedX, entity.speedY);
-                invQ = entity.inventoryQuantities;
-                invE = entity.inventoryElements;
+                inv = inventoryToArray(entity.inventoryQuantities, entity.inventoryElements);
                 lastDP = (entity.timeAtLastDig, entity.timeAtLastPlace);
             }
             public EntityJson()
@@ -106,7 +113,7 @@ namespace Cave
                 lstGrPos = plant.lastDrawPos;
                 grLvl = plant.growthLevel;
                 lastGr = plant.timeAtLastGrowth;
-                fillStates = dictToArray(plant.fillStates);
+                fillStates = fillstatesToArray(plant.fillStates);
                 branches = new List<BranchJson>();
                 foreach (Branch childBranch in plant.childBranches)
                 {
@@ -142,7 +149,7 @@ namespace Cave
                 pos = branch.pos;
                 lstGrPos = branch.lastDrawPos;
                 grLvl = branch.growthLevel;
-                fillStates = dictToArray(branch.fillStates);
+                fillStates = fillstatesToArray(branch.fillStates);
                 branches = new List<BranchJson>();
                 foreach (Branch childBranch in branch.childBranches)
                 {
@@ -175,14 +182,14 @@ namespace Cave
                 pos = flower.pos;
                 lstGrPos = flower.lastDrawPos;
                 grLvl = flower.growthLevel;
-                fillStates = dictToArray(flower.fillStates);
+                fillStates = fillstatesToArray(flower.fillStates);
             }
             public FlowerJson()
             {
 
             }
         }
-        public static int[,] dictToArray(Dictionary<(int x, int y), int> dicto)
+        public static int[,] fillstatesToArray(Dictionary<(int x, int y), int> dicto)
         {
             int[,] arrayo = new int[dicto.Count, 3];
             (int x, int y)[] keyo = dicto.Keys.ToArray();
@@ -194,7 +201,19 @@ namespace Cave
             }
             return arrayo;
         }
-        public static Dictionary<(int x, int y), int> arrayToDict(int[,] arrayo)
+        public static int[,] inventoryToArray(Dictionary<(int index, int subType, int typeOfElement), int> dicto, List<(int index, int subType, int typeOfElement)> listo)
+        {
+            int[,] arrayo = new int[dicto.Count, 4];
+            for (int i = 0; i < listo.Count; i++)
+            {
+                arrayo[i, 0] = listo[i].index;
+                arrayo[i, 1] = listo[i].subType;
+                arrayo[i, 2] = listo[i].typeOfElement;
+                arrayo[i, 3] = dicto[listo[i]];
+            }
+            return arrayo;
+        }
+        public static Dictionary<(int x, int y), int> arrayToFillstates(int[,] arrayo)
         {
             Dictionary<(int x, int y), int> dicto = new Dictionary<(int x, int y), int>();
             for (int i = 0; i < arrayo.GetLength(0); i++)
@@ -202,6 +221,17 @@ namespace Cave
                 dicto[(arrayo[i, 0], arrayo[i, 1])] = arrayo[i, 2];
             }
             return dicto;
+        }
+        public static (Dictionary<(int index, int subType, int typeOfElement), int>, List<(int index, int subType, int typeOfElement)>) arrayToInventory(int[,] arrayo)
+        {
+            Dictionary<(int index, int subType, int typeOfElement), int> dicto = new Dictionary<(int index, int subType, int typeOfElement), int>();
+            List<(int index, int subType, int typeOfElement)> listo = new List<(int index, int subType, int typeOfElement)>();
+            for (int i = 0; i < arrayo.GetLength(0); i++)
+            {
+                dicto[(arrayo[i, 0], arrayo[i, 1], arrayo[i, 2])] = arrayo[i, 3];
+                listo.Add((arrayo[i, 0], arrayo[i, 1], arrayo[i, 2]));
+            }
+            return (dicto, listo);
         }
         public static void saveChunk(Chunk chunk, bool creaturesSpawned)
         {
@@ -282,6 +312,15 @@ namespace Cave
                 {
                     serializer.Serialize(writer, chunkJson);
                 }
+            }
+        }
+        public static Nest loadNest(Form1.Screen screen, int id)
+        {
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\NestData\\{screen.seed}\\{id}.json"))
+            {
+                string content = f.ReadToEnd();
+                Nest nest = JsonConvert.DeserializeObject<Nest>(content);
+                return nest;
             }
         }
     }

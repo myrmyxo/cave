@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 using static Cave.Form1;
 using static Cave.Form1.Globals;
@@ -21,6 +22,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
+using static Cave.Plants;
 
 namespace Cave
 {
@@ -73,7 +75,7 @@ namespace Cave
                 { (4, 0), new OneSprite("MushroomStem", true)},
                 { (5, 0), new OneSprite("MushroomCap", true)},
                 { (6, 0), new OneSprite("FlowerPetal", true)},
-                { (7, 0), new OneSprite("MushroomStem", true)},
+                { (7, 0), new OneSprite("Pollen", true)},
             };
             overlayBackground = new OneSprite("OverlayBackground", true);
             numbersSprite = new OneSprite("Numbers", true);

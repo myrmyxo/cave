@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 using static Cave.Form1;
 using static Cave.Form1.Globals;
@@ -21,6 +22,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
+using static Cave.Plants;
 
 namespace Cave
 {
@@ -1028,11 +1030,43 @@ namespace Cave
                 }
             }
         }
+        public class Room
+        {
+            public Nest nest;
+            public int id;
+            public Dictionary<(int x, int y), bool> tiles;
+            public int type;
+            public List<int> linkedCorridorsId;
+        }
+        public class Corridor
+        {
+            public Nest nest;
+            public int id;
+            public Dictionary<(int x, int y), bool> tiles;
+            public List<int> linkedRoomsId;
+        }
         public class Nest
         {
-            public bool naturallyGenerated;
+            public int id;
+            public int seed;
 
+            public Dictionary<(int x, int y), bool> tiles;
+            public Dictionary<int, Corridor> corridors;
+            public Dictionary<int, Room> rooms;
+            public void saveInFile(Form1.Screen screen)
+            {
+                string savename = $"Hornet nest {id}";
+
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Converters.Add(new JavaScriptDateTimeConverter());
+                serializer.NullValueHandling = NullValueHandling.Ignore;
+
+                using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\NestData\\{screen.seed}\\{savename}.json"))
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    serializer.Serialize(writer, this);
+                }
+            }
         }
-
     }
 }

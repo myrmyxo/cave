@@ -22,9 +22,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
-using Newtonsoft.Json.Linq;
-using System.Resources;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TreeView;
+using static Cave.Plants;
 
 namespace Cave
 {
@@ -142,8 +140,6 @@ namespace Cave
             public bool entitiesAndPlantsSpawned = false;
 
             public Bitmap bitmap;
-            public int[,] plantFillStates;
-            public Bitmap plantBitmap;
             public Chunk((int, int) posToPut, bool structureGenerated, Screen screenToPut)
             {
                 screen = screenToPut;
@@ -378,9 +374,10 @@ namespace Cave
                             if (biomeIndex[i, j][0].Item1 == 8) { elementToFillVoidWith = -2; }
                             else { elementToFillVoidWith = 0; }
 
-                            if (value2 > 200 + value2modifier + oceano || value2 < (foresto-1)*75f - oceano) { fillStates[i, j] = elementToFillVoidWith; }
-                            else if (value1 > 122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw*0.1f) && value1 < 133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw) { fillStates[i, j] = elementToFillVoidWith; }
-                            else { fillStates[i, j] = 1; }
+                            //if (value2 > 200 + value2modifier + oceano || value2 < (foresto-1)*75f - oceano) { fillStates[i, j] = elementToFillVoidWith; }
+                            //else if (value1 > 122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw*0.1f) && value1 < 133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw) { fillStates[i, j] = elementToFillVoidWith; }
+                            //else { fillStates[i, j] = 1; }
+                            fillStates[i, j] = 0;
                         }
                     }
                 }
@@ -456,6 +453,12 @@ namespace Cave
                     colorArray[0] = (int)(colorArray[0] * 0.8f) + 145;
                     colorArray[1] = (int)(colorArray[1] * 0.8f) + 30;
                     colorArray[2] = (int)(colorArray[2] * 0.8f) + 60;
+                }
+                else if (fillStates[i, j] == -5)
+                {
+                    colorArray[0] = (int)(colorArray[0] * 0.8f) + 140;
+                    colorArray[1] = (int)(colorArray[1] * 0.8f) + 120;
+                    colorArray[2] = (int)(colorArray[2] * 0.8f) + 70;
                 }
                 colors[i, j] = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
                 bitmap.SetPixel(i, j, colors[i, j]);
@@ -882,6 +885,10 @@ namespace Cave
                 {
                     Directory.CreateDirectory($"{currentDirectory}\\StructureData\\{seed}");
                 }
+                if (!Directory.Exists($"{currentDirectory}\\NestData\\{seed}"))
+                {
+                    Directory.CreateDirectory($"{currentDirectory}\\NestData\\{seed}");
+                }
                 if (!Directory.Exists($"{currentDirectory}\\bitmapos"))
                 {
                     Directory.CreateDirectory($"{currentDirectory}\\bitmapos");
@@ -1138,7 +1145,7 @@ namespace Cave
                         newStructure.imprintChunks();
                         newStructure.saveInFile();
                     }
-                    long waterLakesAmount = 15 + (seedX + seedY) % 150;
+                    long waterLakesAmount = 0;// 15 + (seedX + seedY) % 150;
                     for (int i = 0; i < waterLakesAmount; i++)
                     {
                         seedX = LCGyNeg(seedX); // on porpoise x    /\_/\
@@ -1684,6 +1691,7 @@ namespace Cave
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ?
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
             // add a dimension with CANDLE TREES (arbres chandeliers) that could be banger
+            // make it possible to visit entities/players inventories lmfao
 
             //
             // cool seeds !!!! DO NOT DELETE
@@ -2480,6 +2488,30 @@ namespace Cave
             int pos = poso % modulo;
             if (pos < 0) { pos += modulo; }
             return pos;
+        }
+
+
+
+
+        // functions to randomize shit
+        public static List<T> shuffleList<T>(List<T> listo)
+        {
+            int posToSwitch;
+            for (int i = listo.Count-1; i >= 0; i--)
+            {
+                posToSwitch = rand.Next(i+1);
+                var elementHeld = listo[i];
+                listo[i] = listo[posToSwitch];
+                listo[posToSwitch] = elementHeld;
+            }
+            for (int i = listo.Count - 1; i >= 0; i--)
+            {
+                posToSwitch = rand.Next(i + 1);
+                var elementHeld = listo[i];
+                listo[i] = listo[posToSwitch];
+                listo[posToSwitch] = elementHeld;
+            } // do it twice because yes ! So element can be at its original position maybe ?
+            return listo;
         }
     }
 }
