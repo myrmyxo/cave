@@ -41,6 +41,7 @@ namespace Cave
             public static bool[] placePress = { false, false };
             public static bool[] zoomPress = { false, false };
             public static bool[] inventoryChangePress = { false, false };
+            public static bool pausePress = false;
             public static bool shiftPress = false;
             public static float lastZoom = 0;
             public static DateTime timeAtLauch;
@@ -374,10 +375,10 @@ namespace Cave
                             if (biomeIndex[i, j][0].Item1 == 8) { elementToFillVoidWith = -2; }
                             else { elementToFillVoidWith = 0; }
 
-                            //if (value2 > 200 + value2modifier + oceano || value2 < (foresto-1)*75f - oceano) { fillStates[i, j] = elementToFillVoidWith; }
-                            //else if (value1 > 122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw*0.1f) && value1 < 133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw) { fillStates[i, j] = elementToFillVoidWith; }
-                            //else { fillStates[i, j] = 1; }
-                            fillStates[i, j] = 0;
+                            if (value2 > 200 + value2modifier + oceano || value2 < (foresto-1)*75f - oceano) { fillStates[i, j] = elementToFillVoidWith; }
+                            else if (value1 > 122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw*0.1f) && value1 < 133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw) { fillStates[i, j] = elementToFillVoidWith; }
+                            else { fillStates[i, j] = 1; }
+                            //fillStates[i, j] = 0;
                         }
                     }
                 }
@@ -1145,7 +1146,7 @@ namespace Cave
                         newStructure.imprintChunks();
                         newStructure.saveInFile();
                     }
-                    long waterLakesAmount = 0;// 15 + (seedX + seedY) % 150;
+                    long waterLakesAmount = 15 + (seedX + seedY) % 150;
                     for (int i = 0; i < waterLakesAmount; i++)
                     {
                         seedX = LCGyNeg(seedX); // on porpoise x    /\_/\
@@ -1222,6 +1223,23 @@ namespace Cave
                         using (var g = Graphics.FromImage(gameBitmap))
                         {
                             g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
+                        }
+                    }
+                }
+                foreach (Entity entity in activeEntities) // debug for paths
+                {
+                    foreach ((int x, int y) posToDrawAt in entity.pathToTarget)
+                    {
+                        pixelPosX = posToDrawAt.x - camPosX - UnloadedChunksAmount * 32;
+                        pixelPosY = posToDrawAt.y - camPosY - UnloadedChunksAmount * 32;
+
+                        if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
+                        {
+                            Color color = entity.color;
+                            using (var g = Graphics.FromImage(gameBitmap))
+                            {
+                                g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
+                            }
                         }
                     }
                 }
@@ -2078,95 +2096,98 @@ namespace Cave
         private void timer1_Tick(object sender, EventArgs e)
         {
             Screen screen = (Screen)timer1.Tag;
-            timeElapsed += 0.02f;
-            screen.extraLoadedChunks.Clear(); // this will make many bugs
-            screen.broadTestUnstableLiquidList = new List<(int, int)>();
-            if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { screen.zoom(true); }
-            if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
-            if (inventoryChangePress[0]) { inventoryChangePress[0] = false; player.moveInventoryCursor(-1); }
-            if (inventoryChangePress[1]) { inventoryChangePress[1] = false; player.moveInventoryCursor(1); }
-            timeElapsed = (float)((DateTime.Now - timeAtLauch).TotalSeconds);
-            accCamX = 0;
-            accCamY = 0;
-            player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.85f) - 0.2f));
-            player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.85f) - 0.2f));
-            if (arrowKeysState[0]) { player.speedX += 0.5f; }
-            if (arrowKeysState[1]) { player.speedX -= 0.5f; }
-            if (arrowKeysState[2]) { player.speedY -= 0.5f; }
-            if (arrowKeysState[3]) { player.speedY += 1; }
-            player.speedY -= 0.5f;
-            if (shiftPress)
+            if (!pausePress)
             {
-                player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.75f) - 0.7f));
-                player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.75f) - 0.7f));
-            }
-            foreach (Player playor in screen.playerList)
-            {
-                playor.movePlayer();
-                screen.checkStructures(playor);
-            }
-
-
-            int posDiffX = player.posX - (camPosX + 16 * (screen.chunkResolution - 1)); //*2 is needed cause there's only *8 and not *16 before
-            int posDiffY = player.posY - (camPosY + 16 * (screen.chunkResolution - 1));
-            accCamX = Sign(posDiffX) * Max(0, Sqrt(Abs(posDiffX)) - 2);
-            accCamY = Sign(posDiffY) * Max(0, Sqrt(Abs(posDiffY)) - 2);
-            if (accCamX == 0 || Sign(accCamX) != Sign(speedCamX))
-            {
-                speedCamX = Sign(speedCamX) * (Max(Abs(speedCamX) - 1, 0));
-            }
-            if (accCamY == 0 || Sign(accCamY) != Sign(speedCamY))
-            {
-                speedCamY = Sign(speedCamY) * (Max(Abs(speedCamY) - 1, 0));
-            }
-            speedCamX = Clamp(speedCamX + accCamX, -15f, 15f);
-            speedCamY = Clamp(speedCamY + accCamY, -15f, 15f);
-            realCamPosX += speedCamX;
-            realCamPosY += speedCamY;
-            camPosX = (int)(realCamPosX + 0.5f);
-            camPosY = (int)(realCamPosY + 0.5f);
-            int oldChunkX = screen.chunkX;
-            int oldChunkY = screen.chunkY;
-            int chunkVariationX = Floor(camPosX, 32) / 32 - oldChunkX;
-            int chunkVariationY = Floor(camPosY, 32) / 32 - oldChunkY;
-            if (chunkVariationX != 0 || chunkVariationY != 0)
-            {
-                screen.updateLoadedChunks(screen.seed, chunkVariationX, chunkVariationY);
-            }
-
-
-
-            screen.entitesToRemove = new List<Entity>();
-            foreach (Entity entity in screen.activeEntities)
-            {
-                entity.testDigPlace();
-            }
-            foreach (Entity entity in screen.activeEntities)
-            {
-                entity.moveEntity();
-            }
-            foreach (Entity entity in screen.entitesToRemove)
-            {
-                screen.activeEntities.Remove(entity);
-            }
-            foreach (Plant plant in screen.activePlants)
-            {
-                plant.testPlantGrowth();
-            }
-            for (int j = screen.chunkY + screen.chunkResolution - 1; j >= screen.chunkY; j--)
-            {
-                for (int i = screen.chunkX; i < screen.chunkX + screen.chunkResolution; i++)
+                timeElapsed += 0.02f;
+                screen.extraLoadedChunks.Clear(); // this will make many bugs
+                screen.broadTestUnstableLiquidList = new List<(int, int)>();
+                if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { screen.zoom(true); }
+                if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
+                if (inventoryChangePress[0]) { inventoryChangePress[0] = false; player.moveInventoryCursor(-1); }
+                if (inventoryChangePress[1]) { inventoryChangePress[1] = false; player.moveInventoryCursor(1); }
+                timeElapsed = (float)((DateTime.Now - timeAtLauch).TotalSeconds);
+                accCamX = 0;
+                accCamY = 0;
+                player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.85f) - 0.2f));
+                player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.85f) - 0.2f));
+                if (arrowKeysState[0]) { player.speedX += 0.5f; }
+                if (arrowKeysState[1]) { player.speedX -= 0.5f; }
+                if (arrowKeysState[2]) { player.speedY -= 0.5f; }
+                if (arrowKeysState[3]) { player.speedY += 1; }
+                player.speedY -= 0.5f;
+                if (shiftPress)
                 {
-                    if (rand.Next(50) == 0) { screen.loadedChunks[(i, j)].unstableLiquidCount++; }
-                    screen.loadedChunks[(i, j)].moveLiquids();
+                    player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.75f) - 0.7f));
+                    player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.75f) - 0.7f));
                 }
+                foreach (Player playor in screen.playerList)
+                {
+                    playor.movePlayer();
+                    screen.checkStructures(playor);
+                }
+
+
+                int posDiffX = player.posX - (camPosX + 16 * (screen.chunkResolution - 1)); //*2 is needed cause there's only *8 and not *16 before
+                int posDiffY = player.posY - (camPosY + 16 * (screen.chunkResolution - 1));
+                accCamX = Sign(posDiffX) * Max(0, Sqrt(Abs(posDiffX)) - 2);
+                accCamY = Sign(posDiffY) * Max(0, Sqrt(Abs(posDiffY)) - 2);
+                if (accCamX == 0 || Sign(accCamX) != Sign(speedCamX))
+                {
+                    speedCamX = Sign(speedCamX) * (Max(Abs(speedCamX) - 1, 0));
+                }
+                if (accCamY == 0 || Sign(accCamY) != Sign(speedCamY))
+                {
+                    speedCamY = Sign(speedCamY) * (Max(Abs(speedCamY) - 1, 0));
+                }
+                speedCamX = Clamp(speedCamX + accCamX, -15f, 15f);
+                speedCamY = Clamp(speedCamY + accCamY, -15f, 15f);
+                realCamPosX += speedCamX;
+                realCamPosY += speedCamY;
+                camPosX = (int)(realCamPosX + 0.5f);
+                camPosY = (int)(realCamPosY + 0.5f);
+                int oldChunkX = screen.chunkX;
+                int oldChunkY = screen.chunkY;
+                int chunkVariationX = Floor(camPosX, 32) / 32 - oldChunkX;
+                int chunkVariationY = Floor(camPosY, 32) / 32 - oldChunkY;
+                if (chunkVariationX != 0 || chunkVariationY != 0)
+                {
+                    screen.updateLoadedChunks(screen.seed, chunkVariationX, chunkVariationY);
+                }
+
+
+
+                screen.entitesToRemove = new List<Entity>();
+                foreach (Entity entity in screen.activeEntities)
+                {
+                    entity.testDigPlace();
+                }
+                foreach (Entity entity in screen.activeEntities)
+                {
+                    entity.moveEntity();
+                }
+                foreach (Entity entity in screen.entitesToRemove)
+                {
+                    screen.activeEntities.Remove(entity);
+                }
+                foreach (Plant plant in screen.activePlants)
+                {
+                    plant.testPlantGrowth();
+                }
+                for (int j = screen.chunkY + screen.chunkResolution - 1; j >= screen.chunkY; j--)
+                {
+                    for (int i = screen.chunkX; i < screen.chunkX + screen.chunkResolution; i++)
+                    {
+                        if (rand.Next(50) == 0) { screen.loadedChunks[(i, j)].unstableLiquidCount++; }
+                        screen.loadedChunks[(i, j)].moveLiquids();
+                    }
+                }
+                gamePictureBox.Image = screen.updateScreen();
+                gamePictureBox.Refresh();
+                overlayPictureBox.Image = screen.overlayBitmap;
+                Sprites.drawSpriteOnCanvas(screen.overlayBitmap, overlayBackground.bitmap, (0, 0), 4, false);
+                player.drawInventory();
+                overlayPictureBox.Refresh();
             }
-            gamePictureBox.Image = screen.updateScreen();
-            gamePictureBox.Refresh();
-            overlayPictureBox.Image = screen.overlayBitmap;
-            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, overlayBackground.bitmap, (0, 0), 4, false);
-            player.drawInventory();
-            overlayPictureBox.Refresh();
         }
         private void KeyIsDown(object sender, KeyEventArgs e)
         {
@@ -2213,6 +2234,10 @@ namespace Cave
             if (e.KeyCode == Keys.V)
             {
                 inventoryChangePress[1] = true;
+            }
+            if (e.KeyCode == Keys.P)
+            {
+                pausePress = true;
             }
             if ((Control.ModifierKeys & Keys.Shift) != 0)
             {
@@ -2264,6 +2289,10 @@ namespace Cave
             if (e.KeyCode == Keys.V)
             {
                 inventoryChangePress[1] = false;
+            }
+            if (e.KeyCode == Keys.P)
+            {
+                pausePress = false;
             }
             if ((Control.ModifierKeys & Keys.Shift) == 0)
             {

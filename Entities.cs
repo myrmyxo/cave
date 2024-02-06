@@ -23,7 +23,7 @@ using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
-using Newtonsoft.Json.Linq;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Cave
 {
@@ -46,6 +46,7 @@ namespace Cave
             public Color color;
 
             public (int x, int y) targetPos = (0, 0);
+            public List<(int x, int y)> pathToTarget = new List<(int x, int y)>();
 
             public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
             public List<(int index, int subType, int typeOfElement)> inventoryElements;
@@ -223,6 +224,113 @@ namespace Cave
                 }
                 return false;
             }
+            public void addToQueue(List<((int x, int y) position, float cost)> queue, ((int x, int y) position, float cost) valueToAdd)
+            {
+                int idx = 0;
+                while (idx < queue.Count)
+                {
+                    if (valueToAdd.cost < queue[idx].cost)
+                    {
+                        queue.Insert(idx, valueToAdd);
+                        return;
+                    }
+                    idx++;
+                }
+                queue.Add(valueToAdd);
+            }
+            public void addRemoveToQueue(List<((int x, int y) position, float cost)> queue, ((int x, int y) position, float cost) valueToAdd)
+            {
+                int idx = 0;
+                while (idx < queue.Count)
+                {
+                    if (valueToAdd.cost < queue[idx].cost)
+                    {
+                        queue.Insert(idx, valueToAdd);
+                        return;
+                    }
+                    idx++;
+                }
+                while (idx < queue.Count)
+                {
+                    if (valueToAdd.position == queue[idx].position)
+                    {
+                        queue.RemoveAt(idx);
+                        return;
+                    }
+                    idx++;
+                }
+            }
+            public int heuristic((int x, int y) currentLocation, (int x, int y) targetLocation)
+            {
+                int diffX = Abs(targetLocation.x - currentLocation.x);
+                int diffY = Abs(targetLocation.y - currentLocation.y);
+                int diagNumber = Min(diffX, diffY);
+                return (int)(diffX + diffY - 2*diagNumber + 1.41421356237f*diagNumber);
+            }
+            public bool pathfindToLocation((int x, int y) targetLocation)
+            {
+                ((int x, int y) pos, float cost)[] neighbourArray = new ((int x, int y) pos, float cost)[]
+                {
+                    ((1, 0), 1), ((-1, 0), 1), ((0, -1), 1), ((0, 1), 1),
+                    ((1, 1), 1.41421356237f), ((-1, 1), 1.41421356237f), ((-1, -1), 1.41421356237f), ((1, -1), 1.41421356237f)
+                };
+
+                Dictionary<(int x, int y), float> costOfTiles = new Dictionary<(int x, int y), float> { { (posX, posY), 0 } };
+                Dictionary<(int x, int y), (int x, int y)> originOfTiles = new Dictionary<(int x, int y), (int x, int y)>();
+                List<((int x, int y) position, float cost)> tilesToVisit = new List<((int x, int y) position, float cost)> { ((posX, posY), heuristic((posX, posY), targetLocation)) };
+                int repeatCounter = 0;
+
+                (int x, int y) tileToTest;
+                while (repeatCounter < 5000 && tilesToVisit.Count > 0)
+                {
+                    tileToTest = tilesToVisit[0].position;
+                    tilesToVisit.RemoveAt(0);
+                    if ((tileToTest.x, tileToTest.y) == targetLocation)
+                    {
+                        goto pathFound;
+                    }
+                    // test if tile possible to go through
+                    (int x, int y) chunkPos = screen.findChunkAbsoluteIndex(tileToTest.x, tileToTest.y);
+                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                    {
+                        (int x, int y) tileIndex = GetChunkTileIndex(tileToTest, 32);
+                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] <= 0)
+                        {
+                            // add neighbours
+                            foreach (((int x, int y) pos, float cost) neighbour in neighbourArray)
+                            {
+                                float costo = costOfTiles[tileToTest] + neighbour.cost; // THE 1 IS THE ONE OF THE 
+                                (int x, int y) posToAddMaybe = (tileToTest.x + neighbour.pos.x, tileToTest.y + neighbour.pos.y);
+                                if (!costOfTiles.ContainsKey(posToAddMaybe)) // if never visited
+                                {
+                                    costOfTiles[posToAddMaybe] = costo;
+                                    originOfTiles[posToAddMaybe] = tileToTest;
+                                    addToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
+                                }
+                                else if (costo < costOfTiles[posToAddMaybe])
+                                {
+                                    costOfTiles[posToAddMaybe] = costo;
+                                    originOfTiles[posToAddMaybe] = tileToTest;
+                                    addRemoveToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
+                                }
+                            }
+                        }
+                    }
+                    repeatCounter++;
+                }
+                return false; // exit early (if impossible to find a path)
+            pathFound:;
+                //backtrack function
+                List<(int x, int y)> path = new List<(int x, int y)> { targetLocation };
+                (int x, int y) currentPos = targetLocation;
+                while (originOfTiles.TryGetValue(currentPos, out (int x, int y) gottenValue))
+                {
+                    path.Insert(0, gottenValue);
+                    currentPos = gottenValue;
+                }
+                pathToTarget = path;
+                return true;
+            }
             public void moveEntity()
             {
                 (int, int) chunkPos;
@@ -250,7 +358,8 @@ namespace Cave
                         {
                             if (findPointOfInterestInPlants(7))
                             {
-                                state = 2; //findRandomDestination(10 + rand.Next(50))
+                                state = 2;
+                                pathfindToLocation(targetPos);
                             }
                         }
                     }
