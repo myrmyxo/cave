@@ -246,10 +246,14 @@ namespace Cave
                     if (valueToAdd.cost < queue[idx].cost)
                     {
                         queue.Insert(idx, valueToAdd);
-                        return;
+                        idx++;
+                        goto AfterLoop;
                     }
                     idx++;
                 }
+                queue.Add(valueToAdd);
+                return;
+            AfterLoop:;
                 while (idx < queue.Count)
                 {
                     if (valueToAdd.position == queue[idx].position)
@@ -267,15 +271,76 @@ namespace Cave
                 int diagNumber = Min(diffX, diffY);
                 return (int)(diffX + diffY - 2*diagNumber + 1.41421356237f*diagNumber);
             }
+            public int evaluateTile((int x, int y) location, Dictionary<(int x, int y), int> costOfTiles)
+            {
+                (int x, int y) chunkPos = screen.findChunkAbsoluteIndex(location.x, location.y);
+                if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                {
+                    (int x, int y) tileIndex = GetChunkTileIndex(location, 32);
+                    int tileContent = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
+                    if (tileContent <= 0)
+                    {
+                        costOfTiles[location] = costDict[tileContent];
+                        return costOfTiles[location];
+                    }
+                }
+                costOfTiles[location] = 1000000;
+                return 1000000;
+            }
+            public bool testQueueAdd((int x, int y) tileToTest, Dictionary<(int x, int y), int> costOfTiles)
+            {
+                int tileCost;
+                if (costOfTiles.TryGetValue(tileToTest, out int returnedResult))
+                {
+                    tileCost = returnedResult;
+                }
+                else
+                {
+                    tileCost = evaluateTile(tileToTest, costOfTiles);
+                }
+
+                if (tileCost < 999999)
+                {
+                    return true;
+                }
+                return false;
+            }
+            public (bool topLeft, bool bottomLeft, bool bottomRight, bool topRight) updateDiagsToAdd((bool topLeft, bool bottomLeft, bool bottomRight, bool topRight) diagsToAdd, (int x, int y) neighbour)
+            {
+                if (neighbour.x == -1)
+                {
+                    diagsToAdd.topLeft = true;
+                    diagsToAdd.bottomLeft = true;
+                }
+                else if (neighbour.x == 1)
+                {
+                    diagsToAdd.topRight = true;
+                    diagsToAdd.bottomRight = true;
+                }
+                else if (neighbour.y == -1)
+                {
+                    diagsToAdd.bottomLeft = true;
+                    diagsToAdd.bottomRight = true;
+                }
+                else if (neighbour.y == 1)
+                {
+                    diagsToAdd.topLeft = true;
+                    diagsToAdd.topRight = true;
+                }
+                return diagsToAdd;
+            }
             public bool pathfindToLocation((int x, int y) targetLocation)
             {
-                ((int x, int y) pos, float cost)[] neighbourArray = new ((int x, int y) pos, float cost)[]
+                ((int x, int y) pos, float cost)[] neighbourDict = new ((int x, int y) pos, float cost)[]
                 {
                     ((1, 0), 1), ((-1, 0), 1), ((0, -1), 1), ((0, 1), 1),
+                }; ((int x, int y) pos, float cost)[] diagNeighbourDicto = new ((int x, int y) pos, float cost)[]
+                {
                     ((1, 1), 1.41421356237f), ((-1, 1), 1.41421356237f), ((-1, -1), 1.41421356237f), ((1, -1), 1.41421356237f)
                 };
 
-                Dictionary<(int x, int y), float> costOfTiles = new Dictionary<(int x, int y), float> { { (posX, posY), 0 } };
+                Dictionary<(int x, int y), int> costOfTiles = new Dictionary<(int x, int y), int> { { (posX, posY), 1000000 } };
+                Dictionary<(int x, int y), float> cumulativeCostOfTiles = new Dictionary<(int x, int y), float> { { (posX, posY), 0 } };
                 Dictionary<(int x, int y), (int x, int y)> originOfTiles = new Dictionary<(int x, int y), (int x, int y)>();
                 List<((int x, int y) position, float cost)> tilesToVisit = new List<((int x, int y) position, float cost)> { ((posX, posY), heuristic((posX, posY), targetLocation)) };
                 int repeatCounter = 0;
@@ -289,30 +354,107 @@ namespace Cave
                     {
                         goto pathFound;
                     }
-                    // test if tile possible to go through
-                    (int x, int y) chunkPos = screen.findChunkAbsoluteIndex(tileToTest.x, tileToTest.y);
-                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                    // add neighbours
+                    (bool topLeft, bool bottomLeft, bool bottomRight, bool topRight) diagsToAdd = (false, false, false, false);
+                    foreach (((int x, int y) pos, float cost) neighbour in neighbourDict)
                     {
-                        (int x, int y) tileIndex = GetChunkTileIndex(tileToTest, 32);
-                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] <= 0)
+                        (int x, int y) posToAddMaybe = (tileToTest.x + neighbour.pos.x, tileToTest.y + neighbour.pos.y);
+                        if (testQueueAdd(posToAddMaybe, costOfTiles))
                         {
-                            // add neighbours
-                            foreach (((int x, int y) pos, float cost) neighbour in neighbourArray)
+                            float costo = cumulativeCostOfTiles[tileToTest] + neighbour.cost*costOfTiles[posToAddMaybe];
+                            if (!cumulativeCostOfTiles.ContainsKey(posToAddMaybe)) // if never visited
                             {
-                                float costo = costOfTiles[tileToTest] + neighbour.cost; // THE 1 IS THE ONE OF THE 
-                                (int x, int y) posToAddMaybe = (tileToTest.x + neighbour.pos.x, tileToTest.y + neighbour.pos.y);
-                                if (!costOfTiles.ContainsKey(posToAddMaybe)) // if never visited
-                                {
-                                    costOfTiles[posToAddMaybe] = costo;
-                                    originOfTiles[posToAddMaybe] = tileToTest;
-                                    addToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
-                                }
-                                else if (costo < costOfTiles[posToAddMaybe])
-                                {
-                                    costOfTiles[posToAddMaybe] = costo;
-                                    originOfTiles[posToAddMaybe] = tileToTest;
-                                    addRemoveToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
-                                }
+                                cumulativeCostOfTiles[posToAddMaybe] = costo;
+                                originOfTiles[posToAddMaybe] = tileToTest;
+                                addToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
+                                diagsToAdd = updateDiagsToAdd(diagsToAdd, neighbour.pos);
+                            }
+                            else if (costo < cumulativeCostOfTiles[posToAddMaybe]) // else if the new path is less expensive
+                            {
+                                cumulativeCostOfTiles[posToAddMaybe] = costo;
+                                originOfTiles[posToAddMaybe] = tileToTest;
+                                addRemoveToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
+                                diagsToAdd = updateDiagsToAdd(diagsToAdd, neighbour.pos);
+                            }
+                        }
+                    }
+                    if (diagsToAdd.topLeft)
+                    {
+                        (int x, int y) posToAddMaybe = (tileToTest.x - 1, tileToTest.y + 1);
+                        if (testQueueAdd(posToAddMaybe, costOfTiles))
+                        {
+                            float costo = cumulativeCostOfTiles[tileToTest] + 1.41421356237f * costOfTiles[posToAddMaybe];
+                            if (!cumulativeCostOfTiles.ContainsKey(posToAddMaybe)) // if never visited
+                            {
+                                cumulativeCostOfTiles[posToAddMaybe] = costo;
+                                originOfTiles[posToAddMaybe] = tileToTest;
+                                addToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
+                            }
+                            else if (costo < cumulativeCostOfTiles[posToAddMaybe]) // else if the new path is less expensive
+                            {
+                                cumulativeCostOfTiles[posToAddMaybe] = costo;
+                                originOfTiles[posToAddMaybe] = tileToTest;
+                                addRemoveToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
+                            }
+                        }
+                    }
+                    if (diagsToAdd.topRight)
+                    {
+                        (int x, int y) posToAddMaybe = (tileToTest.x + 1, tileToTest.y + 1);
+                        if (testQueueAdd(posToAddMaybe, costOfTiles))
+                        {
+                            float costo = cumulativeCostOfTiles[tileToTest] + 1.41421356237f * costOfTiles[posToAddMaybe];
+                            if (!cumulativeCostOfTiles.ContainsKey(posToAddMaybe)) // if never visited
+                            {
+                                cumulativeCostOfTiles[posToAddMaybe] = costo;
+                                originOfTiles[posToAddMaybe] = tileToTest;
+                                addToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
+                            }
+                            else if (costo < cumulativeCostOfTiles[posToAddMaybe]) // else if the new path is less expensive
+                            {
+                                cumulativeCostOfTiles[posToAddMaybe] = costo;
+                                originOfTiles[posToAddMaybe] = tileToTest;
+                                addRemoveToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
+                            }
+                        }
+                    }
+                    if (diagsToAdd.bottomLeft)
+                    {
+                        (int x, int y) posToAddMaybe = (tileToTest.x - 1, tileToTest.y - 1);
+                        if (testQueueAdd(posToAddMaybe, costOfTiles))
+                        {
+                            float costo = cumulativeCostOfTiles[tileToTest] + 1.41421356237f * costOfTiles[posToAddMaybe];
+                            if (!cumulativeCostOfTiles.ContainsKey(posToAddMaybe)) // if never visited
+                            {
+                                cumulativeCostOfTiles[posToAddMaybe] = costo;
+                                originOfTiles[posToAddMaybe] = tileToTest;
+                                addToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
+                            }
+                            else if (costo < cumulativeCostOfTiles[posToAddMaybe]) // else if the new path is less expensive
+                            {
+                                cumulativeCostOfTiles[posToAddMaybe] = costo;
+                                originOfTiles[posToAddMaybe] = tileToTest;
+                                addRemoveToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
+                            }
+                        }
+                    }
+                    if (diagsToAdd.bottomRight)
+                    {
+                        (int x, int y) posToAddMaybe = (tileToTest.x + 1, tileToTest.y - 1);
+                        if (testQueueAdd(posToAddMaybe, costOfTiles))
+                        {
+                            float costo = cumulativeCostOfTiles[tileToTest] + 1.41421356237f * costOfTiles[posToAddMaybe];
+                            if (!cumulativeCostOfTiles.ContainsKey(posToAddMaybe)) // if never visited
+                            {
+                                cumulativeCostOfTiles[posToAddMaybe] = costo;
+                                originOfTiles[posToAddMaybe] = tileToTest;
+                                addToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
+                            }
+                            else if (costo < cumulativeCostOfTiles[posToAddMaybe]) // else if the new path is less expensive
+                            {
+                                cumulativeCostOfTiles[posToAddMaybe] = costo;
+                                originOfTiles[posToAddMaybe] = tileToTest;
+                                addRemoveToQueue(tilesToVisit, (posToAddMaybe, costo + heuristic(posToAddMaybe, targetLocation)));
                             }
                         }
                     }

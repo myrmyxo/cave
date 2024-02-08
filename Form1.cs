@@ -61,6 +61,16 @@ namespace Cave
 
             public static (int, int)[] directionArray = new (int, int)[4] { (-1, 0), (1, 0), (0, 1), (0, -1) };
 
+            public static Dictionary<int, int> costDict = new Dictionary<int, int>
+            {
+                { 0, 1 }, // air
+                { -1, 3 }, // piss
+                { -2, 3 }, // water
+                { -3, 3 }, // fairy liquid
+                { -4, 999999 }, // lava (cannot cross)
+                { -5, 5 }, // honey
+            };
+
             public static Dictionary<int, (int, int, int)> biomeDict = new Dictionary<int, (int, int, int)>
             {
                 { 0, (Color.Blue.R,Color.Blue.G,Color.Blue.B) }, // cold biome
@@ -1368,7 +1378,8 @@ namespace Cave
                     {(4, 0, 2), -999 },
                     {(5, 0, 2), -999 },
                     {(5, 1, 2), -999 },
-                    {(-1, 0, 0), -999 }
+                    {(-1, 0, 0), -999 },
+                    {(-4, 0, 0), -999 }
                 };
                 inventoryElements = new List<(int index, int subType, int typeOfElement)>
                 {
@@ -1386,7 +1397,8 @@ namespace Cave
                     (4, 0, 2),
                     (5, 0, 2),
                     (5, 1, 2),
-                    (-1, 0, 0)
+                    (-1, 0, 0),
+                    (-4, 0, 0)
                 };
         }
             public void movePlayer()
