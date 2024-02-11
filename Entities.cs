@@ -47,6 +47,7 @@ namespace Cave
 
             public (int x, int y) targetPos = (0, 0);
             public List<(int x, int y)> pathToTarget = new List<(int x, int y)>();
+            public List<(int x, int y)> simplifiedPathToTarget = new List<(int x, int y)>();
 
             public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
             public List<(int index, int subType, int typeOfElement)> inventoryElements;
@@ -471,7 +472,45 @@ namespace Cave
                     currentPos = gottenValue;
                 }
                 pathToTarget = path;
+                simplifiedPathToTarget = new List<(int x, int y)>(path);
+                simplifyPath(simplifiedPathToTarget);
                 return true;
+            }
+            public void simplifyPath(List<(int x, int y)> path)
+            {
+                int idx = path.Count - 1;
+                (int x, int y) direction;
+                (int x, int y) lastKeptPointPos;
+                (int x, int y) posToTest;
+                int multCounter;
+
+                while (idx > 0)
+                {
+                    lastKeptPointPos = path[idx];
+                    idx--;
+                    posToTest = path[idx];
+                    direction = (posToTest.x - lastKeptPointPos.x, posToTest.y - lastKeptPointPos.y);
+                    idx--;
+
+                    multCounter = 2;
+                    while (idx >= 0)
+                    {
+                        posToTest = path[idx];
+                        if (posToTest.x - lastKeptPointPos.x == multCounter*direction.x && posToTest.y - lastKeptPointPos.y == multCounter*direction.y)
+                        {
+                            path.RemoveAt(idx+1);
+                            idx--;
+                            multCounter++;
+                        }
+                        else
+                        {
+                            idx++;
+                            break;
+                        }
+                    }
+                }
+                if (path.Count > 0) { path.RemoveAt(0); }
+                if (path.Count > 0) { path.RemoveAt(path.Count - 1); }
             }
             public void moveEntity()
             {
@@ -507,8 +546,34 @@ namespace Cave
                     }
                     else if (state == 2) // moving in the air towards direction
                     {
-                        float realDiffX = targetPos.x+0.5f - realPosX;
-                        float realDiffY = targetPos.y+0.5f - realPosY;
+                        // if following path
+                        float realDiffX;
+                        float realDiffY;
+
+                        //if last is destination
+
+
+
+
+
+
+
+                        if (simplifiedPathToTarget.Count > 0)
+                        {
+                            realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
+                            realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY; while (Abs(realDiffX) < 0.9f && Abs(realDiffY) < 0.9f)
+                            {
+                                simplifiedPathToTarget.RemoveAt(0);
+                                if (simplifiedPathToTarget.Count == 0) { break; }
+                                realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
+                                realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
+                            }
+                        }
+                        else
+                        {
+                            realDiffX = targetPos.x + 0.5f - realPosX;
+                            realDiffY = targetPos.y + 0.5f - realPosY;
+                        }
 
                         if (targetPos.x == posX && targetPos.y == posY)
                         {

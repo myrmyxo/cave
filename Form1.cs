@@ -1246,6 +1246,21 @@ namespace Cave
                         if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
                         {
                             Color color = entity.color;
+                            color = Color.FromArgb(100, color.R, color.G, color.B);
+                            using (var g = Graphics.FromImage(gameBitmap))
+                            {
+                                g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
+                            }
+                        }
+                    }
+                    foreach ((int x, int y) posToDrawAt in entity.simplifiedPathToTarget)
+                    {
+                        pixelPosX = posToDrawAt.x - camPosX - UnloadedChunksAmount * 32;
+                        pixelPosY = posToDrawAt.y - camPosY - UnloadedChunksAmount * 32;
+
+                        if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
+                        {
+                            Color color = Color.FromArgb(100, 255, 0, 0);
                             using (var g = Graphics.FromImage(gameBitmap))
                             {
                                 g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
