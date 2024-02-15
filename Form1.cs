@@ -31,7 +31,7 @@ namespace Cave
         public class Globals
         {
             public static int ChunkLength = 4;
-            public static int UnloadedChunksAmount = 4;
+            public static int UnloadedChunksAmount = 8;
 
             public static Random rand = new Random();
             public static Player player;
@@ -59,7 +59,7 @@ namespace Cave
             public static float speedCamX = 0;
             public static float speedCamY = 0;
 
-            public static (int, int)[] directionArray = new (int, int)[4] { (-1, 0), (1, 0), (0, 1), (0, -1) };
+            public static (int, int)[] neighbourArray = new (int, int)[4] { (-1, 0), (1, 0), (0, 1), (0, -1) };
 
             public static Dictionary<int, int> costDict = new Dictionary<int, int>
             {
@@ -385,10 +385,10 @@ namespace Cave
                             if (biomeIndex[i, j][0].Item1 == 8) { elementToFillVoidWith = -2; }
                             else { elementToFillVoidWith = 0; }
 
-                            if (value2 > 200 + value2modifier + oceano || value2 < (foresto-1)*75f - oceano) { fillStates[i, j] = elementToFillVoidWith; }
-                            else if (value1 > 122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw*0.1f) && value1 < 133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw) { fillStates[i, j] = elementToFillVoidWith; }
-                            else { fillStates[i, j] = 1; }
-                            //fillStates[i, j] = 0;
+                            //if (value2 > 200 + value2modifier + oceano || value2 < (foresto-1)*75f - oceano) { fillStates[i, j] = elementToFillVoidWith; }
+                            //else if (value1 > 122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw*0.1f) && value1 < 133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw) { fillStates[i, j] = elementToFillVoidWith; }
+                            //else { fillStates[i, j] = 1; }
+                            fillStates[i, j] = 1;
                         }
                     }
                 }
@@ -1164,6 +1164,13 @@ namespace Cave
                         Structure newStructure = new Structure(posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480), seedX, seedY, true, (posX, posY), this);
                         newStructure.drawLakePapa();
                         newStructure.saveInFile();
+                    }
+                    long nestAmount = (seedX + seedY) % 3 + 4;
+                    for (int i = 0; i < nestAmount; i++)
+                    {
+                        seedX = LCGyPos(seedX); // on porpoise x    /\_/\
+                        seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
+                        Nest nest = new Nest((posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480)), (long)(seedX*0.5f+seedY*0.5f), this);
                     }
                 }
             }

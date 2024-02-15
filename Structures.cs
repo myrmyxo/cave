@@ -23,6 +23,7 @@ using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
+using System.Windows.Markup;
 
 namespace Cave
 {
@@ -729,7 +730,7 @@ namespace Cave
                 (int x, int y) testPos = (testPos32.x + chunkBounds.Item1*32, testPos32.y + chunkBounds.Item3*32); 
 
                 floodPixel(testPos, testPos, tilesToFill, chunkDict, tilesFilled);
-
+                
                 if (tilesFilled[0] <= 2000)
                 {
                     int liquidTypeToFill = -2;
@@ -1034,25 +1035,402 @@ namespace Cave
         {
             public Nest nest;
             public int id;
-            public Dictionary<(int x, int y), bool> tiles;
+            public bool isToBeDestroyed = false;
+            public List<(int x, int y)> tiles = new List<(int x, int y)>();
+            public List<(int x, int y)> borders = new List<(int x, int y)>();
+            public List<(int x, int y)> extremities = new List<(int x, int y)>(); //only used for corridors
             public int type;
-            public List<int> linkedCorridorsId;
-        }
-        public class Corridor
-        {
-            public Nest nest;
-            public int id;
-            public Dictionary<(int x, int y), bool> tiles;
             public List<int> linkedRoomsId;
+            // type of room : 0 = mainRoom, 1 = normalRoom, 2 = HoneyRoom, 3 = Nursery, 10000 = corridor
+            public Room(List<(int x, int y)> tileListToPut, int typeToPut, int idToPut, Nest nestToPut)
+            {
+                nest = nestToPut;
+                tiles = tileListToPut;
+                type = typeToPut;
+                id = idToPut;
+                linkedRoomsId = new List<int>();
+            }
+            public Room((int x, int y) posToPut, int typeToPut, int idToPut, Nest nestToPut)
+            {
+                nest = nestToPut;
+                tiles = new List<(int x, int y)>();
+                type = typeToPut;
+                id = idToPut;
+                linkedRoomsId = new List<int>();
+
+                if (type == 0)
+                {
+                    makeBubbleRoom(posToPut, 0, null);
+                }
+                else if (type == 1)
+                {
+                    makeBubbleRoom(posToPut, 35 + rand.Next(200), null);
+                }
+                else if (type == 10000)
+                {
+                    sproutCorridor(posToPut, 100);
+                }
+                else
+                {
+                    isToBeDestroyed = true;
+                }
+                findBorders();
+            }
+            public Room((int x, int y) posToPut, int typeToPut, int idToPut, Nest nestToPut, Room motherRoom)
+            {
+                nest = nestToPut;
+                tiles = new List<(int x, int y)>();
+                type = typeToPut;
+                id = idToPut;
+                linkedRoomsId = new List<int>();
+
+                if (type == 0)
+                {
+                    makeBubbleRoom(posToPut, 0, motherRoom);
+                }
+                else if (type == 1)
+                {
+                    makeBubbleRoom(posToPut, 35 + rand.Next(200), motherRoom);
+                }
+                else if (type == 10000)
+                {
+                    sproutCorridor(posToPut, 100);
+                }
+                else
+                {
+                    isToBeDestroyed = true;
+                }
+                findBorders();
+            }
+            public Room((int x, int y) startPos, (int x, int y) targetPos, int typeToPut, int idToPut, Nest nestToPut)
+            {
+                nest = nestToPut;
+                tiles = new List<(int x, int y)>();
+                type = typeToPut;
+                id = idToPut;
+                linkedRoomsId = new List<int>();
+
+                
+                if (type == 10001)
+                {
+                    makeCorridorBetweenPoints(startPos, targetPos, 100);
+                }
+                else
+                {
+                    isToBeDestroyed = true;
+                }
+                findBorders();
+            }
+            public void findBorders()
+            {
+                List<(int x, int y)> tilesToTest = new List<(int x, int y)>(tiles);
+                Dictionary<(int x, int y), bool> bordersDict = new Dictionary<(int x, int y), bool>();
+                (int x, int y) tileToTest;
+                (int x, int y) currentTile;
+                while (tilesToTest.Count > 0)
+                {
+                    currentTile = tilesToTest[0];
+                    tilesToTest.RemoveAt(0);
+
+                    foreach((int x, int y) mod in neighbourArray)
+                    {
+                        tileToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
+                        if (!tiles.Contains(tileToTest))
+                        {
+                            bordersDict[tileToTest] = true;
+                        }
+                    }
+                }
+                borders = bordersDict.Keys.ToList();
+            }
+            public void addToQueue(List<((int x, int y) position, float cost)> queue, ((int x, int y) position, float cost) valueToAdd)
+            {
+                int idx = 0;
+                while (idx < queue.Count)
+                {
+                    if (valueToAdd.position == queue[idx].position) { return; }
+                    if (valueToAdd.cost < queue[idx].cost)
+                    {
+                        queue.Insert(idx, valueToAdd);
+                        return;
+                    }
+                    idx++;
+                }
+                queue.Add(valueToAdd);
+            }
+            public float heuristic((int x, int y) posToTest, (int x, int y) targetPos)
+            {
+                int diffX = Abs(posToTest.x - targetPos.x);
+                int diffY = Abs(posToTest.y - targetPos.y);
+                int diagNumber = Min(diffX, diffY);
+                return (int)(diffX + diffY - 2 * diagNumber + 1.41421356237f * diagNumber);
+            }
+            public float heuristic((int x, int y) posToTest, List<(int x, int y)> targets)
+            {
+                int mini = 999999999;
+
+                foreach ((int x, int y) pos in targets)
+                {
+                    int diffX = Abs(posToTest.x - pos.x);
+                    int diffY = Abs(posToTest.y - pos.y);
+                    int diagNumber = Min(diffX, diffY);
+                    mini = Min((int)(diffX + diffY - 2 * diagNumber + 1.41421356237f * diagNumber), mini);
+                }
+                return mini;
+            }
+            public void makeBubbleRoom((int x, int y) centerPos, int forceSize, Room motherCorridor)
+            {
+                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
+
+                List<(int x, int y)> heuristicTargets = new List<(int x, int y)> { centerPos };
+                long seedo = nest.seed;
+                for (int i = 0; i < nest.seed % 4 + 5; i++)
+                {
+                    seedo = LCGxNeg(seedo);
+                    heuristicTargets.Add((centerPos.x + (int)(seedo % 25) - 12, centerPos.y + (int)(LCGxPos(seedo) % 25) - 12));
+                }
+
+                int tileAmount;
+                if (forceSize == 0) { tileAmount = (int)(25 + (nest.seed % 750)); }
+                else { tileAmount = forceSize; }
+
+                Dictionary<(int x, int y), bool> tilesToFill = new Dictionary<(int x, int y), bool>();
+                List<((int x, int y) pos, float cost)> tilesToTest = new List<((int x, int y) pos, float cost)> { (centerPos, 0) };
+                (int x, int y) currentTile;
+                (int x, int y) posToAdd;
+                (int x, int y) posToTest;
+                int repeatCounter = 0;
+                while (tilesToTest.Count > 0 && repeatCounter < tileAmount)
+                {
+                    currentTile = tilesToTest[0].pos;
+                    tilesToTest.RemoveAt(0);
+                    foreach ((int x, int y) mod in neighbourArray)
+                    {
+                        posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
+                        (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                        if (!chunkDict.ContainsKey(chunkPos)) { chunkDict.Add(chunkPos, new Chunk(chunkPos, true, nest.screen)); }
+                        if (chunkDict[chunkPos].fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32] <= 0 && (motherCorridor == null || !motherCorridor.tiles.Contains(posToTest)) && repeatCounter > 0)
+                        {
+                            goto SkipToNextIteration;
+                        }
+                    }
+                    tilesToFill[currentTile] = true;
+                    foreach ((int x, int y) mod in neighbourArray)
+                    {
+                        posToAdd = (currentTile.x + mod.x, currentTile.y + mod.y);
+                        if (!tilesToFill.ContainsKey(posToAdd) && (!nest.tiles.ContainsKey(posToAdd) || (motherCorridor != null && motherCorridor.tiles.Contains(posToAdd))))
+                        {
+                            addToQueue(tilesToTest, (posToAdd, repeatCounter + 20 * heuristic(posToAdd, heuristicTargets)));
+                        }
+                    }
+
+                SkipToNextIteration:;
+                    repeatCounter++;
+                }
+
+                tiles = tilesToFill.Keys.ToList();
+                if (tiles.Count == 0)
+                {
+                    isToBeDestroyed = true;
+                    return;
+                }
+                foreach ((int x, int y) poso in tiles)
+                {
+                    (int x, int y) chunkPos = (Floor(poso.x, 32) / 32, Floor(poso.y, 32) / 32);
+                    if (!chunkDict.ContainsKey(chunkPos)) { chunkDict.Add(chunkPos, new Chunk(chunkPos, true, nest.screen)); }
+                    chunkDict[(Floor(poso.x, 32) / 32, Floor(poso.y, 32) / 32)].fillStates[(poso.x % 32 + 32) % 32, (poso.y % 32 + 32) % 32] = 0;
+                    chunkDict[(Floor(poso.x, 32) / 32, Floor(poso.y, 32) / 32)].modificationCount = 1;
+                }
+
+                foreach (Chunk chunk in chunkDict.Values)
+                {
+                    Files.saveChunk(chunk, false);
+                }
+            }
+
+
+
+
+
+
+            public void sproutCorridor((int x, int y) startPos, int randomness)
+            {
+                int distance = 40;
+                float angle = (float)(rand.NextDouble()*6.28318530718);
+                (int x, int y) targetPos = (startPos.x + (int)(Math.Cos(angle) * distance), startPos.y + (int)(Math.Sin(angle) * distance));
+                makeCorridorBetweenPoints(startPos, targetPos, randomness);
+            }
+            public void makeCorridorBetweenPoints((int x, int y) startPos, (int x, int y) targetPos, int randomness)
+            {
+
+                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
+
+                int tileAmount = 1000;
+
+                Dictionary<(int x, int y), bool> tilesToFill = new Dictionary<(int x, int y), bool>();
+                Dictionary<(int x, int y), (int x, int y)> originDict = new Dictionary<(int x, int y), (int x, int y)> { { startPos, startPos } };
+                List<((int x, int y) pos, float cost)> tilesToTest = new List<((int x, int y) pos, float cost)> { (startPos, 0) };
+                (int x, int y) currentTile;
+                (int x, int y) posToTest;
+                int repeatCounter = 0;
+                long seedo = nest.seed;
+                while (tilesToTest.Count > 0 && repeatCounter < tileAmount)
+                {
+                    currentTile = tilesToTest[0].pos;
+                    if (currentTile == targetPos)
+                    {
+                        break;
+                    }
+                    tilesToTest.RemoveAt(0);
+                    foreach ((int x, int y) mod in neighbourArray)
+                    {
+                        posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
+                        (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                        if (!chunkDict.ContainsKey(chunkPos)) { chunkDict.Add(chunkPos, new Chunk(chunkPos, true, nest.screen)); }
+                        if (chunkDict[chunkPos].fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32] <= 0 && repeatCounter > 0)
+                        {
+                            goto SkipToNextIteration;
+                        }
+                    }
+                    foreach ((int x, int y) mod in neighbourArray)
+                    {
+                        posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
+                        seedo = LCGz(Abs(LCGyPos(posToTest.x)) + Abs(LCGyNeg(posToTest.y)) + seedo);
+                        if (!originDict.ContainsKey(posToTest) && !nest.tiles.ContainsKey(posToTest))
+                        {
+                            addToQueue(tilesToTest, (posToTest, seedo % randomness + 20 * heuristic(posToTest, targetPos)));
+                            originDict[posToTest] = currentTile;
+                        }
+                    }
+
+                SkipToNextIteration:;
+                    repeatCounter++;
+                }
+                if (repeatCounter >= tileAmount || tilesToTest.Count == 0)
+                {
+                    isToBeDestroyed = true;
+                    return;
+                }
+                currentTile = targetPos;
+                tilesToFill[targetPos] = true;
+                while (currentTile != startPos)
+                {
+                    currentTile = originDict[currentTile];
+                    tilesToFill[currentTile] = true;
+                }
+
+                tiles = tilesToFill.Keys.ToList();
+                foreach ((int x, int y) poso in tiles)
+                {
+                    (int x, int y) chunkPos = (Floor(poso.x, 32) / 32, Floor(poso.y, 32) / 32);
+                    if (!chunkDict.ContainsKey(chunkPos)) { chunkDict.Add(chunkPos, new Chunk(chunkPos, true, nest.screen)); }
+                    chunkDict[(Floor(poso.x, 32) / 32, Floor(poso.y, 32) / 32)].fillStates[(poso.x % 32 + 32) % 32, (poso.y % 32 + 32) % 32] = 0;
+                    chunkDict[(Floor(poso.x, 32) / 32, Floor(poso.y, 32) / 32)].modificationCount = 1;
+                }
+
+                foreach (Chunk chunk in chunkDict.Values)
+                {
+                    Files.saveChunk(chunk, false);
+                }
+                extremities.Add(startPos);
+                extremities.Add(targetPos);
+            }
         }
         public class Nest
         {
-            public int id;
-            public int seed;
+            public Form1.Screen screen;
 
-            public Dictionary<(int x, int y), bool> tiles;
-            public Dictionary<int, Corridor> corridors;
-            public Dictionary<int, Room> rooms;
+            public int id;
+            public long seed;
+
+            // stats to build nest and what it looks like iggg
+            public int roomSize; // bigger leads to bigger rooms
+            public int connectivity; // bigger leads to less connexions (corridors)
+            public int extensivity; // bigger leads to new rooms and corridors being dug out farther away from the center ig
+
+            public Dictionary<(int x, int y), bool> tiles = new Dictionary<(int x, int y), bool>();
+            public Dictionary<int, Room> rooms = new Dictionary<int, Room>();
+            public int currentRoomId = 0;
+            public Nest((int x, int y) posToPut, long seedToPut, Form1.Screen screenToPut)
+            {
+                screen = screenToPut;
+                seed = seedToPut;
+
+                Room mainRoom;
+                Room corridoro;
+                Room kiddoRoom;
+
+                (int x, int y) posToTest = (0, 0);
+
+                mainRoom = new Room(posToPut, 0, currentRoomId, this);
+                rooms[currentRoomId] = mainRoom;
+                currentRoomId++;
+                updateTiles();
+                if (!mainRoom.isToBeDestroyed)
+                {
+                    randomlyExtendNest();
+                }
+            }
+            public void makeCorridorAndRoomRandom(Room originRoom, (int x, int y) targetPos)
+            {
+                int repeatCounter = 0;
+                while (repeatCounter < 1)
+                {
+                    Room corridoro = new Room(originRoom.borders[rand.Next(originRoom.borders.Count())], 10000, currentRoomId, this);
+                    rooms[currentRoomId] = corridoro;
+                    currentRoomId++;
+                    updateTiles();
+                    if (!corridoro.isToBeDestroyed)
+                    {
+                        (int x, int y) posToTest = (0, 0);
+                        foreach ((int x, int y) mod in neighbourArray)
+                        {
+                            posToTest = (corridoro.extremities[1].x + mod.x, corridoro.extremities[1].y + mod.y);
+                            if (corridoro.borders.Contains(posToTest))
+                            {
+                                break;
+                            }
+                        }
+
+                        Room kiddoRoom = new Room(posToTest, 1, currentRoomId, this, corridoro);
+                        rooms[currentRoomId] = kiddoRoom;
+                        currentRoomId++;
+                        updateTiles();
+                    }
+                    repeatCounter++;
+                }
+            }
+            public void randomlyExtendNest()
+            {
+                int biggoCounto = 0;
+                while (rand.Next(10) > 0 && biggoCounto < 10)
+                {
+                    int repeatCounter = 0;
+                    while (repeatCounter < 100)
+                    {
+                        Room roomToTest = rooms.Values.ToList()[rand.Next(rooms.Count)];
+                        if (roomToTest.type < 10000)
+                        {
+                            (int x, int y) posToTest = roomToTest.borders[rand.Next(roomToTest.borders.Count())];
+                            makeCorridorAndRoomRandom(roomToTest, posToTest);
+                            break;
+                        }
+                        repeatCounter++;
+                    }
+                    biggoCounto++;
+                }
+            }
+            public void updateTiles()
+            {
+                tiles = new Dictionary<(int x, int y), bool>();
+                foreach (Room room in rooms.Values)
+                {
+                    foreach ((int x, int y) tile in room.tiles)
+                    {
+                        tiles[tile] = true;
+                    }
+                }
+            }
             public void saveInFile(Form1.Screen screen)
             {
                 string savename = $"Hornet nest {id}";

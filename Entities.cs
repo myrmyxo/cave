@@ -194,11 +194,11 @@ namespace Cave
                         int digorplace = elementsPossessed + rand.Next(5) - 5;
                         if (digorplace < 0)
                         {
-                            Dig(posX + directionArray[direction].Item1, posY + directionArray[direction].Item2);
+                            Dig(posX + neighbourArray[direction].Item1, posY + neighbourArray[direction].Item2);
                         }
                         else
                         {
-                            Place(posX + directionArray[direction].Item1, posY + directionArray[direction].Item2);
+                            Place(posX + neighbourArray[direction].Item1, posY + neighbourArray[direction].Item2);
                         }
                     }
 
@@ -335,7 +335,8 @@ namespace Cave
                 ((int x, int y) pos, float cost)[] neighbourDict = new ((int x, int y) pos, float cost)[]
                 {
                     ((1, 0), 1), ((-1, 0), 1), ((0, -1), 1), ((0, 1), 1),
-                }; ((int x, int y) pos, float cost)[] diagNeighbourDicto = new ((int x, int y) pos, float cost)[]
+                };
+                ((int x, int y) pos, float cost)[] diagNeighbourDicto = new ((int x, int y) pos, float cost)[]
                 {
                     ((1, 1), 1.41421356237f), ((-1, 1), 1.41421356237f), ((-1, -1), 1.41421356237f), ((1, -1), 1.41421356237f)
                 };
