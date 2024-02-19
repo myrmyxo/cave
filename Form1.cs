@@ -23,6 +23,7 @@ using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
 
 namespace Cave
 {
@@ -60,6 +61,8 @@ namespace Cave
             public static float speedCamY = 0;
 
             public static (int, int)[] neighbourArray = new (int, int)[4] { (-1, 0), (1, 0), (0, 1), (0, -1) };
+            public static (int, int)[] bubbleNeighbourArray = new (int, int)[8] { (-1, 0), (1, 0), (0, 1), (0, -1), (-2, 0), (2, 0), (0, 2), (0, -2) };
+            public static (int, int)[] diagNeighbourArray = new (int, int)[4] { (-1, 1), (1, 1), (1, -1), (-1, -1) };
 
             public static Dictionary<int, int> costDict = new Dictionary<int, int>
             {
@@ -859,7 +862,7 @@ namespace Cave
         public class Screen
         {
             public Chunk theFilledChunk;
-            public Dictionary<(int, int), Chunk> loadedChunks;
+            public Dictionary<(int, int), Chunk> loadedChunks = new Dictionary<(int, int), Chunk>();
             public Dictionary<(int, int), Chunk> extraLoadedChunks = new Dictionary<(int, int), Chunk>();
             public List<long>[,] LCGCacheListMatrix;
             public int chunkResolution;
@@ -871,6 +874,7 @@ namespace Cave
             public List<Entity> activeEntities = new List<Entity>();
             public List<Entity> entitesToRemove = new List<Entity>();
             public List<Plant> activePlants = new List<Plant>();
+            public List<Nest> activeNests = new List<Nest>();
             public Dictionary<(int, int), List<Plant>> outOfBoundsPlants = new Dictionary<(int, int), List<Plant>>();
             public List<(int, int)> broadTestUnstableLiquidList = new List<(int, int)>();
 
@@ -1165,13 +1169,15 @@ namespace Cave
                         newStructure.drawLakePapa();
                         newStructure.saveInFile();
                     }
-                    long nestAmount = (seedX + seedY) % 3 + 4;
+                    long nestAmount = (seedX + seedY) % 3 + 10;
+                    //nestAmount = 0;
                     for (int i = 0; i < nestAmount; i++)
                     {
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
                         seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
                         Nest nest = new Nest((posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480)), (long)(seedX*0.5f+seedY*0.5f), this);
                     }
+                    //if (posX == 0 && posY == 0) { Nest nesto = new Nest((0, 0), (long)(seedX * 0.5f + seedY * 0.5f), this); }
                 }
             }
             public Bitmap updateScreen()
@@ -1425,7 +1431,7 @@ namespace Cave
         }
             public void movePlayer()
             {
-                if (digPress && timeElapsed > timeAtLastDig + 0.2f)
+                if (digPress && timeElapsed > timeAtLastDig /*+ 0.2f*/)
                 {
                     if (arrowKeysState[0] && !arrowKeysState[1])
                     {
@@ -2153,6 +2159,10 @@ namespace Cave
                 {
                     player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.75f) - 0.7f));
                     player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.75f) - 0.7f));
+                }
+                if (timeElapsed > 3 && screen.activeNests.Count > 0)
+                {
+                    screen.activeNests[rand.Next(screen.activeNests.Count)].randomlyExtendNest();
                 }
                 foreach (Player playor in screen.playerList)
                 {
