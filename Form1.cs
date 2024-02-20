@@ -43,6 +43,8 @@ namespace Cave
             public static bool[] zoomPress = { false, false };
             public static bool[] inventoryChangePress = { false, false };
             public static bool pausePress = false;
+            public static bool fastForward = false;
+            public static bool debugMode = false;
             public static bool shiftPress = false;
             public static float lastZoom = 0;
             public static DateTime timeAtLauch;
@@ -443,6 +445,15 @@ namespace Cave
                     {
                         colorArray[k] = (int)(colorArray[k]*0.5f) + 120;
                     };
+                }
+                else if (fillStates[i, j] == 3)
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        colorArray[k] = (int)(colorArray[k] * 0.5f) + 120;
+                    };
+                    colorArray[0] += 50;
+                    colorArray[1] += 50;
                 }
                 else if (fillStates[i, j] == -1)
                 {
@@ -1008,12 +1019,21 @@ namespace Cave
             {
                 (int, int) chunkIndex;
                 Chunk chunk;
+                List<Entity> cringeEntities = new List<Entity>();
                 while (activeEntities.Count() > 0)
                 {
                     chunkIndex = findChunkAbsoluteIndex(activeEntities[0].posX, activeEntities[0].posY);
-                    chunk = loadedChunks[chunkIndex];
-                    chunk.entityList.Add(activeEntities[0]);
-                    activeEntities.RemoveAt(0);
+                    if (loadedChunks.ContainsKey(chunkIndex))
+                    {
+                        chunk = loadedChunks[chunkIndex];
+                        chunk.entityList.Add(activeEntities[0]);
+                        activeEntities.RemoveAt(0);
+                    }
+                    else
+                    {
+                        cringeEntities.Add(activeEntities[0]);
+                        activeEntities.RemoveAt(0);
+                    }
                 }
                 while (activePlants.Count() > 0)
                 {
@@ -1021,6 +1041,10 @@ namespace Cave
                     chunk = loadedChunks[chunkIndex];
                     chunk.plantList.Add(activePlants[0]);
                     activePlants.RemoveAt(0);
+                }
+                foreach (Entity entito in cringeEntities)
+                {
+                    activeEntities.Add(entito);
                 }
             }
             public void updateLoadedChunks(long seed, int screenSlideXtoPut, int screenSlideYtoPut)
@@ -1170,14 +1194,14 @@ namespace Cave
                         newStructure.saveInFile();
                     }
                     long nestAmount = (seedX + seedY) % 3 + 10;
-                    //nestAmount = 0;
+                    nestAmount = 0;
                     for (int i = 0; i < nestAmount; i++)
                     {
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
                         seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
                         Nest nest = new Nest((posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480)), (long)(seedX*0.5f+seedY*0.5f), this);
                     }
-                    //if (posX == 0 && posY == 0) { Nest nesto = new Nest((0, 0), (long)(seedX * 0.5f + seedY * 0.5f), this); }
+                    if (posX == 0 && posY == 0) { Nest nesto = new Nest((0, 0), (long)(seedX * 0.5f + seedY * 0.5f), this); }
                 }
             }
             public Bitmap updateScreen()
@@ -1238,10 +1262,13 @@ namespace Cave
                     {
                         Color color = entity.color;
                         (int, int) chunkPos = this.findChunkAbsoluteIndex(entity.posX, entity.posY);
-                        Chunk chunkToTest = this.loadedChunks[chunkPos];
-                        if (chunkToTest.fillStates[(entity.posX % 32 + 32) % 32, (entity.posY % 32 + 32) % 32] > 0)
+                        if (loadedChunks.ContainsKey(chunkPos))
                         {
-                            color = Color.Red;
+                            Chunk chunkToTest = this.loadedChunks[chunkPos];
+                            if (chunkToTest.fillStates[(entity.posX % 32 + 32) % 32, (entity.posY % 32 + 32) % 32] > 0)
+                            {
+                                color = Color.Red;
+                            }
                         }
                         using (var g = Graphics.FromImage(gameBitmap))
                         {
@@ -1249,35 +1276,56 @@ namespace Cave
                         }
                     }
                 }
-                foreach (Entity entity in activeEntities) // debug for paths
+                if (debugMode)
                 {
-                    foreach ((int x, int y) posToDrawAt in entity.pathToTarget)
+                    foreach (Entity entity in activeEntities) // debug for paths
                     {
-                        pixelPosX = posToDrawAt.x - camPosX - UnloadedChunksAmount * 32;
-                        pixelPosY = posToDrawAt.y - camPosY - UnloadedChunksAmount * 32;
-
-                        if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
+                        foreach ((int x, int y) posToDrawAt in entity.pathToTarget)
                         {
-                            Color color = entity.color;
-                            color = Color.FromArgb(100, color.R, color.G, color.B);
-                            using (var g = Graphics.FromImage(gameBitmap))
+                            pixelPosX = posToDrawAt.x - camPosX - UnloadedChunksAmount * 32;
+                            pixelPosY = posToDrawAt.y - camPosY - UnloadedChunksAmount * 32;
+
+                            if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
                             {
-                                g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
+                                Color color = entity.color;
+                                color = Color.FromArgb(100, color.R, color.G, color.B);
+                                using (var g = Graphics.FromImage(gameBitmap))
+                                {
+                                    g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
+                                }
+                            }
+                        }
+                        foreach ((int x, int y) posToDrawAt in entity.simplifiedPathToTarget)
+                        {
+                            pixelPosX = posToDrawAt.x - camPosX - UnloadedChunksAmount * 32;
+                            pixelPosY = posToDrawAt.y - camPosY - UnloadedChunksAmount * 32;
+
+                            if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
+                            {
+                                Color color = Color.FromArgb(100, 200, 0, 100);
+                                using (var g = Graphics.FromImage(gameBitmap))
+                                {
+                                    g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
+                                }
                             }
                         }
                     }
-                    foreach ((int x, int y) posToDrawAt in entity.simplifiedPathToTarget)
+                    foreach (Nest nest in activeNests)
                     {
-                        pixelPosX = posToDrawAt.x - camPosX - UnloadedChunksAmount * 32;
-                        pixelPosY = posToDrawAt.y - camPosY - UnloadedChunksAmount * 32;
-
-                        if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
+                        foreach ((int x, int y) posToDrawAt in nest.digErrands)
                         {
-                            Color color = Color.FromArgb(100, 255, 0, 0);
-                            using (var g = Graphics.FromImage(gameBitmap))
+                            pixelPosX = posToDrawAt.x - camPosX - UnloadedChunksAmount * 32;
+                            pixelPosY = posToDrawAt.y - camPosY - UnloadedChunksAmount * 32;
+
+                            if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
                             {
-                                g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
+                                Color color = Color.FromArgb(100, 255, 0, 0);
+                                using (var g = Graphics.FromImage(gameBitmap))
+                                {
+                                    g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
+                                }
                             }
+
                         }
                     }
                 }
@@ -1622,7 +1670,7 @@ namespace Cave
                     }
                     else if (tileContent.typeOfElement == 1)
                     {
-                        Entity newEntity = new Entity(chunkToTest, (posToDigX, posToDigY), tileContent.index, tileContent.subType);
+                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), tileContent.index, tileContent.subType);
                         screen.activeEntities.Add(newEntity);
                         timeAtLastPlace = timeElapsed;
                     }
@@ -2136,6 +2184,8 @@ namespace Cave
         private void timer1_Tick(object sender, EventArgs e)
         {
             Screen screen = (Screen)timer1.Tag;
+            int framesFastForwarded = 0;
+        LoopStart:;
             if (!pausePress)
             {
                 timeElapsed += 0.02f;
@@ -2162,7 +2212,11 @@ namespace Cave
                 }
                 if (timeElapsed > 3 && screen.activeNests.Count > 0)
                 {
-                    screen.activeNests[rand.Next(screen.activeNests.Count)].randomlyExtendNest();
+                    Nest nestToTest = screen.activeNests[rand.Next(screen.activeNests.Count)];
+                    if (nestToTest.digErrands.Count == 0)
+                    {
+                        screen.activeNests[rand.Next(screen.activeNests.Count)].randomlyExtendNest();
+                    }
                 }
                 foreach (Player playor in screen.playerList)
                 {
@@ -2203,7 +2257,7 @@ namespace Cave
                 screen.entitesToRemove = new List<Entity>();
                 foreach (Entity entity in screen.activeEntities)
                 {
-                    entity.testDigPlace();
+                    //entity.testDigPlace();
                 }
                 foreach (Entity entity in screen.activeEntities)
                 {
@@ -2225,6 +2279,13 @@ namespace Cave
                         screen.loadedChunks[(i, j)].moveLiquids();
                     }
                 }
+
+                if (fastForward && framesFastForwarded < 10)
+                {
+                    framesFastForwarded++;
+                    goto LoopStart;
+                }
+
                 gamePictureBox.Image = screen.updateScreen();
                 gamePictureBox.Refresh();
                 overlayPictureBox.Image = screen.overlayBitmap;
@@ -2283,6 +2344,14 @@ namespace Cave
             {
                 pausePress = true;
             }
+            if (e.KeyCode == Keys.M)
+            {
+                debugMode = !debugMode;
+            }
+            if (e.KeyCode == Keys.F)
+            {
+                fastForward = true;
+            }
             if ((Control.ModifierKeys & Keys.Shift) != 0)
             {
                 shiftPress = true;
@@ -2337,6 +2406,14 @@ namespace Cave
             if (e.KeyCode == Keys.P)
             {
                 pausePress = false;
+            }
+            if (e.KeyCode == Keys.M)
+            {
+
+            }
+            if (e.KeyCode == Keys.F)
+            {
+                fastForward = false;
             }
             if ((Control.ModifierKeys & Keys.Shift) == 0)
             {
@@ -2562,8 +2639,38 @@ namespace Cave
             if (pos < 0) { pos += modulo; }
             return pos;
         }
-
-
+        public static int getBound(List<(int x, int y)> listo, bool testY, bool testMax)
+        {
+            if (listo.Count == 0) { return 0; }
+            int result;
+            if (testY)
+            {
+                result = listo[0].y;
+                foreach ((int x, int y) pos in listo)
+                {
+                    if ((testMax && pos.y > result) || (!testMax && pos.y < result))
+                    {
+                        result = pos.y;
+                    }
+                }
+            }
+            else
+            {
+                result = listo[0].x;
+                foreach ((int x, int y) pos in listo)
+                {
+                    if ((testMax && pos.x > result) || (!testMax && pos.x < result))
+                    {
+                        result = pos.x;
+                    }
+                }
+            }
+            return result;
+        }
+        public static int manhattanDistance((int x, int y) pos1, (int x, int y) pos2)
+        {
+            return Abs(pos1.x - pos2.x) + Abs(pos1.y - pos2.y);
+        }
 
 
         // functions to randomize shit

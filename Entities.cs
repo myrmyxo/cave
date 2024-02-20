@@ -58,6 +58,8 @@ namespace Cave
 
             public bool isDeadAndShouldDisappear = false;
 
+            public Nest nest = null;
+
             public Entity(Chunk chunk, EntityJson entityJson)
             {
                 screen = chunk.screen;
@@ -84,9 +86,9 @@ namespace Cave
                 color = findColor();
                 initializeInventory();
             }
-            public Entity(Chunk chunk, (int, int) positionToPut, int typeToPut, int subTypeToPut)
+            public Entity(Form1.Screen screenToPut, (int, int) positionToPut, int typeToPut, int subTypeToPut)
             {
-                screen = chunk.screen;
+                screen = screenToPut;
                 posX = positionToPut.Item1;
                 realPosX = posX;
                 posY = positionToPut.Item2;
@@ -192,11 +194,11 @@ namespace Cave
                     {
                         int direction = rand.Next(4);
                         int digorplace = elementsPossessed + rand.Next(5) - 5;
-                        if (digorplace < 0)
+                        if (digorplace < 0 && false)
                         {
                             Dig(posX + neighbourArray[direction].Item1, posY + neighbourArray[direction].Item2);
                         }
-                        else
+                        else if (elementsPossessed > 0)
                         {
                             Place(posX + neighbourArray[direction].Item1, posY + neighbourArray[direction].Item2);
                         }
@@ -272,8 +274,13 @@ namespace Cave
                 int diagNumber = Min(diffX, diffY);
                 return (int)(diffX + diffY - 2*diagNumber + 1.41421356237f*diagNumber);
             }
-            public int evaluateTile((int x, int y) location, Dictionary<(int x, int y), int> costOfTiles)
+            public int evaluateTile((int x, int y) location, (int x, int y) targetLocation, Dictionary<(int x, int y), int> costOfTiles)
             {
+                if (location == targetLocation)
+                {
+                    costOfTiles[location] = 0;
+                    return 0;
+                }
                 (int x, int y) chunkPos = screen.findChunkAbsoluteIndex(location.x, location.y);
                 if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                 {
@@ -288,7 +295,7 @@ namespace Cave
                 costOfTiles[location] = 1000000;
                 return 1000000;
             }
-            public bool testQueueAdd((int x, int y) tileToTest, Dictionary<(int x, int y), int> costOfTiles)
+            public bool testQueueAdd((int x, int y) tileToTest, (int x, int y) targetLocation, Dictionary<(int x, int y), int> costOfTiles)
             {
                 int tileCost;
                 if (costOfTiles.TryGetValue(tileToTest, out int returnedResult))
@@ -297,7 +304,7 @@ namespace Cave
                 }
                 else
                 {
-                    tileCost = evaluateTile(tileToTest, costOfTiles);
+                    tileCost = evaluateTile(tileToTest, targetLocation, costOfTiles);
                 }
 
                 if (tileCost < 999999)
@@ -361,7 +368,7 @@ namespace Cave
                     foreach (((int x, int y) pos, float cost) neighbour in neighbourDict)
                     {
                         (int x, int y) posToAddMaybe = (tileToTest.x + neighbour.pos.x, tileToTest.y + neighbour.pos.y);
-                        if (testQueueAdd(posToAddMaybe, costOfTiles))
+                        if (testQueueAdd(posToAddMaybe, targetLocation, costOfTiles))
                         {
                             float costo = cumulativeCostOfTiles[tileToTest] + neighbour.cost*costOfTiles[posToAddMaybe];
                             if (!cumulativeCostOfTiles.ContainsKey(posToAddMaybe)) // if never visited
@@ -383,7 +390,7 @@ namespace Cave
                     if (diagsToAdd.topLeft)
                     {
                         (int x, int y) posToAddMaybe = (tileToTest.x - 1, tileToTest.y + 1);
-                        if (testQueueAdd(posToAddMaybe, costOfTiles))
+                        if (testQueueAdd(posToAddMaybe, targetLocation, costOfTiles))
                         {
                             float costo = cumulativeCostOfTiles[tileToTest] + 1.41421356237f * costOfTiles[posToAddMaybe];
                             if (!cumulativeCostOfTiles.ContainsKey(posToAddMaybe)) // if never visited
@@ -403,7 +410,7 @@ namespace Cave
                     if (diagsToAdd.topRight)
                     {
                         (int x, int y) posToAddMaybe = (tileToTest.x + 1, tileToTest.y + 1);
-                        if (testQueueAdd(posToAddMaybe, costOfTiles))
+                        if (testQueueAdd(posToAddMaybe, targetLocation, costOfTiles))
                         {
                             float costo = cumulativeCostOfTiles[tileToTest] + 1.41421356237f * costOfTiles[posToAddMaybe];
                             if (!cumulativeCostOfTiles.ContainsKey(posToAddMaybe)) // if never visited
@@ -423,7 +430,7 @@ namespace Cave
                     if (diagsToAdd.bottomLeft)
                     {
                         (int x, int y) posToAddMaybe = (tileToTest.x - 1, tileToTest.y - 1);
-                        if (testQueueAdd(posToAddMaybe, costOfTiles))
+                        if (testQueueAdd(posToAddMaybe, targetLocation, costOfTiles))
                         {
                             float costo = cumulativeCostOfTiles[tileToTest] + 1.41421356237f * costOfTiles[posToAddMaybe];
                             if (!cumulativeCostOfTiles.ContainsKey(posToAddMaybe)) // if never visited
@@ -443,7 +450,7 @@ namespace Cave
                     if (diagsToAdd.bottomRight)
                     {
                         (int x, int y) posToAddMaybe = (tileToTest.x + 1, tileToTest.y - 1);
-                        if (testQueueAdd(posToAddMaybe, costOfTiles))
+                        if (testQueueAdd(posToAddMaybe, targetLocation, costOfTiles))
                         {
                             float costo = cumulativeCostOfTiles[tileToTest] + 1.41421356237f * costOfTiles[posToAddMaybe];
                             if (!cumulativeCostOfTiles.ContainsKey(posToAddMaybe)) // if never visited
@@ -540,29 +547,44 @@ namespace Cave
                         {
                             if (findPointOfInterestInPlants(7))
                             {
-                                state = 2;
-                                pathfindToLocation(targetPos);
+                                if (pathfindToLocation(targetPos))
+                                {
+                                    state = 2;
+                                }
+                                else
+                                {
+                                    pathToTarget = new List<(int x, int y)>();
+                                    simplifiedPathToTarget = new List<(int x, int y)>();
+                                }
+                            }
+                        }
+                        else if (nest != null)
+                        {
+                            if (nest.digErrands.Count > 0)
+                            {
+                                targetPos = nest.digErrands[rand.Next(nest.digErrands.Count)];
+                                if (pathfindToLocation(targetPos))
+                                {
+                                    state = 3;
+                                }
+                                else
+                                {
+                                    pathToTarget = new List<(int x, int y)>();
+                                    simplifiedPathToTarget = new List<(int x, int y)>();
+                                }
                             }
                         }
                     }
-                    else if (state == 2) // moving in the air towards direction
+                    else if (state == 2 || state == 3) // moving in the air towards direction
                     {
                         // if following path
                         float realDiffX;
                         float realDiffY;
-
-                        //if last is destination
-
-
-
-
-
-
-
                         if (simplifiedPathToTarget.Count > 0)
                         {
                             realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
-                            realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY; while (Abs(realDiffX) < 0.9f && Abs(realDiffY) < 0.9f)
+                            realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
+                            while (Abs(realDiffX) < 0.9f && Abs(realDiffY) < 0.9f)
                             {
                                 simplifiedPathToTarget.RemoveAt(0);
                                 if (simplifiedPathToTarget.Count == 0) { break; }
@@ -576,13 +598,13 @@ namespace Cave
                             realDiffY = targetPos.y + 0.5f - realPosY;
                         }
 
-                        if (targetPos.x == posX && targetPos.y == posY)
+                        if (manhattanDistance(targetPos, (posX, posY)) <= state-2)
                         {
                             timeAtLastDig = timeElapsed;
-                            state = 3;
+                            state += 2; // go to corresponding state, easier to to +2 lol
                             speedX = 0;
                             speedY = 0;
-                            goto AfterTest;
+                            goto AfterTest; // makes so it digs next frame, idk if to change idk
                         }
 
                         if (Abs(realDiffX) < 0.5f) { speedX = Sign(speedX) * Max(Abs(speedX) - 0.55f, 0); }
@@ -594,7 +616,7 @@ namespace Cave
 
                         if (rand.Next(150) == 0) { state = 1; }
                     }
-                    else if (state == 3) // preparing to dig
+                    else if (state == 4) // preparing to dig plant
                     {
                         if (timeAtLastDig + 1 < timeElapsed)
                         {
@@ -607,6 +629,18 @@ namespace Cave
                                 state = 0;
                             }
                             else { state = 0; }
+                        }
+                    }
+                    else if (state == 5) // preparing to dig tile
+                    {
+                        if (timeAtLastDig + 1 < timeElapsed)
+                        {
+                            Dig(targetPos.x, targetPos.y);
+                            if (nest != null)
+                            {
+                                nest.digErrands.Remove(targetPos);
+                            }
+                            state = 0;
                         }
                     }
                     else { state = 0; }
@@ -808,20 +842,6 @@ namespace Cave
                     }
                 }
             }
-            public bool testTargetedDig()
-            {
-                int value;
-                foreach (Plant plant in screen.activePlants)
-                {
-                    value = plant.testDig(targetPos.x, targetPos.y);
-                    if (value == 7)
-                    {
-                        Dig(targetPos.x, targetPos.y);
-                        return true;
-                    }
-                }
-                return false;
-            }
             public void initializeInventory()
             {
                 inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
@@ -844,6 +864,7 @@ namespace Cave
                         {
                             inventoryQuantities[elementToAdd]++;
                         }
+                        elementsPossessed++;
                         timeAtLastDig = timeElapsed;
                         return;
                     }
@@ -916,7 +937,7 @@ namespace Cave
                     }
                     else if (elementToPlace.typeOfElement == 1)
                     {
-                        Entity newEntity = new Entity(chunkToTest, (posToDigX, posToDigY), elementToPlace.index, elementToPlace.subType);
+                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), elementToPlace.index, elementToPlace.subType);
                         screen.activeEntities.Add(newEntity);
                         timeAtLastPlace = timeElapsed;
                     }

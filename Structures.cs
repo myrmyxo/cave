@@ -23,9 +23,6 @@ using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
-using System.Windows.Markup;
-using System.Runtime.InteropServices;
-
 namespace Cave
 {
     public class Structures
@@ -1067,11 +1064,15 @@ namespace Cave
 
                 if (type == 0)
                 {
-                    makeBubbleRoom(posToPut, 0, null);
+                    makeBubbleRoom(posToPut, 0);
                 }
                 else if (type == 1)
                 {
-                    makeBubbleRoom(posToPut, 35 + rand.Next(200), null);
+                    makeBubbleRoom(posToPut, 35 + rand.Next(200));
+                }
+                else if (type == 2)
+                {
+                    makeBubbleRoom(posToPut, 50 + rand.Next(100));
                 }
                 else
                 {
@@ -1091,7 +1092,7 @@ namespace Cave
 
                 if (type == 10000)
                 {
-                    makeCorridorBetweenPoints(new List<(int x, int y)>(motherRoom.borders), targetPos, 100);
+                    makeCorridorBetweenPoints(motherRoom.borders, targetPos, 100);
                     if (isToBeDestroyed)
                     {
                         bool ohNo = true;
@@ -1116,7 +1117,7 @@ namespace Cave
                 
                 if (type == 10000)
                 {
-                    makeCorridorBetweenPoints(new List<(int x, int y)> { startPos }, targetPos, 30);
+                    makeCorridorBetweenPoints(new List<(int x, int y)> { startPos }, targetPos, 100);
                     if (isToBeDestroyed)
                     {
                         bool ohNo = true;
@@ -1154,6 +1155,17 @@ namespace Cave
                     }
                 }
                 borders = bordersDict.Keys.ToList();
+                if (type == 2)
+                {
+                    int minY = getBound(borders, true, true) - 2;
+                    for (int i = borders.Count - 1; i >= 0; i--)
+                    {
+                        if (borders[i].y < minY)
+                        {
+                            borders.RemoveAt(i);
+                        }
+                    }
+                }
             }
             public void fillTiles()
             {
@@ -1178,6 +1190,8 @@ namespace Cave
                     }
                 }
 
+                int typeToFill = 0;
+                if (type == 2) { typeToFill = 3; }
                 foreach ((int x, int y) poso in tiles)
                 {
                     (int x, int y) chunkPos = (Floor(poso.x, 32) / 32, Floor(poso.y, 32) / 32);
@@ -1188,7 +1202,7 @@ namespace Cave
                         if (!chunkDict.ContainsKey(chunkPos)) { chunkDict.Add(chunkPos, new Chunk(chunkPos, true, nest.screen)); }
                         chunkToTest = chunkDict[chunkPos];
                     }
-                    chunkToTest.fillStates[(poso.x % 32 + 32) % 32, (poso.y % 32 + 32) % 32] = 0;
+                    chunkToTest.fillStates[(poso.x % 32 + 32) % 32, (poso.y % 32 + 32) % 32] = typeToFill;
                     chunkToTest.modificationCount = 1;
                     chunkToTest.findTileColor((poso.x % 32 + 32) % 32, (poso.y % 32 + 32) % 32);
                 }
@@ -1233,7 +1247,43 @@ namespace Cave
                 }
                 return mini;
             }
-            public void makeBubbleRoom((int x, int y) centerPos, int forceSize, Room motherCorridor)
+            public float heuristic((int x, int y) posToTest, (int x, int y)[] targets, float shape)
+            {
+                int mini = 999999999;
+
+                foreach ((int x, int y) pos in targets)
+                {
+                    int diffX = Abs(posToTest.x - pos.x);
+                    int diffY = Abs(posToTest.y - pos.y);
+                    int diagNumber = Min(diffX, diffY);
+                    mini = Min((int)(diffX + diffY - 2 * diagNumber + shape * diagNumber), mini);
+                }
+                return mini;
+            }
+            public (int x, int y)[] makeHeuristicTargets((int x, int y) centerPos, int targetDistance)
+            {
+                (int x, int y)[] arrayo = new (int x, int y)[seed % 4 + 5];
+                long seedo = seed;
+                if (type == 2)
+                {
+                    targetDistance = (int)(targetDistance*0.5f);
+                    for (int i = 0; i < seed % 4 + 5; i++)
+                    {
+                        seedo = LCGxNeg(seedo);
+                        arrayo[i] = (centerPos.x + (int)(seedo % targetDistance) - (int)(0.5f * targetDistance), centerPos.y + i*2);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < seed % 4 + 5; i++)
+                    {
+                        seedo = LCGxNeg(seedo);
+                        arrayo[i] = (centerPos.x + (int)(seedo % targetDistance) - (int)(0.5f * targetDistance), centerPos.y + (int)(LCGxPos(seedo) % targetDistance) - (int)(0.5f * targetDistance));
+                    }
+                }
+                return arrayo;
+            }
+            public void makeBubbleRoom((int x, int y) centerPos, int forceSize)
             {
                 Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
 
@@ -1241,14 +1291,8 @@ namespace Cave
                 if (forceSize == 0) { tileAmount = (int)(25 + (seed % 750)); }
                 else { tileAmount = forceSize; }
 
-                List<(int x, int y)> heuristicTargets = new List<(int x, int y)> { centerPos };
-                long seedo = seed;
-                int targetDistance = Sqrt((int)(tileAmount*0.5f))+2;
-                for (int i = 0; i < seed % 4 + 5; i++)
-                {
-                    seedo = LCGxNeg(seedo);
-                    heuristicTargets.Add((centerPos.x + (int)(seedo % 25) - 12, centerPos.y + (int)(LCGxPos(seedo) % 25) - 12));
-                }
+                int targetDistance = Sqrt((int)(tileAmount * 0.5f)) + 2;
+                (int x, int y)[] heuristicTargets = makeHeuristicTargets(centerPos, targetDistance);
 
                 Dictionary<(int x, int y), bool> tilesToFill = new Dictionary<(int x, int y), bool>();
                 List<((int x, int y) pos, float cost)> tilesToTest = new List<((int x, int y) pos, float cost)> { (centerPos, 0) };
@@ -1279,7 +1323,8 @@ namespace Cave
                             }
                             chunkToTest = chunkDict[chunkPos];
                         }
-                        if (chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32] <= 0 && (motherCorridor == null || !motherCorridor.tiles.Contains(posToTest)) && repeatCounter > 0)
+                        int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+                        if (fillState <= 0 || fillState > 1 || nest.tiles.ContainsKey(posToTest))
                         {
                             goto SkipToNextIteration;
                         }
@@ -1288,7 +1333,7 @@ namespace Cave
                     foreach ((int x, int y) mod in neighbourArray)
                     {
                         posToAdd = (currentTile.x + mod.x, currentTile.y + mod.y);
-                        if (!tilesToFill.ContainsKey(posToAdd) && (!nest.tiles.ContainsKey(posToAdd) || (motherCorridor != null && motherCorridor.tiles.Contains(posToAdd))))
+                        if (!tilesToFill.ContainsKey(posToAdd) && (!nest.tiles.ContainsKey(posToAdd)))
                         {
                             addToQueue(tilesToTest, (posToAdd, repeatCounter + 20 * heuristic(posToAdd, heuristicTargets, nest.shape)));
                         }
@@ -1310,10 +1355,6 @@ namespace Cave
 
 
 
-            public int manhattan((int x, int y) pos1, (int x, int y) pos2)
-            {
-                return Abs(pos1.x-pos2.x)+Abs(pos1.y-pos2.y);
-            }
             public void sproutCorridor((int x, int y) startPos, int randomness)
             {
                 int distance = 20;
@@ -1325,7 +1366,6 @@ namespace Cave
             }
             public void makeCorridorBetweenPoints(List<(int x, int y)> startPosList, (int x, int y) targetPos, int randomness)
             {
-
                 Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
 
                 long seedo = seed;
@@ -1370,7 +1410,8 @@ namespace Cave
                             }
                             chunkToTest = chunkDict[chunkPos];
                         }
-                        if (chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32] <= 0 && repeatCounter>=startPosList.Count && manhattan(currentTile, targetPos) > 2)
+                        int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+                        if (((fillState <= 0 || fillState > 1) || nest.tiles.ContainsKey(posToTest)) && repeatCounter >= startPosList.Count) //cumsum yummy yum
                         {
                             goto SkipToNextIteration;
                         }
@@ -1424,11 +1465,19 @@ namespace Cave
             public int roomSize; // bigger leads to bigger rooms
             public int connectivity; // bigger leads to less connexions (corridors)
             public int extensivity; // bigger leads to new rooms and corridors being dug out farther away from the center ig
-            public float shape = 1.41421356237f;
+            public float shape = 1.41421356237f; //the only one that has an actual effect LMFAO
 
             public Dictionary<(int x, int y), bool> tiles = new Dictionary<(int x, int y), bool>();
+            public Dictionary<(int x, int y), bool> borders = new Dictionary<(int x, int y), bool>();
             public Dictionary<int, Room> rooms = new Dictionary<int, Room>();
             public int currentRoomId = 0;
+
+
+            // entity management
+            public List<Entity> entities = new List<Entity>();
+            public List<(int x, int y)> digErrands = new List<(int x, int y)>();
+
+
             public Nest((int x, int y) posToPut, long seedToPut, Form1.Screen screenToPut)
             {
                 screen = screenToPut;
@@ -1440,16 +1489,45 @@ namespace Cave
                 mainRoom = new Room(posToPut, 0, currentRoomId, this);
                 if (!mainRoom.isToBeDestroyed)
                 {
-                    addRoom(mainRoom);
+                    addRoom(mainRoom, true);
                     screen.activeNests.Add(this);
                 }
+                else
+                {
+                    return;
+                }
+
+                for (int i = 0; i < 10; i++)
+                {
+                    Entity hornet = new Entity(screen, posToPut, 3, 0);
+                    screen.activeEntities.Add(hornet);
+                    entities.Add(hornet);
+                    hornet.nest = this;
+                }
             }
-            public void addRoom(Room room)
+            public void addRoom(Room room, bool fillTiles)
             {
-                rooms[room.id] = room;
+                room.id = currentRoomId;
+                rooms[currentRoomId] = room;
                 currentRoomId++;
-                room.fillTiles();
+                if (fillTiles) { room.fillTiles(); }
                 updateTiles();
+            }
+            public void removeRoom(Room room)
+            {
+                rooms.Remove(room.id);
+                updateTiles();
+            }
+            public int getRoomId((int x, int y) posToGetFrom)
+            {
+                foreach(Room room in rooms.Values)
+                {
+                    if (room.tiles.Contains(posToGetFrom))
+                    {
+                        return room.id;
+                    }
+                }
+                return -1;
             }
             public bool testRoomAvailability((int x, int y) centerPos, int amountToTest)
             {
@@ -1479,7 +1557,8 @@ namespace Cave
                         }
                         chunkToTest = chunkDict[chunkPos];
                     }
-                    if (chunkToTest.fillStates[(currentPos.x % 32 + 32) % 32, (currentPos.y % 32 + 32) % 32] <= 0)
+                    int fillState = chunkToTest.fillStates[(currentPos.x % 32 + 32) % 32, (currentPos.y % 32 + 32) % 32];
+                    if (fillState <= 0 || fillState > 2 || tiles.ContainsKey(currentPos))
                     {
                         return false;
                     }
@@ -1546,16 +1625,20 @@ namespace Cave
             }
             public void makeCorridorAndRoom((int x, int y) targetPos)
             {
-                Room newRoom = new Room(targetPos, 1, currentRoomId, this);
+                Room newRoom = new Room(targetPos, 1+rand.Next(2), currentRoomId, this);
+                if (newRoom.isToBeDestroyed) { return; }
                 (int x, int y) originPoint = newRoom.borders[rand.Next(newRoom.borders.Count())];
-                (int x, int y) targetPosCorridor = findClosestPoint(originPoint);
+                (int x, int y) targetPosCorridor = findClosestBorder(originPoint);
+                addRoom(newRoom, false);
 
-                Room corridoro = new Room(targetPosCorridor, 10000, currentRoomId+1, newRoom, this); //+1 is important ! else it will override lol
+                Room corridoro = new Room(targetPosCorridor, 10000, currentRoomId, newRoom, this); //+1 is important ! else it will override lol
                 if (!corridoro.isToBeDestroyed)
                 {
-                    addRoom(newRoom);
-                    addRoom(corridoro);
+                    //newRoom.fillTiles();
+                    addRoom(corridoro, false);
+                    //corridoro.fillTiles();
                 }
+                else { removeRoom(newRoom); }
             }
             public void randomlyExtendNest()
             {
@@ -1563,6 +1646,7 @@ namespace Cave
                 if (returnTuple.valid)
                 {
                     makeCorridorAndRoom(returnTuple.pos);
+                    updateDigErrands();
                 }
                 //forkRandomCorridorToRandomRoom();
             }
@@ -1588,15 +1672,71 @@ namespace Cave
                 }
                 return posMin;
             }
+            public (int x, int y) findClosestBorder((int x, int y) posToTest)
+            {
+                int diffX;
+                int diffY;
+                int diagNumber;
+                int distance;
+                int distanceMin = 1000000;
+                (int x, int y) posMin = (0, 0);
+                foreach ((int x, int y) pos in borders.Keys)
+                {
+                    diffX = Abs(posToTest.x - pos.x);
+                    diffY = Abs(posToTest.y - pos.y);
+                    diagNumber = Min(diffX, diffY);
+                    distance = (int)(diffX + diffY - 2 * diagNumber + 1.41421356237f * diagNumber);
+                    if (distance < distanceMin)
+                    {
+                        posMin = pos;
+                        distanceMin = distance;
+                    }
+                }
+                return posMin;
+            }
             public void updateTiles()
             {
                 tiles = new Dictionary<(int x, int y), bool>();
+                borders = new Dictionary<(int x, int y), bool>();
                 foreach (Room room in rooms.Values)
                 {
                     foreach ((int x, int y) tile in room.tiles)
                     {
                         tiles[tile] = true;
                     }
+                    foreach ((int x, int y) tile in room.borders)
+                    {
+                        borders[tile] = true;
+                    }
+                }
+            }
+            public void updateDigErrands()
+            {
+                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
+
+                digErrands = new List<(int x, int y)>();
+                updateTiles();
+                foreach ((int x, int y) pos in tiles.Keys)
+                {
+                    (int x, int y) chunkPos = (Floor(pos.x, 32) / 32, Floor(pos.y, 32) / 32);
+                    Chunk chunkToTest;
+                    if (screen.loadedChunks.ContainsKey(chunkPos)) { chunkToTest = screen.loadedChunks[chunkPos]; }
+                    else
+                    {
+                        if (chunkDict.ContainsKey(chunkPos)) { }
+                        else if (screen.extraLoadedChunks.ContainsKey(chunkPos))
+                        {
+                            chunkDict.Add(chunkPos, screen.extraLoadedChunks[chunkPos]);
+                        }
+                        else
+                        {
+                            chunkDict.Add(chunkPos, new Chunk(chunkPos, true, screen));
+                        }
+                        chunkToTest = chunkDict[chunkPos];
+                    }
+                    int fillState = chunkToTest.fillStates[(pos.x % 32 + 32) % 32, (pos.y % 32 + 32) % 32];
+                    if (fillState == 0 || fillState == -5) { }
+                    else { digErrands.Add(pos); }
                 }
             }
             public void saveInFile(Form1.Screen screen)
