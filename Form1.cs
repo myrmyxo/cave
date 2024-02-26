@@ -62,6 +62,10 @@ namespace Cave
             public static float speedCamX = 0;
             public static float speedCamY = 0;
 
+            public static int currentEntityId = 0;
+            public static int currentPlantId = 0;
+            public static int currentNestId = 0;
+
             public static (int, int)[] neighbourArray = new (int, int)[4] { (-1, 0), (1, 0), (0, 1), (0, -1) };
             public static (int, int)[] bubbleNeighbourArray = new (int, int)[8] { (-1, 0), (1, 0), (0, 1), (0, -1), (-2, 0), (2, 0), (0, 2), (0, -2) };
             public static (int, int)[] diagNeighbourArray = new (int, int)[4] { (-1, 1), (1, 1), (1, -1), (-1, -1) };
@@ -137,7 +141,7 @@ namespace Cave
 
             public long chunkSeed;
 
-            public (int, int) position;
+            public (int x, int y) position;
             public int[,] primaryFillValues;
             public int[,] primaryBiomeValues;
             public int[,] primaryBigBiomeValues; // the biome trends that are bigger than biomes
@@ -1204,148 +1208,101 @@ namespace Cave
                     if (posX == 0 && posY == 0) { Nest nesto = new Nest((0, 0), (long)(seedX * 0.5f + seedY * 0.5f), this); }
                 }
             }
+            public void drawPixel(Color color, (int x, int y) position, int PNGmultiplicator)
+            {
+                (int x, int y) posToDraw = (position.x - camPosX - UnloadedChunksAmount * 32, position.y - camPosY - UnloadedChunksAmount * 32);
+                if (posToDraw.x >= 0 && posToDraw.x < (chunkResolution - 1) * 32 && posToDraw.y >= 0 && posToDraw.y < (chunkResolution - 1) * 32)
+                {
+                    using (var g = Graphics.FromImage(gameBitmap))
+                    {
+                        g.FillRectangle(new SolidBrush(color), posToDraw.x * PNGmultiplicator, posToDraw.y * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
+                    }
+                }
+            }
+            public void pasteImage(Bitmap bitmapToDraw, (int x, int y) position, int PNGmultiplicator)
+            {
+                (int x, int y) posToDraw = (position.x - camPosX - UnloadedChunksAmount * 32, position.y - camPosY - UnloadedChunksAmount * 32);
+                if (true || posToDraw.x >= -bitmapToDraw.Width && posToDraw.x < (chunkResolution) * 32 && posToDraw.y >= -bitmapToDraw.Height && posToDraw.y < (chunkResolution) * 32)
+                {
+                    using (Graphics g = Graphics.FromImage(gameBitmap))
+                    {
+                        g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                        g.DrawImage(bitmapToDraw, posToDraw.x * PNGmultiplicator, posToDraw.y * PNGmultiplicator, bitmapToDraw.Width * PNGmultiplicator, bitmapToDraw.Height * PNGmultiplicator);
+                    }
+                }
+            }
             public Bitmap updateScreen()
             {
-                int pixelPosX;
-                int pixelPosY;
-
+                Chunk chunko;
                 int PNGmultiplicator = 4;
                 if(isPngToBeExported) { PNGmultiplicator = 1; }
 
-                for (int i = 0; i < chunkResolution; i++)
+                for (int i = UnloadedChunksAmount; i < chunkResolution-UnloadedChunksAmount; i++)
                 {
-                    for (int j = 0; j < chunkResolution; j++)
+                    for (int j = UnloadedChunksAmount; j < chunkResolution-UnloadedChunksAmount; j++)
                     {
-                        pixelPosX = i*32 - ((camPosX % 32) + 32) % 32 - UnloadedChunksAmount * 32;
-                        pixelPosY = j*32 - ((camPosY % 32) + 32) % 32 - UnloadedChunksAmount * 32;
-
-                        if (pixelPosX < -31 || pixelPosX >= (chunkResolution) * 32 || pixelPosY < -31 || pixelPosY >= (chunkResolution) * 32)
-                        {
-                            continue;
-                        }
-                        using (Graphics g = Graphics.FromImage(gameBitmap))
-                        {
-                            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                            g.DrawImage(loadedChunks[(chunkX + i, chunkY + j)].bitmap, pixelPosX*PNGmultiplicator, pixelPosY*PNGmultiplicator, 32*PNGmultiplicator, 32*PNGmultiplicator);
-                        }
+                        chunko = loadedChunks[(chunkX + i, chunkY + j)];
+                        pasteImage(chunko.bitmap, (chunko.position.x*32, chunko.position.y*32), PNGmultiplicator);
+                        //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32), PNGmultiplicator); } // if want to show chunk origin
                     }
                 }
 
                 foreach (Plant plant in activePlants)
                 {
-                    pixelPosX = plant.posX - camPosX - UnloadedChunksAmount * 32;
-                    pixelPosY = plant.posY - camPosY - UnloadedChunksAmount * 32;
-
-                    if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
-                    {;
-                        (int, int) chunkPos = findChunkAbsoluteIndex(plant.posX, plant.posY);
-                        Chunk chunkToTest = loadedChunks[chunkPos];
-                        if ( true/*chunkToTest.fillStates[(plant.posX % 32 + 32) % 32, (plant.posY % 32 + 32) % 32] <= 0*/)
-                        {
-                            using (Graphics g = Graphics.FromImage(gameBitmap))
-                            {
-                                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                                g.DrawImage(plant.bitmap, (pixelPosX + plant.posOffset[0]) * PNGmultiplicator, (pixelPosY + plant.posOffset[1]) * PNGmultiplicator, plant.bitmap.Width*PNGmultiplicator, plant.bitmap.Height*PNGmultiplicator);
-                            }
-                        }
-                    }
+                    pasteImage(plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), PNGmultiplicator);
                 }
 
                 foreach (Entity entity in activeEntities)
                 {
-                    pixelPosX = entity.posX - camPosX - UnloadedChunksAmount * 32;
-                    pixelPosY = entity.posY - camPosY - UnloadedChunksAmount * 32;
-
-                    if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
+                    Color color = entity.color;
+                    (int, int) chunkPos = findChunkAbsoluteIndex(entity.posX, entity.posY);
+                    if (loadedChunks.ContainsKey(chunkPos))
                     {
-                        Color color = entity.color;
-                        (int, int) chunkPos = this.findChunkAbsoluteIndex(entity.posX, entity.posY);
-                        if (loadedChunks.ContainsKey(chunkPos))
+                        Chunk chunkToTest = loadedChunks[chunkPos];
+                        if (chunkToTest.fillStates[(entity.posX % 32 + 32) % 32, (entity.posY % 32 + 32) % 32] > 0)
                         {
-                            Chunk chunkToTest = this.loadedChunks[chunkPos];
-                            if (chunkToTest.fillStates[(entity.posX % 32 + 32) % 32, (entity.posY % 32 + 32) % 32] > 0)
-                            {
-                                color = Color.Red;
-                            }
-                        }
-                        using (var g = Graphics.FromImage(gameBitmap))
-                        {
-                            g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
+                            color = Color.Red;
                         }
                     }
+                    drawPixel(color, (entity.posX, entity.posY), PNGmultiplicator);
                 }
+
                 if (debugMode)
                 {
-                    foreach (Entity entity in activeEntities) // debug for paths
-                    {
-                        foreach ((int x, int y) posToDrawAt in entity.pathToTarget)
-                        {
-                            pixelPosX = posToDrawAt.x - camPosX - UnloadedChunksAmount * 32;
-                            pixelPosY = posToDrawAt.y - camPosY - UnloadedChunksAmount * 32;
-
-                            if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
-                            {
-                                Color color = entity.color;
-                                color = Color.FromArgb(100, color.R, color.G, color.B);
-                                using (var g = Graphics.FromImage(gameBitmap))
-                                {
-                                    g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
-                                }
-                            }
-                        }
-                        foreach ((int x, int y) posToDrawAt in entity.simplifiedPathToTarget)
-                        {
-                            pixelPosX = posToDrawAt.x - camPosX - UnloadedChunksAmount * 32;
-                            pixelPosY = posToDrawAt.y - camPosY - UnloadedChunksAmount * 32;
-
-                            if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
-                            {
-                                Color color = Color.FromArgb(100, 200, 0, 100);
-                                using (var g = Graphics.FromImage(gameBitmap))
-                                {
-                                    g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
-                                }
-                            }
-                        }
-                    }
                     foreach (Nest nest in activeNests)
                     {
                         foreach ((int x, int y) posToDrawAt in nest.digErrands)
                         {
-                            pixelPosX = posToDrawAt.x - camPosX - UnloadedChunksAmount * 32;
-                            pixelPosY = posToDrawAt.y - camPosY - UnloadedChunksAmount * 32;
-
-                            if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
-                            {
-                                Color color = Color.FromArgb(100, 255, 0, 0);
-                                using (var g = Graphics.FromImage(gameBitmap))
-                                {
-                                    g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
-                                }
-                            }
-
+                            drawPixel(Color.FromArgb(100, 255, 0, 0), posToDrawAt, PNGmultiplicator);
+                        }
+                        foreach ((int x, int y) posToDrawAt in nest.freeHoneyTiles)
+                        {
+                            drawPixel(Color.FromArgb(100, 0, 0, 255), posToDrawAt, PNGmultiplicator);
+                        }
+                    }
+                    foreach (Entity entity in activeEntities) // debug for paths
+                    {
+                        foreach ((int x, int y) posToDrawAt in entity.pathToTarget)
+                        {
+                            drawPixel(Color.FromArgb(100, entity.color.R, entity.color.G, entity.color.B), posToDrawAt, PNGmultiplicator);
+                        }
+                        foreach ((int x, int y) posToDrawAt in entity.simplifiedPathToTarget)
+                        {
+                            drawPixel(Color.FromArgb(100, 200, 0, 100), posToDrawAt, PNGmultiplicator);
                         }
                     }
                 }
 
-                pixelPosX = player.posX - camPosX - UnloadedChunksAmount * 32;
-                pixelPosY = player.posY - camPosY - UnloadedChunksAmount * 32;
-
-                if (pixelPosX >= 0 && pixelPosX < (chunkResolution - 1) * 32 && pixelPosY >= 0 && pixelPosY < (chunkResolution - 1) * 32)
                 {
                     Color color = Color.Green;
-                    (int, int) chunkPos = this.findChunkAbsoluteIndex(player.posX, player.posY);
-                    Chunk chunkToTest = this.loadedChunks[chunkPos];
+                    (int, int) chunkPos = findChunkAbsoluteIndex(player.posX, player.posY);
+                    Chunk chunkToTest = loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[(player.posX % 32 + 32) % 32, (player.posY % 32 + 32) % 32] > 0)
                     {
                         color = Color.Red;
                     }
-                    using (var g = Graphics.FromImage(gameBitmap))
-                    {
-                        g.FillRectangle(new SolidBrush(color), pixelPosX * PNGmultiplicator, pixelPosY * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
-                    }
+                    drawPixel(color, (player.posX, player.posY), PNGmultiplicator);
                 }
                 gameBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 return gameBitmap;
@@ -1788,7 +1745,7 @@ namespace Cave
             Screen mainScreen;
 
             bool updatePNG = false;
-            int PNGsize = 50; // in chunks, 300 or more made it out of memory :( so put at 250 okok
+            int PNGsize = 150; // in chunks, 300 or more made it out of memory :( so put at 250 okok
             bool randomSeed = true;
 
             long seed = 3452270044;

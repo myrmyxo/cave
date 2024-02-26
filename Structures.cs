@@ -1040,6 +1040,7 @@ namespace Cave
             public List<(int x, int y)> borders = new List<(int x, int y)>();
             public List<(int x, int y)> extremities = new List<(int x, int y)>(); //only used for corridors
             public int type;
+            public int maxHoneyLevel;
             public List<int> linkedRoomsId;
             // type of room : 0 = mainRoom, 1 = normalRoom, 2 = HoneyRoom, 3 = Nursery, 10000 = corridor
             public Room(List<(int x, int y)> tileListToPut, int typeToPut, int idToPut, Nest nestToPut)
@@ -1157,10 +1158,10 @@ namespace Cave
                 borders = bordersDict.Keys.ToList();
                 if (type == 2)
                 {
-                    int minY = getBound(borders, true, true) - 2;
+                    maxHoneyLevel = getBound(borders, true, true) - 2;
                     for (int i = borders.Count - 1; i >= 0; i--)
                     {
-                        if (borders[i].y < minY)
+                        if (borders[i].y < maxHoneyLevel)
                         {
                             borders.RemoveAt(i);
                         }
@@ -1476,6 +1477,7 @@ namespace Cave
             // entity management
             public List<Entity> entities = new List<Entity>();
             public List<(int x, int y)> digErrands = new List<(int x, int y)>();
+            public List<(int x, int y)> freeHoneyTiles = new List<(int x, int y)>();
 
 
             public Nest((int x, int y) posToPut, long seedToPut, Form1.Screen screenToPut)
@@ -1646,7 +1648,9 @@ namespace Cave
                 if (returnTuple.valid)
                 {
                     makeCorridorAndRoom(returnTuple.pos);
+                    updateTiles();
                     updateDigErrands();
+                    updateFreeHoneyTiles();
                 }
                 //forkRandomCorridorToRandomRoom();
             }
@@ -1715,7 +1719,6 @@ namespace Cave
                 Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
 
                 digErrands = new List<(int x, int y)>();
-                updateTiles();
                 foreach ((int x, int y) pos in tiles.Keys)
                 {
                     (int x, int y) chunkPos = (Floor(pos.x, 32) / 32, Floor(pos.y, 32) / 32);
@@ -1737,6 +1740,41 @@ namespace Cave
                     int fillState = chunkToTest.fillStates[(pos.x % 32 + 32) % 32, (pos.y % 32 + 32) % 32];
                     if (fillState == 0 || fillState == -5) { }
                     else { digErrands.Add(pos); }
+                }
+            }
+            public void updateFreeHoneyTiles()
+            {
+                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
+
+                freeHoneyTiles = new List<(int x, int y)>();
+                updateTiles();
+                foreach ((int x, int y) pos in tiles.Keys)
+                {
+                    (int x, int y) chunkPos = (Floor(pos.x, 32) / 32, Floor(pos.y, 32) / 32);
+                    Chunk chunkToTest;
+                    if (screen.loadedChunks.ContainsKey(chunkPos)) { chunkToTest = screen.loadedChunks[chunkPos]; }
+                    else
+                    {
+                        if (chunkDict.ContainsKey(chunkPos)) { }
+                        else if (screen.extraLoadedChunks.ContainsKey(chunkPos))
+                        {
+                            chunkDict.Add(chunkPos, screen.extraLoadedChunks[chunkPos]);
+                        }
+                        else
+                        {
+                            chunkDict.Add(chunkPos, new Chunk(chunkPos, true, screen));
+                        }
+                        chunkToTest = chunkDict[chunkPos];
+                    }
+                    int fillState = chunkToTest.fillStates[(pos.x % 32 + 32) % 32, (pos.y % 32 + 32) % 32];
+                    if (fillState == 0 )
+                    {
+                        int roomId = getRoomId(pos);
+                        if (roomId >= 0 && rooms[roomId].type == 2 && pos.y < rooms[roomId].maxHoneyLevel)
+                        {
+                            freeHoneyTiles.Add(pos);
+                        }
+                    }
                 }
             }
             public void saveInFile(Form1.Screen screen)

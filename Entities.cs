@@ -186,27 +186,6 @@ namespace Cave
                 }
                 isDeadAndShouldDisappear = true;
             }
-            public void testDigPlace()
-            {
-                if (type == 3)
-                {
-                    if (timeAtLastDig + 0.5f + rand.NextDouble() * 3 < timeElapsed)
-                    {
-                        int direction = rand.Next(4);
-                        int digorplace = elementsPossessed + rand.Next(5) - 5;
-                        if (digorplace < 0 && false)
-                        {
-                            Dig(posX + neighbourArray[direction].Item1, posY + neighbourArray[direction].Item2);
-                        }
-                        else if (elementsPossessed > 0)
-                        {
-                            Place(posX + neighbourArray[direction].Item1, posY + neighbourArray[direction].Item2);
-                        }
-                    }
-
-                    timeAtLastPlace = timeAtLastDig;
-                }
-            }
             public void findRandomDestination(int distance)
             {
                 targetPos = (posX + rand.Next(distance*2+1) - distance, posY + rand.Next(distance*2+1) - distance);
@@ -543,9 +522,22 @@ namespace Cave
                         {
                             state = 0;
                         }
-                        else if (rand.Next(10) == 0)
+                        else if (nest != null)
                         {
-                            if (findPointOfInterestInPlants(7))
+                            if (inventoryElements.Contains((-5, 0, 0)) && nest.freeHoneyTiles.Count > 0)
+                            {
+                                targetPos = nest.freeHoneyTiles[rand.Next(nest.freeHoneyTiles.Count)];
+                                if (pathfindToLocation(targetPos))
+                                {
+                                    state = 4;
+                                }
+                                else
+                                {
+                                    pathToTarget = new List<(int x, int y)>();
+                                    simplifiedPathToTarget = new List<(int x, int y)>();
+                                }
+                            }
+                            else if (rand.Next(3) == 0 && findPointOfInterestInPlants(7))
                             {
                                 if (pathfindToLocation(targetPos))
                                 {
@@ -557,10 +549,7 @@ namespace Cave
                                     simplifiedPathToTarget = new List<(int x, int y)>();
                                 }
                             }
-                        }
-                        else if (nest != null)
-                        {
-                            if (nest.digErrands.Count > 0)
+                            else if (nest.digErrands.Count > 0)
                             {
                                 targetPos = nest.digErrands[rand.Next(nest.digErrands.Count)];
                                 if (pathfindToLocation(targetPos))
@@ -575,7 +564,7 @@ namespace Cave
                             }
                         }
                     }
-                    else if (state == 2 || state == 3) // moving in the air towards direction
+                    else if (state >= 2 && state <= 4) // moving in the air towards direction
                     {
                         // if following path
                         float realDiffX;
@@ -598,10 +587,13 @@ namespace Cave
                             realDiffY = targetPos.y + 0.5f - realPosY;
                         }
 
-                        if (manhattanDistance(targetPos, (posX, posY)) <= state-2)
+                        int maxDist;
+                        if (state == 2) { maxDist = 0; }
+                        else { maxDist = 1; }
+                        if (manhattanDistance(targetPos, (posX, posY)) <= maxDist)
                         {
                             timeAtLastDig = timeElapsed;
-                            state += 2; // go to corresponding state, easier to to +2 lol
+                            state += 3; // go to corresponding state, easier to to +3 lol
                             speedX = 0;
                             speedY = 0;
                             goto AfterTest; // makes so it digs next frame, idk if to change idk
@@ -616,7 +608,7 @@ namespace Cave
 
                         if (rand.Next(150) == 0) { state = 1; }
                     }
-                    else if (state == 4) // preparing to dig plant
+                    else if (state == 5) // preparing to dig plant
                     {
                         if (timeAtLastDig + 1 < timeElapsed)
                         {
@@ -631,7 +623,7 @@ namespace Cave
                             else { state = 0; }
                         }
                     }
-                    else if (state == 5) // preparing to dig tile
+                    else if (state == 6) // preparing to dig tile
                     {
                         if (timeAtLastDig + 1 < timeElapsed)
                         {
@@ -639,6 +631,34 @@ namespace Cave
                             if (nest != null)
                             {
                                 nest.digErrands.Remove(targetPos);
+                                int roomId = nest.getRoomId(targetPos);
+                                if (roomId >= 0 && nest.rooms[roomId].type == 2)
+                                {
+                                    if (targetPos.y < nest.rooms[roomId].maxHoneyLevel)
+                                    {
+                                        nest.freeHoneyTiles.Add(targetPos);
+                                    }
+                                }
+                            }
+                            state = 0;
+                        }
+                    }
+                    else if (state == 7) // preparing to place honeyy
+                    {
+                        if (timeAtLastPlace + 1 < timeElapsed)
+                        {
+                            Place(targetPos.x, targetPos.y, (-5, 0, 0));
+                            if (nest != null)
+                            {
+                                nest.freeHoneyTiles.Remove(targetPos);
+                                /*int roomId = nest.getRoomId(targetPos);
+                                if (roomId >= 0 && nest.rooms[roomId].type == 2)
+                                {
+                                    if (true)
+                                    {
+
+                                    }
+                                }*/
                             }
                             state = 0;
                         }
@@ -918,11 +938,11 @@ namespace Cave
                     timeAtLastDig = timeElapsed;
                 }
             }
-            public void Place(int posToDigX, int posToDigY)
+            public bool Place(int posToDigX, int posToDigY, (int index, int subType, int typeOfElement) elementToPlace)
             {
                 (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
-                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return; }
-                (int index, int subType, int typeOfElement) elementToPlace = inventoryElements[rand.Next(inventoryElements.Count)];
+                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return true; }
+                if (!inventoryElements.Contains(elementToPlace)) { return true; } 
                 (int x, int y) tileIndex = GetChunkTileIndex(posToDigX, posToDigY, 32);
                 int tileState = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
                 if (tileState == 0 || tileState < 0 && elementToPlace.typeOfElement > 0)
@@ -947,9 +967,11 @@ namespace Cave
                         if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants.Add(newPlant); }
                         timeAtLastPlace = timeElapsed;
                     }
-                    else { return; }
+                    else { return false; }
                     removeElementFromInventory(elementToPlace);
+                    return true;
                 }
+                return false;
             }
             public bool tryManufactureElement()
             {
