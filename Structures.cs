@@ -1031,18 +1031,29 @@ namespace Cave
         }
         public class Room
         {
+            public bool isToBeDestroyed = false;
             public Nest nest;
             public int id;
+            public int type;
             public long seed;
-            public bool isToBeDestroyed = false;
             public (int x, int y) position;
+
             public List<(int x, int y)> tiles = new List<(int x, int y)>();
             public List<(int x, int y)> borders = new List<(int x, int y)>();
-            public List<(int x, int y)> extremities = new List<(int x, int y)>(); //only used for corridors
-            public int type;
-            public int maxHoneyLevel;
-            public List<int> linkedRoomsId;
-            // type of room : 0 = mainRoom, 1 = normalRoom, 2 = HoneyRoom, 3 = Nursery, 10000 = corridor
+            public int maxBordelLevel;
+            public List<(int x, int y)> extremities = new List<(int x, int y)>(); //only used for corridors, and not yet lelel WAIT NO IT IS LMFAO$$$
+            public List<(int x, int y)> dropPositions = new List<(int x, int y)>();
+            public bool containsDebris;
+
+            public List<Entity> assignedEntities = new List<Entity>();
+
+            public int capacity = 0;
+            public int contentCount = 0;
+            public bool isFull = false;
+            public bool inConstruction = false;
+            //public List<int> linkedRoomsId = new List<int>();
+            
+            // type of room : 0 = mainRoom, 1 = normalRoom, 2 = honeyRoom, 3 = nursery, 10000 = corridor
             public Room(List<(int x, int y)> tileListToPut, int typeToPut, int idToPut, Nest nestToPut)
             {
                 nest = nestToPut;
@@ -1051,7 +1062,9 @@ namespace Cave
                 id = idToPut;
                 position = tileListToPut[0];
                 findSeed();
-                linkedRoomsId = new List<int>();
+                findBorders();
+                findDropPositions();
+                findCapacity();
             }
             public Room((int x, int y) posToPut, int typeToPut, int idToPut, Nest nestToPut)
             {
@@ -1061,7 +1074,6 @@ namespace Cave
                 id = idToPut;
                 position = posToPut;
                 findSeed();
-                linkedRoomsId = new List<int>();
 
                 if (type == 0)
                 {
@@ -1075,11 +1087,17 @@ namespace Cave
                 {
                     makeBubbleRoom(posToPut, 50 + rand.Next(100));
                 }
+                else if (type == 3)
+                {
+                    makeBubbleRoom(posToPut, 120 + rand.Next(100));
+                }
                 else
                 {
                     isToBeDestroyed = true;
                 }
                 findBorders();
+                findDropPositions();
+                findCapacity();
             }
             public Room((int x, int y) targetPos, int typeToPut, int idToPut, Room motherRoom, Nest nestToPut)
             {
@@ -1089,7 +1107,6 @@ namespace Cave
                 id = idToPut;
                 position = targetPos;
                 findSeed();
-                linkedRoomsId = new List<int>();
 
                 if (type == 10000)
                 {
@@ -1104,6 +1121,8 @@ namespace Cave
                     isToBeDestroyed = true;
                 }
                 findBorders();
+                findDropPositions();
+                findCapacity();
             }
             public Room((int x, int y) startPos, (int x, int y) targetPos, int typeToPut, int idToPut, Nest nestToPut)
             {
@@ -1113,7 +1132,6 @@ namespace Cave
                 id = idToPut;
                 position = startPos;
                 findSeed();
-                linkedRoomsId = new List<int>();
 
                 
                 if (type == 10000)
@@ -1129,6 +1147,8 @@ namespace Cave
                     isToBeDestroyed = true;
                 }
                 findBorders();
+                findDropPositions();
+                findCapacity();
             }
             public long findSeed()
             {
@@ -1158,10 +1178,21 @@ namespace Cave
                 borders = bordersDict.Keys.ToList();
                 if (type == 2)
                 {
-                    maxHoneyLevel = getBound(borders, true, true) - 2;
+                    maxBordelLevel = getBound(borders, true, true) - 2;
                     for (int i = borders.Count - 1; i >= 0; i--)
                     {
-                        if (borders[i].y < maxHoneyLevel)
+                        if (borders[i].y < maxBordelLevel)
+                        {
+                            borders.RemoveAt(i);
+                        }
+                    }
+                }
+                if (type == 3)
+                {
+                    maxBordelLevel = getBound(borders, true, true) - 6;
+                    for (int i = borders.Count - 1; i >= 0; i--)
+                    {
+                        if (borders[i].y < maxBordelLevel)
                         {
                             borders.RemoveAt(i);
                         }
@@ -1272,6 +1303,16 @@ namespace Cave
                     {
                         seedo = LCGxNeg(seedo);
                         arrayo[i] = (centerPos.x + (int)(seedo % targetDistance) - (int)(0.5f * targetDistance), centerPos.y + i*2);
+                    }
+                }
+                else if (type == 3)
+                {
+                    targetDistance = (int)(targetDistance * 0.5f);
+                    for (int i = 0; i < seed % 4 + 5; i++)
+                    {
+                        int modX = (((i%2)*2)-1)*i;
+                        seedo = LCGxNeg(seedo);
+                        arrayo[i] = (centerPos.x + modX, centerPos.y + (int)((Abs(modX) + i)*0.5f));
                     }
                 }
                 else
@@ -1452,6 +1493,118 @@ namespace Cave
                 if (extremities.Count == 0) { extremities.Add(startPosList[0]); }
                 extremities.Add(targetPos);
             }
+            public void findDropPositions()
+            {
+                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
+
+                foreach ((int x, int y) pos in tiles)
+                {
+                    (int x, int y) chunkPos = (Floor(pos.x, 32) / 32, Floor(pos.y, 32) / 32);
+                    Chunk chunkToTest;
+                    if (nest.screen.loadedChunks.ContainsKey(chunkPos)) { chunkToTest = nest.screen.loadedChunks[chunkPos]; }
+                    else
+                    {
+                        if (chunkDict.ContainsKey(chunkPos)) { }
+                        else if (nest.screen.extraLoadedChunks.ContainsKey(chunkPos))
+                        {
+                            chunkDict.Add(chunkPos, nest.screen.extraLoadedChunks[chunkPos]);
+                        }
+                        else
+                        {
+                            chunkDict.Add(chunkPos, new Chunk(chunkPos, true, nest.screen));
+                        }
+                        chunkToTest = chunkDict[chunkPos];
+                    }
+                    int fillState = chunkToTest.fillStates[(pos.x % 32 + 32) % 32, (pos.y % 32 + 32) % 32];
+                    if (pos.y == maxBordelLevel - 1)
+                    {
+                        dropPositions.Add(pos);
+                    }
+                }
+            }
+            public void testFullness()
+            {
+                countContent();
+                if (type == 2 ||type == 3)
+                {
+                    if (contentCount >= capacity)
+                    {
+                        isFull = true;
+                        return;
+                    }
+                    isFull = false;
+                    return;
+                }
+            }
+            public void findCapacity()
+            {
+                capacity = 0;
+
+                if (type >= 10000) { capacity = 0; } // corridors
+                else if (type <= 1) { capacity = tiles.Count; } // empty rooms
+                else if (type == 2) // honey rooms
+                {
+                    foreach ((int x, int y) posToTest in tiles)
+                    {
+                        if (posToTest.y < maxBordelLevel)
+                        {
+                            capacity++;
+                        }
+                    }
+                    isFull = true;
+                    return;
+                }
+                else if (type == 3) // nurseries
+                {
+                    capacity = (int)(tiles.Count * 0.1f);
+                }
+            }
+            public void countContent()
+            {
+                contentCount = 0;
+
+                // capacity of list of tiles, count, and shit, idkkkkk broooo
+                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
+
+                if (type == 2)
+                {
+                    foreach ((int x, int y) posToTest in tiles)
+                    {
+                        (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                        Chunk chunkToTest;
+                        if (nest.screen.loadedChunks.ContainsKey(chunkPos)) { chunkToTest = nest.screen.loadedChunks[chunkPos]; }
+                        else
+                        {
+                            if (chunkDict.ContainsKey(chunkPos)) { }
+                            else if (nest.screen.extraLoadedChunks.ContainsKey(chunkPos))
+                            {
+                                chunkDict.Add(chunkPos, nest.screen.extraLoadedChunks[chunkPos]);
+                            }
+                            else
+                            {
+                                chunkDict.Add(chunkPos, new Chunk(chunkPos, true, nest.screen));
+                            }
+                            chunkToTest = chunkDict[chunkPos];
+                        }
+                        int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+                        if (posToTest.y < maxBordelLevel)
+                        {
+                            if (fillState == -5)
+                            {
+                                contentCount++;
+                            }
+                            else if (fillState != 0)
+                            {
+                                containsDebris = true;
+                            }
+                        }
+                    }
+                }
+                else if (type == 3)
+                {
+                    contentCount = assignedEntities.Count;
+                }
+            }
         }
         public class Nest
         {
@@ -1463,22 +1616,25 @@ namespace Cave
             public (int x, int y) position;
 
             // stats to build nest and what it looks like iggg
-            public int roomSize; // bigger leads to bigger rooms
-            public int connectivity; // bigger leads to less connexions (corridors)
-            public int extensivity; // bigger leads to new rooms and corridors being dug out farther away from the center ig
+            public int roomSize; // bigger leads to bigger rooms NOT USED
+            public int connectivity; // bigger leads to less connexions (corridors) NOT USED
+            public int extensivity; // bigger leads to new rooms and corridors being dug out farther away from the center ig NOT USED
             public float shape = 1.41421356237f; //the only one that has an actual effect LMFAO
 
             public Dictionary<(int x, int y), bool> tiles = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), bool> borders = new Dictionary<(int x, int y), bool>();
             public Dictionary<int, Room> rooms = new Dictionary<int, Room>();
             public int currentRoomId = 0;
-
+            public bool isStable = false;
 
             // entity management
-            public List<Entity> entities = new List<Entity>();
+            public int eggsToLay = 0;
+            public int totalHoney = 0;
+            public List<Entity> larvae = new List<Entity>();
+            public List<Entity> adults = new List<Entity>();
             public List<(int x, int y)> digErrands = new List<(int x, int y)>();
-            public List<(int x, int y)> freeHoneyTiles = new List<(int x, int y)>();
-
+            public List<int> availableHoneyRooms = new List<int>();
+            public List<int> availableNurseries = new List<int>();
 
             public Nest((int x, int y) posToPut, long seedToPut, Form1.Screen screenToPut)
             {
@@ -1499,11 +1655,11 @@ namespace Cave
                     return;
                 }
 
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 5; i++)
                 {
-                    Entity hornet = new Entity(screen, posToPut, 3, 0);
+                    Entity hornet = new Entity(screen, posToPut, 3, 3);
                     screen.activeEntities.Add(hornet);
-                    entities.Add(hornet);
+                    adults.Add(hornet);
                     hornet.nest = this;
                 }
             }
@@ -1519,6 +1675,17 @@ namespace Cave
             {
                 rooms.Remove(room.id);
                 updateTiles();
+            }
+            public int getRoomId(Entity entityToTest)
+            {
+                foreach (Room room in rooms.Values)
+                {
+                    if (room.assignedEntities.Contains(entityToTest))
+                    {
+                        return room.id;
+                    }
+                }
+                return -1;
             }
             public int getRoomId((int x, int y) posToGetFrom)
             {
@@ -1625,10 +1792,12 @@ namespace Cave
                     break;
                 }
             }
-            public void makeCorridorAndRoom((int x, int y) targetPos)
+            public bool makeCorridorAndRoom((int x, int y) targetPos)
             {
-                Room newRoom = new Room(targetPos, 1+rand.Next(2), currentRoomId, this);
-                if (newRoom.isToBeDestroyed) { return; }
+                int roomTypeToMake = findTypeOfRoomToDig();
+                if (roomTypeToMake == -1) { isStable = true; return false; } //if no need for new room don't make new room lol. isStable
+                Room newRoom = new Room(targetPos, roomTypeToMake, currentRoomId, this);
+                if (newRoom.isToBeDestroyed) { return false; }
                 (int x, int y) originPoint = newRoom.borders[rand.Next(newRoom.borders.Count())];
                 (int x, int y) targetPosCorridor = findClosestBorder(originPoint);
                 addRoom(newRoom, false);
@@ -1636,21 +1805,22 @@ namespace Cave
                 Room corridoro = new Room(targetPosCorridor, 10000, currentRoomId, newRoom, this); //+1 is important ! else it will override lol
                 if (!corridoro.isToBeDestroyed)
                 {
-                    //newRoom.fillTiles();
                     addRoom(corridoro, false);
-                    //corridoro.fillTiles();
+                    return true;
                 }
-                else { removeRoom(newRoom); }
+                removeRoom(newRoom);
+                return false;
             }
             public void randomlyExtendNest()
             {
+                decideForBabies();
                 (bool valid, (int x, int y) pos) returnTuple = findNewRoomLocation();
                 if (returnTuple.valid)
                 {
                     makeCorridorAndRoom(returnTuple.pos);
                     updateTiles();
                     updateDigErrands();
-                    updateFreeHoneyTiles();
+                    updateDropPositions();
                 }
                 //forkRandomCorridorToRandomRoom();
             }
@@ -1714,8 +1884,17 @@ namespace Cave
                     }
                 }
             }
+            public void setAllRoomsAsFinished()
+            {
+                foreach (Room room in rooms.Values)
+                {
+                    room.inConstruction = false;
+                }
+            }
             public void updateDigErrands()
             {
+                setAllRoomsAsFinished();
+
                 Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
 
                 digErrands = new List<(int x, int y)>();
@@ -1738,58 +1917,131 @@ namespace Cave
                         chunkToTest = chunkDict[chunkPos];
                     }
                     int fillState = chunkToTest.fillStates[(pos.x % 32 + 32) % 32, (pos.y % 32 + 32) % 32];
-                    if (fillState == 0 || fillState == -5) { }
-                    else { digErrands.Add(pos); }
+                    Room room = rooms[getRoomId(pos)];
+                    if (fillState == 0 || (fillState == -5 && room.type == 2)) { }
+                    else
+                    {
+                        digErrands.Add(pos);
+                        room.inConstruction = true;
+                    }
                 }
             }
-            public void updateFreeHoneyTiles()
+            public void updateDropPositions()
             {
                 Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
 
-                freeHoneyTiles = new List<(int x, int y)>();
+                availableHoneyRooms = new List<int>();
+                availableNurseries = new List<int>();
                 updateTiles();
-                foreach ((int x, int y) pos in tiles.Keys)
+                foreach (Room room in rooms.Values)
                 {
-                    (int x, int y) chunkPos = (Floor(pos.x, 32) / 32, Floor(pos.y, 32) / 32);
-                    Chunk chunkToTest;
-                    if (screen.loadedChunks.ContainsKey(chunkPos)) { chunkToTest = screen.loadedChunks[chunkPos]; }
-                    else
+                    if (room.type == 2)
                     {
-                        if (chunkDict.ContainsKey(chunkPos)) { }
-                        else if (screen.extraLoadedChunks.ContainsKey(chunkPos))
+                        room.testFullness();
+                        if (!room.isFull && !room.inConstruction)
                         {
-                            chunkDict.Add(chunkPos, screen.extraLoadedChunks[chunkPos]);
+                            availableHoneyRooms.Add(room.id);
                         }
-                        else
-                        {
-                            chunkDict.Add(chunkPos, new Chunk(chunkPos, true, screen));
-                        }
-                        chunkToTest = chunkDict[chunkPos];
                     }
-                    int fillState = chunkToTest.fillStates[(pos.x % 32 + 32) % 32, (pos.y % 32 + 32) % 32];
-                    if (fillState == 0 )
+                    else if (room.type == 3)
                     {
-                        int roomId = getRoomId(pos);
-                        if (roomId >= 0 && rooms[roomId].type == 2 && pos.y < rooms[roomId].maxHoneyLevel)
+                        room.testFullness();
+                        if (!room.isFull && !room.inConstruction)
                         {
-                            freeHoneyTiles.Add(pos);
+                            availableNurseries.Add(room.id);
                         }
                     }
                 }
             }
-            public void saveInFile(Form1.Screen screen)
+            public int findTypeOfRoomToDig()
             {
-                string savename = $"Hornet nest {id}";
-
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new JavaScriptDateTimeConverter());
-                serializer.NullValueHandling = NullValueHandling.Ignore;
-
-                using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\NestData\\{screen.seed}\\{savename}.json"))
-                using (JsonWriter writer = new JsonTextWriter(sw))
+                int honeyCount = countTotalHoney();
+                int honeyCapacity = 0;
+                int larvaCapacity = 0;
+                int larvaCount = 0;
+                int miscTiles = 0;
+                int totalEntities = larvae.Count + adults.Count;
+                foreach (Room room in rooms.Values)
                 {
-                    serializer.Serialize(writer, this);
+                    if (room.type == 2)
+                    {
+                        honeyCapacity += room.capacity;
+                    }
+                    else if (room.type == 3)
+                    {
+                        room.countContent();
+                        larvaCapacity += room.capacity;
+                        larvaCount += room.contentCount;
+                    }
+                    else { miscTiles += room.capacity; } // +0 for corridors as they got capacity = 0, +tileCount for empty rooms (type 0 and 1)
                 }
+
+                int remainingHoneys = honeyCapacity - honeyCount;
+                float honeyRatio = 1;
+                if (honeyCapacity > 0)
+                {
+                    honeyRatio = (float)honeyCount / honeyCapacity;
+                }
+                int remainingLarvae = larvaCapacity - larvaCount;
+                float larvaRatio = 1;
+                if (larvaCapacity > 0)
+                {
+                    larvaRatio = (float)larvaCount / larvaCapacity;
+                }
+
+                if (remainingHoneys <= 0) { return 2; }
+                if (remainingLarvae <= 0) { return 3; }
+                if (honeyRatio < 0.75f && larvaRatio < 0.75f)
+                {
+                    if (miscTiles <= totalEntities*5)
+                    {
+                        return 1;
+                    }
+                    return -1;
+                }
+                if (honeyRatio > larvaRatio) { return 2; }
+                return 3;
+            }
+            public int countTotalHoney()
+            {
+                totalHoney = 0;
+                foreach (Room room in rooms.Values)
+                {
+                    if (room.type == 2)
+                    {
+                        room.countContent();
+                        totalHoney += room.contentCount;
+                    }
+                }
+                foreach (Entity entity in adults)
+                {
+                    if (entity.inventoryElements.Contains((-5, 0, 0)))
+                    {
+                        totalHoney += entity.inventoryQuantities[(-5, 0, 0)];
+                    }
+                }
+                return totalHoney;
+            }
+            public void decideForBabies()
+            {
+                countTotalHoney();
+                int upkeepHoneyCost = adults.Count;
+                foreach (Entity kiddo in larvae)
+                {
+                    if (kiddo.subType == 0)
+                    {
+                        upkeepHoneyCost += 4;
+                    }
+                    if (kiddo.subType == 1)
+                    {
+                        upkeepHoneyCost += 4 - kiddo.food;
+                    }
+                    if (kiddo.subType == 2)
+                    {
+                        upkeepHoneyCost += 1;
+                    }
+                }
+                eggsToLay = Max(0, (int)(0.25 * (totalHoney - upkeepHoneyCost)));
             }
         }
     }

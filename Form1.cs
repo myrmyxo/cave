@@ -29,6 +29,7 @@ namespace Cave
 {
     public partial class Form1 : Form
     {
+        public const float div32 = 0.03125f;
         public class Globals
         {
             public static int ChunkLength = 4;
@@ -888,6 +889,7 @@ namespace Cave
             public List<Player> playerList = new List<Player>();
             public List<Entity> activeEntities = new List<Entity>();
             public List<Entity> entitesToRemove = new List<Entity>();
+            public List<Entity> entitesToAdd = new List<Entity>();
             public List<Plant> activePlants = new List<Plant>();
             public List<Nest> activeNests = new List<Nest>();
             public Dictionary<(int, int), List<Plant>> outOfBoundsPlants = new Dictionary<(int, int), List<Plant>>();
@@ -1276,9 +1278,22 @@ namespace Cave
                         {
                             drawPixel(Color.FromArgb(100, 255, 0, 0), posToDrawAt, PNGmultiplicator);
                         }
-                        foreach ((int x, int y) posToDrawAt in nest.freeHoneyTiles)
+                        foreach (Room room in nest.rooms.Values)
                         {
-                            drawPixel(Color.FromArgb(100, 0, 0, 255), posToDrawAt, PNGmultiplicator);
+                            if (room.type == 2)
+                            {
+                                foreach ((int x, int y) posToDrawAt in room.dropPositions)
+                                {
+                                    drawPixel(Color.FromArgb(100, 0, 0, 255), posToDrawAt, PNGmultiplicator);
+                                }
+                            }
+                            else if (room.type == 3)
+                            {
+                                foreach ((int x, int y) posToDrawAt in room.dropPositions)
+                                {
+                                    drawPixel(Color.FromArgb(100, 220, 255, 150), posToDrawAt, PNGmultiplicator);
+                                }
+                            }
                         }
                     }
                     foreach (Entity entity in activeEntities) // debug for paths
@@ -1341,13 +1356,48 @@ namespace Cave
                     }
                 }
             }
-            public Chunk tryToGetChunk((int, int) chunkCoords)
+            public Chunk tryToGetChunk((int x, int y) chunkCoords)
             {
                 if (loadedChunks.TryGetValue(chunkCoords, out Chunk chunkToTest))
                 {
                     return chunkToTest;
                 }
                 return theFilledChunk;
+            }
+            public int getTileContent((int x, int y) posToTest)
+            {
+                (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                Chunk chunkToTest;
+                if (loadedChunks.ContainsKey(chunkPos)) { chunkToTest = loadedChunks[chunkPos]; }
+                else
+                {
+                    if (!extraLoadedChunks.ContainsKey(chunkPos))
+                    {
+                        extraLoadedChunks.Add(chunkPos, new Chunk(chunkPos, true, this));
+                    }
+                    chunkToTest = extraLoadedChunks[chunkPos];
+                }
+                return chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+            }
+            public int getTileContent((int x, int y) posToTest, Dictionary<(int x, int y), Chunk> extraDictToCheckFrom)
+            {
+                (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                Chunk chunkToTest;
+                if (loadedChunks.ContainsKey(chunkPos)) { chunkToTest = loadedChunks[chunkPos]; }
+                else
+                {
+                    if (extraDictToCheckFrom.ContainsKey(chunkPos)) { }
+                    else if (extraLoadedChunks.ContainsKey(chunkPos))
+                    {
+                        extraDictToCheckFrom.Add(chunkPos, extraLoadedChunks[chunkPos]);
+                    }
+                    else
+                    {
+                        extraDictToCheckFrom.Add(chunkPos, new Chunk(chunkPos, true, this));
+                    }
+                    chunkToTest = extraDictToCheckFrom[chunkPos];
+                }
+                return chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
             }
         }
         public class Player
@@ -1403,6 +1453,7 @@ namespace Cave
                     {(1, 0, 1), -999 },
                     {(2, 0, 1), -999 },
                     {(3, 0, 1), -999 },
+                    {(3, 3, 1), -999 },
                     {(0, 0, 2), -999 },
                     {(1, 0, 2), -999 },
                     {(2, 0, 2), -999 },
@@ -1422,6 +1473,7 @@ namespace Cave
                     (1, 0, 1),
                     (2, 0, 1),
                     (3, 0, 1),
+                    (3, 3, 1),
                     (0, 0, 2),
                     (1, 0, 2),
                     (2, 0, 2),
@@ -2152,7 +2204,7 @@ namespace Cave
                 if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
                 if (inventoryChangePress[0]) { inventoryChangePress[0] = false; player.moveInventoryCursor(-1); }
                 if (inventoryChangePress[1]) { inventoryChangePress[1] = false; player.moveInventoryCursor(1); }
-                timeElapsed = (float)((DateTime.Now - timeAtLauch).TotalSeconds);
+                //timeElapsed = (float)((DateTime.Now - timeAtLauch).TotalSeconds); // what the FUCK is that ?????
                 accCamX = 0;
                 accCamY = 0;
                 player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.85f) - 0.2f));
@@ -2170,7 +2222,8 @@ namespace Cave
                 if (timeElapsed > 3 && screen.activeNests.Count > 0)
                 {
                     Nest nestToTest = screen.activeNests[rand.Next(screen.activeNests.Count)];
-                    if (nestToTest.digErrands.Count == 0)
+                    if (rand.Next(100) == 0) { nestToTest.isStable = false; }
+                    if (!nestToTest.isStable && nestToTest.digErrands.Count == 0)
                     {
                         screen.activeNests[rand.Next(screen.activeNests.Count)].randomlyExtendNest();
                     }
@@ -2212,6 +2265,7 @@ namespace Cave
 
 
                 screen.entitesToRemove = new List<Entity>();
+                screen.entitesToAdd = new List<Entity>();
                 foreach (Entity entity in screen.activeEntities)
                 {
                     //entity.testDigPlace();
@@ -2223,6 +2277,10 @@ namespace Cave
                 foreach (Entity entity in screen.entitesToRemove)
                 {
                     screen.activeEntities.Remove(entity);
+                }
+                foreach (Entity entity in screen.entitesToAdd)
+                {
+                    screen.activeEntities.Add(entity);
                 }
                 foreach (Plant plant in screen.activePlants)
                 {

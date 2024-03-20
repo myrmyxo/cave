@@ -54,7 +54,8 @@ namespace Cave
                 { (0, 2), new OneSprite("FrostFairy", true)},
                 { (1, 0), new OneSprite("Frog", true)},
                 { (2, 0), new OneSprite("Fish", true)},
-                { (3, 0), new OneSprite("Hornet", true)}
+                { (3, 0), new OneSprite("Hornet", true)},
+                { (3, 3), new OneSprite("Hornet", true)}
             };
             plantSprites = new Dictionary<(int, int), OneSprite>
             {

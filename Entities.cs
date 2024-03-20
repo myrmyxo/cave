@@ -24,6 +24,7 @@ using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
 using static System.Net.Mime.MediaTypeNames;
+using System.Diagnostics.Eventing.Reader;
 
 namespace Cave
 {
@@ -52,7 +53,9 @@ namespace Cave
             public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
             public List<(int index, int subType, int typeOfElement)> inventoryElements;
             public int elementsPossessed = 0;
+            public int food = 0;
 
+            public float timeAtBirth = 0;
             public float timeAtLastDig = -9999;
             public float timeAtLastPlace = -9999;
 
@@ -74,6 +77,9 @@ namespace Cave
                 (Dictionary<(int index, int subType, int typeOfElement), int>, List<(int index, int subType, int typeOfElement)>) returnTuple = arrayToInventory(entityJson.inv);
                 inventoryQuantities = returnTuple.Item1;
                 inventoryElements = returnTuple.Item2;
+                timeAtBirth = entityJson.brth;
+                timeAtLastDig = entityJson.lastDP.Item1;
+                timeAtLastPlace = entityJson.lastDP.Item2;
                 state = entityJson.state;
                 color = findColor();
             }
@@ -85,6 +91,7 @@ namespace Cave
                 findType(chunk);
                 color = findColor();
                 initializeInventory();
+                timeAtBirth = timeElapsed;
             }
             public Entity(Form1.Screen screenToPut, (int, int) positionToPut, int typeToPut, int subTypeToPut)
             {
@@ -99,6 +106,7 @@ namespace Cave
                 seed = rand.Next(1000000000); //                               FALSE RANDOM NOT SEEDED ARGHHEHEEEE
                 initializeInventory();
                 color = findColor();
+                timeAtBirth = timeElapsed;
             }
             public void findType(Chunk chunk)
             {
@@ -158,7 +166,26 @@ namespace Cave
                 }
                 if (type == 3)
                 {
-                    return Color.FromArgb(190 + (int)(hueVar * 0.2f) + shadeVar, 190 - (int)(hueVar * 0.2f) + shadeVar, 80 + shadeVar);
+                    if (subType == 0)
+                    {
+                        hueVar = Abs((int)(hueVar * 0.4f));
+                        shadeVar = Abs(shadeVar);
+                        return Color.FromArgb(255 - hueVar - shadeVar, 255 - hueVar - shadeVar, 255 - shadeVar);
+                    }
+                    else if (subType == 1)
+                    {
+                        hueVar = Abs((int)(hueVar * 0.4f));
+                        shadeVar = Abs(shadeVar);
+                        return Color.FromArgb(230 - hueVar - shadeVar, 230 - hueVar - shadeVar, 190 - shadeVar);
+                    }
+                    else if (subType == 2)
+                    {
+                        return Color.FromArgb(120 + (int)(hueVar * 0.2f) + shadeVar, 120 - (int)(hueVar * 0.2f) + shadeVar, Max(0, 10 + shadeVar));
+                    }
+                    else if (subType == 3)
+                    {
+                        return Color.FromArgb(190 + (int)(hueVar * 0.2f) + shadeVar, 190 - (int)(hueVar * 0.2f) + shadeVar, 80 + shadeVar);
+                    }
                 }
                 return Color.Red;
             }
@@ -318,6 +345,21 @@ namespace Cave
             }
             public bool pathfindToLocation((int x, int y) targetLocation)
             {
+                //TEST IF THE TILE IS EXPOSED TO AIR/LIQUID AT LEAST NOT TO PATHFIND FOR NUTHIN LOL
+                if (
+                    screen.getTileContent((targetLocation.x+1, targetLocation.y)) > 0
+                    &&
+                    screen.getTileContent((targetLocation.x-1, targetLocation.y)) > 0
+                    &&
+                    screen.getTileContent((targetLocation.x, targetLocation.y+1)) > 0
+                    &&
+                    screen.getTileContent((targetLocation.x, targetLocation.y-1)) > 0
+                    )
+                {
+                    return false;
+                }
+
+
                 ((int x, int y) pos, float cost)[] neighbourDict = new ((int x, int y) pos, float cost)[]
                 {
                     ((1, 0), 1), ((-1, 0), 1), ((0, -1), 1), ((0, 1), 1),
@@ -499,196 +541,80 @@ namespace Cave
                 if (path.Count > 0) { path.RemoveAt(0); }
                 if (path.Count > 0) { path.RemoveAt(path.Count - 1); }
             }
+            public void applyGravity()
+            {
+                speedY -= 0.5f;
+            }
+            public void changeSpeedRandom(float range)
+            {
+                speedX += range*(float)(rand.NextDouble() - 0.5);
+                speedY += range*(float)(rand.NextDouble() - 0.5);
+            }
+            public void jumpRandom(float rangeX, float maxY)
+            {
+                speedX += rangeX*(float)(rand.NextDouble() - 0.5);
+                speedY += maxY*(float)(rand.NextDouble());
+            }
+            public void slowDown(float slowdownSpeed)
+            {
+                speedX = Sign(speedX) * Max(Abs(speedX) - slowdownSpeed, 0);
+                speedY = Sign(speedY) * Max(Abs(speedY) - slowdownSpeed, 0);
+            }
+            public void ariGeoSlowDownX(float ari, float geo)
+            {
+                speedX = Sign(speedX) * Max(0, Abs(speedX) * geo - ari);
+            }
+            public void ariGeoSlowDownY(float ari, float geo)
+            {
+                speedY = Sign(speedY) * Max(0, Abs(speedY) * geo - ari);
+            }
+            public void hoverIdle(float slowdownSpeed, int stateChangeChance)
+            {
+                slowDown(slowdownSpeed);
+                if (rand.Next(stateChangeChance) == 0)
+                {
+                    state = 1;
+                }
+            }
             public void moveEntity()
             {
                 (int, int) chunkPos;
-                if (type == 0 || type == 3) // fairy and hornet
+                if (type == 0) // fairy
                 {
                     if (state == 0) // idle
                     {
-                        speedX = Sign(speedX) * Max(Abs(speedX) - 0.5f, 0);
-                        speedY = Sign(speedY) * Max(Abs(speedY) - 0.5f, 0);
-
-                        if (rand.Next(100) == 0)
-                        {
-                            state = 1;
-                        }
+                        hoverIdle(0.5f, 100);
                     }
                     else if (state == 1) // moving in the air randomly
                     {
-                        speedX += (float)(rand.NextDouble()) - 0.5f;
-                        speedY += (float)(rand.NextDouble()) - 0.5f;
+                        changeSpeedRandom(0.5f);
                         if (rand.Next(333) == 0)
                         {
                             state = 0;
                         }
-                        else if (nest != null)
-                        {
-                            if (inventoryElements.Contains((-5, 0, 0)) && nest.freeHoneyTiles.Count > 0)
-                            {
-                                targetPos = nest.freeHoneyTiles[rand.Next(nest.freeHoneyTiles.Count)];
-                                if (pathfindToLocation(targetPos))
-                                {
-                                    state = 4;
-                                }
-                                else
-                                {
-                                    pathToTarget = new List<(int x, int y)>();
-                                    simplifiedPathToTarget = new List<(int x, int y)>();
-                                }
-                            }
-                            else if (rand.Next(3) == 0 && findPointOfInterestInPlants(7))
-                            {
-                                if (pathfindToLocation(targetPos))
-                                {
-                                    state = 2;
-                                }
-                                else
-                                {
-                                    pathToTarget = new List<(int x, int y)>();
-                                    simplifiedPathToTarget = new List<(int x, int y)>();
-                                }
-                            }
-                            else if (nest.digErrands.Count > 0)
-                            {
-                                targetPos = nest.digErrands[rand.Next(nest.digErrands.Count)];
-                                if (pathfindToLocation(targetPos))
-                                {
-                                    state = 3;
-                                }
-                                else
-                                {
-                                    pathToTarget = new List<(int x, int y)>();
-                                    simplifiedPathToTarget = new List<(int x, int y)>();
-                                }
-                            }
-                        }
-                    }
-                    else if (state >= 2 && state <= 4) // moving in the air towards direction
-                    {
-                        // if following path
-                        float realDiffX;
-                        float realDiffY;
-                        if (simplifiedPathToTarget.Count > 0)
-                        {
-                            realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
-                            realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
-                            while (Abs(realDiffX) < 0.9f && Abs(realDiffY) < 0.9f)
-                            {
-                                simplifiedPathToTarget.RemoveAt(0);
-                                if (simplifiedPathToTarget.Count == 0) { break; }
-                                realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
-                                realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
-                            }
-                        }
-                        else
-                        {
-                            realDiffX = targetPos.x + 0.5f - realPosX;
-                            realDiffY = targetPos.y + 0.5f - realPosY;
-                        }
-
-                        int maxDist;
-                        if (state == 2) { maxDist = 0; }
-                        else { maxDist = 1; }
-                        if (manhattanDistance(targetPos, (posX, posY)) <= maxDist)
-                        {
-                            timeAtLastDig = timeElapsed;
-                            state += 3; // go to corresponding state, easier to to +3 lol
-                            speedX = 0;
-                            speedY = 0;
-                            goto AfterTest; // makes so it digs next frame, idk if to change idk
-                        }
-
-                        if (Abs(realDiffX) < 0.5f) { speedX = Sign(speedX) * Max(Abs(speedX) - 0.55f, 0); }
-                        else if (speedX*speedX > Abs(realDiffX) && Sign(speedX) == Sign(realDiffX)) { speedX -= Sign(realDiffX) * 0.35f; }
-                        else { speedX += Sign(realDiffX) *0.35f; }
-                        if (Abs(realDiffY) < 0.5f) { speedY = Sign(speedY) * Max(Abs(speedY) - 0.55f, 0); }
-                        else if (speedY*speedY > Abs(realDiffY) && Sign(speedY) == Sign(realDiffY)) { speedY -= Sign(realDiffY) * 0.35f; }
-                        else { speedY += Sign(realDiffY) *0.35f; }
-
-                        if (rand.Next(150) == 0) { state = 1; }
-                    }
-                    else if (state == 5) // preparing to dig plant
-                    {
-                        if (timeAtLastDig + 1 < timeElapsed)
-                        {
-                            if (tryPlantDig(targetPos.x, targetPos.y))
-                            {
-                                if (type == 3)
-                                {
-                                    tryManufactureElement();
-                                }
-                                state = 0;
-                            }
-                            else { state = 0; }
-                        }
-                    }
-                    else if (state == 6) // preparing to dig tile
-                    {
-                        if (timeAtLastDig + 1 < timeElapsed)
-                        {
-                            Dig(targetPos.x, targetPos.y);
-                            if (nest != null)
-                            {
-                                nest.digErrands.Remove(targetPos);
-                                int roomId = nest.getRoomId(targetPos);
-                                if (roomId >= 0 && nest.rooms[roomId].type == 2)
-                                {
-                                    if (targetPos.y < nest.rooms[roomId].maxHoneyLevel)
-                                    {
-                                        nest.freeHoneyTiles.Add(targetPos);
-                                    }
-                                }
-                            }
-                            state = 0;
-                        }
-                    }
-                    else if (state == 7) // preparing to place honeyy
-                    {
-                        if (timeAtLastPlace + 1 < timeElapsed)
-                        {
-                            Place(targetPos.x, targetPos.y, (-5, 0, 0));
-                            if (nest != null)
-                            {
-                                nest.freeHoneyTiles.Remove(targetPos);
-                                /*int roomId = nest.getRoomId(targetPos);
-                                if (roomId >= 0 && nest.rooms[roomId].type == 2)
-                                {
-                                    if (true)
-                                    {
-
-                                    }
-                                }*/
-                            }
-                            state = 0;
-                        }
                     }
                     else { state = 0; }
-                AfterTest:;
                 }
-
-
-                else if (type == 1)
+                else if (type == 1) // frog
                 {
-                    speedY -= 0.5f;
-                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1); // +1 cause coordinates are inverted lol
+                    applyGravity();
+                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
                     if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                     {
                         (int x, int y) tileIndex = GetChunkTileIndex(posX, posY - 1, 32);
                         if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] > 0)
                         {
-                            speedX = Sign(speedX) * (Max(0, Abs(speedX) * (0.85f) - 0.2f));
+                            ariGeoSlowDownX(0.2f, 0.85f);
                             if (rand.NextDouble() > 0.05f)
                             {
-                                speedX += (float)(rand.NextDouble()) * 5 - 2.5f;
-                                speedY += (float)(rand.NextDouble()) * 2.5f;
+                                jumpRandom(2.5f, 2.5f);
                             }
                         }
                     }
                 }
                 else if (type == 2) // fish
                 {
-                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY); // +1 cause coordinates are inverted lol
+                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
 
                     if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
                     {
@@ -708,8 +634,7 @@ namespace Cave
 
                     if (state == 0) // idle
                     {
-                        speedX = Sign(speedX) * Max(Abs(speedX) - 0.5f, 0);
-                        speedY = Sign(speedY) * Max(Abs(speedY) - 0.5f, 0);
+                        slowDown(0.5f);
 
                         if (rand.Next(50) == 0)
                         {
@@ -718,15 +643,14 @@ namespace Cave
                     }
                     else if (state == 1) // moving in water
                     {
-                        speedX = speedX * 0.9f - Sign(speedX) * 0.12f;
-                        speedY = speedY * 0.9f - Sign(speedY) * 0.12f;
+                        ariGeoSlowDownX(0.12f, 0.9f);
+                        ariGeoSlowDownY(0.12f, 0.9f);
 
-                        speedX += (float)(rand.NextDouble()) - 0.5f;
-                        speedY += (float)(rand.NextDouble()) - 0.5f;
-                        if (rand.Next(100) == 0)
+                        changeSpeedRandom(0.5f);
+
+                        if (rand.Next(50) == 0)
                         {
-                            speedX = (float)(rand.NextDouble()) * 3 - 1.5f;
-                            speedY = (float)(rand.NextDouble()) * 3 - 1.5f;
+                            changeSpeedRandom(2.5f); // big dash nyoooooom
                         }
                         else if (rand.Next(1000) == 0)
                         {
@@ -735,7 +659,7 @@ namespace Cave
                     }
                     else if (state == 2) // outside water
                     {
-                        speedY -= 0.5f;
+                        applyGravity();
                         chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1); // +1 cause coordinates are inverted lol (no)
 
                         if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
@@ -744,14 +668,280 @@ namespace Cave
                             if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] > 0)
                             {
                                 speedX = speedX * 0.9f - Sign(speedX) * 0.12f;
-                                if (rand.NextDouble() > 0.05f)
+                                if (rand.Next(10) != 0)
                                 {
-                                    speedX += (float)(rand.NextDouble()) * 2 - 1;
-                                    speedY = (float)(rand.NextDouble()) * 1.5f - 0.5f;
+                                    jumpRandom(1, 2);
                                 }
                             }
                         }
                     }
+                }
+                if (type == 3) // hornet
+                {
+                    if (subType == 0)
+                    {
+                        applyGravity();
+                        if (timeElapsed - timeAtBirth > 30)
+                        {
+                            subType = 1;
+                            color = findColor();
+                        }
+                    }
+                    else if (subType == 1)
+                    {
+                        applyGravity();
+                        if (timeElapsed - timeAtBirth > 60)
+                        {
+                            subType = 2;
+                            color = findColor();
+                            goto AfterTest;
+                        }
+                        chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
+                        if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                        {
+                            (int x, int y) tileIndex = GetChunkTileIndex(posX, posY - 1, 32);
+                            if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] > 0)
+                            {
+                                ariGeoSlowDownX(0.2f, 0.85f);
+                                if (rand.NextDouble() < 0.05f)
+                                {
+                                    jumpRandom(1, 1.5f);
+                                }
+                            }
+                        }
+                    }
+                    else if (subType == 2)
+                    {
+                        hoverIdle(0.5f, 100);
+                        applyGravity();
+                        if (timeElapsed - timeAtBirth > 90)
+                        {
+                            if (nest != null)
+                            {
+                                if (nest.larvae.Contains(this))
+                                {
+                                    nest.larvae.Remove(this);
+                                }
+                                int id = nest.getRoomId(this);
+                                if (id >= 0)
+                                {
+                                    nest.rooms[id].assignedEntities.Remove(this);
+                                    nest.rooms[id].contentCount--;
+                                }
+                                nest.adults.Add(this);
+                            }
+                            else
+                            {
+                                bool ONO = true;
+                            }
+                            subType = 3;
+                            color = findColor();
+                        }
+                    }
+                    else if (subType == 3)
+                    {
+                        if (state == 0) // idle
+                        {
+                            hoverIdle(0.5f, 100);
+                        }
+                        else if (state == 1) // moving in the air randomly
+                        {
+                            changeSpeedRandom(0.5f);
+                            if (rand.Next(333) == 0)
+                            {
+                                state = 0;
+                            }
+                            else if (nest != null)
+                            {
+                                if (inventoryElements.Contains((-5, 0, 0)) && nest.availableHoneyRooms.Count > 0)
+                                {
+                                    Room targetRoom = nest.rooms[nest.availableHoneyRooms[rand.Next(nest.availableHoneyRooms.Count)]];
+                                    targetPos = targetRoom.dropPositions[rand.Next(targetRoom.dropPositions.Count)];
+                                    if (pathfindToLocation(targetPos))
+                                    {
+                                        state = 10002;
+                                    }
+                                    else
+                                    {
+                                        pathToTarget = new List<(int x, int y)>();
+                                        simplifiedPathToTarget = new List<(int x, int y)>();
+                                    }
+                                }
+                                else if (rand.Next(3) > 0 && nest.eggsToLay > 0 && nest.availableNurseries.Count > 0)
+                                {
+                                    Room targetRoom = nest.rooms[nest.availableNurseries[rand.Next(nest.availableNurseries.Count)]];
+                                    targetPos = targetRoom.dropPositions[rand.Next(targetRoom.dropPositions.Count)];
+                                    if (pathfindToLocation(targetPos))
+                                    {
+                                        state = 10003;
+                                    }
+                                    else
+                                    {
+                                        pathToTarget = new List<(int x, int y)>();
+                                        simplifiedPathToTarget = new List<(int x, int y)>();
+                                    }
+                                }
+                                else if (rand.Next(3) == 0 && findPointOfInterestInPlants(7))
+                                {
+                                    if (pathfindToLocation(targetPos))
+                                    {
+                                        state = 10000;
+                                    }
+                                    else
+                                    {
+                                        pathToTarget = new List<(int x, int y)>();
+                                        simplifiedPathToTarget = new List<(int x, int y)>();
+                                    }
+                                }
+                                else if (nest.digErrands.Count > 0)
+                                {
+                                    targetPos = nest.digErrands[rand.Next(nest.digErrands.Count)];
+                                    if (pathfindToLocation(targetPos))
+                                    {
+                                        state = 10001;
+                                    }
+                                    else
+                                    {
+                                        pathToTarget = new List<(int x, int y)>();
+                                        simplifiedPathToTarget = new List<(int x, int y)>();
+                                    }
+                                }
+                            }
+                        }
+                        else if (state >= 10000) // moving in the air towards direction
+                        {
+                            // if following path
+                            float realDiffX;
+                            float realDiffY;
+                            if (simplifiedPathToTarget.Count > 0)
+                            {
+                                realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
+                                realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
+                                while (Abs(realDiffX) < 0.9f && Abs(realDiffY) < 0.9f)
+                                {
+                                    simplifiedPathToTarget.RemoveAt(0);
+                                    if (simplifiedPathToTarget.Count == 0) { break; }
+                                    realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
+                                    realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
+                                }
+                            }
+                            else
+                            {
+                                realDiffX = targetPos.x + 0.5f - realPosX;
+                                realDiffY = targetPos.y + 0.5f - realPosY;
+                            }
+
+                            int maxDist;
+                            if (state == 2) { maxDist = 0; }
+                            else { maxDist = 1; }
+                            if (manhattanDistance(targetPos, (posX, posY)) <= maxDist)
+                            {
+                                timeAtLastDig = timeElapsed;
+                                state -= 9995; // go to corresponding state, easier to to +3 lol (wait what no??)
+                                speedX = 0;
+                                speedY = 0;
+                                goto AfterTest; // makes so it digs next frame, idk if to change idk
+                            }
+
+                            if (Abs(realDiffX) < 0.5f) { speedX = Sign(speedX) * Max(Abs(speedX) - 0.55f, 0); }
+                            else if (speedX * speedX > Abs(realDiffX) && Sign(speedX) == Sign(realDiffX)) { speedX -= Sign(realDiffX) * 0.35f; }
+                            else { speedX += Sign(realDiffX) * 0.35f; }
+                            if (Abs(realDiffY) < 0.5f) { speedY = Sign(speedY) * Max(Abs(speedY) - 0.55f, 0); }
+                            else if (speedY * speedY > Abs(realDiffY) && Sign(speedY) == Sign(realDiffY)) { speedY -= Sign(realDiffY) * 0.35f; }
+                            else { speedY += Sign(realDiffY) * 0.35f; }
+
+                            if (rand.Next(150) == 0) { state = 1; }
+                        }
+                        else if (state == 5) // preparing to dig plant
+                        {
+                            if (timeAtLastDig + 1 < timeElapsed)
+                            {
+                                if (tryPlantDig(targetPos.x, targetPos.y))
+                                {
+                                    tryManufactureElement();
+                                }
+                                state = 0;
+                            }
+                        }
+                        else if (state == 6) // preparing to dig tile
+                        {
+                            if (timeAtLastDig + 1 < timeElapsed)
+                            {
+                                Dig(targetPos.x, targetPos.y);
+                                if (nest != null)
+                                {
+                                    nest.digErrands.Remove(targetPos);
+                                    int roomId = nest.getRoomId(targetPos);
+                                    /*Room roomToTest = nest.rooms[roomId];
+                                    if (roomId >= 0)
+                                    {
+                                        if (roomToTest.dropPositions.Contains(targetPos))
+                                        {
+                                            if (roomToTest.type == 2 && !nest.honeyDropPositions.Contains(targetPos))
+                                            {
+                                                nest.honeyDropPositions.Add(targetPos);
+                                            }
+                                            if (roomToTest.type == 3 && !nest.larvaeDropPositions.Contains(targetPos))
+                                            {
+                                                nest.larvaeDropPositions.Add(targetPos);
+                                            }
+                                        }
+                                    }*/
+                                }
+                                state = 0;
+                            }
+                        }
+                        else if (state == 7) // preparing to place honeyy
+                        {
+                            if (timeAtLastPlace + 1 < timeElapsed)
+                            {
+                                Place(targetPos.x, targetPos.y, (-5, 0, 0), false);
+                                if (nest != null)
+                                {
+                                    Room room = nest.rooms[nest.getRoomId(targetPos)];
+                                    if (room.type == 2)
+                                    {
+                                        room.testFullness();
+                                        if (room.isFull)
+                                        {
+                                            nest.updateDropPositions();
+                                        }
+                                    }
+                                }
+                                state = 0;
+                            }
+                        }
+                        else if (state == 8) // preparing to LAY AN EGGGGG
+                        {
+                            if (nest != null && nest.eggsToLay > 0)
+                            {
+                                if (timeAtLastPlace + 1 < timeElapsed)
+                                {
+                                    Room room = nest.rooms[nest.getRoomId(targetPos)];
+                                    if (room.type == 3 && Place(targetPos.x, targetPos.y, (3, 0, 1), true))
+                                    {
+                                        Entity kiddo = screen.entitesToAdd[screen.entitesToAdd.Count - 1];
+                                        kiddo.nest = nest;
+                                        room.assignedEntities.Add(kiddo);  // since it's the last to be added, add last entity in entity list to the room
+                                        nest.larvae.Add(kiddo);
+                                        nest.eggsToLay--;
+                                        room.testFullness();
+                                        if (room.isFull)
+                                        {
+                                            nest.updateDropPositions();
+                                        }
+                                    }
+                                    state = 0;
+                                }
+                            }
+                            else
+                            {
+                                state = 0;
+                            }
+                        }
+                        else { state = 0; }
+                    }
+                AfterTest:;
                 }
                 if (type != 2)
                 {
@@ -766,6 +956,38 @@ namespace Cave
                         }
                     }
                 }
+
+                actuallyMoveTheEntity();
+
+                // test what happens if in special liquids (fairy lake, lava...)
+
+                {
+                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
+                    if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                    {
+                        return;
+                    }
+                    (int x, int y) tileIndex = GetChunkTileIndex(posX, posY, 32);
+                    if (type != 0 && chunkToTest.fillStates[tileIndex.x, tileIndex.y] == -3)
+                    {
+                        if (rand.Next(10) == 0)
+                        {
+                            type = 0;
+                            this.color = Color.Purple;
+                        }
+                    }
+                    if (type != 2 && chunkToTest.fillStates[tileIndex.x, tileIndex.y] == -4)
+                    {
+                        if (rand.Next(10) == 0)
+                        {
+                            screen.entitesToRemove.Add(this);
+                        }
+                    }
+                }
+            }
+            public void actuallyMoveTheEntity()
+            {
+                (int x, int y) chunkPos;
                 float toMoveX = speedX;
                 float toMoveY = speedY;
 
@@ -833,32 +1055,6 @@ namespace Cave
                         speedX = 0;
                         toMoveX = 0;
                         break;
-                    }
-                }
-
-                // test what happens if in special liquids (fairy lake, lava...)
-
-                {
-                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
-                    if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
-                    {
-                        return;
-                    }
-                    (int x, int y) tileIndex = GetChunkTileIndex(posX, posY, 32);
-                    if (type != 0 && chunkToTest.fillStates[tileIndex.x, tileIndex.y] == -3)
-                    {
-                        if (rand.Next(10) == 0)
-                        {
-                            type = 0;
-                            this.color = Color.Purple;
-                        }
-                    }
-                    if (type != 2 && chunkToTest.fillStates[tileIndex.x, tileIndex.y] == -4)
-                    {
-                        if (rand.Next(10) == 0)
-                        {
-                            screen.entitesToRemove.Add(this);
-                        }
                     }
                 }
             }
@@ -938,11 +1134,11 @@ namespace Cave
                     timeAtLastDig = timeElapsed;
                 }
             }
-            public bool Place(int posToDigX, int posToDigY, (int index, int subType, int typeOfElement) elementToPlace)
+            public bool Place(int posToDigX, int posToDigY, (int index, int subType, int typeOfElement) elementToPlace, bool forcePlace)
             {
                 (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
-                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return true; }
-                if (!inventoryElements.Contains(elementToPlace)) { return true; } 
+                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return false; }
+                if (!forcePlace && !inventoryElements.Contains(elementToPlace)) { return false; } 
                 (int x, int y) tileIndex = GetChunkTileIndex(posToDigX, posToDigY, 32);
                 int tileState = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
                 if (tileState == 0 || tileState < 0 && elementToPlace.typeOfElement > 0)
@@ -958,7 +1154,7 @@ namespace Cave
                     else if (elementToPlace.typeOfElement == 1)
                     {
                         Entity newEntity = new Entity(screen, (posToDigX, posToDigY), elementToPlace.index, elementToPlace.subType);
-                        screen.activeEntities.Add(newEntity);
+                        screen.entitesToAdd.Add(newEntity);
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (elementToPlace.typeOfElement == 2)
@@ -968,7 +1164,7 @@ namespace Cave
                         timeAtLastPlace = timeElapsed;
                     }
                     else { return false; }
-                    removeElementFromInventory(elementToPlace);
+                    if (!forcePlace) { removeElementFromInventory(elementToPlace); }
                     return true;
                 }
                 return false;

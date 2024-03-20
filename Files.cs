@@ -76,6 +76,7 @@ namespace Cave
             public (float, float) speed;
             public int[,] inv;
             public (float, float) lastDP;
+            public float brth;
             public EntityJson(Entity entity)
             {
                 seed = entity.seed;
@@ -86,6 +87,7 @@ namespace Cave
                 speed = (entity.speedX, entity.speedY);
                 inv = inventoryToArray(entity.inventoryQuantities, entity.inventoryElements);
                 lastDP = (entity.timeAtLastDig, entity.timeAtLastPlace);
+                brth = entity.timeAtBirth;
             }
             public EntityJson()
             {
