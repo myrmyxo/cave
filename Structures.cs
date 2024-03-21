@@ -23,6 +23,8 @@ using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
+using System.Reflection.Emit;
+
 namespace Cave
 {
     public class Structures
@@ -1605,6 +1607,42 @@ namespace Cave
                     contentCount = assignedEntities.Count;
                 }
             }
+            public ((int x, int y) pos, bool found) findTileOfTypeInRoom(int typeToFind)
+            {
+                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
+
+                List<(int x, int y)> tileList = new List<(int x, int y)>(tiles);
+                (int x, int y) posToTest;
+                int idxToTest;
+                while (tileList.Count > 0)
+                {
+                    idxToTest = rand.Next(tileList.Count);
+                    posToTest = tileList[idxToTest];
+                    tileList.RemoveAt(idxToTest);
+                    (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                    Chunk chunkToTest;
+                    if (nest.screen.loadedChunks.ContainsKey(chunkPos)) { chunkToTest = nest.screen.loadedChunks[chunkPos]; }
+                    else
+                    {
+                        if (chunkDict.ContainsKey(chunkPos)) { }
+                        else if (nest.screen.extraLoadedChunks.ContainsKey(chunkPos))
+                        {
+                            chunkDict.Add(chunkPos, nest.screen.extraLoadedChunks[chunkPos]);
+                        }
+                        else
+                        {
+                            chunkDict.Add(chunkPos, new Chunk(chunkPos, true, nest.screen));
+                        }
+                        chunkToTest = chunkDict[chunkPos];
+                    }
+                    int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+                    if (fillState == typeToFind)
+                    {
+                        return (posToTest, true);
+                    }
+                }
+                return ((0, 0), false);
+            }
         }
         public class Nest
         {
@@ -1632,6 +1670,7 @@ namespace Cave
             public int totalHoney = 0;
             public List<Entity> larvae = new List<Entity>();
             public List<Entity> adults = new List<Entity>();
+            public List<Entity> hungryLarvae = new List<Entity>();
             public List<(int x, int y)> digErrands = new List<(int x, int y)>();
             public List<int> availableHoneyRooms = new List<int>();
             public List<int> availableNurseries = new List<int>();
@@ -2042,6 +2081,20 @@ namespace Cave
                     }
                 }
                 eggsToLay = Max(0, (int)(0.25 * (totalHoney - upkeepHoneyCost)));
+            }
+            public Room getRandomRoomOfType(int typeToGet)
+            {
+                List<Room> roomList = rooms.Values.ToList();
+                Room roomToTest;
+                while (roomList.Count >  0)
+                {
+                    roomToTest = roomList.ElementAt(rand.Next(roomList.Count));
+                    if (roomToTest.type == typeToGet)
+                    {
+                        return roomToTest;
+                    }
+                }
+                return null;
             }
         }
     }

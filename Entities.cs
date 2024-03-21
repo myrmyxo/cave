@@ -46,6 +46,7 @@ namespace Cave
             public float speedY = 0;
             public Color color;
 
+            public Entity targetEntity = null;
             public (int x, int y) targetPos = (0, 0);
             public List<(int x, int y)> pathToTarget = new List<(int x, int y)>();
             public List<(int x, int y)> simplifiedPathToTarget = new List<(int x, int y)>();
@@ -56,6 +57,7 @@ namespace Cave
             public int food = 0;
 
             public float timeAtBirth = 0;
+            public float timeAtLastStateChange = 0;
             public float timeAtLastDig = -9999;
             public float timeAtLastPlace = -9999;
 
@@ -78,6 +80,7 @@ namespace Cave
                 inventoryQuantities = returnTuple.Item1;
                 inventoryElements = returnTuple.Item2;
                 timeAtBirth = entityJson.brth;
+                timeAtLastStateChange = entityJson.sttCh;
                 timeAtLastDig = entityJson.lastDP.Item1;
                 timeAtLastPlace = entityJson.lastDP.Item2;
                 state = entityJson.state;
@@ -684,15 +687,27 @@ namespace Cave
                         if (timeElapsed - timeAtBirth > 30)
                         {
                             subType = 1;
+                            timeAtLastStateChange = timeElapsed;
                             color = findColor();
                         }
                     }
                     else if (subType == 1)
                     {
                         applyGravity();
-                        if (timeElapsed - timeAtBirth > 60)
+                        if (food < 3)
+                        {
+                            if (timeElapsed - timeAtLastStateChange > 15 + 15*food)
+                            {
+                                if (nest != null && !nest.hungryLarvae.Contains(this))
+                                {
+                                    nest.hungryLarvae.Add(this);
+                                }
+                            }
+                        }
+                        else if (timeElapsed - timeAtLastStateChange > 60)
                         {
                             subType = 2;
+                            timeAtLastStateChange = timeElapsed;
                             color = findColor();
                             goto AfterTest;
                         }
@@ -714,7 +729,7 @@ namespace Cave
                     {
                         hoverIdle(0.5f, 100);
                         applyGravity();
-                        if (timeElapsed - timeAtBirth > 90)
+                        if (timeElapsed - timeAtLastStateChange > 30)
                         {
                             if (nest != null)
                             {
@@ -735,6 +750,7 @@ namespace Cave
                                 bool ONO = true;
                             }
                             subType = 3;
+                            timeAtLastStateChange = timeElapsed;
                             color = findColor();
                         }
                     }
@@ -759,7 +775,23 @@ namespace Cave
                                     targetPos = targetRoom.dropPositions[rand.Next(targetRoom.dropPositions.Count)];
                                     if (pathfindToLocation(targetPos))
                                     {
-                                        state = 10002;
+                                        state = 10007;
+                                    }
+                                    else
+                                    {
+                                        pathToTarget = new List<(int x, int y)>();
+                                        simplifiedPathToTarget = new List<(int x, int y)>();
+                                    }
+                                }
+                                else if (rand.Next(3) == 0 && nest.hungryLarvae.Count > 0)
+                                {
+                                    Room roomToTest = nest.getRandomRoomOfType(2);
+                                    ((int x, int y) pos, bool found) returnTuple = roomToTest.findTileOfTypeInRoom(-5);
+                                    if (!returnTuple.found) { goto AfterTest; }
+                                    targetPos = returnTuple.pos;
+                                    if (pathfindToLocation(targetPos))
+                                    {
+                                        state = 10006;
                                     }
                                     else
                                     {
@@ -773,7 +805,7 @@ namespace Cave
                                     targetPos = targetRoom.dropPositions[rand.Next(targetRoom.dropPositions.Count)];
                                     if (pathfindToLocation(targetPos))
                                     {
-                                        state = 10003;
+                                        state = 10008;
                                     }
                                     else
                                     {
@@ -785,7 +817,7 @@ namespace Cave
                                 {
                                     if (pathfindToLocation(targetPos))
                                     {
-                                        state = 10000;
+                                        state = 10005;
                                     }
                                     else
                                     {
@@ -798,7 +830,7 @@ namespace Cave
                                     targetPos = nest.digErrands[rand.Next(nest.digErrands.Count)];
                                     if (pathfindToLocation(targetPos))
                                     {
-                                        state = 10001;
+                                        state = 10006;
                                     }
                                     else
                                     {
@@ -832,25 +864,46 @@ namespace Cave
                             }
 
                             int maxDist;
-                            if (state == 2) { maxDist = 0; }
+                            if (state == 10005) { maxDist = 0; }
                             else { maxDist = 1; }
                             if (manhattanDistance(targetPos, (posX, posY)) <= maxDist)
                             {
+                                if (state == 10009)
+                                {
+                                    if (manhattanDistance((targetEntity.posX, targetEntity.posY), (posX, posY)) > maxDist)
+                                    {
+                                        targetPos = (targetEntity.posX, targetEntity.posY);
+                                        if (pathfindToLocation(targetPos))
+                                        {
+
+                                        }
+                                        else
+                                        {
+                                            targetEntity = null;
+                                            pathToTarget = new List<(int x, int y)>();
+                                            simplifiedPathToTarget = new List<(int x, int y)>();
+                                            state = 0;
+                                        }
+                                        goto AfterTest;
+                                    }
+                                }
                                 timeAtLastDig = timeElapsed;
-                                state -= 9995; // go to corresponding state, easier to to +3 lol (wait what no??)
+                                state -= 10000; // go to corresponding state, easier to to +3 lol (wait what no??)
                                 speedX = 0;
                                 speedY = 0;
-                                goto AfterTest; // makes so it digs next frame, idk if to change idk
+                                //goto AfterTest; // makes so it digs next frame, idk if to change idk
                             }
+                            else
+                            {
+                                if (Abs(realDiffX) < 0.5f) { speedX = Sign(speedX) * Max(Abs(speedX) - 0.55f, 0); }
+                                else if (speedX * speedX > Abs(realDiffX) && Sign(speedX) == Sign(realDiffX)) { speedX -= Sign(realDiffX) * 0.35f; }
+                                else { speedX += Sign(realDiffX) * 0.35f; }
+                                if (Abs(realDiffY) < 0.5f) { speedY = Sign(speedY) * Max(Abs(speedY) - 0.55f, 0); }
+                                else if (speedY * speedY > Abs(realDiffY) && Sign(speedY) == Sign(realDiffY)) { speedY -= Sign(realDiffY) * 0.35f; }
+                                else { speedY += Sign(realDiffY) * 0.35f; }
 
-                            if (Abs(realDiffX) < 0.5f) { speedX = Sign(speedX) * Max(Abs(speedX) - 0.55f, 0); }
-                            else if (speedX * speedX > Abs(realDiffX) && Sign(speedX) == Sign(realDiffX)) { speedX -= Sign(realDiffX) * 0.35f; }
-                            else { speedX += Sign(realDiffX) * 0.35f; }
-                            if (Abs(realDiffY) < 0.5f) { speedY = Sign(speedY) * Max(Abs(speedY) - 0.55f, 0); }
-                            else if (speedY * speedY > Abs(realDiffY) && Sign(speedY) == Sign(realDiffY)) { speedY -= Sign(realDiffY) * 0.35f; }
-                            else { speedY += Sign(realDiffY) * 0.35f; }
-
-                            if (rand.Next(150) == 0) { state = 1; }
+                                if (rand.Next(150) == 0) { state = 1; }
+                            }
                         }
                         else if (state == 5) // preparing to dig plant
                         {
@@ -867,28 +920,29 @@ namespace Cave
                         {
                             if (timeAtLastDig + 1 < timeElapsed)
                             {
-                                Dig(targetPos.x, targetPos.y);
+                                int dugTile = Dig(targetPos.x, targetPos.y);
                                 if (nest != null)
                                 {
-                                    nest.digErrands.Remove(targetPos);
-                                    int roomId = nest.getRoomId(targetPos);
-                                    /*Room roomToTest = nest.rooms[roomId];
-                                    if (roomId >= 0)
+                                    if (dugTile >= 0) { nest.digErrands.Remove(targetPos); }
+                                    if (dugTile == -5 && nest.hungryLarvae.Count > 0)
                                     {
-                                        if (roomToTest.dropPositions.Contains(targetPos))
+                                        targetEntity = nest.hungryLarvae[rand.Next(nest.hungryLarvae.Count)];
+                                        targetPos = (targetEntity.posX, targetEntity.posY);
+                                        if (pathfindToLocation(targetPos))
                                         {
-                                            if (roomToTest.type == 2 && !nest.honeyDropPositions.Contains(targetPos))
-                                            {
-                                                nest.honeyDropPositions.Add(targetPos);
-                                            }
-                                            if (roomToTest.type == 3 && !nest.larvaeDropPositions.Contains(targetPos))
-                                            {
-                                                nest.larvaeDropPositions.Add(targetPos);
-                                            }
+                                            state = 10009;
                                         }
-                                    }*/
+                                        else
+                                        {
+                                            targetEntity = null;
+                                            pathToTarget = new List<(int x, int y)>();
+                                            simplifiedPathToTarget = new List<(int x, int y)>();
+                                            state = 0;
+                                        }
+                                    }
+                                    else { state = 0; }
                                 }
-                                state = 0;
+                                else { state = 0; }
                             }
                         }
                         else if (state == 7) // preparing to place honeyy
@@ -938,6 +992,14 @@ namespace Cave
                             {
                                 state = 0;
                             }
+                        }
+                        else if (state == 9) // feeding kiddo !
+                        {
+                            if (nest != null && nest.hungryLarvae.Contains(targetEntity))
+                            {
+                                tryFeedTargetEntity();
+                            }
+                            state = 0;
                         }
                         else { state = 0; }
                     }
@@ -1117,10 +1179,10 @@ namespace Cave
                 }
                 return false;
             }
-            public void Dig(int posToDigX, int posToDigY)
+            public int Dig(int posToDigX, int posToDigY)
             {
                 (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
-                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return; }
+                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return 0; }
                 (int x, int y) tileIndex = GetChunkTileIndex(posToDigX, posToDigY, 32);
                 int tileContent = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
                 if (tileContent != 0)
@@ -1133,6 +1195,7 @@ namespace Cave
                     elementsPossessed++;
                     timeAtLastDig = timeElapsed;
                 }
+                return tileContent;
             }
             public bool Place(int posToDigX, int posToDigY, (int index, int subType, int typeOfElement) elementToPlace, bool forcePlace)
             {
@@ -1184,6 +1247,25 @@ namespace Cave
                         else { return false; }
                     }
                 }
+                return false;
+            }
+            public bool tryFeedTargetEntity()
+            {
+                if (targetEntity == null) { return false; }
+                if (targetEntity.type == 3 && targetEntity.subType == 1)
+                {
+                    if (inventoryElements.Contains((-5, 0, 0)) && targetEntity.food < 3 && timeElapsed - targetEntity.timeAtBirth > 45 + 15 * food)
+                    {
+                        removeElementFromInventory((-5, 0, 0));
+                        targetEntity.food++;
+                        if (targetEntity.food < 3 && timeElapsed - targetEntity.timeAtBirth > 45 + 15 * food)
+                        {
+                            targetEntity.nest.hungryLarvae.Remove(targetEntity);
+                        }
+                        return true;
+                    }
+                }
+                targetEntity.nest.hungryLarvae.Remove(targetEntity);
                 return false;
             }
         }

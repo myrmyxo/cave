@@ -77,6 +77,7 @@ namespace Cave
             public int[,] inv;
             public (float, float) lastDP;
             public float brth;
+            public float sttCh;
             public EntityJson(Entity entity)
             {
                 seed = entity.seed;
@@ -88,6 +89,7 @@ namespace Cave
                 inv = inventoryToArray(entity.inventoryQuantities, entity.inventoryElements);
                 lastDP = (entity.timeAtLastDig, entity.timeAtLastPlace);
                 brth = entity.timeAtBirth;
+                sttCh = entity.timeAtLastStateChange;
             }
             public EntityJson()
             {
