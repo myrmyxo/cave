@@ -46,6 +46,10 @@ namespace Cave
                 { -1, new OneSprite("Piss", true)},
                 { 1, new OneSprite("BasicTile", true)},
                 { 2, new OneSprite("BasicTile", true)},
+                { 3, new OneSprite("BasicTile", true)},
+                { 4, new OneSprite("BasicTile", true)},
+                { 5, new OneSprite("BasicTile", true)},
+                { 6, new OneSprite("BasicTile", true)}
             };
             entitySprites = new Dictionary<(int, int), OneSprite>
             {
