@@ -38,28 +38,36 @@ namespace Cave
         }
         public class ChunkJson
         {
-            public long chunkSeed;
-            public (int, int) position;
-            public int[,] fillStates;
-            public bool enPlSpawned;
-            public List<EntityJson> entityList;
-            public List<PlantJson> plantList;
+            public long seed;
+            public (int, int) pos;
+            public int[,] fill;
+            public bool spwnd;
+            public List<EntityJson> eLst;
+            public List<PlantJson> pLst;
+            public int explLvl;
+            public bool[,] fog;
             public ChunkJson(Chunk chunk)
             {
-                chunkSeed = chunk.chunkSeed;
-                position = chunk.position;
-                fillStates = chunk.fillStates;
-                enPlSpawned = chunk.entitiesAndPlantsSpawned;
-                entityList = new List<EntityJson>();
+                seed = chunk.chunkSeed;
+                pos = chunk.position;
+                fill = chunk.fillStates;
+                spwnd = chunk.entitiesAndPlantsSpawned;
+                eLst = new List<EntityJson>();
                 foreach (Entity entity in chunk.entityList)
                 {
-                    entityList.Add(new EntityJson(entity));
+                    eLst.Add(new EntityJson(entity));
                 }
-                plantList = new List<PlantJson>();
+                pLst = new List<PlantJson>();
                 foreach (Plant plant in chunk.plantList)
                 {
-                    plantList.Add(new PlantJson(plant));
+                    pLst.Add(new PlantJson(plant));
                 }
+                explLvl = chunk.explorationLevel;
+                if (explLvl == 1)
+                {
+                    fog = chunk.fogOfWar;
+                }
+                else { fog = null; }
             }
             public ChunkJson()
             {
@@ -265,24 +273,39 @@ namespace Cave
                 string content = f.ReadToEnd();
                 ChunkJson chunkJson = JsonConvert.DeserializeObject<ChunkJson>(content);
 
-                chunk.chunkSeed = chunkJson.chunkSeed;
-                chunk.position = chunkJson.position;
-                chunk.fillStates = chunkJson.fillStates;
-                chunk.entitiesAndPlantsSpawned = chunkJson.enPlSpawned;
+                chunk.chunkSeed = chunkJson.seed;
+                chunk.position = chunkJson.pos;
+                chunk.fillStates = chunkJson.fill;
+                chunk.entitiesAndPlantsSpawned = chunkJson.spwnd;
 
                 if(loadEntitiesAndPlants)
                 {
                     chunk.entityList = new List<Entity>();
-                    foreach (EntityJson entityJson in chunkJson.entityList)
+                    foreach (EntityJson entityJson in chunkJson.eLst)
                     {
                         chunk.entityList.Add(new Entity(chunk, entityJson));
                     }
                     chunk.plantList = new List<Plant>();
-                    foreach (PlantJson plantJson in chunkJson.plantList)
+                    foreach (PlantJson plantJson in chunkJson.pLst)
                     {
                         chunk.plantList.Add(new Plant(chunk, plantJson));
                     }
                 }
+
+                chunk.explorationLevel = chunkJson.explLvl;
+                if (chunk.explorationLevel == 1)
+                {
+                    chunk.fogOfWar = chunkJson.fog;
+                    chunk.fogBitmap = new Bitmap(32, 32);
+                    for(int i = 0; i < 32; i++)
+                    {
+                        for (int j = 0; j < 32; j++)
+                        {
+                            if (!chunk.fogOfWar[i, j]) { chunk.fogBitmap.SetPixel(i, j, Color.Black); }
+                        }
+                    }
+                }
+                else { chunk.fogOfWar = null; }
             }
         }
         public static void saveEntity(Entity entity)
@@ -300,7 +323,7 @@ namespace Cave
                 {
                     string content = f.ReadToEnd();
                     chunkJson = JsonConvert.DeserializeObject<ChunkJson>(content);
-                    chunkJson.entityList.Add(new EntityJson(entity));
+                    chunkJson.eLst.Add(new EntityJson(entity));
                 }
                 using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\ChunkData\\{entity.screen.seed}\\{position.Item1}.{position.Item2}.json"))
                 using (JsonWriter writer = new JsonTextWriter(sw))

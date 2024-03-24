@@ -24,6 +24,7 @@ using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
+using System.Data.SqlTypes;
 
 namespace Cave
 {
@@ -34,6 +35,8 @@ namespace Cave
         {
             public static int ChunkLength = 4;
             public static int UnloadedChunksAmount = 8;
+
+            public static Bitmap black32Bitmap = new Bitmap(32, 32);
 
             public static Random rand = new Random();
             public static Player player;
@@ -143,6 +146,7 @@ namespace Cave
             public long chunkSeed;
 
             public (int x, int y) position;
+
             public int[,,] primaryFillValues;
             public int[,] primaryBigFillValues;
             public int[,] primaryBiomeValues;
@@ -152,17 +156,24 @@ namespace Cave
             public int[,,] secondaryBiomeValues;
             public int[,,] secondaryBigBiomeValues;
             public (int, int)[,][] biomeIndex;
+
             public int[,] fillStates;
             public (int,int,int)[,] baseColors;
             public Color[,] colors;
+            public Bitmap bitmap;
+
             public List<Entity> entityList = new List<Entity>();
             public List<Plant> plantList = new List<Plant>();
             public List<Plant> exteriorPlantList = new List<Plant>();
+
             public int modificationCount = 0;
             public int unstableLiquidCount = 1;
             public bool entitiesAndPlantsSpawned = false;
 
-            public Bitmap bitmap;
+            public int explorationLevel = 0;
+            public bool[,] fogOfWar = null;
+            public Bitmap fogBitmap = null;
+
             public Chunk((int x, int y) posToPut, bool structureGenerated, Screen screenToPut)
             {
                 screen = screenToPut;
@@ -1016,6 +1027,7 @@ namespace Cave
                 }
                 LCGCacheInit();
                 makeTheFilledChunk();
+                makeBlackBitmap();
                 checkStructuresPlayerSpawn(player);
                 loadChunks(posX, posY, seed);
                 overlayBitmap = new Bitmap(512, 128);
@@ -1412,6 +1424,23 @@ namespace Cave
                     }
                     drawPixel(color, (player.posX, player.posY), PNGmultiplicator);
                 }
+
+                for (int i = UnloadedChunksAmount; i < chunkResolution - UnloadedChunksAmount; i++)
+                {
+                    for (int j = UnloadedChunksAmount; j < chunkResolution - UnloadedChunksAmount; j++)
+                    {
+                        chunko = loadedChunks[(chunkX + i, chunkY + j)];
+                        if (chunko.explorationLevel == 0)
+                        {
+                            pasteImage(black32Bitmap, (chunko.position.x * 32, chunko.position.y * 32), PNGmultiplicator);
+                        }
+                        else if (chunko.explorationLevel == 1)
+                        {
+                            pasteImage(chunko.fogBitmap, (chunko.position.x * 32, chunko.position.y * 32), PNGmultiplicator);
+                        }
+                    }
+                }
+
                 gameBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 return gameBitmap;
             }
@@ -1446,6 +1475,17 @@ namespace Cave
                     for (int j = 0; j < 32; j++)
                     {
                         theFilledChunk.fillStates[i,j] = 1;
+                    }
+                }
+            }
+            public void makeBlackBitmap()
+            {
+                black32Bitmap = new Bitmap(32, 32);
+                for (int i = 0; i < 32; i++)
+                {
+                    for (int j = 0; j < 32; j++)
+                    {
+                        black32Bitmap.SetPixel(i, j, Color.Black);
                     }
                 }
             }
@@ -1517,7 +1557,7 @@ namespace Cave
             public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
             public List<(int index, int subType, int typeOfElement)> inventoryElements;
             public int inventoryCursor = 3;
-            public Player (Screen screenToPut)
+            public Player(Screen screenToPut)
             {
                 screen = screenToPut;
             }
@@ -1583,7 +1623,7 @@ namespace Cave
                     (-1, 0, 0),
                     (-4, 0, 0)
                 };
-        }
+            }
             public void movePlayer()
             {
                 if (digPress && timeElapsed > timeAtLastDig /*+ 0.2f*/)
@@ -1628,8 +1668,8 @@ namespace Cave
                     (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
                     if (screen.loadedChunks[chunkPos].fillStates[(posX % 32 + 32) % 32, (posY % 32 + 32) % 32] < 0)
                     {
-                        speedX = speedX * 0.8f - Sign(speedX)*Sqrt(Max((int)speedX-1,0));
-                        speedY = speedY * 0.8f - Sign(speedY)*Sqrt(Max((int)speedY-1,0));
+                        speedX = speedX * 0.8f - Sign(speedX) * Sqrt(Max((int)speedX - 1, 0));
+                        speedY = speedY * 0.8f - Sign(speedY) * Sqrt(Max((int)speedY - 1, 0));
                     }
                 }
 
@@ -1694,6 +1734,147 @@ namespace Cave
                     }
                     else { break; }
                 }
+
+                updateFogOfWar();
+            }
+            public void updateFogOfWar()
+            {
+                // CAREFUL, for fog of war, a false means the tile has not been visited (false = fog present), and a true means a tile has been visited (true = fog absent)
+
+                (int x, int y) chunkPos;
+                (int x, int y) posToTest;
+                (int x, int y) tileIndex;
+                Chunk chunkToTest;
+                Dictionary<Chunk, bool> visitedChunks = new Dictionary<Chunk, bool>();
+                List<(int x, int y)> modsToTest = new List<(int x, int y)>();
+                modsToTest.Add((25, 25));
+                modsToTest.Add((-25, 25));
+                modsToTest.Add((25, -25));
+                modsToTest.Add((-25, -25));
+                for (int i = -24; i < 25; i++)
+                {
+                    modsToTest.Add((-25, i));
+                    modsToTest.Add((25, i));
+                    modsToTest.Add((i, 25));
+                    modsToTest.Add((i, -25));
+                }
+
+                foreach ((int x, int y) mod in modsToTest)
+                {
+                    List<(int x, int y)> posList = rayCast((posX, posY), (posX + mod.x, posY + mod.y));
+                    foreach ((int x, int y) pos in posList)
+                    {
+                        posToTest = pos;
+                        chunkPos = screen.findChunkAbsoluteIndex(posToTest.x, posToTest.y);
+                        if (screen.loadedChunks.ContainsKey(chunkPos))
+                        {
+                            chunkToTest = screen.loadedChunks[chunkPos];
+                        }
+                        else { continue; }
+                        if (chunkToTest.explorationLevel == 2) { continue; }
+                        visitedChunks[chunkToTest] = true;
+                        if (chunkToTest.explorationLevel == 0)
+                        {
+                            chunkToTest.explorationLevel = 1;
+                            chunkToTest.fogOfWar = new bool[32, 32];
+                            chunkToTest.fogBitmap = new Bitmap(32, 32);
+                            for (int ii = 0; ii < 32; ii++)
+                            {
+                                for (int jj = 0; jj < 32; jj++)
+                                {
+                                    chunkToTest.fogBitmap.SetPixel(ii, jj, Color.Black);
+                                }
+                            }
+                        }
+                        tileIndex = GetChunkTileIndex(posToTest.x, posToTest.y, 32);
+                        if (!chunkToTest.fogOfWar[tileIndex.x, tileIndex.y])
+                        {
+                            chunkToTest.fogOfWar[tileIndex.x, tileIndex.y] = true;
+                            chunkToTest.fogBitmap.SetPixel(tileIndex.x, tileIndex.y, Color.Transparent);
+                        }
+                    }
+                }
+                foreach (Chunk chunko in visitedChunks.Keys)
+                {
+                    bool setAsVisited = true;
+                    foreach (bool boolo in chunko.fogOfWar)
+                    {
+                        if (!boolo)
+                        {
+                            setAsVisited = false;
+                            break;
+                        }
+                    }
+                    if (setAsVisited)
+                    {
+                        chunko.explorationLevel = 2;
+                        chunko.fogOfWar = null;
+                        chunko.fogBitmap = null;
+                    }
+                }
+            }
+            public List<(int x, int y)> rayCast((int x, int y) startPos, (int x, int y) targetPos)
+            {
+                int lives = 1;
+
+                List<(int x, int y)> posList = new List<(int x, int y)>();
+
+                (int x, int y) diff = (targetPos.x - startPos.x, targetPos.y - startPos.y);
+                bool goingUp = diff.x > 0;
+                bool goingRight = diff.y > 0;
+                int xMult;
+                if (goingUp) { xMult = 1; }
+                else { xMult = -1; }
+                int yMult;
+                if (goingRight) { yMult = 1; }
+                else { yMult = -1; }
+
+                float xToY = Abs((float)diff.x) / (diff.y + 0.0001f);
+                float yToX = Abs((float)diff.y) / (diff.x + 0.0001f);
+
+                (float x, float y) currentPos = (startPos.x + 0.5f, startPos.y + 0.5f);
+                (int x, int y) currentPosInt;
+                (int x, int y) chunkPos;
+                Chunk chunkToTest;
+                float valueX;
+                float valueY;
+                int repeatCounter = 0;
+                while (repeatCounter < 100)
+                {
+                    valueX = PosMod(currentPos.x, 1);
+                    if (goingUp) { valueX = 1 - valueX; };
+                    valueY = PosMod(currentPos.y, 1);
+                    if (goingRight) { valueY = 1 - valueY; }
+                    if (Abs(valueX * xToY) > Abs(valueY))
+                    {
+                        currentPos = (currentPos.x + xMult * (valueX + 0.0001f), currentPos.y + yMult * yToX * (valueX + 0.0001f));
+                        currentPosInt = ((int)currentPos.x, (int)currentPos.y);
+                        chunkPos = screen.findChunkAbsoluteIndex(currentPosInt.x, currentPosInt.y);
+                        chunkToTest = screen.tryToGetChunk(chunkPos);
+                        posList.Add(currentPosInt);
+                        if (chunkToTest.fillStates[GetChunkTileIndex1D(currentPosInt.x, 32), GetChunkTileIndex1D(currentPosInt.y, 32)] > 0 )
+                        {
+                            lives--;
+                            if (lives <= 0) { return posList; }
+                        }
+                    }
+                    else
+                    {
+                        currentPos = (currentPos.x + xMult * xToY * (valueY + 0.0001f), currentPos.y + yMult * (valueY + 0.0001f));
+                        currentPosInt = ((int)currentPos.x, (int)currentPos.y);
+                        chunkPos = screen.findChunkAbsoluteIndex(currentPosInt.x, currentPosInt.y);
+                        chunkToTest = screen.tryToGetChunk(chunkPos);
+                        posList.Add(currentPosInt);
+                        if (chunkToTest.fillStates[GetChunkTileIndex1D(currentPosInt.x, 32), GetChunkTileIndex1D(currentPosInt.y, 32)] > 0)
+                        {
+                            lives--;
+                            if (lives <= 0) { return posList; }
+                        }
+                    }
+                    repeatCounter++;
+                }
+
+                return posList;
             }
             public bool CheckStructurePosChange()
             {
@@ -1894,7 +2075,7 @@ namespace Cave
 
             Screen mainScreen;
 
-            bool updatePNG = true;
+            bool updatePNG = false;
             int PNGsize = 120; // in chunks, 300 or more made it out of memory :( so put at 250 okok
             bool randomSeed = true;
 
@@ -2704,13 +2885,25 @@ namespace Cave
         {
             return value - (((value % modulo) + modulo) % modulo);
         }
+        public static float Floor(float value, float modulo)
+        {
+            return value - (((value % modulo) + modulo) % modulo);
+        }
         public static long Floor(long value, long modulo)
         {
             return value - (((value % modulo) + modulo) % modulo);
         }
-        public static float Floor(float value, float modulo)
+        public static int PosMod(int value, int modulo)
         {
-            return value - (((value % modulo) + modulo) % modulo);
+            return ((value % modulo) + modulo) % modulo;
+        }
+        public static float PosMod(float value, float modulo)
+        {
+            return ((value % modulo) + modulo) % modulo;
+        }
+        public static long PosMod(long value, long modulo)
+        {
+            return ((value % modulo) + modulo) % modulo;
         }
         public static int Sign(int a)
         {
