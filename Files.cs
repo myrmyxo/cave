@@ -23,6 +23,9 @@ using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
+using static Cave.Screens;
+using static Cave.Chunks;
+using static Cave.Players;
 
 namespace Cave
 {
@@ -30,11 +33,58 @@ namespace Cave
     {
         public class SettingsJson
         {
-            public (int x, int y) playerPosition;
-            public int currentNestId;
-            public int currentEntityId;
-            public int currentPlantId;
-            public int currentStructureId;
+            public int nestId;
+            public int entityId;
+            public int plantId;
+            public int structureId;
+            public float time;
+            public PlayerJson player;
+            public SettingsJson(Screens.Screen screen)
+            {
+                time = timeElapsed;
+                nestId = currentNestId;
+                plantId = currentPlantId;
+                entityId = currentEntityId;
+                structureId = currentStructureId;
+                player = new PlayerJson(screen.playerList[0]);
+            }
+            public SettingsJson()
+            {
+
+            }
+        }
+        public class MegaChunk
+        {
+            public (int, int) pos;
+            public List<int> nests = new List<int>();
+            public List<int> structures = new List<int>();
+            public MegaChunk((int x, int y) posToPut)
+            {
+                pos = posToPut;
+            }
+            public MegaChunk()
+            {
+
+            }
+            public void loadAllChunksInNests(Screens.Screen screen)
+            {
+                Nest nesto;
+                foreach (int nestId in nests)
+                {
+                    if (!screen.activeNests.ContainsKey(nestId))
+                    {
+                        continue;
+                    }
+                    nesto = screen.activeNests[nestId];
+                    foreach ((int x, int y) pos in nesto.chunkPresence.Keys)
+                    {
+                        if (!screen.loadedChunks.ContainsKey(pos))
+                        {
+                            screen.loadedChunks.Add(pos, new Chunk(pos, false, screen));
+                        }
+                    }
+                }
+            }
         }
         public class ChunkJson
         {
@@ -42,8 +92,8 @@ namespace Cave
             public (int, int) pos;
             public int[,] fill;
             public bool spwnd;
-            public List<EntityJson> eLst;
-            public List<PlantJson> pLst;
+            public List<int> eLst;
+            public List<int> pLst;
             public int explLvl;
             public bool[,] fog;
             public ChunkJson(Chunk chunk)
@@ -52,16 +102,20 @@ namespace Cave
                 pos = chunk.position;
                 fill = chunk.fillStates;
                 spwnd = chunk.entitiesAndPlantsSpawned;
-                eLst = new List<EntityJson>();
+                eLst = new List<int>();
                 foreach (Entity entity in chunk.entityList)
                 {
-                    eLst.Add(new EntityJson(entity));
+                    saveEntity(entity);
+                    eLst.Add(entity.id);
                 }
-                pLst = new List<PlantJson>();
+                chunk.entityList = new List<Entity>();
+                pLst = new List<int>();
                 foreach (Plant plant in chunk.plantList)
                 {
-                    pLst.Add(new PlantJson(plant));
+                    savePlant(plant);
+                    pLst.Add(plant.id);
                 }
+                chunk.plantList = new List<Plant>();
                 explLvl = chunk.explorationLevel;
                 if (explLvl == 1)
                 {
@@ -74,9 +128,29 @@ namespace Cave
 
             }
         }
+        public class PlayerJson
+        {
+            public (float x, float y) pos;
+            public (float x, float y) speed;
+            public int[,] inv;
+            public (float x, float y) lastDP;
+            public PlayerJson(Player player)
+            {
+                pos = (player.realPosX, player.realPosY);
+                speed = (player.speedX, player.speedY);
+                inv = inventoryToArray(player.inventoryQuantities, player.inventoryElements);
+                lastDP = (player.timeAtLastDig, player.timeAtLastPlace);
+            }
+            public PlayerJson()
+            {
+
+            }
+        }
         public class EntityJson
         {
             public int seed;
+            public int id;
+            public int nstId;
             public (int, int) type;
             public int state;
             public (float, float) pos;
@@ -89,6 +163,9 @@ namespace Cave
             public EntityJson(Entity entity)
             {
                 seed = entity.seed;
+                id = entity.id;
+                if (entity.nest == null) { nstId = -1; }
+                else { nstId = entity.nest.id; }
                 type = (entity.type, entity.subType);
                 state = entity.state;
                 pos = (entity.realPosX, entity.realPosY);
@@ -107,6 +184,7 @@ namespace Cave
         public class PlantJson
         {
             public int seed;
+            public int id;
             public (int, int) type;
             public (int, int) pos;
             public (int, int) lstGrPos;
@@ -120,6 +198,7 @@ namespace Cave
             public PlantJson(Plant plant)
             {
                 seed = plant.seed;
+                id = plant.id;
                 type = (plant.type, plant.subType);
                 pos = (plant.posX, plant.posY);
                 lstGrPos = plant.lastDrawPos;
@@ -201,6 +280,113 @@ namespace Cave
 
             }
         }
+        public class RoomJson
+        {
+            public int id;
+            public int type;
+            public long seed;
+            public (int x, int y) pos;
+
+            public int[,] tiles;
+
+            public int[] ent;
+            public RoomJson(Room room)
+            {
+                id = room.id;
+                seed = room.seed;
+                type = room.type;
+                pos = room.position;
+                tiles = tileListToArray(room.tiles);
+                ent = new int[room.assignedEntities.Count];
+                for (int i = 0; i < room.assignedEntities.Count; i++)
+                {
+                    ent[i] = room.assignedEntities[i].id;
+                }
+            }
+            public RoomJson()
+            {
+
+            }
+        }
+        public class StructureJson
+        {
+            public string name;
+            public int type;
+            public int id;
+            public (long, long) seed;
+            public (int, int) pos;
+            public StructureJson(Structure structure)
+            {
+                name = structure.name;
+                type = structure.type;
+                id = structure.id;
+                seed = (structure.seedX, structure.seedY);
+                pos = structure.centerPos;
+            }
+            public StructureJson()
+            {
+
+            }
+        }
+        public class NestJson
+        {
+            public int id;
+            public int type;
+            public long seed;
+
+            public (int x, int y) pos;
+            public RoomJson[] rooms;
+            public int roomId = 0;
+            public bool stable = false;
+
+            public int[] ent;
+            public NestJson(Nest nest)
+            {
+                id = nest.id;
+                seed = nest.seed;
+                type = nest.type;
+                pos = nest.position;
+                Room[] allRooms = nest.rooms.Values.ToArray();
+                rooms = new RoomJson[allRooms.Length];
+                for (int i = 0; i < allRooms.Length; i++)
+                {
+                    rooms[i] = new RoomJson(allRooms[i]);
+                }
+
+                ent = new int[nest.outsideEntities.Count + nest.adults.Count + nest.larvae.Count];
+                int idx = 0;
+                for (int i = 0; i < nest.outsideEntities.Count; i++)
+                {
+                    ent[idx] = nest.outsideEntities[i];
+                    idx++;
+                }
+                for (int i = 0; i < nest.adults.Count; i++)
+                {
+                    ent[idx] = nest.adults[i].id;
+                    idx++;
+                }
+                for (int i = 0; i < nest.larvae.Count; i++)
+                {
+                    ent[idx] = nest.larvae[i].id;
+                    idx++;
+                }
+            }
+            public NestJson()
+            {
+
+            }
+        }
+        public static int[,] tileListToArray(List<(int x, int y)> listo)
+        {
+            int[,] arrayo = new int[listo.Count, 2];
+            (int x, int y)[] keyo = listo.ToArray();
+            for (int i = 0; i < keyo.Length; i++)
+            {
+                arrayo[i, 0] = keyo[i].x;
+                arrayo[i, 1] = keyo[i].y;
+            }
+            return arrayo;
+        }
         public static int[,] fillstatesToArray(Dictionary<(int x, int y), int> dicto)
         {
             int[,] arrayo = new int[dicto.Count, 3];
@@ -234,6 +420,15 @@ namespace Cave
             }
             return dicto;
         }
+        public static List<(int x, int y)> arrayToTileList(int[,] arrayo)
+        {
+            List<(int x, int y)> listo = new List<(int x, int y)>();
+            for (int i = 0; i < arrayo.GetLength(0); i++)
+            {
+                listo.Add((arrayo[i, 0], arrayo[i, 1]));
+            }
+            return listo;
+        }
         public static (Dictionary<(int index, int subType, int typeOfElement), int>, List<(int index, int subType, int typeOfElement)>) arrayToInventory(int[,] arrayo)
         {
             Dictionary<(int index, int subType, int typeOfElement), int> dicto = new Dictionary<(int index, int subType, int typeOfElement), int>();
@@ -245,30 +440,57 @@ namespace Cave
             }
             return (dicto, listo);
         }
-        public static void saveChunk(Chunk chunk, bool creaturesSpawned)
+        public static void saveMegaChunk(MegaChunk megaChunk, (int x, int y) pos)
         {
             JsonSerializer serializer = new JsonSerializer();
             serializer.Converters.Add(new JavaScriptDateTimeConverter());
             serializer.NullValueHandling = NullValueHandling.Ignore;
 
-            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\ChunkData\\{chunk.screen.seed}\\{chunk.position.Item1}.{chunk.position.Item2}.json"))
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{pos.x}.{pos.y}.json"))
+            using (JsonWriter writer = new JsonTextWriter(sw))
+            {
+                serializer.Serialize(writer, megaChunk);
+            }
+        }
+        public static MegaChunk loadMegaChunk(Screens.Screen screenToPut, (int x, int y) pos)
+        {
+            if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{pos.x}.{pos.y}.json"))
+            {
+                MegaChunk oOoOdindondandoyoufeelmylove = new MegaChunk(pos);
+                return oOoOdindondandoyoufeelmylove;
+            }
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{pos.x}.{pos.y}.json"))
+            {
+                string content = f.ReadToEnd();
+                MegaChunk imatwinklelittlemermaidgirl = JsonConvert.DeserializeObject<MegaChunk>(content);
+
+                return imatwinklelittlemermaidgirl;
+            }
+        }
+        public static void saveChunk(Chunk chunk)
+        {
+            JsonSerializer serializer = new JsonSerializer();
+            serializer.Converters.Add(new JavaScriptDateTimeConverter());
+            serializer.NullValueHandling = NullValueHandling.Ignore;
+
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{chunk.screen.seed}\\ChunkData\\{chunk.position.Item1}.{chunk.position.Item2}.json"))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
                 ChunkJson baby = new ChunkJson(chunk);
                 serializer.Serialize(writer, baby);
             }
         }
-        public static void saveAllChunks(Form1.Screen screen)
+        public static void saveAllChunks(Screens.Screen screen)
         {
             foreach (Chunk chunko in screen.loadedChunks.Values)
             {
-                saveChunk(chunko, false);
+                saveChunk(chunko);
             }
         }
         public static void loadChunk(Chunk chunk, bool loadEntitiesAndPlants)
         {
-            bool willSpawnEntities;
-            using (StreamReader f = new StreamReader($"{currentDirectory}\\ChunkData\\{chunk.screen.seed}\\{chunk.position.Item1}.{chunk.position.Item2}.json"))
+            //bool willSpawnEntities;
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{chunk.screen.seed}\\ChunkData\\{chunk.position.Item1}.{chunk.position.Item2}.json"))
             {
                 string content = f.ReadToEnd();
                 ChunkJson chunkJson = JsonConvert.DeserializeObject<ChunkJson>(content);
@@ -278,17 +500,17 @@ namespace Cave
                 chunk.fillStates = chunkJson.fill;
                 chunk.entitiesAndPlantsSpawned = chunkJson.spwnd;
 
-                if(loadEntitiesAndPlants)
+                if (loadEntitiesAndPlants)
                 {
                     chunk.entityList = new List<Entity>();
-                    foreach (EntityJson entityJson in chunkJson.eLst)
+                    foreach (int entityId in chunkJson.eLst)
                     {
-                        chunk.entityList.Add(new Entity(chunk, entityJson));
+                        chunk.entityList.Add(loadEntity(chunk.screen, entityId));
                     }
                     chunk.plantList = new List<Plant>();
-                    foreach (PlantJson plantJson in chunkJson.pLst)
+                    foreach (int plantId in chunkJson.pLst)
                     {
-                        chunk.plantList.Add(new Plant(chunk, plantJson));
+                        chunk.plantList.Add(loadPlant(chunk.screen, plantId));
                     }
                 }
 
@@ -297,7 +519,7 @@ namespace Cave
                 {
                     chunk.fogOfWar = chunkJson.fog;
                     chunk.fogBitmap = new Bitmap(32, 32);
-                    for(int i = 0; i < 32; i++)
+                    for (int i = 0; i < 32; i++)
                     {
                         for (int j = 0; j < 32; j++)
                         {
@@ -308,46 +530,135 @@ namespace Cave
                 else { chunk.fogOfWar = null; }
             }
         }
+        public static Plant loadPlant(Screens.Screen screenToPut, int plantId)
+        {
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{worldSeed}\\PlantData\\{plantId}.json"))
+            {
+                string content = f.ReadToEnd();
+                PlantJson plantJson = JsonConvert.DeserializeObject<PlantJson>(content);
+
+                return new Plant(screenToPut, plantJson);
+            }
+        }
+        public static Entity loadEntity(Screens.Screen screenToPut, int entityId)
+        {
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{worldSeed}\\EntityData\\{entityId}.json"))
+            {
+                string content = f.ReadToEnd();
+                EntityJson entityJson = JsonConvert.DeserializeObject<EntityJson>(content);
+
+                return new Entity(screenToPut, entityJson);
+            }
+        }
+        public static void savePlant(Plant plant)
+        {
+            JsonSerializer serializer = new JsonSerializer();
+            serializer.Converters.Add(new JavaScriptDateTimeConverter());
+            serializer.NullValueHandling = NullValueHandling.Ignore;
+
+            PlantJson plantJson = new PlantJson(plant);
+
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{plant.screen.seed}\\PlantData\\{plant.id}.json"))
+            using (JsonWriter writer = new JsonTextWriter(sw))
+            {
+                serializer.Serialize(writer, plantJson);
+            }
+        }
         public static void saveEntity(Entity entity)
         {
             JsonSerializer serializer = new JsonSerializer();
             serializer.Converters.Add(new JavaScriptDateTimeConverter());
             serializer.NullValueHandling = NullValueHandling.Ignore;
 
-            ChunkJson chunkJson;
-            (int, int) position = (Floor(entity.posX, 32) / 32, Floor(entity.posY, 32) / 32);
+            EntityJson entityJson = new EntityJson(entity);
 
-            if (System.IO.File.Exists($"{currentDirectory}\\ChunkData\\{entity.screen.seed}\\{position.Item1}.{position.Item2}.json"))
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{entity.screen.seed}\\EntityData\\{entity.id}.json"))
+            using (JsonWriter writer = new JsonTextWriter(sw))
             {
-                using (StreamReader f = new StreamReader($"{currentDirectory}\\ChunkData\\{entity.screen.seed}\\{position.Item1}.{position.Item2}.json"))
-                {
-                    string content = f.ReadToEnd();
-                    chunkJson = JsonConvert.DeserializeObject<ChunkJson>(content);
-                    chunkJson.eLst.Add(new EntityJson(entity));
-                }
-                using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\ChunkData\\{entity.screen.seed}\\{position.Item1}.{position.Item2}.json"))
-                using (JsonWriter writer = new JsonTextWriter(sw))
-                {
-                    serializer.Serialize(writer, chunkJson);
-                }
-            }
-            else
-            {
-                chunkJson = new ChunkJson(new Chunk(position, true, entity.screen));
-                using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\ChunkData\\{entity.screen.seed}\\{position.Item1}.{position.Item2}.json"))
-                using (JsonWriter writer = new JsonTextWriter(sw))
-                {
-                    serializer.Serialize(writer, chunkJson);
-                }
+                serializer.Serialize(writer, entityJson);
             }
         }
-        public static Nest loadNest(Form1.Screen screen, int id)
+        public static void saveNest(Nest nest)
         {
-            using (StreamReader f = new StreamReader($"{currentDirectory}\\NestData\\{screen.seed}\\{id}.json"))
+            JsonSerializer serializer = new JsonSerializer();
+            serializer.Converters.Add(new JavaScriptDateTimeConverter());
+            serializer.NullValueHandling = NullValueHandling.Ignore;
+
+            NestJson nestJson = new NestJson(nest);
+
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{nest.screen.seed}\\NestData\\{nest.id}.json"))
+            using (JsonWriter writer = new JsonTextWriter(sw))
+            {
+                serializer.Serialize(writer, nestJson);
+            }
+        }
+        public static Nest loadNest(Screens.Screen screen, int id)
+        {
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{screen.seed}\\NestData\\{id}.json"))
             {
                 string content = f.ReadToEnd();
-                Nest nest = JsonConvert.DeserializeObject<Nest>(content);
-                return nest;
+                NestJson nestJson = JsonConvert.DeserializeObject<NestJson>(content);
+
+                return new Nest(screen, nestJson);
+            }
+        }
+        public static void saveSettings(Screens.Screen screen)
+        {
+            if (screen.playerList.Count == 0) { return; }
+
+            JsonSerializer serializer = new JsonSerializer();
+            serializer.Converters.Add(new JavaScriptDateTimeConverter());
+            serializer.NullValueHandling = NullValueHandling.Ignore;
+
+            SettingsJson settings = new SettingsJson(screen);
+
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{screen.seed}\\settings.json"))
+            using (JsonWriter writer = new JsonTextWriter(sw))
+            {
+                serializer.Serialize(writer, settings);
+            }
+        }
+        public static SettingsJson tryLoadSettings(long seed)
+        {
+            if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{seed}\\settings.json")) { return null; }
+
+            SettingsJson settings;
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{seed}\\settings.json"))
+            {
+                string content = f.ReadToEnd();
+                settings = JsonConvert.DeserializeObject<SettingsJson>(content);
+            }
+            return settings;
+        }
+        public static void createFolders(long seed)
+        {
+            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\MegaChunkData"))
+            {
+                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\MegaChunkData");
+            }
+            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\ChunkData"))
+            {
+                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\ChunkData");
+            }
+            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\StructureData"))
+            {
+                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\StructureData");
+            }
+            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\PlantData"))
+            {
+                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\PlantData");
+            }
+            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\EntityData"))
+            {
+                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\EntityData");
+            }
+            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\NestData"))
+            {
+                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\NestData");
+            }
+            if (!Directory.Exists($"{currentDirectory}\\CaveData\\bitmapos"))
+            {
+                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\bitmapos");
             }
         }
     }

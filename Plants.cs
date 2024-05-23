@@ -23,12 +23,21 @@ using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TreeView;
+using static Cave.Screens;
+using static Cave.Chunks;
+using static Cave.Players;
 
 namespace Cave
 {
     public class Plants
     {
+        public static Dictionary<(int type, int subType), bool> upsideDownPlants = new Dictionary<(int type, int subType), bool>
+        {
+            { (2, 1), true },
+            { (5, 0), true },
+            { (5, 1), true },
+            { (6, 0), true }
+        };
         public class Branch
         {
             public Plant motherPlant;
@@ -379,10 +388,10 @@ namespace Cave
         }
         public class Plant
         {
-            public Form1.Screen screen;
-            public Chunk chunk;
+            public Screens.Screen screen;
 
             public int seed;
+            public int id;
             public int type;
             public int subType;
             public int state;
@@ -406,16 +415,16 @@ namespace Cave
 
             public bool isDeadAndShouldDisappear = false;
             public bool isStable = false;
-            public Plant(Chunk chunkToPut, PlantJson plantJson)
+            public Plant(Screens.Screen screenToPut, PlantJson plantJson)
             {
-                chunk = chunkToPut;
-                screen = chunk.screen;
+                screen = screenToPut;
                 posX = plantJson.pos.Item1;
                 posY = plantJson.pos.Item2;
                 lastDrawPos = plantJson.lstGrPos;
                 type = plantJson.type.Item1;
                 subType = plantJson.type.Item2;
                 seed = plantJson.seed;
+                id = plantJson.id;
                 growthLevel = plantJson.grLvl;
                 timeAtLastGrowth = plantJson.lastGr;
                 fillStates = arrayToFillstates(plantJson.fillStates);
@@ -432,32 +441,41 @@ namespace Cave
             }
             public Plant(Chunk chunkToPut)
             {
-                chunk = chunkToPut;
-                screen = chunk.screen;
-                seed = LCGint1(Abs((int)chunk.chunkSeed));
+                posX = chunkToPut.position.x*32;
+                posY = chunkToPut.position.y*32;
+                screen = chunkToPut.screen;
+                seed = LCGint1(Abs((int)chunkToPut.chunkSeed));
+                id = currentEntityId;
                 growthLevel = -1;
                 placePlant();
+                if (isDeadAndShouldDisappear) { return; }
                 findType();
                 findColors();
                 tryGrowth();
                 makeBitmap();
                 timeAtLastGrowth = timeElapsed;
+
+                currentPlantId++;
             }
-            public Plant(Chunk chunkToPut, (int, int) positionToPut, int typeToPut, int subTypeToPut)
+            public Plant(Screens.Screen screenToPut, (int, int) positionToPut, int typeToPut, int subTypeToPut)
             {
-                chunk = chunkToPut;
-                screen = chunk.screen;
+                screen = screenToPut;
                 posX = positionToPut.Item1;
                 posY = positionToPut.Item2;
                 type = typeToPut;
-                subType = subTypeToPut; ;
+                subType = subTypeToPut;
+                if (upsideDownPlants.ContainsKey((typeToPut, subTypeToPut))) { attachPoint = 3; }
                 seed = rand.Next(1000000000); //                               FALSE RANDOM NOT SEEDED ARGHHEHEEEE
+                id = currentEntityId;
                 growthLevel = -1;
                 testPlantPosition();
+                if (isDeadAndShouldDisappear) { return; }
                 findColors();
                 tryGrowth();
                 makeBitmap();
                 timeAtLastGrowth = timeElapsed;
+
+                currentPlantId++;
             }
             public bool tryFill((int x, int y) testPos, int typeToFill)
             {
@@ -466,11 +484,19 @@ namespace Cave
             }
             public void findType()
             {
-                (int x, int y) tileIndex = GetChunkTileIndex(posX, posY, 32);
-                int biome = chunk.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
+                (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
+
+                (int x, int y) chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
+                if (!screen.loadedChunks.ContainsKey(chunkPos))
+                {
+                    return;
+                }
+                Chunk chunkToTest = screen.loadedChunks[chunkPos];
+
+                int biome = chunkToTest.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
                 if (attachPoint == 0)
                 {
-                    if (chunk.fillStates[tileIndex.x, tileIndex.y] < 0)
+                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] < 0)
                     {
                         type = 2;
                         subType = 0;
@@ -515,7 +541,7 @@ namespace Cave
 
                 else if (attachPoint == 3)
                 {
-                    if (chunk.fillStates[tileIndex.x, tileIndex.y] < 0)
+                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] < 0)
                     {
                         type = 2;
                         subType = 1;
@@ -527,7 +553,7 @@ namespace Cave
                     }
                     else
                     {
-                        if (seed % 7 == 0)
+                        if (seed % 7 == 0) // the fuck is this for ? I don't even recall ????
                         {
                             type = 6;
                             subType = 0;
@@ -547,7 +573,7 @@ namespace Cave
                 int hueVar = (int)(seedo % 101) - 50;
                 seedo = LCGint1(seed);
                 int shadeVar = (int)(seedo % 61) - 30;
-                //(int x, int y) tileIndex = GetChunkTileIndex(posX, posY, 32);
+                //(int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY, 32);
                 //int biome = chunk.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
                 if (type == 0) // normal
                 {
@@ -599,7 +625,7 @@ namespace Cave
             public bool testIfPositionEmpty((int x, int y) mod)
             {
                 (int x, int y) pixelPos = (posX + mod.x, posY + mod.y);
-                (int x, int y) pixelTileIndex = GetChunkTileIndex(pixelPos.x, pixelPos.y, 32);
+                (int x, int y) pixelTileIndex = GetChunkIndexFromTile(pixelPos.x, pixelPos.y);
                 (int x, int y) chunkPos = (Floor(pixelPos.x, 32) / 32, Floor(pixelPos.y, 32) / 32);
 
                 if (screen.loadedChunks.ContainsKey(chunkPos))
@@ -933,7 +959,7 @@ namespace Cave
                 }
             }
             public void addPlantInChunks()
-            {
+            {/*
                 (int, int) chunkPos;
                 Chunk chunkToTest;
 
@@ -968,7 +994,7 @@ namespace Cave
                             }
                         }
                     }
-                }
+                }*/
             }
             public void placePlant()
             {
@@ -976,41 +1002,69 @@ namespace Cave
                 while (counto < 10000)
                 {
                     int randX = rand.Next(32);
-                    int randY = rand.Next(30) + 1;
-                    if (chunk.fillStates[randX, randY] <= 0)
+                    int randY = rand.Next(32);
+                    posX += randX;
+                    posY += randY;
+                    (int x, int y) chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
+                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                     {
-                        if (chunk.fillStates[randX, randY - 1] > 0)
+                        (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
+                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] <= 0)
                         {
-                            posX = chunk.position.Item1 * 32 + randX;
-                            posY = chunk.position.Item2 * 32 + randY;
-                            attachPoint = 0;
-                            return;
-                        }
-                        else if (chunk.fillStates[randX, randY + 1] > 0)
-                        {
-                            posX = chunk.position.Item1 * 32 + randX;
-                            posY = chunk.position.Item2 * 32 + randY;
-                            attachPoint = 3;
-                            return;
+                            chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
+                            if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
+                            {
+                                tileIndex = GetChunkIndexFromTile(posX, posY - 1);
+                                if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y] > 0)
+                                {
+                                    attachPoint = 0;
+                                    return;
+                                }
+                            }
+                            chunkPos = screen.findChunkAbsoluteIndex(posX, posY + 1);
+                            if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesto))
+                            {
+                                tileIndex = GetChunkIndexFromTile(posX, posY + 1);
+                                if (chunkToTesto.fillStates[tileIndex.x, tileIndex.y] > 0)
+                                {
+                                    attachPoint = 3;
+                                    return;
+                                }
+                            }
                         }
                     }
+                    posX -= randX;
+                    posY -= randY;
                     counto += 1;
                 }
                 isDeadAndShouldDisappear = true;
             }
             public void testPlantPosition()
             {
-                int randX = GetChunkTileIndex1D(posX, 32);
-                int randY = GetChunkTileIndex1D(posY, 32); ;
-                if (chunk.fillStates[randX, randY] <= 0)
+                (int x, int y) chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
+                if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                 {
-                    if (randY < 15 && chunk.fillStates[randX, randY + 1] > 0)
+                    (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
+                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] <= 0)
                     {
-                        return;
-                    }
-                    else if (randY > 0 && chunk.fillStates[randX, randY - 1] > 0)
-                    {
-                        return;
+                        chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
+                        if (attachPoint == 0 && screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesto))
+                        {
+                            tileIndex = GetChunkIndexFromTile(posX, posY - 1);
+                            if (chunkToTesto.fillStates[tileIndex.x, tileIndex.y] > 0)
+                            {
+                                return;
+                            }
+                        }
+                        chunkPos = screen.findChunkAbsoluteIndex(posX, posY + 1);
+                        if (attachPoint == 3 && screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
+                        {
+                            tileIndex = GetChunkIndexFromTile(posX, posY + 1);
+                            if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y] > 0)
+                            {
+                                return;
+                            }
+                        }
                     }
                 }
                 isDeadAndShouldDisappear = true;

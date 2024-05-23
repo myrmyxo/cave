@@ -23,7 +23,9 @@ using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
-using System.Reflection.Emit;
+using static Cave.Screens;
+using static Cave.Chunks;
+using static Cave.Players;
 
 namespace Cave
 {
@@ -34,7 +36,8 @@ namespace Cave
             public string name = "";
             public (int, int) structChunkPosition;
             public int type;
-            public Form1.Screen screen;
+            public int id;
+            public Screens.Screen screen;
             public long seedX;
             public long seedY;
             public (int, int) centerPos;
@@ -42,7 +45,9 @@ namespace Cave
             public (int, int) size;
             public (int, int, int, int) chunkBounds; // (Start X, end X not included, Start Y, end Y not included)
             public int[,][,] structureArray;
-            public Structure(int posX, int posY, long seedXToPut, long seedYToPut, bool isLake, (int, int) structChunkPositionToPut, Form1.Screen screenToPut)
+
+            public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>();
+            public Structure(int posX, int posY, long seedXToPut, long seedYToPut, bool isLake, (int, int) structChunkPositionToPut, Screens.Screen screenToPut)
             {
                 seedX = seedXToPut;
                 seedY = seedYToPut;
@@ -50,6 +55,9 @@ namespace Cave
                 centerPos = (posX, posY);
                 structChunkPosition = structChunkPositionToPut;
                 centerChunkPos = (Floor(posX, 32) / 32, Floor(posY, 32) / 32);
+
+                id = currentStructureId;
+                currentStructureId++;
 
                 if (isLake)
                 {
@@ -242,7 +250,7 @@ namespace Cave
 
                 int liquidTypeToFill = -2;
                 int numberOfSubLakes = 0; // the total number of mini lakes, connected or not, basically the amount of times the code passed through "searchForBottom"
-                int numberOfConnectedSubLakes = 1; // the total number of mini lakes, that are touching the first minilake (basically those that are connected only, to not make separated lakes when saving and ignoring the non connected ones)
+                //int numberOfConnectedSubLakes = 1; // the total number of mini lakes, that are touching the first minilake (basically those that are connected only, to not make separated lakes when saving and ignoring the non connected ones)
 
                 // Loop 1 : find a tile in the base chunk, try going down till ground is found, if not found soon enough cancel
                 // Loop 2 : bottom found : check if it's really the bottom or not (water can't possibly flow out by the sides), try to find the real bottom for a bit if not, if not foudn cancel.
@@ -485,13 +493,13 @@ namespace Cave
                     }
                 }
 
-                bitmapo.Save($"{currentDirectory}\\bitmapos\\bitmapo{rand.Next(10000)}.png");
+                bitmapo.Save($"{currentDirectory}\\CaveData\\bitmapos\\bitmapo{rand.Next(10000)}.png");
 
                 foreach (List<Chunk> chunko in chunkList)
                 {
                     foreach (Chunk chunk in chunko)
                     {
-                        Files.saveChunk(chunk, false);
+                        Files.saveChunk(chunk);
                     }
                 }
 
@@ -528,7 +536,7 @@ namespace Cave
                 int liquidTypeToFill = -2;
 
                 int numberOfSubLakes = 0; // the total number of mini lakes, connected or not, basically the amount of times the code passed through "searchForBottom"
-                int numberOfConnectedSubLakes = 1; // the total number of mini lakes, that are touching the first minilake (basically those that are connected only, to not make separated lakes when saving and ignoring the non connected ones)
+                //int numberOfConnectedSubLakes = 1; // the total number of mini lakes, that are touching the first minilake (basically those that are connected only, to not make separated lakes when saving and ignoring the non connected ones)
 
                 List<List<Chunk>> chunkList = new List<List<Chunk>>();
                 chunkList.Add(new List<Chunk>());
@@ -559,7 +567,7 @@ namespace Cave
                 {
                     goto abandonLake;
                 }
-            searchForBottom:; // if the lake was not fully filled, go back here to try and test if it's possible to fill it more
+            //searchForBottom:; // if the lake was not fully filled, go back here to try and test if it's possible to fill it more
                 currentTestPos = listTestPos[listTestPos.Count - 1];
                 numberOfSubLakes++;
                 int repeatCounter = 0;
@@ -698,13 +706,13 @@ namespace Cave
                     }
                 }
 
-                bitmapo.Save($"{currentDirectory}\\bitmapos\\bitmapo{rand.Next(10000)}.png");
+                bitmapo.Save($"{currentDirectory}\\CaveData\\bitmapos\\bitmapo{rand.Next(10000)}.png");
 
                 foreach (List<Chunk> chunko in chunkList)
                 {
                     foreach (Chunk chunk in chunko)
                     {
-                        Files.saveChunk(chunk, false);
+                        Files.saveChunk(chunk);
                     }
                 }
 
@@ -759,7 +767,8 @@ namespace Cave
 
                     foreach (Chunk chunk in chunkDict.Values)
                     {
-                        Files.saveChunk(chunk, false);
+                        Files.saveChunk(chunk);
+                        chunkPresence[chunk.position] = true;
                     }
 
                     name = "";
@@ -1008,7 +1017,8 @@ namespace Cave
                             }
                         }
                         chunko.modificationCount = 1;
-                        Files.saveChunk(chunko, false);
+                        Files.saveChunk(chunko);
+                        chunkPresence[chunko.position] = true;
                     }
                 }
             }
@@ -1023,7 +1033,7 @@ namespace Cave
                 {
                     savename = $"{name} {structureNames[type]}";
                 }
-                using (StreamWriter f = new StreamWriter($"{currentDirectory}\\StructureData\\{screen.seed}\\{structChunkPosition.Item1}.{structChunkPosition.Item2}\\{savename}.txt", false))
+                using (StreamWriter f = new StreamWriter($"{currentDirectory}\\CaveData\\{screen.seed}\\StructureData\\{structChunkPosition.Item1}.{structChunkPosition.Item2}.{savename}.txt", false))
                 {
                     string stringo = $"Welcome to structure {name}'s file !";
                     stringo += $"{name} is a {structureNames[type]}.";
@@ -1056,6 +1066,30 @@ namespace Cave
             //public List<int> linkedRoomsId = new List<int>();
             
             // type of room : 0 = mainRoom, 1 = normalRoom, 2 = honeyRoom, 3 = nursery, 10000 = corridor
+            public Room(Nest nestToPut, RoomJson roomJson)
+            {
+                nest = nestToPut;
+                id = roomJson.id;
+                type = roomJson.type;
+                seed = roomJson.seed;
+                position = roomJson.pos;
+                tiles = arrayToTileList(roomJson.tiles);
+                findBorders();
+                findDropPositions();
+                findCapacity();
+                foreach (int id in roomJson.ent) // could be improved for efficiency i guess
+                {
+                    foreach (Entity entity in nest.screen.activeEntities.Values)
+                    {
+                        if (entity.id == id)
+                        {
+                            assignedEntities.Add(entity);
+                            break;
+                        }
+                    }
+                }
+                testFullness();
+            }
             public Room(List<(int x, int y)> tileListToPut, int typeToPut, int idToPut, Nest nestToPut)
             {
                 nest = nestToPut;
@@ -1149,10 +1183,10 @@ namespace Cave
                 if (type == 10000)
                 {
                     makeCorridorBetweenPoints(new List<(int x, int y)> { startPos }, targetPos, 100);
-                    if (isToBeDestroyed)
+                    /*if (isToBeDestroyed)
                     {
                         bool ohNo = true;
-                    }
+                    }*/
                 }
                 else
                 {
@@ -1240,7 +1274,7 @@ namespace Cave
 
                 foreach (Chunk chunk in chunkDict.Values)
                 {
-                    Files.saveChunk(chunk, false);
+                    Files.saveChunk(chunk);
                 }
             }
             public void addToQueue(List<((int x, int y) position, float cost)> queue, ((int x, int y) position, float cost) valueToAdd)
@@ -1426,10 +1460,10 @@ namespace Cave
                 SkipToNextIteration:;
                     repeatCounter++;
                 }
-                if (repeatCounter == 5000000)
+                /*if (repeatCounter == 5000000)
                 {
                     bool hihihoisfjioqdwjklf = true;
-                }
+                }*/
                 return ((0, 0), false);
             }
             public void makeCorridorBetweenPoints(List<(int x, int y)> startPosList, (int x, int y) targetPos, int randomness)
@@ -1491,10 +1525,10 @@ namespace Cave
                 if (repeatCounter >= tileAmount || tilesToTest.Count == 0)
                 {
                     isToBeDestroyed = true;
-                    if (tilesToTest.Count == 0)
+                    /*if (tilesToTest.Count == 0)
                     {
                         bool ohFuck = true;
-                    }
+                    }*/
                     return;
                 }
                 currentTile = targetPos;
@@ -1618,28 +1652,32 @@ namespace Cave
         }
         public class Nest
         {
-            public Form1.Screen screen;
+            public Screens.Screen screen;
 
             public int id;
+            public int type;
             public long seed;
 
             public (int x, int y) position;
 
             // stats to build nest and what it looks like iggg
-            public int roomSize; // bigger leads to bigger rooms NOT USED
-            public int connectivity; // bigger leads to less connexions (corridors) NOT USED
-            public int extensivity; // bigger leads to new rooms and corridors being dug out farther away from the center ig NOT USED
+            public int roomSize = 0; // bigger leads to bigger rooms NOT USED
+            public int connectivity = 0; // bigger leads to less connexions (corridors) NOT USED
+            public int extensivity = 0; // bigger leads to new rooms and corridors being dug out farther away from the center ig NOT USED
             public float shape = 1.41421356237f; //the only one that has an actual effect LMFAO
 
+            public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>(); // the chunks that the nest is present in
             public Dictionary<(int x, int y), bool> tiles = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), bool> borders = new Dictionary<(int x, int y), bool>();
             public Dictionary<int, Room> rooms = new Dictionary<int, Room>();
             public int currentRoomId = 0;
             public bool isStable = false;
+            public bool isNotToBeAdded = false;
 
             // entity management
             public int eggsToLay = 0;
             public int totalHoney = 0;
+            public List<int> outsideEntities = new List<int>();
             public List<Entity> larvae = new List<Entity>();
             public List<Entity> adults = new List<Entity>();
             public List<Entity> hungryLarvae = new List<Entity>();
@@ -1647,10 +1685,49 @@ namespace Cave
             public List<int> availableHoneyRooms = new List<int>();
             public List<int> availableNurseries = new List<int>();
 
-            public Nest((int x, int y) posToPut, long seedToPut, Form1.Screen screenToPut)
+            public Nest(Screens.Screen screenToPut, NestJson nestJson)
+            {
+                screen = screenToPut;
+                id = nestJson.id;
+                seed = nestJson.seed;
+                type = nestJson.type;
+                position = nestJson.pos;
+                foreach (RoomJson roomJson in nestJson.rooms)
+                {
+                    rooms[roomJson.id] = new Room(this, roomJson);
+                }
+
+                foreach (int id in nestJson.ent) // could be improved for efficiency i guess
+                {
+                    foreach (Entity entity in screen.activeEntities.Values)
+                    {
+                        if (entity.id == id)
+                        {
+                            if (entity.type == 3)
+                            {
+                                adults.Add(entity);
+                            }
+                            else
+                            {
+                                larvae.Add(entity);
+                            }
+                            goto entityFound;
+                        }
+                    }
+                    outsideEntities.Add(id);
+                entityFound:;
+                }
+                updateTiles();
+                updateDropPositions();
+                updateDigErrands();
+                decideForBabies();
+
+            }
+            public Nest((int x, int y) posToPut, long seedToPut, Screens.Screen screenToPut)
             {
                 screen = screenToPut;
                 seed = seedToPut;
+                type = 0;
                 position = posToPut;
 
                 Room mainRoom = new Room(posToPut, 0, currentRoomId, this);
@@ -1662,21 +1739,33 @@ namespace Cave
                     {
                         addRoom(corridoro, true);
                     }
-                    else { return; }
-                    screen.activeNests.Add(this);
+                    else
+                    {
+                        isNotToBeAdded = true;
+                        return;
+                    }
                 }
                 else
                 {
+                    isNotToBeAdded = true;
                     return;
                 }
 
                 for (int i = 0; i < 5; i++)
                 {
                     Entity hornet = new Entity(screen, posToPut, 3, 3);
-                    screen.activeEntities.Add(hornet);
+                    screen.activeEntities[hornet.id] = hornet;
                     adults.Add(hornet);
                     hornet.nest = this;
                 }
+                updateTiles();
+                updateDropPositions();
+                updateDigErrands();
+                decideForBabies();
+
+                id = currentNestId;
+                currentNestId++;
+                saveNest(this);
             }
             public void addRoom(Room room, bool fillTiles)
             {
@@ -1871,6 +1960,7 @@ namespace Cave
             }
             public void updateTiles()
             {
+                chunkPresence = new Dictionary<(int x, int y), bool>();
                 tiles = new Dictionary<(int x, int y), bool>();
                 borders = new Dictionary<(int x, int y), bool>();
                 foreach (Room room in rooms.Values)
@@ -1878,10 +1968,12 @@ namespace Cave
                     foreach ((int x, int y) tile in room.tiles)
                     {
                         tiles[tile] = true;
+                        chunkPresence[screen.findChunkAbsoluteIndex(tile.x, tile.y)] = true;
                     }
                     foreach ((int x, int y) tile in room.borders)
                     {
                         borders[tile] = true;
+                        chunkPresence[screen.findChunkAbsoluteIndex(tile.x, tile.y)] = true;
                     }
                 }
             }

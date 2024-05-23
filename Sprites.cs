@@ -23,6 +23,9 @@ using static Cave.Structures;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
+using static Cave.Screens;
+using static Cave.Chunks;
+using static Cave.Players;
 
 namespace Cave
 {
@@ -34,56 +37,56 @@ namespace Cave
         public static Dictionary<(int, int), OneSprite> materialSprites;
         public static OneSprite numbersSprite;
         public static Dictionary<int, OneSprite> numberSprites;
-        public static OneSprite overlayBackground = new OneSprite("OverlayBackground", true);
+        public static OneSprite overlayBackground;
         public static void loadSpriteDictionaries()
         {
             compoundSprites = new Dictionary<int, OneSprite>
             {
-                { -5, new OneSprite("Honey", true)},
-                { -4, new OneSprite("Lava", true)},
-                { -3, new OneSprite("FairyLiquid", true)},
-                { -2, new OneSprite("Water", true)},
-                { -1, new OneSprite("Piss", true)},
-                { 1, new OneSprite("BasicTile", true)},
-                { 2, new OneSprite("BasicTile", true)},
-                { 3, new OneSprite("BasicTile", true)},
-                { 4, new OneSprite("BasicTile", true)},
-                { 5, new OneSprite("BasicTile", true)},
-                { 6, new OneSprite("BasicTile", true)}
+                { -5, new OneSprite("Honey", false)},
+                { -4, new OneSprite("Lava", false)},
+                { -3, new OneSprite("FairyLiquid", false)},
+                { -2, new OneSprite("Water", false)},
+                { -1, new OneSprite("Piss", false)},
+                { 1, new OneSprite("BasicTile", false)},
+                { 2, new OneSprite("BasicTile", false)},
+                { 3, new OneSprite("BasicTile", false)},
+                { 4, new OneSprite("BasicTile", false)},
+                { 5, new OneSprite("BasicTile", false)},
+                { 6, new OneSprite("BasicTile", false)}
             };
             entitySprites = new Dictionary<(int, int), OneSprite>
             {
-                { (0, 0), new OneSprite("Fairy", true)},
-                { (0, 1), new OneSprite("ObsidianFairy", true)},
-                { (0, 2), new OneSprite("FrostFairy", true)},
-                { (1, 0), new OneSprite("Frog", true)},
-                { (2, 0), new OneSprite("Fish", true)},
-                { (3, 0), new OneSprite("Hornet", true)},
-                { (3, 3), new OneSprite("Hornet", true)}
+                { (0, 0), new OneSprite("Fairy", false)},
+                { (0, 1), new OneSprite("ObsidianFairy", false)},
+                { (0, 2), new OneSprite("FrostFairy", false)},
+                { (1, 0), new OneSprite("Frog", false)},
+                { (2, 0), new OneSprite("Fish", false)},
+                { (3, 0), new OneSprite("Hornet", false)},
+                { (3, 3), new OneSprite("Hornet", false)}
             };
             plantSprites = new Dictionary<(int, int), OneSprite>
             {
-                { (0, 0), new OneSprite("BasePlant", true)},
-                { (1, 0), new OneSprite("Tree", true)},
-                { (2, 0), new OneSprite("KelpUpwards", true)},
-                { (2, 1), new OneSprite("KelpDownwards", true)},
-                { (3, 0), new OneSprite("ObsidianPlant", true)},
-                { (4, 0), new OneSprite("Mushroom", true)},
-                { (5, 0), new OneSprite("Vines", true)},
-                { (5, 1), new OneSprite("ObsidianVines", true)}
+                { (0, 0), new OneSprite("BasePlant", false)},
+                { (1, 0), new OneSprite("Tree", false)},
+                { (2, 0), new OneSprite("KelpUpwards", false)},
+                { (2, 1), new OneSprite("KelpDownwards", false)},
+                { (3, 0), new OneSprite("ObsidianPlant", false)},
+                { (4, 0), new OneSprite("Mushroom", false)},
+                { (5, 0), new OneSprite("Vines", false)},
+                { (5, 1), new OneSprite("ObsidianVines", false)}
             };
             materialSprites = new Dictionary<(int, int), OneSprite>
             {
-                { (1, 0), new OneSprite("PlantMatter", true)},
-                { (2, 0), new OneSprite("Wood", true)},
-                { (3, 0), new OneSprite("Kelp", true)},
-                { (4, 0), new OneSprite("MushroomStem", true)},
-                { (5, 0), new OneSprite("MushroomCap", true)},
-                { (6, 0), new OneSprite("FlowerPetal", true)},
-                { (7, 0), new OneSprite("Pollen", true)},
+                { (1, 0), new OneSprite("PlantMatter", false)},
+                { (2, 0), new OneSprite("Wood", false)},
+                { (3, 0), new OneSprite("Kelp", false)},
+                { (4, 0), new OneSprite("MushroomStem", false)},
+                { (5, 0), new OneSprite("MushroomCap", false)},
+                { (6, 0), new OneSprite("FlowerPetal", false)},
+                { (7, 0), new OneSprite("Pollen", false)},
             };
-            overlayBackground = new OneSprite("OverlayBackground", true);
-            numbersSprite = new OneSprite("Numbers", true);
+            overlayBackground = new OneSprite("OverlayBackground", false);
+            numbersSprite = new OneSprite("Numbers", false);
             Bitmap[] numberBitmapArray = numbersSprite.slice(11, 1);
             numberSprites = new Dictionary<int, OneSprite>();
             for (int i = 0; i < numberBitmapArray.Count(); i++)
@@ -129,12 +132,13 @@ namespace Cave
             {
                 if (isFileName)
                 {
-                    contentString = (findSpritesPath() + $"\\{contentString}.txt");
+                    contentString = findSpritesPath() + $"\\{contentString}.txt";
                     using (StreamReader f = new StreamReader(contentString))
                     {
                         contentString = f.ReadToEnd();
                     }
                 }
+                else { contentString = SpriteStrings.spriteStringsDict[contentString]; }
                 makeBitmapFromContentString(contentString);
             }
             public void makeBitmapFromContentString(string contentString) // read string content, and put it in the variables I guess
