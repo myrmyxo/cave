@@ -65,6 +65,7 @@ namespace Cave
             public static int currentEntityId   = 0;
             public static int currentPlantId  = 0;
             public static int currentNestId = 0;
+            public static int currentScreenId = 0;
 
             public static long worldSeed = 0;
 
@@ -187,8 +188,7 @@ namespace Cave
 
             loadSpriteDictionaries();
 
-            Screens.Screen mainScreen;
-            SettingsJson settings;
+            Game game;
 
             loadStructuresYesOrNo = true;
 
@@ -201,8 +201,9 @@ namespace Cave
             // cool ideas for later !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ?
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
-            // add a dimension with CANDLE TREES (arbres chandeliers) that could be banger
+            // add a dimension with CANDLE TREES (arbres chandeliers) that could be banger (and darkish gray cement/concrete tiles ?)
             // make it possible to visit entities/players inventories lmfao
+            // looping dimensions ???? Could be cool. And serve as TELEPORT HUBS ???
 
             //
             // cool seeds !!!! DO NOT DELETE
@@ -236,27 +237,8 @@ namespace Cave
 
             Files.createFolders(seed);
 
-            timeElapsed = 0;
-            if (updatePNG)
-            {
-                int oldChunkLength = ChunkLength;
-                ChunkLength = PNGsize;
-                settings = tryLoadSettings(seed);
-                if (settings != null) { timeElapsed = settings.time; }
-                mainScreen = new Screens.Screen(ChunkLength, seed, true, settings);
-                timer1.Tag = mainScreen;
-                timeAtLauch = DateTime.Now;
-
-                timer1_Tick(new object(), new EventArgs());
-
-                mainScreen.updateScreen().Save($"{currentDirectory}\\CaveData\\cavee.png");
-                ChunkLength = oldChunkLength;
-            }
-
-            settings = tryLoadSettings(seed);
-            if (settings != null) { timeElapsed = settings.time; }
-            mainScreen = new Screens.Screen(ChunkLength, seed, false, settings);
-            timer1.Tag = mainScreen;
+            game = new Game(ChunkLength, worldSeed, updatePNG, PNGsize);
+            timer1.Tag = game;
             timeAtLauch = DateTime.Now;
         }
         public static long findPlantSeed(long posX, long posY, Screens.Screen screen, int layer)
@@ -647,150 +629,8 @@ namespace Cave
         }
         private void timer1_Tick(object sender, EventArgs e)
         {
-            Screens.Screen screen = (Screens.Screen)timer1.Tag;
-            Player player = screen.playerList[0];
-            int framesFastForwarded = 0;
-        LoopStart:;
-            if (!pausePress)
-            {
-                timeElapsed += 0.02f;
-                screen.extraLoadedChunks.Clear(); // this will make many bugs
-                screen.broadTestUnstableLiquidList = new List<(int, int)>();
-                if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { screen.zoom(true); }
-                if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
-                if (inventoryChangePress[0]) { inventoryChangePress[0] = false; player.moveInventoryCursor(-1); }
-                if (inventoryChangePress[1]) { inventoryChangePress[1] = false; player.moveInventoryCursor(1); }
-                //timeElapsed = (float)((DateTime.Now - timeAtLauch).TotalSeconds); // what the FUCK is that ?????
-                player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.85f) - 0.2f));
-                player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.85f) - 0.2f));
-                if (arrowKeysState[0]) { player.speedX += 0.5f; }
-                if (arrowKeysState[1]) { player.speedX -= 0.5f; }
-                if (arrowKeysState[2]) { player.speedY -= 0.5f; }
-                if (arrowKeysState[3]) { player.speedY += 1; }
-                player.speedY -= 0.5f;
-                if (shiftPress)
-                {
-                    player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.75f) - 0.7f));
-                    player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.75f) - 0.7f));
-                }
-                if (timeElapsed > 3 && screen.activeNests.Count > 0)
-                {
-                    Nest nestToTest = screen.activeNests.Values.ToArray()[rand.Next(screen.activeNests.Count)];
-                    if (rand.Next(100) == 0) { nestToTest.isStable = false; }
-                    if (!nestToTest.isStable && nestToTest.digErrands.Count == 0)
-                    {
-                        nestToTest.randomlyExtendNest();
-                    }
-                }
-                foreach (Player playor in screen.playerList)
-                {
-                    playor.movePlayer();
-                    screen.checkStructures(playor);
-                }
-
-                int posDiffX = player.posX - (player.camPosX + 16 * (screen.chunkResolution - 1)); //*2 is needed cause there's only *8 and not *16 before
-                int posDiffY = player.posY - (player.camPosY + 16 * (screen.chunkResolution - 1));
-                float accCamX = Sign(posDiffX) * Max(0, Sqrt(Abs(posDiffX)) - 2);
-                float accCamY = Sign(posDiffY) * Max(0, Sqrt(Abs(posDiffY)) - 2);
-                if (accCamX == 0 || Sign(accCamX) != Sign(player.speedCamX))
-                {
-                    player.speedCamX = Sign(player.speedCamX) * (Max(Abs(player.speedCamX) - 1, 0));
-                }
-                if (accCamY == 0 || Sign(accCamY) != Sign(player.speedCamY))
-                {
-                    player.speedCamY = Sign(player.speedCamY) * (Max(Abs(player.speedCamY) - 1, 0));
-                }
-                player.speedCamX = Clamp(player.speedCamX + accCamX, -15f, 15f);
-                player.speedCamY = Clamp(player.speedCamY + accCamY, -15f, 15f);
-                player.realCamPosX += player.speedCamX;
-                player.realCamPosY += player.speedCamY;
-                player.camPosX = (int)(player.realCamPosX + 0.5f);
-                player.camPosY = (int)(player.realCamPosY + 0.5f);
-                int oldChunkX = screen.chunkX;
-                int oldChunkY = screen.chunkY;
-                int chunkVariationX = Floor(player.camPosX, 32) / 32 - oldChunkX;
-                int chunkVariationY = Floor(player.camPosY, 32) / 32 - oldChunkY;
-                if (chunkVariationX != 0 || chunkVariationY != 0)
-                {
-                    screen.updateLoadedChunks(screen.seed, chunkVariationX, chunkVariationY);
-                }
-                screen.unloadFarawayChunks();
-                screen.manageMegaChunks();
-                if (doShitPress) { screen.testMegaChunksForBugs(); doShitPress = false; }
-
-                foreach((int x, int y) pos in screen.chunksToSpawnEntitiesIn.Keys)
-                {
-                    if (screen.loadedChunks.ContainsKey(pos))
-                    {
-                        screen.loadedChunks[pos].spawnEntities();
-                    }
-                }
-                screen.chunksToSpawnEntitiesIn = new Dictionary<(int x, int y), bool>();
-
-                List<int> orphansToRemove = new List<int>();
-                foreach (int entityId in screen.orphanEntities.Keys)    // add entities that were loaded when nests were not loaded if possible
-                {
-                    if (!screen.activeEntities.ContainsKey(entityId))
-                    {
-                        orphansToRemove.Add(entityId);
-                        continue;
-                    }
-                    Entity entityToTest = screen.activeEntities[entityId];
-                    if (screen.activeNests.ContainsKey(entityToTest.nestId))
-                    {
-                        entityToTest.nest = screen.activeNests[entityToTest.nestId];
-                        orphansToRemove.Add(entityId);
-                    }
-                }
-                foreach (int entityId in orphansToRemove)
-                {
-                    screen.orphanEntities.Remove(entityId);
-                }
-
-
-                screen.entitesToRemove = new Dictionary<int, Entity>();
-                screen.entitesToAdd = new Dictionary<int, Entity>();
-                foreach (Entity entity in screen.activeEntities.Values)
-                {
-                    entity.moveEntity();
-                }
-                foreach (Entity entity in screen.entitesToRemove.Values)
-                {
-                    screen.activeEntities.Remove(entity.id);
-                }
-                foreach (Entity entity in screen.entitesToAdd.Values)
-                {
-                    screen.activeEntities[entity.id] = entity;
-                }
-                foreach (Plant plant in screen.activePlants.Values)
-                {
-                    plant.testPlantGrowth();
-                }
-                for (int j = screen.chunkY + screen.chunkResolution - 1; j >= screen.chunkY; j--)
-                {
-                    for (int i = screen.chunkX; i < screen.chunkX + screen.chunkResolution; i++)
-                    {
-                        if (rand.Next(50) == 0) { screen.loadedChunks[(i, j)].unstableLiquidCount++; }
-                        screen.loadedChunks[(i, j)].moveLiquids();
-                    }
-                }
-
-                saveSettings(screen);
-
-                if (fastForward && framesFastForwarded < 10)
-                {
-                    framesFastForwarded++;
-                    goto LoopStart;
-                }
-
-                gamePictureBox.Image = screen.updateScreen();
-                gamePictureBox.Refresh();
-                overlayPictureBox.Image = screen.overlayBitmap;
-                Sprites.drawSpriteOnCanvas(screen.overlayBitmap, overlayBackground.bitmap, (0, 0), 4, false);
-                player.drawInventory();
-                overlayPictureBox.Refresh();
-
-            }
+            Game game = (Game)timer1.Tag;
+            game.runGame(gamePictureBox, overlayPictureBox);
         }
         private void KeyIsDown(object sender, KeyEventArgs e)
         {
@@ -950,9 +790,12 @@ namespace Cave
         }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            Screens.Screen screen = (Screens.Screen)timer1.Tag;
-            screen.putEntitiesAndPlantsInChunks();
-            screen.saveAllChunks();
+            Game game= (Game)timer1.Tag;
+            foreach (Screens.Screen screen in game.loadedScreens.Values)
+            {
+                screen.putEntitiesAndPlantsInChunks();
+                screen.saveAllChunks();
+            }
         }
     }
     public class MathF

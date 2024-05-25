@@ -37,20 +37,41 @@ namespace Cave
             public int entityId;
             public int plantId;
             public int structureId;
+            public int screenId;
             public float time;
             public PlayerJson player;
-            public SettingsJson(Screens.Screen screen)
+            public int playerDimension; // dimension where the player is located
+            public SettingsJson(Game game)
             {
                 time = timeElapsed;
                 nestId = currentNestId;
                 plantId = currentPlantId;
+                screenId = currentScreenId;
                 entityId = currentEntityId;
                 structureId = currentStructureId;
-                player = new PlayerJson(screen.playerList[0]);
+                player = new PlayerJson(game.playerList[0]);
             }
             public SettingsJson()
             {
 
+            }
+        }
+        public class DimensionJson
+        {
+            public long seed;
+            public int id;
+            public int type;
+            public bool isMono;
+            public DimensionJson(Screens.Screen screen)
+            {
+                seed = screen.seed;
+                id = screen.id;
+                type = screen.type;
+                isMono = screen.isMonoBiome;
+            }
+            public DimensionJson()
+            {
+            
             }
         }
         public class MegaChunk
@@ -602,17 +623,17 @@ namespace Cave
                 return new Nest(screen, nestJson);
             }
         }
-        public static void saveSettings(Screens.Screen screen)
+        public static void saveSettings(Game game)
         {
-            if (screen.playerList.Count == 0) { return; }
+            if (game.playerList.Count == 0) { return; }
 
             JsonSerializer serializer = new JsonSerializer();
             serializer.Converters.Add(new JavaScriptDateTimeConverter());
             serializer.NullValueHandling = NullValueHandling.Ignore;
 
-            SettingsJson settings = new SettingsJson(screen);
+            SettingsJson settings = new SettingsJson(game);
 
-            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{screen.seed}\\settings.json"))
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{worldSeed}\\settings.json"))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
                 serializer.Serialize(writer, settings);

@@ -445,7 +445,7 @@ namespace Cave
                 posY = chunkToPut.position.y*32;
                 screen = chunkToPut.screen;
                 seed = LCGint1(Abs((int)chunkToPut.chunkSeed));
-                id = currentEntityId;
+                id = currentPlantId;
                 growthLevel = -1;
                 placePlant();
                 if (isDeadAndShouldDisappear) { return; }
@@ -466,7 +466,7 @@ namespace Cave
                 subType = subTypeToPut;
                 if (upsideDownPlants.ContainsKey((typeToPut, subTypeToPut))) { attachPoint = 3; }
                 seed = rand.Next(1000000000); //                               FALSE RANDOM NOT SEEDED ARGHHEHEEEE
-                id = currentEntityId;
+                id = currentPlantId;
                 growthLevel = -1;
                 testPlantPosition();
                 if (isDeadAndShouldDisappear) { return; }

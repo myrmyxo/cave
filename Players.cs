@@ -33,7 +33,9 @@ namespace Cave
     {
         public class Player
         {
+            
             public Screens.Screen screen;
+            public int dimension = 0;
 
             public float realPosX = 0;
             public float realPosY = 0;
@@ -57,10 +59,8 @@ namespace Cave
             public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
             public List<(int index, int subType, int typeOfElement)> inventoryElements;
             public int inventoryCursor = 3;
-            public Player(Screens.Screen screenToPut, SettingsJson settingsJson)
+            public Player(SettingsJson settingsJson)
             {
-                screen = screenToPut;
-
                 if (settingsJson == null)
                 {
                     initializeInventory();
@@ -523,24 +523,24 @@ namespace Cave
                     (int index, int subType, int typeOfElement) element = inventoryElements[inventoryCursor];
                     if (element.typeOfElement == 0)
                     {
-                        Sprites.drawSpriteOnCanvas(screen.overlayBitmap, compoundSprites[element.index].bitmap, (340, 64), 4, true);
+                        Sprites.drawSpriteOnCanvas(screen.game.overlayBitmap, compoundSprites[element.index].bitmap, (340, 64), 4, true);
                     }
                     else if (element.typeOfElement == 1)
                     {
-                        Sprites.drawSpriteOnCanvas(screen.overlayBitmap, entitySprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
+                        Sprites.drawSpriteOnCanvas(screen.game.overlayBitmap, entitySprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
                     }
                     else if (element.typeOfElement == 2)
                     {
-                        Sprites.drawSpriteOnCanvas(screen.overlayBitmap, plantSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
+                        Sprites.drawSpriteOnCanvas(screen.game.overlayBitmap, plantSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
                     }
                     else if (element.typeOfElement == 3)
                     {
-                        Sprites.drawSpriteOnCanvas(screen.overlayBitmap, materialSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
+                        Sprites.drawSpriteOnCanvas(screen.game.overlayBitmap, materialSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
                     }
                     int quantity = inventoryQuantities[element];
                     if (quantity == -999)
                     {
-                        Sprites.drawSpriteOnCanvas(screen.overlayBitmap, numberSprites[10].bitmap, (408, 64), 4, true);
+                        Sprites.drawSpriteOnCanvas(screen.game.overlayBitmap, numberSprites[10].bitmap, (408, 64), 4, true);
                     }
                     else
                     {
@@ -552,7 +552,7 @@ namespace Cave
                         }
                         for (int i = 0; i < numberList.Count; i++)
                         {
-                            Sprites.drawSpriteOnCanvas(screen.overlayBitmap, numberSprites[numberList[i]].bitmap, (408 + i * 32, 64), 4, true);
+                            Sprites.drawSpriteOnCanvas(screen.game.overlayBitmap, numberSprites[numberList[i]].bitmap, (408 + i * 32, 64), 4, true);
                         }
                     }
                 }

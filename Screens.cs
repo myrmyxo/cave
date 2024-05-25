@@ -26,13 +26,217 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using Cave.Properties;
+using System.Runtime;
 
 namespace Cave
 {
     public class Screens
     {
+        public class Game
+        {
+            public Dictionary<int, Screen> loadedScreens = new Dictionary<int, Screen>();
+            public List<Player> playerList = new List<Player>();
+            public Bitmap overlayBitmap;
+            public Game(int chunkResolutionToPut, long seedToPut, bool isPngToExport, int PNGsize)
+            {
+                playerList = new List<Player>();
+
+                overlayBitmap = new Bitmap(512, 128);
+
+                Screens.Screen mainScreen;
+                SettingsJson settings;
+                settings = tryLoadSettings(seedToPut);
+
+                playerList.Add(new Player(settings));
+                Player player = playerList[0];
+
+                timeElapsed = 0;
+                if (isPngToExport)
+                {
+                    int oldChunkLength = ChunkLength;
+                    ChunkLength = PNGsize;
+                    mainScreen = new Screen(this, ChunkLength, seedToPut, true);
+                    timeAtLauch = DateTime.Now;
+
+                    //runGame();
+
+                    mainScreen.updateScreen().Save($"{currentDirectory}\\CaveData\\cavee.png");
+                    ChunkLength = oldChunkLength;
+                }
+
+                mainScreen = new Screens.Screen(this, ChunkLength, seedToPut, false);
+                loadedScreens[0] = mainScreen;
+                setPlayerDimension(player, 0);
+            }
+            public void runGame(PictureBox gamePictureBox, PictureBox overlayPictureBox)
+            {
+                if (pausePress) { return; }
+
+                Player player = playerList[0];
+                foreach (Screen screen in loadedScreens.Values)
+                {
+                    int framesFastForwarded = 0;
+                LoopStart:;
+                    timeElapsed += 0.02f;
+                    screen.extraLoadedChunks.Clear(); // this will make many bugs
+                    screen.broadTestUnstableLiquidList = new List<(int, int)>();
+                    if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { screen.zoom(true); }
+                    if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
+                    if (player.dimension == screen.id)
+                    {
+                        if (inventoryChangePress[0]) { inventoryChangePress[0] = false; player.moveInventoryCursor(-1); }
+                        if (inventoryChangePress[1]) { inventoryChangePress[1] = false; player.moveInventoryCursor(1); }
+                        player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.85f) - 0.2f));
+                        player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.85f) - 0.2f));
+                        if (arrowKeysState[0]) { player.speedX += 0.5f; }
+                        if (arrowKeysState[1]) { player.speedX -= 0.5f; }
+                        if (arrowKeysState[2]) { player.speedY -= 0.5f; }
+                        if (arrowKeysState[3]) { player.speedY += 1; }
+                        player.speedY -= 0.5f;
+                        if (shiftPress)
+                        {
+                            player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.75f) - 0.7f));
+                            player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.75f) - 0.7f));
+                        }
+                        player.movePlayer();
+                        screen.checkStructures(player);
+
+                        int posDiffX = player.posX - (player.camPosX + 16 * (screen.chunkResolution - 1)); //*2 is needed cause there's only *8 and not *16 before
+                        int posDiffY = player.posY - (player.camPosY + 16 * (screen.chunkResolution - 1));
+                        float accCamX = Sign(posDiffX) * Max(0, Sqrt(Abs(posDiffX)) - 2);
+                        float accCamY = Sign(posDiffY) * Max(0, Sqrt(Abs(posDiffY)) - 2);
+                        if (accCamX == 0 || Sign(accCamX) != Sign(player.speedCamX))
+                        {
+                            player.speedCamX = Sign(player.speedCamX) * (Max(Abs(player.speedCamX) - 1, 0));
+                        }
+                        if (accCamY == 0 || Sign(accCamY) != Sign(player.speedCamY))
+                        {
+                            player.speedCamY = Sign(player.speedCamY) * (Max(Abs(player.speedCamY) - 1, 0));
+                        }
+                        player.speedCamX = Clamp(player.speedCamX + accCamX, -15f, 15f);
+                        player.speedCamY = Clamp(player.speedCamY + accCamY, -15f, 15f);
+                        player.realCamPosX += player.speedCamX;
+                        player.realCamPosY += player.speedCamY;
+                        player.camPosX = (int)(player.realCamPosX + 0.5f);
+                        player.camPosY = (int)(player.realCamPosY + 0.5f);
+                        int oldChunkX = screen.chunkX;
+                        int oldChunkY = screen.chunkY;
+                        int chunkVariationX = Floor(player.camPosX, 32) / 32 - oldChunkX;
+                        int chunkVariationY = Floor(player.camPosY, 32) / 32 - oldChunkY;
+                        if (chunkVariationX != 0 || chunkVariationY != 0)
+                        {
+                            screen.updateLoadedChunks(screen.seed, chunkVariationX, chunkVariationY);
+                        }
+                    }
+
+                    if (timeElapsed > 3 && screen.activeNests.Count > 0)
+                    {
+                        Nest nestToTest = screen.activeNests.Values.ToArray()[rand.Next(screen.activeNests.Count)];
+                        if (rand.Next(100) == 0) { nestToTest.isStable = false; }
+                        if (!nestToTest.isStable && nestToTest.digErrands.Count == 0)
+                        {
+                            nestToTest.randomlyExtendNest();
+                        }
+                    }
+
+                    screen.unloadFarawayChunks();
+                    screen.manageMegaChunks();
+
+                    foreach ((int x, int y) pos in screen.chunksToSpawnEntitiesIn.Keys)
+                    {
+                        if (screen.loadedChunks.ContainsKey(pos))
+                        {
+                            screen.loadedChunks[pos].spawnEntities();
+                        }
+                    }
+                    screen.chunksToSpawnEntitiesIn = new Dictionary<(int x, int y), bool>();
+
+                    List<int> orphansToRemove = new List<int>();
+                    foreach (int entityId in screen.orphanEntities.Keys)    // add entities that were loaded when nests were not loaded if possible
+                    {
+                        if (!screen.activeEntities.ContainsKey(entityId))
+                        {
+                            orphansToRemove.Add(entityId);
+                            continue;
+                        }
+                        Entity entityToTest = screen.activeEntities[entityId];
+                        if (screen.activeNests.ContainsKey(entityToTest.nestId))
+                        {
+                            entityToTest.nest = screen.activeNests[entityToTest.nestId];
+                            orphansToRemove.Add(entityId);
+                        }
+                    }
+                    foreach (int entityId in orphansToRemove)
+                    {
+                        screen.orphanEntities.Remove(entityId);
+                    }
+
+
+                    screen.entitesToRemove = new Dictionary<int, Entity>();
+                    screen.entitesToAdd = new Dictionary<int, Entity>();
+                    foreach (Entity entity in screen.activeEntities.Values)
+                    {
+                        entity.moveEntity();
+                    }
+                    foreach (Entity entity in screen.entitesToRemove.Values)
+                    {
+                        screen.activeEntities.Remove(entity.id);
+                    }
+                    foreach (Entity entity in screen.entitesToAdd.Values)
+                    {
+                        screen.activeEntities[entity.id] = entity;
+                    }
+                    foreach (Plant plant in screen.activePlants.Values)
+                    {
+                        plant.testPlantGrowth();
+                    }
+                    for (int j = screen.chunkY + screen.chunkResolution - 1; j >= screen.chunkY; j--)
+                    {
+                        for (int i = screen.chunkX; i < screen.chunkX + screen.chunkResolution; i++)
+                        {
+                            if (rand.Next(50) == 0) { screen.loadedChunks[(i, j)].unstableLiquidCount++; }
+                            screen.loadedChunks[(i, j)].moveLiquids();
+                        }
+                    }
+
+
+                    if (fastForward && framesFastForwarded < 10)
+                    {
+                        framesFastForwarded++;
+                        goto LoopStart;
+                    }
+
+                    if (player.dimension == screen.id)
+                    {
+                        gamePictureBox.Image = screen.updateScreen();
+                        gamePictureBox.Refresh();
+                        overlayPictureBox.Image = overlayBitmap;
+                        Sprites.drawSpriteOnCanvas(overlayBitmap, overlayBackground.bitmap, (0, 0), 4, false);
+                        player.drawInventory();
+                        overlayPictureBox.Refresh();
+                    }
+                }
+                saveSettings(this);
+            }
+            public void renderScreen()
+            {
+
+            }
+            public void setPlayerDimension(Player player, int targetDimension)
+            {
+                if (loadedScreens.ContainsKey(targetDimension))
+                {
+                    player.screen = loadedScreens[targetDimension];
+                    player.dimension = targetDimension;
+                    player.screen.checkStructuresOnSpawn(player);
+                }
+            }
+        }
         public class Screen
         {
+            public Game game;
+
             public Dictionary<(int x, int y), bool> chunksToSpawnEntitiesIn = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), Chunk> loadedChunks = new Dictionary<(int x, int y), Chunk>();
             public Dictionary<(int x, int y), Chunk> extraLoadedChunks = new Dictionary<(int x, int y), Chunk>();
@@ -41,14 +245,16 @@ namespace Cave
             public List<long>[,] LCGCacheListMatrix;
 
             public int chunkResolution; // included both loaded and unloaded chunks, side of the square
-            public long seed;
             public bool isPngToBeExported;
 
+            public long seed;
+            public int id;
+            public int type;
+            public bool isMonoBiome; // if yes, then the whole-ass dimension is only made ouf of ONE biome, that is of the type of... well type. If not, type is the type of dimension and not the biome (like idk normal, frozen, lampadaire, shitpiss world...)
+
             public Bitmap gameBitmap;
-            public Bitmap overlayBitmap;
 
             public (float x, float y) playerStartPos = (0, 0);
-            public List<Player> playerList = new List<Player>();
 
             public Dictionary<int, Entity> activeEntities = new Dictionary<int, Entity>();
             public Dictionary<int, Entity> entitesToRemove = new Dictionary<int, Entity>();
@@ -71,31 +277,16 @@ namespace Cave
             public Dictionary<(int x, int y), bool> nestLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), bool> structureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
 
-            public Screen(int chunkResolutionToPut, long seedo, bool isPngToExport, SettingsJson settings)
+            public Screen(Game gameToPut, int chunkResolutionToPut, long seedo, bool isPngToExport)
             {
+                game = gameToPut;
                 seed = seedo;
                 isPngToBeExported = isPngToExport;
-                playerList = new List<Player>();
-                activeEntities = new Dictionary<int, Entity>();
-                activePlants = new Dictionary<int, Plant>();
                 chunkResolution = chunkResolutionToPut + UnloadedChunksAmount * 2; // invisible chunks of the sides/top/bottom
                 LCGCacheInit();
-                overlayBitmap = new Bitmap(512, 128);
-
-                playerList.Add(new Player(this, settings));
-                checkStructuresOnSpawn(playerList[0]);
-                if (settings == null)
-                {
-                    chunkX = 0;
-                    chunkY = 0;
-                }
-                else
-                {
-                    chunkX = Floor((int)settings.player.pos.x, 32) / 32;
-                    chunkY = Floor((int)settings.player.pos.y, 32) / 32;
-                }
-                loadChunks(chunkX, chunkY);
-                playerList[0].placePlayer();
+                chunkX = Floor(game.playerList[0].posX, 32) / 32;
+                chunkY = Floor(game.playerList[0].posY, 32) / 32;
+                loadChunks();
             }
             public void LCGCacheInit()
             {
@@ -162,14 +353,14 @@ namespace Cave
                     saveChunk(chunk);
                 }
             }
-            public void loadChunks(int posX, int posY)
+            public void loadChunks()
             {
                 loadedChunks = new Dictionary<(int, int), Chunk>();
                 for (int i = 0; i < chunkResolution; i++)
                 {
                     for (int j = 0; j < chunkResolution; j++)
                     {
-                        loadedChunks.Add((posX + i, posY + j), new Chunk((posX + i, posY + j), false, this));
+                        loadedChunks.Add((chunkX + i, chunkY + j), new Chunk((chunkX + i, chunkY + j), false, this));
                     }
                 }
                 if (isPngToBeExported) { gameBitmap = new Bitmap(32 * (chunkResolution - 1), 32 * (chunkResolution - 1)); }
@@ -295,7 +486,7 @@ namespace Cave
                 int nestChunkAmount = extraChunkIndexes.Count;
                 int minChunkAmount = chunkResolution * chunkResolution + nestChunkAmount;
 
-                (int x, int y) cameraChunkIdx = (Floor(playerList[0].camPosX, 32) / 32 + chunkResolution / 2, Floor(playerList[0].camPosY, 32) / 32 + chunkResolution / 2);
+                (int x, int y) cameraChunkIdx = (Floor(game.playerList[0].camPosX, 32) / 32 + chunkResolution / 2, Floor(game.playerList[0].camPosY, 32) / 32 + chunkResolution / 2);
 
                 Dictionary<(int x, int y), bool> chunksToRemove = new Dictionary<(int x, int y), bool>();
                 (int x, int y)[] chunkKeys = loadedChunks.Keys.ToArray();
@@ -346,7 +537,7 @@ namespace Cave
             }
             public void manageMegaChunks() // megachunk resolution : 512*512
             {
-                (int x, int y) cameraChunkIdx = (Floor(playerList[0].camPosX, 32) / 32 + chunkResolution / 2, Floor(playerList[0].camPosY, 32) / 32 + chunkResolution / 2);
+                (int x, int y) cameraChunkIdx = (Floor(game.playerList[0].camPosX, 32) / 32 + chunkResolution / 2, Floor(game.playerList[0].camPosY, 32) / 32 + chunkResolution / 2);
 
                 Dictionary<(int x, int y), MegaChunk> newMegaChunks = new Dictionary<(int x, int y), MegaChunk>();
 
@@ -402,18 +593,6 @@ namespace Cave
                 }
 
                 megaChunks = newMegaChunks;
-            }
-            public void testMegaChunksForBugs()
-            {
-                Dictionary<int, Nest> nestsToKeepLoaded = new Dictionary<int, Nest>();
-                foreach (MegaChunk megaChunk in megaChunks.Values)
-                {
-                    foreach (int nestId in megaChunk.nests)
-                    {
-                        nestsToKeepLoaded[nestId] = activeNests[nestId];
-                    }
-                }
-                activeNests = nestsToKeepLoaded;
             }
             public (int, int) findMegaChunkAbsoluteIndex((int x, int y) pos)
             {
@@ -573,7 +752,7 @@ namespace Cave
                 Chunk chunko;
                 int PNGmultiplicator = 4;
                 if (isPngToBeExported) { PNGmultiplicator = 1; }
-                Player player = playerList[0];
+                Player player = game.playerList[0];
                 (int x, int y) camPos = (player.camPosX, player.camPosY);
 
                 for (int i = UnloadedChunksAmount; i < chunkResolution - UnloadedChunksAmount; i++)
@@ -681,7 +860,7 @@ namespace Cave
 
                 if (debugMode)
                 {
-                    (int x, int y) cameraChunkIdx = (Floor(playerList[0].camPosX, 32) / 32, Floor(playerList[0].camPosY, 32) / 32);
+                    (int x, int y) cameraChunkIdx = (Floor(game.playerList[0].camPosX, 32) / 32, Floor(game.playerList[0].camPosY, 32) / 32);
                     foreach ((int x, int y) poso in megaChunks.Keys)
                     {
                         Color colorToDraw = Color.Crimson;
