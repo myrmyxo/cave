@@ -26,6 +26,8 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using System.Runtime.CompilerServices;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
 
 namespace Cave
 {
@@ -73,18 +75,193 @@ namespace Cave
             {
                 screen = screenToPut;
                 position = posToPut;
-                long chunkX = position.x * 2;
-                long chunkY = position.y * 2;
 
                 bool filePresent = testLoadChunk(structureGenerated);
+                long chunkX = position.x * 2;
+                long chunkY = position.y * 2;
 
                 chunkSeed = findPlantSeed(chunkX, chunkY, screen, 0);
                 long bigSeed = LCGxNeg(LCGz(LCGyPos(LCGxNeg(screen.seed))));
                 long bigSeed2 = LCGxNeg(LCGz(LCGyPos(LCGxPos(bigSeed))));
                 long bigSeed3 = LCGxNeg(LCGz(LCGyPos(LCGxNeg(bigSeed2))));
 
+                if (screen.isMonoBiome)
+                {
+                    biomeIndex = new (int, int)[32, 32][];
+                    baseColors = new (int, int, int)[32, 32];
+                    secondaryBiomeValues = new int[32, 32, 6];
+                    secondaryBigBiomeValues = new int[32, 32, 6];
+                    colors = new Color[32, 32];
+                    bitmap = new Bitmap(32, 32);
+
+                    for (int i = 0; i < 32; i++)
+                    {
+                        for (int j = 0; j < 32; j++)
+                        {
+                            int fixedBiome = screen.type;
+                            biomeIndex[i, j] = new (int, int)[]{(fixedBiome, 1000)};
+
+                            secondaryBiomeValues[i, j, 0] = biomeTypicalValues[fixedBiome].Item1;
+                            secondaryBiomeValues[i, j, 1] = biomeTypicalValues[fixedBiome].Item2;
+                            secondaryBiomeValues[i, j, 2] = biomeTypicalValues[fixedBiome].Item3;
+                            secondaryBiomeValues[i, j, 3] = biomeTypicalValues[fixedBiome].Item4;
+
+                            secondaryBigBiomeValues[i, j, 0] = biomeTypicalValues[fixedBiome].Item1;
+                            secondaryBigBiomeValues[i, j, 1] = biomeTypicalValues[fixedBiome].Item2;
+                            secondaryBigBiomeValues[i, j, 2] = biomeTypicalValues[fixedBiome].Item3;
+                            secondaryBigBiomeValues[i, j, 3] = biomeTypicalValues[fixedBiome].Item4;
+
+
+                            secondaryBiomeValues[i, j, 4] = 128;
+                            secondaryBiomeValues[i, j, 5] = 128;
+                            // Th change ! Both !
+                            secondaryBigBiomeValues[i, j, 4] = 128;
+                            secondaryBigBiomeValues[i, j, 5] = 128;
+
+                            int[] colorArray = { 0, 0, 0 };
+                            (int, int, int) tupel2 = biomeDict[biomeIndex[i, j][0].Item1];
+                            colorArray[0] += tupel2.Item1;
+                            colorArray[1] += tupel2.Item2;
+                            colorArray[2] += tupel2.Item3;
+                            for (int k = 0; k < 3; k++)
+                            {
+                                colorArray[k] = (int)(colorArray[k] * 0.15f);
+                                colorArray[k] += 20;
+                            }
+                            baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
+                        }
+                    }
+
+                }
+                else
+                {
+                    chunkX = Floor(position.x, 16) / 16;
+                    chunkY = Floor(position.y, 16) / 16;
+                    primaryBiomeValues = new int[,]
+                    {
+                        {
+                            findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 0),
+                            findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 0),
+                            findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 0),
+                            findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 0)
+                        },
+                        {
+                            findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 1),
+                            findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 1),
+                            findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 1),
+                            findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 1)
+                        },
+                        {
+                            findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 2),
+                            findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 2),
+                            findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 2),
+                            findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 2)
+                        },
+                        {
+                            findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 3),
+                            findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 3),
+                            findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 3),
+                            findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 3)
+                        },
+                        {
+                            findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 4),
+                            findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 4),
+                            findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 4),
+                            findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 4)
+                        },
+                        {
+                            findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 5),
+                            findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 5),
+                            findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 5),
+                            findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 5)
+                        }
+                    };
+
+                    chunkX = Floor(position.Item1, 32) / 32;
+                    chunkY = Floor(position.Item2, 32) / 32;
+                    primaryBigBiomeValues = new int[,]
+                    {
+                        {
+                            findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 0),
+                            findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 0),
+                            findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 0),
+                            findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 0)
+                        },
+                        {
+                            findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 1),
+                            findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 1),
+                            findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 1),
+                            findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 1)
+                        },
+                        {
+                            findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 2),
+                            findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 2),
+                            findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 2),
+                            findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 2)
+                        },
+                        {
+                            findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 3),
+                            findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 3),
+                            findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 3),
+                            findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 3)
+                        },
+                        {
+                            findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 4),
+                            findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 4),
+                            findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 4),
+                            findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 4)
+                        },
+                        {
+                            findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 5),
+                            findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 5),
+                            findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 5),
+                            findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 5)
+                        }
+                    };
+                    secondaryBiomeValues = new int[32, 32, 6];
+                    secondaryBigBiomeValues = new int[32, 32, 6];
+                    biomeIndex = new (int, int)[32, 32][];
+                    baseColors = new (int, int, int)[32, 32];
+                    colors = new Color[32, 32];
+                    bitmap = new Bitmap(32, 32);
+
+                    for (int i = 0; i < 32; i++)
+                    {
+                        for (int j = 0; j < 32; j++)
+                        {
+                            for (int k = 0; k < 6; k++)
+                            {
+                                secondaryBiomeValues[i, j, k] = findSecondaryBiomeValue(this, i, j, k);
+                                secondaryBigBiomeValues[i, j, k] = findSecondaryBigBiomeValue(this, i, j, k);
+                            }
+                            biomeIndex[i, j] = findBiome(secondaryBiomeValues, secondaryBigBiomeValues, i, j);
+
+                            int[] colorArray = { 0, 0, 0 };
+                            float mult;
+                            foreach ((int, int) tupel in biomeIndex[i, j])
+                            {
+                                mult = tupel.Item2 * 0.001f;
+
+                                (int, int, int) tupel2 = biomeDict[tupel.Item1];
+                                colorArray[0] += (int)(mult * tupel2.Item1);
+                                colorArray[1] += (int)(mult * tupel2.Item2);
+                                colorArray[2] += (int)(mult * tupel2.Item3);
+                            }
+                            for (int k = 0; k < 3; k++)
+                            {
+                                colorArray[k] = (int)(colorArray[k] * 0.15f);
+                                colorArray[k] += 20;
+                            }
+                            baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
+                        }
+                    }
+                }
+
                 if (!filePresent)
                 {
+                    chunkX = position.x * 2;
+                    chunkY = position.y * 2;
+
                     primaryFillValues = new int[4, 2, 4]
                     {
                         {
@@ -144,11 +321,10 @@ namespace Cave
                             }
                         }
                     };
-                }
-                chunkX = Floor(position.x, 2) / 2;
-                chunkY = Floor(position.y, 2) / 2;
-                if (!filePresent)
-                {
+
+                    chunkX = Floor(position.x, 2) / 2;
+                    chunkY = Floor(position.y, 2) / 2;
+
                     primaryBigFillValues = new int[,]
                     {
                         {
@@ -164,131 +340,7 @@ namespace Cave
                             findPrimaryNoiseValue(chunkX + 1, chunkY + 1, bigSeed3, 1)
                         }
                     };
-                }
-                chunkX = Floor(position.x, 16) / 16;
-                chunkY = Floor(position.y, 16) / 16;
-                primaryBiomeValues = new int[,]
-                {
-                    {
-                        findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 0),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 0),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 0),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 0)
-                    },
-                    {
-                        findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 1),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 1),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 1),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 1)
-                    },
-                    {
-                        findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 2),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 2),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 2),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 2)
-                    },
-                    {
-                        findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 3),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 3),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 3),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 3)
-                    },
-                    {
-                        findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 4),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 4),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 4),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 4)
-                    },
-                    {
-                        findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 5),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 5),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 5),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 5)
-                    }
-                };
 
-                chunkX = Floor(position.Item1, 32) / 32;
-                chunkY = Floor(position.Item2, 32) / 32;
-                primaryBigBiomeValues = new int[,]
-                {
-                    {
-                        findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 0),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 0),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 0),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 0)
-                    },
-                    {
-                        findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 1),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 1),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 1),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 1)
-                    },
-                    {
-                        findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 2),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 2),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 2),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 2)
-                    },
-                    {
-                        findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 3),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 3),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 3),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 3)
-                    },
-                    {
-                        findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 4),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 4),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 4),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 4)
-                    },
-                    {
-                        findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 5),
-                        findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 5),
-                        findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 5),
-                        findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 5)
-                    }
-                };
-                secondaryBiomeValues = new int[32, 32, 6];
-                secondaryBigBiomeValues = new int[32, 32, 6];
-                biomeIndex = new (int, int)[32, 32][];
-                baseColors = new (int, int, int)[32, 32];
-                colors = new Color[32, 32];
-                bitmap = new Bitmap(32, 32);
-
-                for (int i = 0; i < 32; i++)
-                {
-                    for (int j = 0; j < 32; j++)
-                    {
-                        for (int k = 0; k < 6; k++)
-                        {
-                            secondaryBiomeValues[i, j, k] = findSecondaryBiomeValue(this, i, j, k);
-                            secondaryBigBiomeValues[i, j, k] = findSecondaryBigBiomeValue(this, i, j, k);
-                        }
-                        biomeIndex[i, j] = findBiome(secondaryBiomeValues, secondaryBigBiomeValues, i, j);
-
-                        int[] colorArray = { 0, 0, 0 };
-                        float mult;
-                        foreach ((int, int) tupel in biomeIndex[i, j])
-                        {
-                            mult = tupel.Item2 * 0.001f;
-
-                            (int, int, int) tupel2 = biomeDict[tupel.Item1];
-                            colorArray[0] += (int)(mult * tupel2.Item1);
-                            colorArray[1] += (int)(mult * tupel2.Item2);
-                            colorArray[2] += (int)(mult * tupel2.Item3);
-                        }
-                        for (int k = 0; k < 3; k++)
-                        {
-                            colorArray[k] = (int)(colorArray[k] * 0.15f);
-                            colorArray[k] += 20;
-                        }
-                        baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
-                    }
-                }
-
-
-                if (!filePresent)
-                {
                     secondaryFillValues = new int[2, 32, 32];
                     secondaryBigFillValues = new int[2, 32, 32];
                     fillStates = new int[32, 32];
@@ -406,13 +458,13 @@ namespace Cave
             {
                 if (structureGenerated)
                 {
-                    if (System.IO.File.Exists($"{currentDirectory}\\CaveData\\{screen.seed}\\ChunkData\\{position.Item1}.{position.Item2}.json"))
+                    if (System.IO.File.Exists($"{currentDirectory}\\CaveData\\{screen.game.seed}\\ChunkData\\{screen.id}\\{position.Item1}.{position.Item2}.json"))
                     {
                         loadChunk(this, false);
                         return true;
                     }
                 }
-                else if (System.IO.File.Exists($"{currentDirectory}\\CaveData\\{screen.seed}\\ChunkData\\{position.Item1}.{position.Item2}.json"))
+                else if (System.IO.File.Exists($"{currentDirectory}\\CaveData\\{screen.game.seed}\\ChunkData\\{screen.id}\\{position.Item1}.{position.Item2}.json"))
                 {
                     loadChunk(this, true);
                     return true;

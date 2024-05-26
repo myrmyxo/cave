@@ -55,6 +55,8 @@ namespace Cave
             public static bool debugMode = false;
             public static bool shiftPress = false;
             public static bool doShitPress = false;
+            public static bool dimensionSelection = false;
+            public static int currentTargetDimension = 0;
             public static float lastZoom = 0;
             public static DateTime timeAtLauch;
             public static float timeElapsed = 0;
@@ -94,6 +96,20 @@ namespace Cave
                 { 6, (-100,-100,-100) }, // obsidian biome...
                 { 7, (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) }, // frost biome
                 { 8, (Color.LightBlue.R,Color.LightBlue.G+60,Color.LightBlue.B+130) }, // ocean biome !
+            };
+
+            // 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
+            public static Dictionary<int, (int, int, int, int)> biomeTypicalValues = new Dictionary<int, (int, int, int, int)>
+            {
+                { 0, (50, 80, 80, 128) }, // cold biome
+                { 1, (50, 128, 200, 128) }, // acid biome
+                { 2, (210, 128, 128, 128) }, // hot biome
+                { 3, (128, 180, 128, 70) }, // plant biome
+                { 4, (128, 70, 128, 180) }, // toxic biome
+                { 5, (50, 210, 50, 80) }, // fairy biome !
+                { 6, (220, 220, 128, 128) }, // obsidian biome...
+                { 7, (-100, 128, 128, 128) }, // frost biome
+                { 8, (128, 240, 128, 128) }, // ocean biome !
             };
 
             public static string[] nameArray = new string[]
@@ -204,6 +220,8 @@ namespace Cave
             // add a dimension with CANDLE TREES (arbres chandeliers) that could be banger (and darkish gray cement/concrete tiles ?)
             // make it possible to visit entities/players inventories lmfao
             // looping dimensions ???? Could be cool. And serve as TELEPORT HUBS ???
+            // bone trees and shrubs... like ribs. Maybe a BONE dimension ! Or biome inside the living dimension... kinda good yesyes, a dead part of the living dimension.
+            // maybe depending on a parameter of the dimension, some living world dimensions would be more dead or not dead at all. 
 
             //
             // cool seeds !!!! DO NOT DELETE
@@ -237,7 +255,7 @@ namespace Cave
 
             Files.createFolders(seed);
 
-            game = new Game(ChunkLength, worldSeed, updatePNG, PNGsize);
+            game = new Game(worldSeed, updatePNG, PNGsize);
             timer1.Tag = game;
             timeAtLauch = DateTime.Now;
         }
@@ -790,7 +808,7 @@ namespace Cave
         }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            Game game= (Game)timer1.Tag;
+            Game game = (Game)timer1.Tag;
             foreach (Screens.Screen screen in game.loadedScreens.Values)
             {
                 screen.putEntitiesAndPlantsInChunks();

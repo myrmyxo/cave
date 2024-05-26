@@ -544,19 +544,25 @@ namespace Cave
                     }
                     else
                     {
-                        List<int> numberList = new List<int>();
-                        for (int i = 0; quantity > 0; i++)
-                        {
-                            numberList.Insert(0, quantity % 10);
-                            quantity = quantity / 10;
-                        }
-                        for (int i = 0; i < numberList.Count; i++)
-                        {
-                            Sprites.drawSpriteOnCanvas(screen.game.overlayBitmap, numberSprites[numberList[i]].bitmap, (408 + i * 32, 64), 4, true);
-                        }
+                        drawNumber(screen.game.overlayBitmap, quantity, (408, 64), 4, true);
                     }
                 }
             }
+        }
+        public static void drawNumber(Bitmap bitmap, int number, (int x, int y) pos, int scaleFactor, bool centeredDraw)
+        {
+            List<int> numberList = new List<int>();
+            if (number == 0) { numberList.Add(0); }
+            for (int i = 0; number > 0; i++)
+            {
+                numberList.Insert(0, number % 10);
+                number = number / 10;
+            }
+            for (int i = 0; i < numberList.Count; i++)
+            {
+                Sprites.drawSpriteOnCanvas(bitmap, numberSprites[numberList[i]].bitmap, (pos.x + i * 32, pos.y), scaleFactor, centeredDraw);
+            }
+
         }
     }
 }

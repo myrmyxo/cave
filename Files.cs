@@ -461,13 +461,13 @@ namespace Cave
             }
             return (dicto, listo);
         }
-        public static void saveMegaChunk(MegaChunk megaChunk, (int x, int y) pos)
+        public static void saveMegaChunk(MegaChunk megaChunk, (int x, int y) pos, int id)
         {
             JsonSerializer serializer = new JsonSerializer();
             serializer.Converters.Add(new JavaScriptDateTimeConverter());
             serializer.NullValueHandling = NullValueHandling.Ignore;
 
-            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{pos.x}.{pos.y}.json"))
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{id}\\{pos.x}.{pos.y}.json"))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
                 serializer.Serialize(writer, megaChunk);
@@ -475,12 +475,12 @@ namespace Cave
         }
         public static MegaChunk loadMegaChunk(Screens.Screen screenToPut, (int x, int y) pos)
         {
-            if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{pos.x}.{pos.y}.json"))
+            if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{screenToPut.id}\\{pos.x}.{pos.y}.json"))
             {
                 MegaChunk oOoOdindondandoyoufeelmylove = new MegaChunk(pos);
                 return oOoOdindondandoyoufeelmylove;
             }
-            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{pos.x}.{pos.y}.json"))
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{screenToPut.id}\\{pos.x}.{pos.y}.json"))
             {
                 string content = f.ReadToEnd();
                 MegaChunk imatwinklelittlemermaidgirl = JsonConvert.DeserializeObject<MegaChunk>(content);
@@ -494,7 +494,7 @@ namespace Cave
             serializer.Converters.Add(new JavaScriptDateTimeConverter());
             serializer.NullValueHandling = NullValueHandling.Ignore;
 
-            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{chunk.screen.seed}\\ChunkData\\{chunk.position.Item1}.{chunk.position.Item2}.json"))
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{chunk.screen.game.seed}\\ChunkData\\{chunk.screen.id}\\{chunk.position.Item1}.{chunk.position.Item2}.json"))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
                 ChunkJson baby = new ChunkJson(chunk);
@@ -511,7 +511,7 @@ namespace Cave
         public static void loadChunk(Chunk chunk, bool loadEntitiesAndPlants)
         {
             //bool willSpawnEntities;
-            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{chunk.screen.seed}\\ChunkData\\{chunk.position.Item1}.{chunk.position.Item2}.json"))
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{chunk.screen.game.seed}\\ChunkData\\{chunk.screen.id}\\{chunk.position.Item1}.{chunk.position.Item2}.json"))
             {
                 string content = f.ReadToEnd();
                 ChunkJson chunkJson = JsonConvert.DeserializeObject<ChunkJson>(content);
@@ -579,7 +579,7 @@ namespace Cave
 
             PlantJson plantJson = new PlantJson(plant);
 
-            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{plant.screen.seed}\\PlantData\\{plant.id}.json"))
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{plant.screen.game.seed}\\PlantData\\{plant.id}.json"))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
                 serializer.Serialize(writer, plantJson);
@@ -593,7 +593,7 @@ namespace Cave
 
             EntityJson entityJson = new EntityJson(entity);
 
-            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{entity.screen.seed}\\EntityData\\{entity.id}.json"))
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{entity.screen.game.seed}\\EntityData\\{entity.id}.json"))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
                 serializer.Serialize(writer, entityJson);
@@ -607,7 +607,7 @@ namespace Cave
 
             NestJson nestJson = new NestJson(nest);
 
-            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{nest.screen.seed}\\NestData\\{nest.id}.json"))
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{nest.screen.game.seed}\\NestData\\{nest.id}.json"))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
                 serializer.Serialize(writer, nestJson);
@@ -615,7 +615,7 @@ namespace Cave
         }
         public static Nest loadNest(Screens.Screen screen, int id)
         {
-            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{screen.seed}\\NestData\\{id}.json"))
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{screen.game.seed}\\NestData\\{id}.json"))
             {
                 string content = f.ReadToEnd();
                 NestJson nestJson = JsonConvert.DeserializeObject<NestJson>(content);
@@ -651,8 +651,24 @@ namespace Cave
             }
             return settings;
         }
+        public static void createDimensionFolders(Game game, int id)
+        {
+            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{game.seed}\\MegaChunkData\\{id}"))
+            {
+                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{game.seed}\\MegaChunkData\\{id}");
+            }
+            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{game.seed}\\ChunkData\\{id}"))
+            {
+                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{game.seed}\\ChunkData\\{id}");
+            }
+        }
+
         public static void createFolders(long seed)
         {
+            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\DimensionData"))
+            {
+                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\MegaChunkData");
+            }
             if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\MegaChunkData"))
             {
                 Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\MegaChunkData");

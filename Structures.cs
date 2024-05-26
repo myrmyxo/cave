@@ -1033,7 +1033,7 @@ namespace Cave
                 {
                     savename = $"{name} {structureNames[type]}";
                 }
-                using (StreamWriter f = new StreamWriter($"{currentDirectory}\\CaveData\\{screen.seed}\\StructureData\\{structChunkPosition.Item1}.{structChunkPosition.Item2}.{savename}.txt", false))
+                using (StreamWriter f = new StreamWriter($"{currentDirectory}\\CaveData\\{screen.game.seed}\\StructureData\\{structChunkPosition.Item1}.{structChunkPosition.Item2}.{savename}.txt", false))
                 {
                     string stringo = $"Welcome to structure {name}'s file !";
                     stringo += $"{name} is a {structureNames[type]}.";

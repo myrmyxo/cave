@@ -38,8 +38,10 @@ namespace Cave
             public Dictionary<int, Screen> loadedScreens = new Dictionary<int, Screen>();
             public List<Player> playerList = new List<Player>();
             public Bitmap overlayBitmap;
-            public Game(int chunkResolutionToPut, long seedToPut, bool isPngToExport, int PNGsize)
+            public long seed;
+            public Game(long seedToPut, bool isPngToExport, int PNGsize)
             {
+                seed = seedToPut;
                 playerList = new List<Player>();
 
                 overlayBitmap = new Bitmap(512, 128);
@@ -56,7 +58,7 @@ namespace Cave
                 {
                     int oldChunkLength = ChunkLength;
                     ChunkLength = PNGsize;
-                    mainScreen = new Screen(this, ChunkLength, seedToPut, true);
+                    mainScreen = new Screen(this, ChunkLength, 0, false, true);
                     timeAtLauch = DateTime.Now;
 
                     //runGame();
@@ -65,15 +67,76 @@ namespace Cave
                     ChunkLength = oldChunkLength;
                 }
 
-                mainScreen = new Screens.Screen(this, ChunkLength, seedToPut, false);
+                mainScreen = new Screen(this, ChunkLength, 0, false, false);
+                if (currentScreenId == 0) { currentScreenId++; };
                 loadedScreens[0] = mainScreen;
                 setPlayerDimension(player, 0);
             }
+            public void movePlayerStuff(Screen screen, Player player)
+            {
+                if (inventoryChangePress[0]) { inventoryChangePress[0] = false; player.moveInventoryCursor(-1); }
+                if (inventoryChangePress[1]) { inventoryChangePress[1] = false; player.moveInventoryCursor(1); }
+                player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.85f) - 0.2f));
+                player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.85f) - 0.2f));
+                if (!dimensionSelection)
+                {
+                    if (arrowKeysState[0]) { player.speedX += 0.5f; }
+                    if (arrowKeysState[1]) { player.speedX -= 0.5f; }
+                    if (arrowKeysState[2]) { player.speedY -= 0.5f; }
+                    if (arrowKeysState[3]) { player.speedY += 1; }
+                }
+                player.speedY -= 0.5f;
+                if (shiftPress)
+                {
+                    player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.75f) - 0.7f));
+                    player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.75f) - 0.7f));
+                }
+                player.movePlayer();
+                screen.checkStructures(player);
+
+                int posDiffX = player.posX - (player.camPosX + 16 * (screen.chunkResolution - 1)); //*2 is needed cause there's only *8 and not *16 before
+                int posDiffY = player.posY - (player.camPosY + 16 * (screen.chunkResolution - 1));
+                float accCamX = Sign(posDiffX) * Max(0, Sqrt(Abs(posDiffX)) - 2);
+                float accCamY = Sign(posDiffY) * Max(0, Sqrt(Abs(posDiffY)) - 2);
+                if (accCamX == 0 || Sign(accCamX) != Sign(player.speedCamX))
+                {
+                    player.speedCamX = Sign(player.speedCamX) * (Max(Abs(player.speedCamX) - 1, 0));
+                }
+                if (accCamY == 0 || Sign(accCamY) != Sign(player.speedCamY))
+                {
+                    player.speedCamY = Sign(player.speedCamY) * (Max(Abs(player.speedCamY) - 1, 0));
+                }
+                player.speedCamX = Clamp(player.speedCamX + accCamX, -15f, 15f);
+                player.speedCamY = Clamp(player.speedCamY + accCamY, -15f, 15f);
+                player.realCamPosX += player.speedCamX;
+                player.realCamPosY += player.speedCamY;
+                player.camPosX = (int)(player.realCamPosX + 0.5f);
+                player.camPosY = (int)(player.realCamPosY + 0.5f);
+                int oldChunkX = screen.chunkX;
+                int oldChunkY = screen.chunkY;
+                int chunkVariationX = Floor(player.camPosX, 32) / 32 - oldChunkX;
+                int chunkVariationY = Floor(player.camPosY, 32) / 32 - oldChunkY;
+                if (chunkVariationX != 0 || chunkVariationY != 0)
+                {
+                    screen.updateLoadedChunks(screen.seed, chunkVariationX, chunkVariationY);
+                }
+            }
             public void runGame(PictureBox gamePictureBox, PictureBox overlayPictureBox)
             {
-                if (pausePress) { return; }
-
                 Player player = playerList[0];
+
+                if (pausePress) { return; }
+                if (doShitPress)
+                {
+                    if (dimensionSelection)
+                    {
+                        dimensionSelection = false;
+                        setPlayerDimension(player, currentTargetDimension);
+                    }
+                    else { dimensionSelection = true; }
+                    doShitPress = false;
+                }
+
                 foreach (Screen screen in loadedScreens.Values)
                 {
                     int framesFastForwarded = 0;
@@ -85,49 +148,14 @@ namespace Cave
                     if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
                     if (player.dimension == screen.id)
                     {
-                        if (inventoryChangePress[0]) { inventoryChangePress[0] = false; player.moveInventoryCursor(-1); }
-                        if (inventoryChangePress[1]) { inventoryChangePress[1] = false; player.moveInventoryCursor(1); }
-                        player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.85f) - 0.2f));
-                        player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.85f) - 0.2f));
-                        if (arrowKeysState[0]) { player.speedX += 0.5f; }
-                        if (arrowKeysState[1]) { player.speedX -= 0.5f; }
-                        if (arrowKeysState[2]) { player.speedY -= 0.5f; }
-                        if (arrowKeysState[3]) { player.speedY += 1; }
-                        player.speedY -= 0.5f;
-                        if (shiftPress)
+                        if (dimensionSelection && timeElapsed%0.3f < 0.019f)
                         {
-                            player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.75f) - 0.7f));
-                            player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.75f) - 0.7f));
+                            if (arrowKeysState[0] || arrowKeysState[2]) { 
+                                currentTargetDimension++; 
+                            }
+                            if (arrowKeysState[1] || arrowKeysState[3]) { currentTargetDimension--; }
                         }
-                        player.movePlayer();
-                        screen.checkStructures(player);
-
-                        int posDiffX = player.posX - (player.camPosX + 16 * (screen.chunkResolution - 1)); //*2 is needed cause there's only *8 and not *16 before
-                        int posDiffY = player.posY - (player.camPosY + 16 * (screen.chunkResolution - 1));
-                        float accCamX = Sign(posDiffX) * Max(0, Sqrt(Abs(posDiffX)) - 2);
-                        float accCamY = Sign(posDiffY) * Max(0, Sqrt(Abs(posDiffY)) - 2);
-                        if (accCamX == 0 || Sign(accCamX) != Sign(player.speedCamX))
-                        {
-                            player.speedCamX = Sign(player.speedCamX) * (Max(Abs(player.speedCamX) - 1, 0));
-                        }
-                        if (accCamY == 0 || Sign(accCamY) != Sign(player.speedCamY))
-                        {
-                            player.speedCamY = Sign(player.speedCamY) * (Max(Abs(player.speedCamY) - 1, 0));
-                        }
-                        player.speedCamX = Clamp(player.speedCamX + accCamX, -15f, 15f);
-                        player.speedCamY = Clamp(player.speedCamY + accCamY, -15f, 15f);
-                        player.realCamPosX += player.speedCamX;
-                        player.realCamPosY += player.speedCamY;
-                        player.camPosX = (int)(player.realCamPosX + 0.5f);
-                        player.camPosY = (int)(player.realCamPosY + 0.5f);
-                        int oldChunkX = screen.chunkX;
-                        int oldChunkY = screen.chunkY;
-                        int chunkVariationX = Floor(player.camPosX, 32) / 32 - oldChunkX;
-                        int chunkVariationY = Floor(player.camPosY, 32) / 32 - oldChunkY;
-                        if (chunkVariationX != 0 || chunkVariationY != 0)
-                        {
-                            screen.updateLoadedChunks(screen.seed, chunkVariationX, chunkVariationY);
-                        }
+                        movePlayerStuff(screen, player);
                     }
 
                     if (timeElapsed > 3 && screen.activeNests.Count > 0)
@@ -191,13 +219,10 @@ namespace Cave
                     {
                         plant.testPlantGrowth();
                     }
-                    for (int j = screen.chunkY + screen.chunkResolution - 1; j >= screen.chunkY; j--)
+                    foreach ((int x, int y) pos in screen.loadedChunks.Keys)
                     {
-                        for (int i = screen.chunkX; i < screen.chunkX + screen.chunkResolution; i++)
-                        {
-                            if (rand.Next(50) == 0) { screen.loadedChunks[(i, j)].unstableLiquidCount++; }
-                            screen.loadedChunks[(i, j)].moveLiquids();
-                        }
+                        if (rand.Next(100) == 0) { screen.loadedChunks[(pos.x, pos.y)].unstableLiquidCount++; }
+                        screen.loadedChunks[(pos.x, pos.y)].moveLiquids();
                     }
 
 
@@ -213,6 +238,10 @@ namespace Cave
                         gamePictureBox.Refresh();
                         overlayPictureBox.Image = overlayBitmap;
                         Sprites.drawSpriteOnCanvas(overlayBitmap, overlayBackground.bitmap, (0, 0), 4, false);
+                        if (dimensionSelection)
+                        {
+                            Players.drawNumber(overlayBitmap, currentTargetDimension, (200, 64), 4, true);
+                        }
                         player.drawInventory();
                         overlayPictureBox.Refresh();
                     }
@@ -225,12 +254,15 @@ namespace Cave
             }
             public void setPlayerDimension(Player player, int targetDimension)
             {
-                if (loadedScreens.ContainsKey(targetDimension))
+                if (!loadedScreens.ContainsKey(targetDimension))
                 {
-                    player.screen = loadedScreens[targetDimension];
-                    player.dimension = targetDimension;
-                    player.screen.checkStructuresOnSpawn(player);
+                    Screen newScreen = new Screen(this, ChunkLength, targetDimension, true, false);
+                    loadedScreens[targetDimension] = newScreen;
+                    currentScreenId++;
                 }
+                player.screen = loadedScreens[targetDimension];
+                player.dimension = targetDimension;
+                player.screen.checkStructuresOnSpawn(player);
             }
         }
         public class Screen
@@ -277,12 +309,16 @@ namespace Cave
             public Dictionary<(int x, int y), bool> nestLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), bool> structureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
 
-            public Screen(Game gameToPut, int chunkResolutionToPut, long seedo, bool isPngToExport)
+            public Screen(Game gameToPut, int chunkResolutionToPut, int idToPut, bool isMonoToPut, bool isPngToExport)
             {
                 game = gameToPut;
-                seed = seedo;
+                id = idToPut;
+                seed = game.seed + id;
+                type = id % 9;
+                isMonoBiome = isMonoToPut;
                 isPngToBeExported = isPngToExport;
                 chunkResolution = chunkResolutionToPut + UnloadedChunksAmount * 2; // invisible chunks of the sides/top/bottom
+                createDimensionFolders(game, id);
                 LCGCacheInit();
                 chunkX = Floor(game.playerList[0].posX, 32) / 32;
                 chunkY = Floor(game.playerList[0].posY, 32) / 32;
@@ -587,7 +623,7 @@ namespace Cave
                         }
                         activeNests.Remove(nestId);
                     }
-                    saveMegaChunk(megaChunks[pos], pos);
+                    saveMegaChunk(megaChunks[pos], pos, id);
 
                     actuallyUnloadTheChunks(chunksToRemove);
                 }
@@ -648,7 +684,7 @@ namespace Cave
             }
             public void createStructures(int posX, int posY)
             {
-                if (loadStructuresYesOrNo && !System.IO.File.Exists($"{currentDirectory}\\CaveData\\{seed}\\MegaChunkData\\{posX}.{posY}.json"))
+                if (loadStructuresYesOrNo && !System.IO.File.Exists($"{currentDirectory}\\CaveData\\{game.seed}\\MegaChunkData\\{id}\\{posX}.{posY}.json"))
                 {
                     MegaChunk megaChunk = new MegaChunk((posX, posY));
 
@@ -689,7 +725,7 @@ namespace Cave
                         activeStructures[newStructure.id] = newStructure;
                         //newStructure.saveInFile();
                     }
-                    long nestAmount = (seedX + seedY) % 3 + 10;
+                    long nestAmount = (seedX + seedY) % 3;
                     //nestAmount = 0;
                     for (int i = 0; i < nestAmount; i++)
                     {
@@ -702,7 +738,7 @@ namespace Cave
                             activeNests[nest.id] = nest;
                         }
                     }
-                    if (posX == 0 && posY == 0)
+                    /*if (posX == 0 && posY == 0) // to have a nest spawn at (0, 0) for testing shit
                     {
                         Nest nesto = new Nest((0, 0), (long)(seedX * 0.5f + seedY * 0.5f), this);
                         if (!nesto.isNotToBeAdded)
@@ -710,10 +746,10 @@ namespace Cave
                             megaChunk.nests.Add(nesto.id);
                             activeNests[nesto.id] = nesto;
                         }
-                    }
+                    }*/
                     megaChunk.loadAllChunksInNests(this);
                     megaChunks[megaChunk.pos] = megaChunk;
-                    saveMegaChunk(megaChunk, megaChunk.pos);
+                    saveMegaChunk(megaChunk, megaChunk.pos, id);
                 }
             }
             public void drawPixelFixed(Color color, (int x, int y) posToDraw, int scale)
