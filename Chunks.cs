@@ -41,7 +41,7 @@ namespace Cave
 
             public (int x, int y) position;
 
-            public int[,,] primaryFillValues;
+            public int[,] primaryFillValues;
             public int[,] primaryBigFillValues;
             public int[,] primaryBiomeValues;
             public int[,] primaryBigBiomeValues; // the biome trends that are bigger than biomes
@@ -64,7 +64,7 @@ namespace Cave
             public int unstableLiquidCount = 1;
             public bool entitiesAndPlantsSpawned = false;
 
-            public int explorationLevel = 2; // 0 to not visible, 1 to partially visible, 2 to full visible. 
+            public int explorationLevel = 2; // set fog : 0 for not visible, 1 for cremebetweens, 2 for fully visible
             public bool[,] fogOfWar = null;
             public Bitmap fogBitmap = null;
             public Chunk()
@@ -85,261 +85,104 @@ namespace Cave
                 long bigSeed2 = LCGxNeg(LCGz(LCGyPos(LCGxPos(bigSeed))));
                 long bigSeed3 = LCGxNeg(LCGz(LCGyPos(LCGxNeg(bigSeed2))));
 
-                if (screen.isMonoBiome)
+                (int x, int y) mod;
+
+
+                // biome shit generation
+
+                int layerStart = 0;
+                if (screen.isMonoBiome) { layerStart = 4; }
+
+                chunkX = Floor(position.x, 16) / 16;
+                chunkY = Floor(position.y, 16) / 16;
+                primaryBiomeValues = new int[6,4];
+                for (int i = layerStart; i < 6; i++)
                 {
-                    biomeIndex = new (int, int)[32, 32][];
-                    baseColors = new (int, int, int)[32, 32];
-                    secondaryBiomeValues = new int[32, 32, 6];
-                    secondaryBigBiomeValues = new int[32, 32, 6];
-                    colors = new Color[32, 32];
-                    bitmap = new Bitmap(32, 32);
-
-                    for (int i = 0; i < 32; i++)
+                    for (int j = 0; j < 4; j++)
                     {
-                        for (int j = 0; j < 32; j++)
-                        {
-                            int fixedBiome = screen.type;
-                            biomeIndex[i, j] = new (int, int)[]{(fixedBiome, 1000)};
-
-                            secondaryBiomeValues[i, j, 0] = biomeTypicalValues[fixedBiome].Item1;
-                            secondaryBiomeValues[i, j, 1] = biomeTypicalValues[fixedBiome].Item2;
-                            secondaryBiomeValues[i, j, 2] = biomeTypicalValues[fixedBiome].Item3;
-                            secondaryBiomeValues[i, j, 3] = biomeTypicalValues[fixedBiome].Item4;
-
-                            secondaryBigBiomeValues[i, j, 0] = biomeTypicalValues[fixedBiome].Item1;
-                            secondaryBigBiomeValues[i, j, 1] = biomeTypicalValues[fixedBiome].Item2;
-                            secondaryBigBiomeValues[i, j, 2] = biomeTypicalValues[fixedBiome].Item3;
-                            secondaryBigBiomeValues[i, j, 3] = biomeTypicalValues[fixedBiome].Item4;
-
-
-                            secondaryBiomeValues[i, j, 4] = 128;
-                            secondaryBiomeValues[i, j, 5] = 128;
-                            // Th change ! Both !
-                            secondaryBigBiomeValues[i, j, 4] = 128;
-                            secondaryBigBiomeValues[i, j, 5] = 128;
-
-                            int[] colorArray = { 0, 0, 0 };
-                            (int, int, int) tupel2 = biomeDict[biomeIndex[i, j][0].Item1];
-                            colorArray[0] += tupel2.Item1;
-                            colorArray[1] += tupel2.Item2;
-                            colorArray[2] += tupel2.Item3;
-                            for (int k = 0; k < 3; k++)
-                            {
-                                colorArray[k] = (int)(colorArray[k] * 0.15f);
-                                colorArray[k] += 20;
-                            }
-                            baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
-                        }
-                    }
-
-                }
-                else
-                {
-                    chunkX = Floor(position.x, 16) / 16;
-                    chunkY = Floor(position.y, 16) / 16;
-                    primaryBiomeValues = new int[,]
-                    {
-                        {
-                            findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 0),
-                            findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 0),
-                            findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 0),
-                            findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 0)
-                        },
-                        {
-                            findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 1),
-                            findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 1),
-                            findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 1),
-                            findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 1)
-                        },
-                        {
-                            findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 2),
-                            findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 2),
-                            findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 2),
-                            findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 2)
-                        },
-                        {
-                            findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 3),
-                            findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 3),
-                            findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 3),
-                            findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 3)
-                        },
-                        {
-                            findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 4),
-                            findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 4),
-                            findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 4),
-                            findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 4)
-                        },
-                        {
-                            findPrimaryBiomeValue(chunkX, chunkY, screen.seed, 5),
-                            findPrimaryBiomeValue(chunkX+1, chunkY, screen.seed, 5),
-                            findPrimaryBiomeValue(chunkX, chunkY+1, screen.seed, 5),
-                            findPrimaryBiomeValue(chunkX+1, chunkY+1, screen.seed, 5)
-                        }
-                    };
-
-                    chunkX = Floor(position.Item1, 32) / 32;
-                    chunkY = Floor(position.Item2, 32) / 32;
-                    primaryBigBiomeValues = new int[,]
-                    {
-                        {
-                            findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 0),
-                            findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 0),
-                            findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 0),
-                            findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 0)
-                        },
-                        {
-                            findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 1),
-                            findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 1),
-                            findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 1),
-                            findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 1)
-                        },
-                        {
-                            findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 2),
-                            findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 2),
-                            findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 2),
-                            findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 2)
-                        },
-                        {
-                            findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 3),
-                            findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 3),
-                            findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 3),
-                            findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 3)
-                        },
-                        {
-                            findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 4),
-                            findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 4),
-                            findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 4),
-                            findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 4)
-                        },
-                        {
-                            findPrimaryBiomeValue(chunkX, chunkY, bigSeed, 5),
-                            findPrimaryBiomeValue(chunkX+1, chunkY, bigSeed, 5),
-                            findPrimaryBiomeValue(chunkX, chunkY+1, bigSeed, 5),
-                            findPrimaryBiomeValue(chunkX+1, chunkY+1, bigSeed, 5)
-                        }
-                    };
-                    secondaryBiomeValues = new int[32, 32, 6];
-                    secondaryBigBiomeValues = new int[32, 32, 6];
-                    biomeIndex = new (int, int)[32, 32][];
-                    baseColors = new (int, int, int)[32, 32];
-                    colors = new Color[32, 32];
-                    bitmap = new Bitmap(32, 32);
-
-                    for (int i = 0; i < 32; i++)
-                    {
-                        for (int j = 0; j < 32; j++)
-                        {
-                            for (int k = 0; k < 6; k++)
-                            {
-                                secondaryBiomeValues[i, j, k] = findSecondaryBiomeValue(this, i, j, k);
-                                secondaryBigBiomeValues[i, j, k] = findSecondaryBigBiomeValue(this, i, j, k);
-                            }
-                            biomeIndex[i, j] = findBiome(secondaryBiomeValues, secondaryBigBiomeValues, i, j);
-
-                            int[] colorArray = { 0, 0, 0 };
-                            float mult;
-                            foreach ((int, int) tupel in biomeIndex[i, j])
-                            {
-                                mult = tupel.Item2 * 0.001f;
-
-                                (int, int, int) tupel2 = biomeDict[tupel.Item1];
-                                colorArray[0] += (int)(mult * tupel2.Item1);
-                                colorArray[1] += (int)(mult * tupel2.Item2);
-                                colorArray[2] += (int)(mult * tupel2.Item3);
-                            }
-                            for (int k = 0; k < 3; k++)
-                            {
-                                colorArray[k] = (int)(colorArray[k] * 0.15f);
-                                colorArray[k] += 20;
-                            }
-                            baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
-                        }
+                        mod = squareModArray[j];
+                        primaryBiomeValues[i, j] = findPrimaryBiomeValue(chunkX + mod.x, chunkY + mod.y, screen.seed, i);
                     }
                 }
+
+                chunkX = Floor(position.Item1, 32) / 32;
+                chunkY = Floor(position.Item2, 32) / 32;
+                primaryBigBiomeValues = new int[6, 4];
+                for (int i = layerStart; i < 6; i++)
+                {
+                    for (int j = 0; j < 4; j++)
+                    {
+                        mod = squareModArray[j];
+                        primaryBigBiomeValues[i, j] = findPrimaryBiomeValue(chunkX + mod.x, chunkY + mod.y, bigSeed, i);
+                    }
+                }
+
+                secondaryBiomeValues = new int[32, 32, 6];
+                secondaryBigBiomeValues = new int[32, 32, 6];
+                biomeIndex = new (int, int)[32, 32][];
+                baseColors = new (int, int, int)[32, 32];
+                colors = new Color[32, 32];
+                bitmap = new Bitmap(32, 32);
+
+                for (int i = 0; i < 32; i++)
+                {
+                    for (int j = 0; j < 32; j++)
+                    {
+                        for (int k = layerStart; k < 6; k++)
+                        {
+                            secondaryBiomeValues[i, j, k] = findSecondaryBiomeValue(this, i, j, k);
+                            secondaryBigBiomeValues[i, j, k] = findSecondaryBigBiomeValue(this, i, j, k);
+                        }
+                        if (screen.isMonoBiome) { biomeIndex[i, j] = new (int, int)[] { (screen.type, 1000) }; }
+                        else { biomeIndex[i, j] = findBiome(secondaryBiomeValues, secondaryBigBiomeValues, i, j); }
+
+                        int[] colorArray = { 0, 0, 0 };
+                        float mult;
+                        foreach ((int, int) tupel in biomeIndex[i, j])
+                        {
+                            mult = tupel.Item2 * 0.001f;
+
+                            (int, int, int) tupel2 = biomeDict[tupel.Item1];
+                            colorArray[0] += (int)(mult * tupel2.Item1);
+                            colorArray[1] += (int)(mult * tupel2.Item2);
+                            colorArray[2] += (int)(mult * tupel2.Item3);
+                        }
+                        for (int k = 0; k < 3; k++)
+                        {
+                            colorArray[k] = (int)(colorArray[k] * 0.15f);
+                            colorArray[k] += 20;
+                        }
+                        baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
+                    }
+                }
+
+
+
+
+                // terrain noise shit generation
 
                 if (!filePresent)
                 {
                     chunkX = position.x * 2;
                     chunkY = position.y * 2;
-
-                    primaryFillValues = new int[4, 2, 4]
+                    primaryFillValues = new int[2, 9];
+                    for (int j = 0; j < 9; j++)
                     {
-                        {
-                            {
-                                findPrimaryNoiseValue(chunkX, chunkY, screen.seed, 0),
-                                findPrimaryNoiseValue(chunkX + 1, chunkY, screen.seed, 0),
-                                findPrimaryNoiseValue(chunkX, chunkY + 1, screen.seed, 0),
-                                findPrimaryNoiseValue(chunkX + 1, chunkY + 1, screen.seed, 0)
-                            },
-                            {
-                                findPrimaryNoiseValue(chunkX, chunkY, bigSeed2, 1),
-                                findPrimaryNoiseValue(chunkX + 1, chunkY, bigSeed2, 1),
-                                findPrimaryNoiseValue(chunkX, chunkY + 1, bigSeed2, 1),
-                                findPrimaryNoiseValue(chunkX + 1, chunkY + 1, bigSeed2, 1)
-                            }
-                        },
-                        {
-                            {
-                                findPrimaryNoiseValue(chunkX + 1, chunkY, screen.seed, 0),
-                                findPrimaryNoiseValue(chunkX + 2, chunkY, screen.seed, 0),
-                                findPrimaryNoiseValue(chunkX + 1, chunkY + 1, screen.seed, 0),
-                                findPrimaryNoiseValue(chunkX + 2, chunkY + 1, screen.seed, 0)
-                            },
-                            {
-                                findPrimaryNoiseValue(chunkX + 1, chunkY, bigSeed2, 1),
-                                findPrimaryNoiseValue(chunkX + 2, chunkY, bigSeed2, 1),
-                                findPrimaryNoiseValue(chunkX + 1, chunkY + 1, bigSeed2, 1),
-                                findPrimaryNoiseValue(chunkX + 2, chunkY + 1, bigSeed2, 1)
-                            }
-                        },
-                        {
-                            {
-                                findPrimaryNoiseValue(chunkX, chunkY + 1, screen.seed, 0),
-                                findPrimaryNoiseValue(chunkX + 1, chunkY + 1, screen.seed, 0),
-                                findPrimaryNoiseValue(chunkX, chunkY + 2, screen.seed, 0),
-                                findPrimaryNoiseValue(chunkX + 1, chunkY + 2, screen.seed, 0)
-                            },
-                            {
-                                findPrimaryNoiseValue(chunkX, chunkY + 1, bigSeed2, 1),
-                                findPrimaryNoiseValue(chunkX + 1, chunkY + 1, bigSeed2, 1),
-                                findPrimaryNoiseValue(chunkX, chunkY + 2, bigSeed2, 1),
-                                findPrimaryNoiseValue(chunkX + 1, chunkY + 2, bigSeed2, 1)
-                            }
-                        },
-                        {
-                            {
-                                findPrimaryNoiseValue(chunkX + 1, chunkY + 1, screen.seed, 0),
-                                findPrimaryNoiseValue(chunkX + 2, chunkY + 1, screen.seed, 0),
-                                findPrimaryNoiseValue(chunkX + 1, chunkY + 2, screen.seed, 0),
-                                findPrimaryNoiseValue(chunkX + 2, chunkY + 2, screen.seed, 0)
-                            },
-                            {
-                                findPrimaryNoiseValue(chunkX + 1, chunkY + 1, bigSeed2, 1),
-                                findPrimaryNoiseValue(chunkX + 2, chunkY + 1, bigSeed2, 1),
-                                findPrimaryNoiseValue(chunkX + 1, chunkY + 2, bigSeed2, 1),
-                                findPrimaryNoiseValue(chunkX + 2, chunkY + 2, bigSeed2, 1)
-                            }
-                        }
-                    };
+                        mod = bigSquareModArray[j];
+                        primaryFillValues[0, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, screen.seed, 0);
+                        primaryFillValues[1, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed, 1);
+                    }
+
 
                     chunkX = Floor(position.x, 2) / 2;
                     chunkY = Floor(position.y, 2) / 2;
-
-                    primaryBigFillValues = new int[,]
+                    primaryBigFillValues = new int[2, 4];
+                    for (int j = 0; j < 4; j++)
                     {
-                        {
-                            findPrimaryNoiseValue(chunkX, chunkY, bigSeed, 0),
-                            findPrimaryNoiseValue(chunkX + 1, chunkY, bigSeed, 0),
-                            findPrimaryNoiseValue(chunkX, chunkY + 1, bigSeed, 0),
-                            findPrimaryNoiseValue(chunkX + 1, chunkY + 1, bigSeed, 0)
-                        },
-                        {
-                            findPrimaryNoiseValue(chunkX, chunkY, bigSeed3, 1),
-                            findPrimaryNoiseValue(chunkX + 1, chunkY, bigSeed3, 1),
-                            findPrimaryNoiseValue(chunkX, chunkY + 1, bigSeed3, 1),
-                            findPrimaryNoiseValue(chunkX + 1, chunkY + 1, bigSeed3, 1)
-                        }
-                    };
+                        mod = squareModArray[j];
+                        primaryBigFillValues[0, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed2, 1);
+                        primaryBigFillValues[1, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed3, 1);
+                    }
 
                     secondaryFillValues = new int[2, 32, 32];
                     secondaryBigFillValues = new int[2, 32, 32];
@@ -351,7 +194,7 @@ namespace Cave
                             secondaryFillValues[0, i, j] = findSecondaryNoiseValue(this, i, j, 0);
                             secondaryBigFillValues[0, i, j] = findSecondaryBigNoiseValue(this, i, j, 0);
                             int value1 = secondaryBigFillValues[0, i, j] + (int)(0.25 * secondaryFillValues[0, i, j]) - 32;
-                            //value1 = secondaryBigFillValues[0, i, j];
+                            //value1 = secondaryFillValues[0, i, j];
                             //value1 = 0;
                             secondaryFillValues[1, i, j] = findSecondaryNoiseValue(this, i, j, 1);
                             secondaryBigFillValues[1, i, j] = findSecondaryBigNoiseValue(this, i, j, 1);
@@ -393,8 +236,8 @@ namespace Cave
                                 }
                                 else if (tupel.Item1 == 6)
                                 {
-                                    float see1 = Obs((position.Item1 * 16) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
-                                    float see2 = Obs((position.Item2 * 16) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
+                                    float see1 = Obs((position.Item1 * 32) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
+                                    float see2 = Obs((position.Item2 * 32) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
                                     if (false && (value2 < 50 || value2 > 200))
                                     {
                                         value2PREmodifier = 300;

@@ -445,6 +445,7 @@ namespace Cave
                 posY = chunkToPut.position.y*32;
                 screen = chunkToPut.screen;
                 seed = LCGint1(Abs((int)chunkToPut.chunkSeed));
+                seed = Abs(seed + rand.Next(100000)); // TO CHANGE TOCHANGE cuz false randommmm
                 id = currentPlantId;
                 growthLevel = -1;
                 placePlant();

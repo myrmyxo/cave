@@ -71,6 +71,8 @@ namespace Cave
 
             public static long worldSeed = 0;
 
+            public static (int, int)[] squareModArray = new (int, int)[4] { (0, 0), (1, 0), (0, 1), (1, 1) };
+            public static (int, int)[] bigSquareModArray = new (int, int)[9] { (0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2)};
             public static (int, int)[] neighbourArray = new (int, int)[4] { (-1, 0), (1, 0), (0, 1), (0, -1) };
             public static (int, int)[] bubbleNeighbourArray = new (int, int)[8] { (-1, 0), (1, 0), (0, 1), (0, -1), (-2, 0), (2, 0), (0, 2), (0, -2) };
             public static (int, int)[] diagNeighbourArray = new (int, int)[4] { (-1, 1), (1, 1), (1, -1), (-1, -1) };
@@ -487,14 +489,14 @@ namespace Cave
             int modulo = 16;
             int modX = GetChunkIndexFromTile1D(chunk.position.Item1 * 16 + varX, modulo);
             int modY = GetChunkIndexFromTile1D(chunk.position.Item2 * 16 + varY, modulo);
-            int[,,] values = chunk.primaryFillValues;
+            int[,] values = chunk.primaryFillValues;
 
             int quartile = 0;
             if (varX >= 16) { quartile += 1; }
-            if (varY >= 16) { quartile += 2; }
+            if (varY >= 16) { quartile += 3; }
 
-            int fX1 = values[quartile, layer, 0] * (modulo - modX) + values[quartile, layer, 1] * modX;
-            int fX2 = values[quartile, layer, 2] * (modulo - modX) + values[quartile, layer, 3] * modX;
+            int fX1 = values[layer, 0 + quartile] * (modulo - modX) + values[layer, 1 + quartile] * modX;
+            int fX2 = values[layer, 3 + quartile] * (modulo - modX) + values[layer, 4 + quartile] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
             int fY = fX1 * (modulo - modY) + fX2 * modY;
             return fY / (modulo * modulo);
         }
@@ -505,7 +507,7 @@ namespace Cave
             int modY = GetChunkIndexFromTile1D(chunk.position.Item2 * 32 + varY, modulo);
             int[,] values = chunk.primaryBigFillValues;
             int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
-            int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX;
+            int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
             int fY = fX1 * (modulo - modY) + fX2 * modY;
             return fY / (modulo * modulo);
         }
@@ -516,7 +518,7 @@ namespace Cave
             int modY = GetChunkIndexFromTile1D(chunk.position.Item2 * 32 + varY, modulo);
             int[,] values = chunk.primaryBiomeValues;
             int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
-            int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX;
+            int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
             int fY = fX1 * (modulo - modY) + fX2 * modY;
             return fY / (modulo * modulo);
         }
@@ -524,7 +526,7 @@ namespace Cave
         {
             int modulo = 1024;
             int modX = GetChunkIndexFromTile1D(chunk.position.Item1 * 32 + varX, modulo);
-            int modY = GetChunkIndexFromTile1D(chunk.position.Item2 * 32 + varY, modulo);
+            int modY = GetChunkIndexFromTile1D(chunk.position.Item2 * 32 + varY, modulo); // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
             int[,] values = chunk.primaryBigBiomeValues;
             int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
             int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX;

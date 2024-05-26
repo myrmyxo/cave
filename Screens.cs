@@ -26,8 +26,6 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
-using Cave.Properties;
-using System.Runtime;
 
 namespace Cave
 {
@@ -54,11 +52,15 @@ namespace Cave
                 Player player = playerList[0];
 
                 timeElapsed = 0;
+
+                int idToPut = 5;
+                bool isMonoeBiomeToPut = true;
+                
                 if (isPngToExport)
                 {
                     int oldChunkLength = ChunkLength;
                     ChunkLength = PNGsize;
-                    mainScreen = new Screen(this, ChunkLength, 0, false, true);
+                    mainScreen = new Screen(this, ChunkLength, idToPut, isMonoeBiomeToPut, true);
                     timeAtLauch = DateTime.Now;
 
                     //runGame();
@@ -67,10 +69,10 @@ namespace Cave
                     ChunkLength = oldChunkLength;
                 }
 
-                mainScreen = new Screen(this, ChunkLength, 0, false, false);
+                mainScreen = new Screen(this, ChunkLength, idToPut, isMonoeBiomeToPut, false);
                 if (currentScreenId == 0) { currentScreenId++; };
-                loadedScreens[0] = mainScreen;
-                setPlayerDimension(player, 0);
+                loadedScreens[idToPut] = mainScreen;
+                setPlayerDimension(player, idToPut);
             }
             public void movePlayerStuff(Screen screen, Player player)
             {
@@ -112,14 +114,9 @@ namespace Cave
                 player.realCamPosY += player.speedCamY;
                 player.camPosX = (int)(player.realCamPosX + 0.5f);
                 player.camPosY = (int)(player.realCamPosY + 0.5f);
-                int oldChunkX = screen.chunkX;
-                int oldChunkY = screen.chunkY;
-                int chunkVariationX = Floor(player.camPosX, 32) / 32 - oldChunkX;
-                int chunkVariationY = Floor(player.camPosY, 32) / 32 - oldChunkY;
-                if (chunkVariationX != 0 || chunkVariationY != 0)
-                {
-                    screen.updateLoadedChunks(screen.seed, chunkVariationX, chunkVariationY);
-                }
+                screen.chunkX = Floor(player.camPosX, 32) / 32;
+                screen.chunkY = Floor(player.camPosY, 32) / 32;
+                screen.updateLoadedChunks();
             }
             public void runGame(PictureBox gamePictureBox, PictureBox overlayPictureBox)
             {
@@ -202,7 +199,7 @@ namespace Cave
 
 
                     screen.entitesToRemove = new Dictionary<int, Entity>();
-                    screen.entitesToAdd = new Dictionary<int, Entity>();
+                    screen.entitesToAdd = new List<Entity>();
                     foreach (Entity entity in screen.activeEntities.Values)
                     {
                         entity.moveEntity();
@@ -211,7 +208,7 @@ namespace Cave
                     {
                         screen.activeEntities.Remove(entity.id);
                     }
-                    foreach (Entity entity in screen.entitesToAdd.Values)
+                    foreach (Entity entity in screen.entitesToAdd)
                     {
                         screen.activeEntities[entity.id] = entity;
                     }
@@ -290,7 +287,7 @@ namespace Cave
 
             public Dictionary<int, Entity> activeEntities = new Dictionary<int, Entity>();
             public Dictionary<int, Entity> entitesToRemove = new Dictionary<int, Entity>();
-            public Dictionary<int, Entity> entitesToAdd = new Dictionary<int, Entity>();
+            public List<Entity> entitesToAdd = new List<Entity>();
             public Dictionary<int, bool> orphanEntities = new Dictionary<int, bool>();
             public Dictionary<int, Plant> activePlants = new Dictionary<int, Plant>();
             public Dictionary<int, Nest> activeNests = new Dictionary<int, Nest>();
@@ -456,7 +453,22 @@ namespace Cave
                     activeEntities[entito.id] = entito;
                 }
             }
-            public void updateLoadedChunks(long seed, int screenSlideXtoPut, int screenSlideYtoPut)
+            public void updateLoadedChunks()
+            {
+                (int x, int y) posToTest;
+                for (int i = 0; i < chunkResolution; i++)
+                {
+                    for (int j = 0; j < chunkResolution; j++)
+                    {
+                        posToTest = (chunkX + i, chunkY + j);
+                        if (!loadedChunks.ContainsKey(posToTest))
+                        {
+                            loadedChunks.Add(posToTest, new Chunk(posToTest, false, this));
+                        }
+                    }
+                }
+            }
+            public void updateLoadedChunksOld(int screenSlideXtoPut, int screenSlideYtoPut)
             {
                 int screenSlideX = screenSlideXtoPut;
                 int screenSlideY = screenSlideYtoPut;

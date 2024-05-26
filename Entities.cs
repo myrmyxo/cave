@@ -1234,7 +1234,7 @@ namespace Cave
                     else if (elementToPlace.typeOfElement == 1)
                     {
                         Entity newEntity = new Entity(screen, (posToDigX, posToDigY), elementToPlace.index, elementToPlace.subType);
-                        screen.entitesToAdd[newEntity.id] = newEntity;
+                        screen.entitesToAdd.Add(newEntity);
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (elementToPlace.typeOfElement == 2)
