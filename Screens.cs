@@ -26,6 +26,8 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using static System.Net.Mime.MediaTypeNames;
+using System.Drawing.Imaging;
 
 namespace Cave
 {
@@ -37,6 +39,8 @@ namespace Cave
             public List<Player> playerList = new List<Player>();
             public Bitmap overlayBitmap;
             public long seed;
+
+            public bool isLight = true;
             public Game(long seedToPut, bool isPngToExport, int PNGsize)
             {
                 seed = seedToPut;
@@ -53,8 +57,8 @@ namespace Cave
 
                 timeElapsed = 0;
 
-                int idToPut = 5;
-                bool isMonoeBiomeToPut = true;
+                int idToPut = 9;
+                bool isMonoeBiomeToPut = false;
                 
                 if (isPngToExport)
                 {
@@ -283,6 +287,8 @@ namespace Cave
 
             public Bitmap gameBitmap;
 
+            public Bitmap lightBitmap;
+
             public (float x, float y) playerStartPos = (0, 0);
 
             public Dictionary<int, Entity> activeEntities = new Dictionary<int, Entity>();
@@ -311,7 +317,7 @@ namespace Cave
                 game = gameToPut;
                 id = idToPut;
                 seed = game.seed + id;
-                type = id % 9;
+                type = id % 11;
                 isMonoBiome = isMonoToPut;
                 isPngToBeExported = isPngToExport;
                 chunkResolution = chunkResolutionToPut + UnloadedChunksAmount * 2; // invisible chunks of the sides/top/bottom
@@ -763,31 +769,43 @@ namespace Cave
                     megaChunks[megaChunk.pos] = megaChunk;
                     saveMegaChunk(megaChunk, megaChunk.pos, id);
                 }
+                else { saveMegaChunk(new MegaChunk((posX, posY)), (posX, posY), id); }
             }
-            public void drawPixelFixed(Color color, (int x, int y) posToDraw, int scale)
+            public void fillBitmap(Bitmap receiver, Color color)
             {
-                using (var g = Graphics.FromImage(gameBitmap))
+                drawRectangle(receiver, color, (0, 0), (receiver.Size.Width, receiver.Size.Height));
+            }
+            public void drawRectangle(Bitmap receiver, Color color, (int x, int y) posToDraw, (int x, int y) size)
+            {
+                using (var g = Graphics.FromImage(receiver))
+                {
+                    g.FillRectangle(new SolidBrush(color), posToDraw.x, posToDraw.y, size.x, size.y);
+                }
+            }
+            public void drawPixelFixed(Bitmap receiver, Color color, (int x, int y) posToDraw, int scale)
+            {
+                using (var g = Graphics.FromImage(receiver))
                 {
                     g.FillRectangle(new SolidBrush(color), posToDraw.x, posToDraw.y, scale, scale);
                 }
             }
-            public void drawPixel(Color color, (int x, int y) position, (int x, int y) camPos, int PNGmultiplicator)
+            public void drawPixel(Bitmap receiver, Color color, (int x, int y) position, (int x, int y) camPos, int PNGmultiplicator)
             {
                 (int x, int y) posToDraw = (position.x - camPos.x - UnloadedChunksAmount * 32, position.y - camPos.y - UnloadedChunksAmount * 32);
                 if (posToDraw.x >= 0 && posToDraw.x < (chunkResolution - 1) * 32 && posToDraw.y >= 0 && posToDraw.y < (chunkResolution - 1) * 32)
                 {
-                    using (var g = Graphics.FromImage(gameBitmap))
+                    using (var g = Graphics.FromImage(receiver))
                     {
                         g.FillRectangle(new SolidBrush(color), posToDraw.x * PNGmultiplicator, posToDraw.y * PNGmultiplicator, PNGmultiplicator, PNGmultiplicator);
                     }
                 }
             }
-            public void pasteImage(Bitmap bitmapToDraw, (int x, int y) position, (int x, int y) camPos, int PNGmultiplicator)
+            public void pasteImage(Bitmap receiver, Bitmap bitmapToDraw, (int x, int y) position, (int x, int y) camPos, int PNGmultiplicator)
             {
                 (int x, int y) posToDraw = (position.x - camPos.x - UnloadedChunksAmount * 32, position.y - camPos.y - UnloadedChunksAmount * 32);
                 if (true || posToDraw.x >= -bitmapToDraw.Width && posToDraw.x < (chunkResolution) * 32 && posToDraw.y >= -bitmapToDraw.Height && posToDraw.y < (chunkResolution) * 32)
                 {
-                    using (Graphics g = Graphics.FromImage(gameBitmap))
+                    using (Graphics g = Graphics.FromImage(receiver))
                     {
                         g.PixelOffsetMode = PixelOffsetMode.HighQuality;
                         g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
@@ -797,6 +815,12 @@ namespace Cave
             }
             public Bitmap updateScreen()
             {
+                Graphics gg = Graphics.FromImage(gameBitmap);
+                gg.Clear(Color.White);
+                gg.Dispose();
+
+                List<(int x, int y, int radius)> lightPositions = new List<(int x, int y, int radius)>();
+
                 Chunk chunko;
                 int PNGmultiplicator = 4;
                 if (isPngToBeExported) { PNGmultiplicator = 1; }
@@ -808,14 +832,21 @@ namespace Cave
                     for (int j = UnloadedChunksAmount; j < chunkResolution - UnloadedChunksAmount; j++)
                     {
                         chunko = loadedChunks[(chunkX + i, chunkY + j)];
-                        pasteImage(chunko.bitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator);
+                        pasteImage(gameBitmap, chunko.bitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator);
                         //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32), PNGmultiplicator); } // if want to show chunk origin
                     }
                 }
 
                 foreach (Plant plant in activePlants.Values)
                 {
-                    pasteImage(plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos, PNGmultiplicator);
+                    pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos, PNGmultiplicator);
+                    if (game.isLight && plant.type == 1 && plant.subType == 1)
+                    {
+                        foreach ((int x, int y) pos in plant.lightPositions)
+                        {
+                            lightPositions.Add((pos.x, pos.y, 15));
+                        }
+                    }
                 }
 
                 foreach (Entity entity in activeEntities.Values)
@@ -830,22 +861,96 @@ namespace Cave
                             color = Color.Red;
                         }
                     }
-                    drawPixel(color, (entity.posX, entity.posY), camPos, PNGmultiplicator);
+                    if (game.isLight && entity.type == 0) { lightPositions.Add((entity.posX, entity.posY, 7)); }
+                    drawPixel(gameBitmap, color, (entity.posX, entity.posY), camPos, PNGmultiplicator);
                 }
 
-                if (debugMode)
+                { // player
+                    Color color = Color.Green;
+                    (int, int) chunkPos = findChunkAbsoluteIndex(player.posX, player.posY);
+                    Chunk chunkToTest = loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[(player.posX % 32 + 32) % 32, (player.posY % 32 + 32) % 32] > 0)
+                    {
+                        color = Color.Red;
+                    }
+                    if (game.isLight) { lightPositions.Add((player.posX, player.posY, 11)); }
+                    drawPixel(gameBitmap, color, (player.posX, player.posY), camPos, PNGmultiplicator);
+                }
+
+
+                if (game.isLight && !debugMode) // light shit
+                {
+                    lightBitmap = new Bitmap(gameBitmap.Size.Width/4, gameBitmap.Size.Height/4);
+                    for (int i = UnloadedChunksAmount; i < chunkResolution - UnloadedChunksAmount; i++)
+                    {
+                        for (int j = UnloadedChunksAmount; j < chunkResolution - UnloadedChunksAmount; j++)
+                        {
+                            chunko = loadedChunks[(chunkX + i, chunkY + j)];
+                            pasteImage(lightBitmap, chunko.lightBitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, 1);
+                            //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32), PNGmultiplicator); } // if want to show chunk origin
+                        }
+                    }
+                    //fillBitmap(lightBitmap, Color.Black);
+
+                    if (false) // weirdly much slower than the other one
+                    {
+                        //pasteBitmapTransparenciesOnBitmap(lightBitmap, lightPositions, camPos);
+                    }
+                    else
+                    {
+                        foreach ((int x, int y, int radius) pos in lightPositions)
+                        {
+                            pasteImage(lightBitmap, lightBitmaps[pos.radius], (pos.x - pos.radius, pos.y - pos.radius), camPos, 1);
+                        }
+                    }
+
+                    //replaceLight(lightBitmap);
+
+                    Bitmap resizedBitmap = new Bitmap(lightBitmap.Width * 4, lightBitmap.Height * 4);
+                    using (Graphics g = Graphics.FromImage(resizedBitmap))
+                    {
+                        g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                        g.DrawImage(lightBitmap, 0, 0, resizedBitmap.Width, resizedBitmap.Height);
+                    }
+                    lightBitmap = resizedBitmap;
+
+                    pasteImage(gameBitmap, lightBitmap, (UnloadedChunksAmount*32, UnloadedChunksAmount*32), (0, 0), 1);
+                    lightBitmap.Dispose();
+                }
+
+                if (!debugMode) // fog of war
+                {
+                    for (int i = UnloadedChunksAmount; i < chunkResolution - UnloadedChunksAmount; i++)
+                    {
+                        for (int j = UnloadedChunksAmount; j < chunkResolution - UnloadedChunksAmount; j++)
+                        {
+                            chunko = loadedChunks[(chunkX + i, chunkY + j)];
+                            if (chunko.explorationLevel == 0)
+                            {
+                                pasteImage(gameBitmap, black32Bitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator);
+                            }
+                            else if (chunko.explorationLevel == 1)
+                            {
+                                pasteImage(gameBitmap, chunko.fogBitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator);
+                            }
+                        }
+                    }
+                }
+
+                if (debugMode) // debug for nests
                 {
                     foreach (Nest nest in activeNests.Values)
                     {
                         foreach ((int x, int y) posToDrawAt in nest.digErrands)
                         {
-                            drawPixel(Color.FromArgb(100, 255, 0, 0), posToDrawAt, camPos, PNGmultiplicator);
+                            drawPixel(gameBitmap, Color.FromArgb(100, 255, 0, 0), posToDrawAt, camPos, PNGmultiplicator);
                         }
                         if (nest.rooms.ContainsKey(1))
                         {
                             foreach ((int x, int y) posToDrawAt in nest.rooms[1].tiles)
                             {
-                                drawPixel(Color.FromArgb(100, 120, 0, 100), posToDrawAt, camPos, PNGmultiplicator);
+                                drawPixel(gameBitmap, Color.FromArgb(100, 120, 0, 100), posToDrawAt, camPos, PNGmultiplicator);
                             }
                         }
                         foreach (Room room in nest.rooms.Values)
@@ -854,83 +959,61 @@ namespace Cave
                             {
                                 foreach ((int x, int y) posToDrawAt in room.dropPositions)
                                 {
-                                    drawPixel(Color.FromArgb(100, 0, 0, 255), posToDrawAt, camPos, PNGmultiplicator);
+                                    drawPixel(gameBitmap, Color.FromArgb(100, 0, 0, 255), posToDrawAt, camPos, PNGmultiplicator);
                                 }
                             }
                             else if (room.type == 3)
                             {
                                 foreach ((int x, int y) posToDrawAt in room.dropPositions)
                                 {
-                                    drawPixel(Color.FromArgb(100, 220, 255, 150), posToDrawAt, camPos, PNGmultiplicator);
+                                    drawPixel(gameBitmap, Color.FromArgb(100, 220, 255, 150), posToDrawAt, camPos, PNGmultiplicator);
                                 }
                             }
                         }
                     }
-                    foreach (Entity entity in activeEntities.Values) // debug for paths
+                }
+                if (debugMode) // debug for paths
+                {
+                    foreach (Entity entity in activeEntities.Values)
                     {
                         foreach ((int x, int y) posToDrawAt in entity.pathToTarget)
                         {
-                            drawPixel(Color.FromArgb(100, entity.color.R, entity.color.G, entity.color.B), posToDrawAt, camPos, PNGmultiplicator);
+                            drawPixel(gameBitmap, Color.FromArgb(100, entity.color.R, entity.color.G, entity.color.B), posToDrawAt, camPos, PNGmultiplicator);
                         }
                         foreach ((int x, int y) posToDrawAt in entity.simplifiedPathToTarget)
                         {
-                            drawPixel(Color.FromArgb(100, 200, 0, 100), posToDrawAt, camPos, PNGmultiplicator);
+                            drawPixel(gameBitmap, Color.FromArgb(100, 200, 0, 100), posToDrawAt, camPos, PNGmultiplicator);
                         }
                     }
                 }
 
-                {
-                    Color color = Color.Green;
-                    (int, int) chunkPos = findChunkAbsoluteIndex(player.posX, player.posY);
-                    Chunk chunkToTest = loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[(player.posX % 32 + 32) % 32, (player.posY % 32 + 32) % 32] > 0)
-                    {
-                        color = Color.Red;
-                    }
-                    drawPixel(color, (player.posX, player.posY), camPos, PNGmultiplicator);
-                }
-
-                for (int i = UnloadedChunksAmount; i < chunkResolution - UnloadedChunksAmount; i++)
-                {
-                    for (int j = UnloadedChunksAmount; j < chunkResolution - UnloadedChunksAmount; j++)
-                    {
-                        chunko = loadedChunks[(chunkX + i, chunkY + j)];
-                        if (chunko.explorationLevel == 0)
-                        {
-                            pasteImage(black32Bitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator);
-                        }
-                        else if (chunko.explorationLevel == 1)
-                        {
-                            pasteImage(chunko.fogBitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator);
-                        }
-                    }
-                }
-
-                if (debugMode)
+                if (debugMode) // debug shit for chunks and megachunks
                 {
                     (int x, int y) cameraChunkIdx = (Floor(game.playerList[0].camPosX, 32) / 32, Floor(game.playerList[0].camPosY, 32) / 32);
                     foreach ((int x, int y) poso in megaChunks.Keys)
                     {
                         Color colorToDraw = Color.Crimson;
-                        drawPixelFixed(colorToDraw, (300 + poso.x * 16 - cameraChunkIdx.x, 300 + poso.y * 16 - cameraChunkIdx.y), 16);
+                        drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x * 16 - cameraChunkIdx.x, 300 + poso.y * 16 - cameraChunkIdx.y), 16);
                     }
                     foreach ((int x, int y) poso in structureLoadedChunkIndexes.Keys)
                     {
                         Color colorToDraw = Color.FromArgb(100, 255, 255, 100);
-                        drawPixelFixed(colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
+                        drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
                     }
                     foreach ((int x, int y) poso in nestLoadedChunkIndexes.Keys)
                     {
                         Color colorToDraw = Color.Purple;
-                        drawPixelFixed(colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
+                        drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
                     }
                     foreach ((int x, int y) poso in loadedChunks.Keys)
                     {
                         Color colorToDraw = Color.FromArgb(150, 0, 128, 0);
                         if (nestLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.Cyan; }
-                        drawPixelFixed(colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
+                        drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
                     }
                 }
+
+
 
                 gameBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 return gameBitmap;

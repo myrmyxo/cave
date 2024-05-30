@@ -120,6 +120,7 @@ namespace Cave
                     {(3, 3, 1), -999 },
                     {(0, 0, 2), -999 },
                     {(1, 0, 2), -999 },
+                    {(1, 1, 2), -999 },
                     {(2, 0, 2), -999 },
                     {(2, 1, 2), -999 },
                     {(3, 0, 2), -999 },
@@ -140,6 +141,7 @@ namespace Cave
                     (3, 3, 1),
                     (0, 0, 2),
                     (1, 0, 2),
+                    (1, 1, 2),
                     (2, 0, 2),
                     (2, 1, 2),
                     (3, 0, 2),
@@ -311,7 +313,7 @@ namespace Cave
                             {
                                 for (int jj = 0; jj < 32; jj++)
                                 {
-                                    chunkToTest.fogBitmap.SetPixel(ii, jj, Color.Black);
+                                    setPixelButFaster(chunkToTest.fogBitmap, (ii, jj), Color.Black);
                                 }
                             }
                         }
@@ -319,7 +321,7 @@ namespace Cave
                         if (!chunkToTest.fogOfWar[tileIndex.x, tileIndex.y])
                         {
                             chunkToTest.fogOfWar[tileIndex.x, tileIndex.y] = true;
-                            chunkToTest.fogBitmap.SetPixel(tileIndex.x, tileIndex.y, Color.Transparent);
+                            setPixelButFaster(chunkToTest.fogBitmap, (tileIndex.x, tileIndex.y), Color.Transparent);
                         }
                     }
                 }
@@ -331,6 +333,7 @@ namespace Cave
                         if (!boolo)
                         {
                             setAsVisited = false;
+                            chunko.fogBitmap.MakeTransparent(Color.White);
                             break;
                         }
                     }

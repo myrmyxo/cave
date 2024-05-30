@@ -42,6 +42,7 @@ namespace Cave
 
             public static Bitmap black32Bitmap = new Bitmap(32, 32);
             public static Chunk theFilledChunk;
+            public static Color transparentColor = Color.FromArgb(0, 255, 255, 255);
 
             public static Random rand = new Random();
 
@@ -87,6 +88,12 @@ namespace Cave
                 { -5, 5 }, // honey
             };
 
+            public static Dictionary<int, bool> darkBiomes = new Dictionary<int, bool>
+            {
+                //{ 0, true }, // chandelier biome
+                { 9, true }, // chandelier biome
+            };
+
             public static Dictionary<int, (int, int, int)> biomeDict = new Dictionary<int, (int, int, int)>
             {
                 { 0, (Color.Blue.R,Color.Blue.G,Color.Blue.B) }, // cold biome
@@ -98,6 +105,8 @@ namespace Cave
                 { 6, (-100,-100,-100) }, // obsidian biome...
                 { 7, (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) }, // frost biome
                 { 8, (Color.LightBlue.R,Color.LightBlue.G+60,Color.LightBlue.B+130) }, // ocean biome !
+                { 9, (Color.Gray.R,Color.Gray.G,Color.Gray.B) }, // stoplights and chandeliers biome !?!
+                { 10, (Color.Red.R,Color.Red.G,Color.Red.B) }, // Livinggg biome !?!
             };
 
             // 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
@@ -112,6 +121,8 @@ namespace Cave
                 { 6, (220, 220, 128, 128) }, // obsidian biome...
                 { 7, (-100, 128, 128, 128) }, // frost biome
                 { 8, (128, 240, 128, 128) }, // ocean biome !
+                { 9, (80, 80, 60, 60) }, // chandeliers biome !
+                { 10, (180, 220, 128, 220) }, // LIVING biome !
             };
 
             public static string[] nameArray = new string[]
@@ -166,6 +177,7 @@ namespace Cave
 
             makeTheFilledChunk();
             makeBlackBitmap();
+            makeLightBitmaps();
 
             if (false)
             {
@@ -208,7 +220,7 @@ namespace Cave
 
             Game game;
 
-            loadStructuresYesOrNo = true;
+            loadStructuresYesOrNo = false;
 
             bool updatePNG = false;
             int PNGsize = 120; // in chunks, 300 or more made it out of memory :( so put at 250 okok
@@ -219,11 +231,13 @@ namespace Cave
             // cool ideas for later !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ?
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
-            // add a dimension with CANDLE TREES (arbres chandeliers) that could be banger (and darkish gray cement/concrete tiles ?)
+            // add a dimension with CANDLE TREES (arbres chandeliers) that could be banger (and darkish gray cement/concrete tiles ?).
+            // and like have candelier tree biomes, stoplight biomes, and candle biomes ?
             // make it possible to visit entities/players inventories lmfao
             // looping dimensions ???? Could be cool. And serve as TELEPORT HUBS ???
             // bone trees and shrubs... like ribs. Maybe a BONE dimension ! Or biome inside the living dimension... kinda good yesyes, a dead part of the living dimension.
-            // maybe depending on a parameter of the dimension, some living world dimensions would be more dead or not dead at all. 
+            // maybe depending on a parameter of the dimension, some living world dimensions would be more dead or not dead at all.
+            // Lolitadimension ?? ? ? or CANDYDIMENSION ???? idk ? ? ? sugar cane trees would be poggers. Or a candy dimension with candies... yeah and uh idk a lolita biome and a super rare variant being a gothic lolita biome ??? idk wtf i'm on ngl
 
             //
             // cool seeds !!!! DO NOT DELETE
@@ -533,105 +547,125 @@ namespace Cave
             int fY = fX1 * (modulo - modY) + fX2 * modY;
             return fY / (modulo * modulo);
         }
-        public static (int, int)[] findBiome(int[,,] values, int[,,] bigBiomeValues, int posX, int posY)
+        public static (int, int)[] findBiome(Chunk chunk, int posX, int posY)
         {
             //return new (int, int)[]{ (8, 1000) }; // use this to force a biome for debug (infite biome)
 
 
             // arrite so... 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
-            int temperature = values[posX, posY, 0] + bigBiomeValues[posX, posY, 0] - 512;
-            int humidity = values[posX, posY, 1] + bigBiomeValues[posX, posY, 1] - 512;
-            int acidity = values[posX, posY, 2] + bigBiomeValues[posX, posY, 2] - 512;
-            int toxicity = values[posX, posY, 3] + bigBiomeValues[posX, posY, 3] - 512;
+            int temperature = chunk.secondaryBiomeValues[posX, posY, 0] + chunk.secondaryBigBiomeValues[posX, posY, 0] - 512;
+            int humidity = chunk.secondaryBiomeValues[posX, posY, 1] + chunk.secondaryBigBiomeValues[posX, posY, 1] - 512;
+            int acidity = chunk.secondaryBiomeValues[posX, posY, 2] + chunk.secondaryBigBiomeValues[posX, posY, 2] - 512;
+            int toxicity = chunk.secondaryBiomeValues[posX, posY, 3] + chunk.secondaryBigBiomeValues[posX, posY, 3] - 512;
             List<(int, int)> listo = new List<(int, int)>();
             int percentageFree = 1000;
 
-            if (humidity > 720)
+            if (chunk.screen.type == 0)
             {
-                int oceanness = Min((humidity - 720) * 25, 1000);
-                if (oceanness > 0)
-                {
-                    listo.Add((8, oceanness));
-                    percentageFree -= oceanness;
-                }
-            }
 
-
-            if (percentageFree > 0)
-            {
-                if (temperature > 720)
+                if (humidity > 720)
                 {
-                    int hotness = (int)(Min((temperature - 720) * 25, 1000) * percentageFree * 0.001f);
-                    if (temperature > 840 && humidity > 600)
+                    int oceanness = Min((humidity - 720) * 25, 1000);
+                    if (oceanness > 0)
                     {
-                        int minimo = Min(temperature - 840, humidity - 600);
-                        int obsidianess = minimo * 10;
-                        obsidianess = (int)(Min(obsidianess, 1000) * percentageFree * 0.001f);
-                        hotness -= obsidianess;
-                        listo.Add((6, obsidianess));
-                        percentageFree -= obsidianess;
-                    }
-                    if (hotness > 0)
-                    {
-                        listo.Add((2, hotness));
-                        percentageFree -= hotness;
+                        listo.Add((8, oceanness));
+                        percentageFree -= oceanness;
                     }
                 }
-                else if (temperature < 440)
+
+
+                if (percentageFree > 0)
                 {
-                    int coldness = (int)(Min((440 - temperature) * 10, 1000) * percentageFree * 0.001f);
-                    if (temperature < 0)
+                    if (temperature > 720)
                     {
-                        int bigColdness = (int)(Min((0 - temperature) * 10, 1000) * coldness * 0.001f);
-                        coldness -= bigColdness;
-                        if (bigColdness > 0)
+                        int hotness = (int)(Min((temperature - 720) * 25, 1000) * percentageFree * 0.001f);
+                        if (temperature > 840 && humidity > 600)
                         {
-                            listo.Add((7, bigColdness));
-                            percentageFree -= bigColdness;
+                            int minimo = Min(temperature - 840, humidity - 600);
+                            int obsidianess = minimo * 10;
+                            obsidianess = (int)(Min(obsidianess, 1000) * percentageFree * 0.001f);
+                            hotness -= obsidianess;
+                            listo.Add((6, obsidianess));
+                            percentageFree -= obsidianess;
+                        }
+                        if (hotness > 0)
+                        {
+                            listo.Add((2, hotness));
+                            percentageFree -= hotness;
                         }
                     }
-                    int savedColdness = (int)(Max(0, (Min((120 - temperature) * 10, 1000))) * percentageFree * 0.001f);
-                    savedColdness = Min(savedColdness, coldness);
-                    coldness -= savedColdness;
-                    if (acidity < 440)
+                    else if (temperature < 440)
                     {
-                        int acidness = (int)(Min((440 - acidity) * 10, 1000) * coldness * 0.001f);
-                        coldness -= acidness;
-                        listo.Add((1, acidness));
-                        percentageFree -= acidness;
-                    }
-                    if (humidity > toxicity)
-                    {
-                        int fairyness = (int)(Min((humidity - toxicity) * 10, 1000) * coldness * 0.001f);
-                        coldness -= fairyness;
-                        if (fairyness > 0)
+                        int coldness = (int)(Min((440 - temperature) * 10, 1000) * percentageFree * 0.001f);
+                        if (temperature < 0)
                         {
-                            listo.Add((5, fairyness));
-                            percentageFree -= fairyness;
+                            int bigColdness = (int)(Min((0 - temperature) * 10, 1000) * coldness * 0.001f);
+                            coldness -= bigColdness;
+                            if (bigColdness > 0)
+                            {
+                                listo.Add((7, bigColdness));
+                                percentageFree -= bigColdness;
+                            }
+                        }
+                        int savedColdness = (int)(Max(0, (Min((120 - temperature) * 10, 1000))) * percentageFree * 0.001f);
+                        savedColdness = Min(savedColdness, coldness);
+                        coldness -= savedColdness;
+                        if (acidity < 440)
+                        {
+                            int acidness = (int)(Min((440 - acidity) * 10, 1000) * coldness * 0.001f);
+                            coldness -= acidness;
+                            listo.Add((1, acidness));
+                            percentageFree -= acidness;
+                        }
+                        if (humidity > toxicity)
+                        {
+                            int fairyness = (int)(Min((humidity - toxicity) * 10, 1000) * coldness * 0.001f);
+                            coldness -= fairyness;
+                            if (fairyness > 0)
+                            {
+                                listo.Add((5, fairyness));
+                                percentageFree -= fairyness;
+                            }
+                        }
+                        coldness += savedColdness;
+                        if (coldness > 0)
+                        {
+                            listo.Add((0, coldness));
+                            percentageFree -= coldness;
                         }
                     }
-                    coldness += savedColdness;
-                    if (coldness > 0)
+                }
+
+                if (percentageFree > 0)
+                {
+                    int slimeness = (int)(Clamp((toxicity - humidity + 20) * 10, 0, 1000) * percentageFree * 0.001f);
+                    int forestness = (int)(Clamp((humidity - toxicity + 20) * 10, 0, 1000) * percentageFree * 0.001f);
+                    if (forestness > 0)
                     {
-                        listo.Add((0, coldness));
-                        percentageFree -= coldness;
+                        listo.Add((3, forestness));
+                        percentageFree -= forestness;
+                    }
+                    if (slimeness > 0)
+                    {
+                        listo.Add((4, slimeness));
+                        percentageFree -= slimeness;
                     }
                 }
             }
-
-            if (percentageFree > 0)
+            else if (true)
             {
-                int slimeness = (int)(Clamp((toxicity - humidity + 20) * 10, 0, 1000) * percentageFree * 0.001f);
-                int forestness = (int)(Clamp((humidity - toxicity + 20) * 10, 0, 1000) * percentageFree * 0.001f);
-                if (forestness > 0)
+                if (humidity > 512)
                 {
-                    listo.Add((3, forestness));
-                    percentageFree -= forestness;
+                    int oceanness = Min((humidity - 720) * 25, 1000);
+                    if (oceanness > 0)
+                    {
+                        listo.Add((9, oceanness));
+                        percentageFree -= oceanness;
+                    }
                 }
-                if (slimeness > 0)
+                if (percentageFree > 0)
                 {
-                    listo.Add((4, slimeness));
-                    percentageFree -= slimeness;
+                    listo.Add((0, percentageFree));
                 }
             }
 
@@ -797,6 +831,14 @@ namespace Cave
                 }
             }
         }
+        public static void makeLightBitmaps()
+        {
+            lightBitmaps = new Dictionary<int, Bitmap> ();
+            for (int i = 0; i <= 20; i++)
+            {
+                lightBitmaps[i] = makeLightBitmap((int)(i*0.5f+0.6f), i);
+            }
+        }
         public static void makeBlackBitmap()
         {
             black32Bitmap = new Bitmap(32, 32);
@@ -804,7 +846,7 @@ namespace Cave
             {
                 for (int j = 0; j < 32; j++)
                 {
-                    black32Bitmap.SetPixel(i, j, Color.Black);
+                    Sprites.setPixelButFaster(black32Bitmap, (i, j), Color.Black);
                 }
             }
         }
@@ -891,12 +933,22 @@ namespace Cave
             if (a > b) { return a; }
             return b;
         }
+        public static byte Max(byte a, byte b)
+        {
+            if (a > b) { return a; }
+            return b;
+        }
         public static float Min(float a, float b)
         {
             if (a < b) { return a; }
             return b;
         }
         public static int Min(int a, int b)
+        {
+            if (a < b) { return a; }
+            return b;
+        }
+        public static byte Min(byte a, byte b)
         {
             if (a < b) { return a; }
             return b;

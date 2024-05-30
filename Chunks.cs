@@ -26,8 +26,6 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
-using System.Runtime.CompilerServices;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
 
 namespace Cave
 {
@@ -64,9 +62,10 @@ namespace Cave
             public int unstableLiquidCount = 1;
             public bool entitiesAndPlantsSpawned = false;
 
-            public int explorationLevel = 2; // set fog : 0 for not visible, 1 for cremebetweens, 2 for fully visible
+            public int explorationLevel = 0; // set fog : 0 for not visible, 1 for cremebetweens, 2 for fully visible
             public bool[,] fogOfWar = null;
             public Bitmap fogBitmap = null;
+            public Bitmap lightBitmap = new Bitmap(32, 32);
             public Chunk()
             {
 
@@ -131,10 +130,10 @@ namespace Cave
                         for (int k = layerStart; k < 6; k++)
                         {
                             secondaryBiomeValues[i, j, k] = findSecondaryBiomeValue(this, i, j, k);
-                            secondaryBigBiomeValues[i, j, k] = findSecondaryBigBiomeValue(this, i, j, k);
+                            secondaryBigBiomeValues[i, j, k] = 512;//findSecondaryBigBiomeValue(this, i, j, k);
                         }
                         if (screen.isMonoBiome) { biomeIndex[i, j] = new (int, int)[] { (screen.type, 1000) }; }
-                        else { biomeIndex[i, j] = findBiome(secondaryBiomeValues, secondaryBigBiomeValues, i, j); }
+                        else { biomeIndex[i, j] = findBiome(this, i, j); }
 
                         int[] colorArray = { 0, 0, 0 };
                         float mult;
@@ -160,7 +159,6 @@ namespace Cave
 
 
                 // terrain noise shit generation
-
                 if (!filePresent)
                 {
                     chunkX = position.x * 2;
@@ -187,9 +185,13 @@ namespace Cave
                     secondaryFillValues = new int[2, 32, 32];
                     secondaryBigFillValues = new int[2, 32, 32];
                     fillStates = new int[32, 32];
-                    for (int i = 0; i < 32; i++)
+                }
+
+                for (int i = 0; i < 32; i++)
+                {
+                    for (int j = 0; j < 32; j++)
                     {
-                        for (int j = 0; j < 32; j++)
+                        if (!filePresent)
                         {
                             secondaryFillValues[0, i, j] = findSecondaryNoiseValue(this, i, j, 0);
                             secondaryBigFillValues[0, i, j] = findSecondaryBigNoiseValue(this, i, j, 0);
@@ -222,7 +224,7 @@ namespace Cave
                                 {
                                     value2modifier += -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11));
                                 }
-                                else if (tupel.Item1 == 3)
+                                else if (tupel.Item1 == 3 || tupel.Item1 == 9)
                                 {
                                     foresto += mult;
                                 }
@@ -280,6 +282,21 @@ namespace Cave
                             else { fillStates[i, j] = 1; }
                             //fillStates[i, j] = 1;
                         }
+
+                        int darkness = 0;
+                        foreach ((int, int) tupel in biomeIndex[i, j])
+                        {
+                            if (darkBiomes.ContainsKey(tupel.Item1))
+                            {
+                                darkness += (int)(tupel.Item2*0.3f);
+                                if (tupel.Item2 < 900)
+                                {
+                                    bool houhou = false;
+                                }
+                            }
+                        }
+                        Color colorToDraw = Color.FromArgb(Max(0, 255-darkness), 255, 255, 255);
+                        setPixelButFaster(lightBitmap, (i, j), colorToDraw);
                     }
                 }
 
@@ -381,7 +398,7 @@ namespace Cave
                     colorArray[2] = (int)(colorArray[2] * 0.8f) + 70;
                 }
                 colors[i, j] = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
-                bitmap.SetPixel(i, j, colors[i, j]);
+                setPixelButFaster(bitmap, (i, j), colors[i, j]);
             }
             public void spawnEntities()
             {
@@ -396,6 +413,7 @@ namespace Cave
                     if (!newPlant.isDeadAndShouldDisappear)
                     {
                         screen.activePlants[newPlant.id] = newPlant;
+                        if (newPlant.type == 1) { break; }
                     }
                 }
                 entitiesAndPlantsSpawned = true;

@@ -151,7 +151,7 @@ namespace Cave
                     type = 0;
                     subType = 1;
                 }
-                else if (biome == 7)
+                else if (biome == 7 || biome == 9)
                 {
                     type = 0;
                     subType = 2;

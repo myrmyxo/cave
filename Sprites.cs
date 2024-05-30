@@ -26,11 +26,15 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using System.Drawing.Imaging;
+using System.Xml.Linq;
 
 namespace Cave
 {
     public class Sprites
     {
+        public static Dictionary<int, Bitmap> lightBitmaps;
+
         public static Dictionary<int, OneSprite> compoundSprites;
         public static Dictionary<(int, int), OneSprite> entitySprites;
         public static Dictionary<(int, int), OneSprite> plantSprites;
@@ -68,6 +72,7 @@ namespace Cave
             {
                 { (0, 0), new OneSprite("BasePlant", false)},
                 { (1, 0), new OneSprite("Tree", false)},
+                { (1, 1), new OneSprite("Tree", false)},
                 { (2, 0), new OneSprite("KelpUpwards", false)},
                 { (2, 1), new OneSprite("KelpDownwards", false)},
                 { (3, 0), new OneSprite("ObsidianPlant", false)},
@@ -224,7 +229,7 @@ namespace Cave
                 {
                     for (int j = 0; j < dimensions.Item2; j++)
                     {
-                        bitmap.SetPixel(i, j, palette[thirdLineInts[i+j*dimensions.Item1]]);
+                        setPixelButFaster(bitmap, (i, j), palette[thirdLineInts[i+j*dimensions.Item1]]);
                     }
                 }
             }
@@ -235,7 +240,7 @@ namespace Cave
                 {
                     for (int j = 0; j < dimensions.Item2; j++)
                     {
-                        bitmap.SetPixel(i, j, Color.FromArgb(palette[colors[i, j]].Item1, palette[colors[i, j]].Item2, palette[colors[i, j]].Item3, palette[colors[i, j]].Item4));
+                        bitmap.setPixelButFaster(i, j, Color.FromArgb(palette[colors[i, j]].Item1, palette[colors[i, j]].Item2, palette[colors[i, j]].Item3, palette[colors[i, j]].Item4));
                     }
                 }
             }*/
@@ -420,6 +425,212 @@ namespace Cave
                 return Color.FromArgb(255, t, p, v);
             else
                 return Color.FromArgb(255, v, p, q);
+        }
+
+
+
+        public static Bitmap makeLightBitmap(int radius, int bigRadius)
+        {
+            int radiusSq = (int)((radius+0.5f)*(radius+0.5f));
+            int bigRadius2 = bigRadius*2;
+            int bigRadiusSq = (int)((bigRadius+0.5f)*(bigRadius+0.5f));
+            Bitmap bitmap = new Bitmap(bigRadius2 + 1, bigRadius2 + 1); // size 0 : 1*1 bitmap
+            int length2;
+            Color color;
+            Color semiTransparent = Color.FromArgb(128,255,255,255);
+            Color transparent = Color.FromArgb(255,255,255,255);
+            for (int i = 0; i < bigRadius2 + 1; i++)
+            {
+                for (int j = 0; j < bigRadius2 + 1; j++)
+                {   
+                    length2 = (i - bigRadius) * (i - bigRadius) + (j - bigRadius) * (j - bigRadius);
+                    if (length2 <= bigRadiusSq)
+                    {
+                        if (length2 <= radiusSq)
+                        {
+                            color = transparent;
+                        }
+                        else { color = semiTransparent; }
+                        setPixelButFaster(bitmap, (i, j), color);
+                    }
+                }
+            }
+            return bitmap;
+        }
+
+
+
+        // the unsafe shit is NOT MY CODE !!! Thank you davidtbernal (i think)
+        public static unsafe Bitmap replaceLight(Bitmap bitmap)    // only to set transparency !
+        {
+            BitmapData bData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadWrite, bitmap.PixelFormat);
+
+            byte bitsPerPixel = (byte)System.Drawing.Image.GetPixelFormatSize(bData.PixelFormat);
+            byte* scan0 = (byte*)bData.Scan0.ToPointer();
+
+            byte* data;
+            for (int i = 0; i < bData.Height; ++i)
+            {
+                for (int j = 0; j < bData.Width; ++j)
+                {
+                    data = scan0 + i * bData.Stride + j * bitsPerPixel / 8;
+                    data[3] = (byte)(255 - data[3]);
+                    data[0] = 0;
+                    data[1] = 0;
+                    data[2] = 0;
+                }
+            }
+
+            bitmap.UnlockBits(bData);
+
+            return bitmap;
+        }
+        public static unsafe Bitmap replaceColor(Bitmap bitmap, Color colorToReplace, Color replacement)    // only to set transparency !
+        {
+            BitmapData bData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadWrite, bitmap.PixelFormat);
+
+            byte bitsPerPixel = (byte)System.Drawing.Image.GetPixelFormatSize(bData.PixelFormat);
+            byte* scan0 = (byte*)bData.Scan0.ToPointer();
+
+            byte* data;
+            for (int i = 0; i < bData.Height; ++i)
+            {
+                for (int j = 0; j < bData.Width; ++j)
+                {
+                    data = scan0 + i * bData.Stride + j * bitsPerPixel / 8;
+                    if (data[0] == colorToReplace.B && data[1] == colorToReplace.G && data[2] == colorToReplace.R && data[3] == colorToReplace.A)
+                    {
+                        data[0] = replacement.B;
+                        data[1] = replacement.G;
+                        data[2] = replacement.R;
+                        data[3] = replacement.A;
+                    }
+                }
+            }
+
+            bitmap.UnlockBits(bData);
+
+            return bitmap;
+        }
+        public static unsafe Bitmap pasteBitmapOnBitmap(Bitmap receiver, Bitmap bitmapToPaste, (int x, int y) posToPaste)    // only to set transparency !
+        {
+            BitmapData bData1 = receiver.LockBits(new Rectangle(0, 0, receiver.Width, receiver.Height), ImageLockMode.ReadWrite, receiver.PixelFormat);
+            BitmapData bData2 = bitmapToPaste.LockBits(new Rectangle(0, 0, bitmapToPaste.Width, bitmapToPaste.Height), ImageLockMode.ReadWrite, bitmapToPaste.PixelFormat);
+
+            byte bitsPerPixel1 = (byte)System.Drawing.Image.GetPixelFormatSize(bData1.PixelFormat);
+            byte bitsPerPixel2 = (byte)System.Drawing.Image.GetPixelFormatSize(bData2.PixelFormat);
+            byte* scan01 = (byte*)bData1.Scan0.ToPointer();
+            byte* scan02 = (byte*)bData2.Scan0.ToPointer();
+
+            byte* data1;
+            byte* data2;
+            (int x, int y) pos;
+            for (int i = 0; i < bData2.Height; ++i)
+            {
+                for (int j = 0; j < bData2.Width; ++j)
+                {
+                    pos = (posToPaste.x + i, posToPaste.y + j);
+                    data1 = scan01 + pos.x * bData1.Stride + pos.y * bitsPerPixel1 / 8;
+                    data2 = scan02 + i * bData2.Stride + j * bitsPerPixel2 / 8;
+                    data1 = data2;
+                    /*if (data[0] == colorToReplace.B && data[1] == colorToReplace.G && data[2] == colorToReplace.R && data[3] == colorToReplace.A)
+                    {
+                        data[0] = replacement.B;
+                        data[1] = replacement.G;
+                        data[2] = replacement.R;
+                        data[3] = replacement.A;
+                    }*/
+                }
+            }
+
+            receiver.UnlockBits(bData1);
+            bitmapToPaste.UnlockBits(bData2);
+
+            return receiver;
+        }
+        public static unsafe Bitmap pasteBitmapTransparencyOnBitmap(Bitmap receiver, Bitmap bitmapToPaste, (int x, int y) posToPaste)    // only to set transparency !
+        {
+            BitmapData bData1 = receiver.LockBits(new Rectangle(0, 0, receiver.Width, receiver.Height), ImageLockMode.ReadWrite, receiver.PixelFormat);
+            BitmapData bData2 = bitmapToPaste.LockBits(new Rectangle(0, 0, bitmapToPaste.Width, bitmapToPaste.Height), ImageLockMode.ReadWrite, bitmapToPaste.PixelFormat);
+
+            byte bitsPerPixel1 = (byte)System.Drawing.Image.GetPixelFormatSize(bData1.PixelFormat);
+            byte bitsPerPixel2 = (byte)System.Drawing.Image.GetPixelFormatSize(bData2.PixelFormat);
+            byte* scan01 = (byte*)bData1.Scan0.ToPointer();
+            byte* scan02 = (byte*)bData2.Scan0.ToPointer();
+
+            byte* data1;
+            byte* data2;
+            (int x, int y) pos;
+            for (int i = 0; i < bData2.Height; ++i)
+            {
+                for (int j = 0; j < bData2.Width; ++j)
+                {
+                    pos = (posToPaste.x + j, posToPaste.y + i);
+                    if (pos.x < 0 || pos.y < 0 || receiver.Width <= pos.x || receiver.Height <= pos.y) { continue; }
+                    data1 = scan01 + pos.y * bData1.Stride + pos.x * bitsPerPixel1 / 8;
+                    data2 = scan02 + i * bData2.Stride + j * bitsPerPixel2 / 8;
+                    data1[3] = 0;
+                    //data1[3] = Min(data1[3], data2[3]);
+                }
+            }
+
+            receiver.UnlockBits(bData1);
+            bitmapToPaste.UnlockBits(bData2);
+
+            return receiver;
+        }
+        /*public static unsafe Bitmap pasteBitmapTransparenciesOnBitmap(Bitmap receiver, List<(int x, int y)> bitmapPos, (int x, int y) camPos)    // only to set transparency !
+        {
+            BitmapData bData1 = receiver.LockBits(new Rectangle(0, 0, receiver.Width, receiver.Height), ImageLockMode.ReadWrite, receiver.PixelFormat);
+                BitmapData bData2 = lightBitmap3.LockBits(new Rectangle(0, 0, lightBitmap3.Width, lightBitmap3.Height), ImageLockMode.ReadWrite, lightBitmap3.PixelFormat);
+
+            byte bitsPerPixel1 = (byte)System.Drawing.Image.GetPixelFormatSize(bData1.PixelFormat);
+                byte bitsPerPixel2 = (byte)System.Drawing.Image.GetPixelFormatSize(bData2.PixelFormat);
+            byte* scan01 = (byte*)bData1.Scan0.ToPointer();
+                byte* scan02 = (byte*)bData2.Scan0.ToPointer();
+
+            byte* data1;
+            byte* data2;
+            (int x, int y) pos;
+            foreach ((int x, int y) posot in bitmapPos)
+            {
+                (int x, int y) poso = (posot.x - camPos.x - UnloadedChunksAmount * 32, posot.y - camPos.y - UnloadedChunksAmount * 32);
+                for (int i = 0; i < bData2.Height; ++i)
+                {
+                    for (int j = 0; j < bData2.Width; ++j)
+                    {
+                        pos = (poso.x + j, poso.y + i);
+                        if (pos.x < 0 || pos.y < 0 || receiver.Width <= pos.x || receiver.Height <= pos.y) { continue; }
+                        data1 = scan01 + pos.y * bData1.Stride + pos.x * bitsPerPixel1 / 8;
+                        data2 = scan02 + i * bData2.Stride + j * bitsPerPixel2 / 8;
+                        data1[3] = 0;
+                        //data1[3] = Min(data1[3], data2[3]);
+                    }
+                }
+            }
+
+            receiver.UnlockBits(bData1);
+                lightBitmap3.UnlockBits(bData2);
+
+            return receiver;
+        }*/
+        public static unsafe Bitmap setPixelButFaster(Bitmap bitmap, (int x, int y) pos, Color colorToDraw)
+        {
+            BitmapData bData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadWrite, bitmap.PixelFormat);
+
+            byte bitsPerPixel = (byte)System.Drawing.Image.GetPixelFormatSize(bData.PixelFormat);
+            byte* scan0 = (byte*)bData.Scan0.ToPointer();
+
+            byte* data;
+            data = scan0 + pos.y * bData.Stride + pos.x * bitsPerPixel / 8;
+            data[0] = Max(colorToDraw.B, data[0]);
+            data[1] = Max(colorToDraw.G, data[1]);
+            data[2] = Max(colorToDraw.R, data[2]);
+            data[3] = Max(colorToDraw.A, data[3]);
+
+            bitmap.UnlockBits(bData);
+
+            return bitmap;
         }
     }
 }

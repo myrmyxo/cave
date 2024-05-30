@@ -544,7 +544,7 @@ namespace Cave
                     {
                         for (int j = 0; j < 32; j++)
                         {
-                            if (!chunk.fogOfWar[i, j]) { chunk.fogBitmap.SetPixel(i, j, Color.Black); }
+                            if (!chunk.fogOfWar[i, j]) { setPixelButFaster(chunk.fogBitmap, (i, j), Color.Black); }
                         }
                     }
                 }
