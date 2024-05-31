@@ -58,7 +58,7 @@ namespace Cave
                 timeElapsed = 0;
 
                 int idToPut = 9;
-                bool isMonoeBiomeToPut = false;
+                bool isMonoeBiomeToPut = true;
                 
                 if (isPngToExport)
                 {
@@ -813,13 +813,48 @@ namespace Cave
                     }
                 }
             }
+            public unsafe void pasteImage(Bitmap receiver, Bitmap bitmapToDraw, Color colorToPaste, (int x, int y) position, (int x, int y) camPos, int PNGmultiplicator)
+            {
+                // Thank you Stephen from stackOverflow !! !! !
+                //BitmapData bData = bitmapToDraw.LockBits(new Rectangle(0, 0, bitmapToDraw.Width, bitmapToDraw.Height), ImageLockMode.ReadWrite, bitmapToDraw.PixelFormat);
+
+                ColorPalette oldPalette = bitmapToDraw.Palette;
+
+
+
+                if (false)
+                {
+                    ColorPalette newPalette = bitmapToDraw.Palette;
+                    for (int i = 0; i < newPalette.Entries.Length; i++)
+                    {
+                        Color current = newPalette.Entries[i];
+                        newPalette.Entries[i] = Color.FromArgb((int)(colorToPaste.A*current.A*_1On255), (int)(colorToPaste.R*current.R*_1On255), (int)(colorToPaste.G*current.G * _1On255), (int)(colorToPaste.B*current.B*_1On255));
+                    }
+                    bitmapToDraw.Palette = newPalette; // The crucial statement
+                }
+
+                (int x, int y) posToDraw = (position.x - camPos.x - UnloadedChunksAmount * 32, position.y - camPos.y - UnloadedChunksAmount * 32);
+                if (true || posToDraw.x >= -bitmapToDraw.Width && posToDraw.x < (chunkResolution) * 32 && posToDraw.y >= -bitmapToDraw.Height && posToDraw.y < (chunkResolution) * 32)
+                {
+                    using (Graphics g = Graphics.FromImage(receiver))
+                    {
+                        g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                        g.DrawImage(bitmapToDraw, posToDraw.x * PNGmultiplicator, posToDraw.y * PNGmultiplicator, bitmapToDraw.Width * PNGmultiplicator, bitmapToDraw.Height * PNGmultiplicator);
+                    }
+                }
+
+                //bitmapToDraw.Palette = oldPalette; // The crucial statement
+
+                //bitmapToDraw.UnlockBits(bData);
+            }
             public Bitmap updateScreen()
             {
                 Graphics gg = Graphics.FromImage(gameBitmap);
                 gg.Clear(Color.White);
                 gg.Dispose();
 
-                List<(int x, int y, int radius)> lightPositions = new List<(int x, int y, int radius)>();
+                List<(int x, int y, int radius, Color color)> lightPositions = new List<(int x, int y, int radius, Color color)>();
 
                 Chunk chunko;
                 int PNGmultiplicator = 4;
@@ -839,12 +874,20 @@ namespace Cave
 
                 foreach (Plant plant in activePlants.Values)
                 {
-                    pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos, PNGmultiplicator);
-                    if (game.isLight && plant.type == 1 && plant.subType == 1)
+                    if (plant.type == 0 && plant.subType == 1 && (timeElapsed + plant.seed % 100) % 0.2f < 0.1f)
                     {
+                        pasteImage(gameBitmap, plant.secondaryBitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos, PNGmultiplicator);
+                    }
+                    else { pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos, PNGmultiplicator); }
+                    if (game.isLight)
+                    {
+                        int radius = 3;
+                        if (plant.type == 0 && plant.subType == 1) { radius = 5; }
+                        else if (plant.type == 1 && plant.subType == 1) { radius = 11; }
+
                         foreach ((int x, int y) pos in plant.lightPositions)
                         {
-                            lightPositions.Add((pos.x, pos.y, 15));
+                            lightPositions.Add((pos.x, pos.y, radius, plant.colorDict[plant.lightMaterial]));
                         }
                     }
                 }
@@ -861,7 +904,7 @@ namespace Cave
                             color = Color.Red;
                         }
                     }
-                    if (game.isLight && entity.type == 0) { lightPositions.Add((entity.posX, entity.posY, 7)); }
+                    if (game.isLight && entity.type == 0) { lightPositions.Add((entity.posX, entity.posY, 7, entity.color)); }
                     drawPixel(gameBitmap, color, (entity.posX, entity.posY), camPos, PNGmultiplicator);
                 }
 
@@ -873,14 +916,13 @@ namespace Cave
                     {
                         color = Color.Red;
                     }
-                    if (game.isLight) { lightPositions.Add((player.posX, player.posY, 11)); }
+                    if (game.isLight) { lightPositions.Add((player.posX, player.posY, 9, color)); }
                     drawPixel(gameBitmap, color, (player.posX, player.posY), camPos, PNGmultiplicator);
                 }
 
-
                 if (game.isLight && !debugMode) // light shit
                 {
-                    lightBitmap = new Bitmap(gameBitmap.Size.Width/4, gameBitmap.Size.Height/4);
+                    lightBitmap = new Bitmap(gameBitmap.Size.Width / 4, gameBitmap.Size.Height / 4);
                     for (int i = UnloadedChunksAmount; i < chunkResolution - UnloadedChunksAmount; i++)
                     {
                         for (int j = UnloadedChunksAmount; j < chunkResolution - UnloadedChunksAmount; j++)
@@ -890,21 +932,21 @@ namespace Cave
                             //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32), PNGmultiplicator); } // if want to show chunk origin
                         }
                     }
-                    //fillBitmap(lightBitmap, Color.Black);
 
-                    if (false) // weirdly much slower than the other one
+
+                    pasteBitmapTransparenciesOnBitmap(lightBitmap, lightPositions, camPos); // very slow for some reason !
+                    /*else
                     {
-                        //pasteBitmapTransparenciesOnBitmap(lightBitmap, lightPositions, camPos);
-                    }
-                    else
-                    {
-                        foreach ((int x, int y, int radius) pos in lightPositions)
+                        foreach ((int x, int y, int radius, Color color) pos in lightPositions)
                         {
-                            pasteImage(lightBitmap, lightBitmaps[pos.radius], (pos.x - pos.radius, pos.y - pos.radius), camPos, 1);
+                            Bitmap bitmapo = Form1.getLightBitmap(pos.color, pos.radius);
+                            for (int k = 0; k < 3; k++)
+                            {
+                                pasteImage(lightBitmap[k], bitmapo, pos.color, (pos.x - pos.radius, pos.y - pos.radius), camPos, 1);
+                            }
+                            pasteImage(lightBitmap2, bitmapo, pos.color, (pos.x - pos.radius, pos.y - pos.radius), camPos, 1);
                         }
-                    }
-
-                    //replaceLight(lightBitmap);
+                    }*/
 
                     Bitmap resizedBitmap = new Bitmap(lightBitmap.Width * 4, lightBitmap.Height * 4);
                     using (Graphics g = Graphics.FromImage(resizedBitmap))
@@ -915,8 +957,7 @@ namespace Cave
                     }
                     lightBitmap = resizedBitmap;
 
-                    pasteImage(gameBitmap, lightBitmap, (UnloadedChunksAmount*32, UnloadedChunksAmount*32), (0, 0), 1);
-                    lightBitmap.Dispose();
+                    pasteLightBitmapOnGameBitmap(gameBitmap, lightBitmap);
                 }
 
                 if (!debugMode) // fog of war

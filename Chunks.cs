@@ -130,7 +130,7 @@ namespace Cave
                         for (int k = layerStart; k < 6; k++)
                         {
                             secondaryBiomeValues[i, j, k] = findSecondaryBiomeValue(this, i, j, k);
-                            secondaryBigBiomeValues[i, j, k] = 512;//findSecondaryBigBiomeValue(this, i, j, k);
+                            secondaryBigBiomeValues[i, j, k] = findSecondaryBigBiomeValue(this, i, j, k);
                         }
                         if (screen.isMonoBiome) { biomeIndex[i, j] = new (int, int)[] { (screen.type, 1000) }; }
                         else { biomeIndex[i, j] = findBiome(this, i, j); }
@@ -409,12 +409,16 @@ namespace Cave
                 }
                 for (int i = 0; i < 4; i++)
                 {
-                    Plant newPlant = new Plant(this);
-                    if (!newPlant.isDeadAndShouldDisappear)
+                    Plant newPlanto = new Plant(this, 0);
+                    if (!newPlanto.isDeadAndShouldDisappear)
                     {
-                        screen.activePlants[newPlant.id] = newPlant;
-                        if (newPlant.type == 1) { break; }
+                        screen.activePlants[newPlanto.id] = newPlanto;
                     }
+                }
+                Plant newPlant = new Plant(this, 1);
+                if (!newPlant.isDeadAndShouldDisappear)
+                {
+                    screen.activePlants[newPlant.id] = newPlant;
                 }
                 entitiesAndPlantsSpawned = true;
             }

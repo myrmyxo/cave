@@ -279,12 +279,27 @@ namespace Cave
                     return true;
                 }
 
+                if (motherPlant.type == 0 && motherPlant.subType == 1)
+                {
+                    maxGrowthLevel = 1;
+
+                    fillStates = new Dictionary<(int x, int y), int>();
+                    tryFill((-1, 0), 7);
+                    tryFill((0, 0), 6);
+                    tryFill((1, 0), 7);
+                    tryFill((0, 1), 7);
+                    motherPlant.makeBitmap(true);
+                    tryFill((-1, 1), 7);
+                    tryFill((0, 1), 6);
+                    tryFill((1, 1), 7);
+                    tryFill((0, 2), 7);
+                    growthLevel = growthLevelToTest;
+                    return true;
+                }
                 if (motherPlant.type == 1) // tree
                 {
                     if (motherPlant.subType == 1)
                     {
-                        maxGrowthLevel = 5;
-
                         if (growthLevelToTest == 1)
                         {
                             fillStates = new Dictionary<(int x, int y), int>();
@@ -524,9 +539,11 @@ namespace Cave
 
             public float timeAtLastGrowth = timeElapsed;
 
-            public Bitmap bitmap;
+            public Bitmap bitmap = new Bitmap(1, 1);
+            public Bitmap secondaryBitmap = new Bitmap(1, 1);
             public Dictionary<(int x, int y), int> fillStates = new Dictionary<(int x, int y), int>();
             public List<(int x, int y)> lightPositions = new List<(int x, int y)>();
+            public int lightMaterial = 0;
             public int[] posOffset = new int[3];
             public int[] bounds = new int[4];
             public (int x, int y) lastDrawPos = (0, 0);
@@ -558,9 +575,9 @@ namespace Cave
                     childFlowers.Add(new Flower(this, flowerJson));
                 }
                 findColors();
-                makeBitmap();
+                makeBitmap(false);
             }
-            public Plant(Chunk chunkToPut)
+            public Plant(Chunk chunkToPut, int groupOfPlant)
             {
                 posX = chunkToPut.position.x*32;
                 posY = chunkToPut.position.y*32;
@@ -570,11 +587,11 @@ namespace Cave
                 id = currentPlantId;
                 growthLevel = -1;
                 placePlant();
+                findType(groupOfPlant);
                 if (isDeadAndShouldDisappear) { return; }
-                findType();
                 findColors();
                 tryGrowth();
-                makeBitmap();
+                makeBitmap(false);
                 timeAtLastGrowth = timeElapsed;
 
                 currentPlantId++;
@@ -594,7 +611,7 @@ namespace Cave
                 if (isDeadAndShouldDisappear) { return; }
                 findColors();
                 tryGrowth();
-                makeBitmap();
+                makeBitmap(false);
                 timeAtLastGrowth = timeElapsed;
 
                 currentPlantId++;
@@ -604,7 +621,7 @@ namespace Cave
                 if (testIfPositionEmpty(testPos)) { fillStates[testPos] = typeToFill; return true; }
                 return false;
             }
-            public void findType()
+            public void findType(int group) // 0 = small, 1 = tree
             {
                 (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
 
@@ -625,9 +642,9 @@ namespace Cave
                     }
                     else if (biome == 3) // forest
                     {
-                        if (rand.Next(2) == 0)
+                        if (group == 1)
                         {
-                            type = 0;
+                            type = 1;
                             subType = 0;
                         }
                         else
@@ -656,8 +673,16 @@ namespace Cave
                     }
                     else if (biome == 9) // chandelier
                     {
-                        type = 1;
-                        subType = 1;
+                        if (group == 0)
+                        {
+                            type = 0;
+                            subType = 1;
+                        }
+                        else if (group == 1)
+                        {
+                            type = 1;
+                            subType = 1;
+                        }
                     }
                     else
                     {
@@ -677,6 +702,10 @@ namespace Cave
                     {
                         type = 5;
                         subType = 1;
+                    }
+                    else if (biome == 9)
+                    {
+                        isDeadAndShouldDisappear = true;
                     }
                     else
                     {
@@ -704,7 +733,18 @@ namespace Cave
                 //int biome = chunk.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
                 if (type == 0) // normal
                 {
-                    colorDict.Add(1, Color.FromArgb(50 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
+                    if (subType == 1)
+                    {
+                        shadeVar = (int)(shadeVar * 0.3f);
+                        colorDict.Add(1, Color.FromArgb(210 - shadeVar, 210 - shadeVar, 200 - shadeVar));
+                        colorDict.Add(2, Color.FromArgb(40 - shadeVar, 30 - shadeVar, 10 - shadeVar));
+                        colorDict.Add(6, Color.FromArgb(220 - shadeVar, 200 - shadeVar, 80 - shadeVar));
+                        colorDict.Add(7, Color.FromArgb(200 - shadeVar, 120 - shadeVar, 40 - shadeVar));
+                    }
+                    else
+                    {
+                        colorDict.Add(1, Color.FromArgb(50 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
+                    }
                     return;
                 }
                 else if (type == 1) // woody
@@ -776,7 +816,7 @@ namespace Cave
                 }
                 return true;
             }
-            public void makeBitmap()
+            public void makeBitmap(bool isSecondaryBitmap)
             {
                 List<Branch> branchList = new List<Branch>(childBranches);
                 List<Flower> flowerList = new List<Flower>(childFlowers);
@@ -839,11 +879,22 @@ namespace Cave
 
                 int width = maxX - minX + 1;
                 int height = maxY - minY + 1;
-                bitmap = new Bitmap(width, height);
+
+                Bitmap bitmapToMake;
+                if (isSecondaryBitmap)
+                {
+                    secondaryBitmap = new Bitmap(width, height);
+                    bitmapToMake = secondaryBitmap;
+                }
+                else
+                {
+                    bitmap = new Bitmap(width, height);
+                    bitmapToMake = bitmap;
+                }
 
                 foreach ((int x, int y) drawPos in fillDict.Keys)
                 {
-                    setPixelButFaster(bitmap, (drawPos.x - minX, drawPos.y - minY), colorDict[fillDict[drawPos]]);
+                    setPixelButFaster(bitmapToMake, (drawPos.x - minX, drawPos.y - minY), colorDict[fillDict[drawPos]]);
                 }
 
                 posOffset[0] = minX;
@@ -867,10 +918,14 @@ namespace Cave
             }
             public void findLightPositions(List<Branch> branchList, List<Flower> flowerList)
             {
+                if (type == 0 && subType == 1) { lightMaterial = 7; }
+                else if (type == 1 && subType == 1) { lightMaterial = 1; }
+                else { lightMaterial = 0; }
+
                 lightPositions = new List<(int x, int y)>();
                 foreach((int x, int y) pos in fillStates.Keys)
                 {
-                    if (fillStates[pos] == 1)
+                    if (fillStates[pos] == lightMaterial)
                     {
                         lightPositions.Add((pos.x + posX, pos.y + posY));
                     }
@@ -879,7 +934,7 @@ namespace Cave
                 {
                     foreach ((int x, int y) keyo in branch.fillStates.Keys)
                     {
-                        if (branch.fillStates[keyo] == 1)
+                        if (branch.fillStates[keyo] == lightMaterial)
                         {
                             lightPositions.Add((keyo.x + branch.pos.x + posX, keyo.y + branch.pos.y + posY));
                         }
@@ -889,7 +944,7 @@ namespace Cave
                 {
                     foreach ((int x, int y) keyo in flower.fillStates.Keys)
                     {
-                        if (flower.fillStates[keyo] == 1)
+                        if (flower.fillStates[keyo] == lightMaterial)
                         {
                             lightPositions.Add((keyo.x + flower.pos.x + posX, keyo.y + flower.pos.y + posY));
                         }
@@ -921,23 +976,46 @@ namespace Cave
                     if (growthLevelToTest > maxGrowthLevel) { return false; }
 
                     (int x, int y) drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
+                    if (subType == 1)
+                    {
+                        if (testIfPositionEmpty((drawPos.x, drawPos.y+2)))
+                        {
+                            tryFill(drawPos, 1);
+                            
+                            if (growthLevel == seed % 2)
+                            {
+                                Flower baby = new Flower(this, drawPos, 0, LCGint1(seed + 3 * growthLevelToTest));
+                                childFlowers.Add(baby);
+                            }
+                            foreach (Flower flower in childFlowers)
+                            {
+                                flower.pos = (drawPos.x, drawPos.y+1);
+                            }
 
-                    seedo = LCGint1(seed + growthLevelToTest * (seed % 7 + 1));
-                    int resulto = seedo % 3;
-                    if (resulto == 0 && growthLevel % 2 == 1)
-                    {
-                        drawPos = (drawPos.x - 1, drawPos.y);
+                            lastDrawPos = drawPos;
+                            growthLevel = growthLevelToTest;
+                            return true;
+                        }
                     }
-                    else if (resulto == 2 && growthLevel % 2 == 1)
+                    else
                     {
-                        drawPos = (drawPos.x + 1, drawPos.y);
-                    }
+                        seedo = LCGint1(seed + growthLevelToTest * (seed % 7 + 1));
+                        int resulto = seedo % 3;
+                        if (resulto == 0 && growthLevel % 2 == 1)
+                        {
+                            drawPos = (drawPos.x - 1, drawPos.y);
+                        }
+                        else if (resulto == 2 && growthLevel % 2 == 1)
+                        {
+                            drawPos = (drawPos.x + 1, drawPos.y);
+                        }
 
-                    if (tryFill(drawPos, 1))
-                    {
-                        lastDrawPos = drawPos;
-                        growthLevel = growthLevelToTest;
-                        return true;
+                        if (tryFill(drawPos, 1))
+                        {
+                            lastDrawPos = drawPos;
+                            growthLevel = growthLevelToTest;
+                            return true;
+                        }
                     }
                     return false;
                 }
@@ -1122,7 +1200,7 @@ namespace Cave
                     {
                         if (flower.tryGrowth()) { isStable = false; }
                     }
-                    makeBitmap();
+                    makeBitmap(false);
                     timeAtLastGrowth = timeElapsed;
                 }
             }
@@ -1277,7 +1355,7 @@ namespace Cave
                         if (value != 0)
                         {
                             flower.fillStates.Remove((posToTest.x, posToTest.y));
-                            makeBitmap();
+                            makeBitmap(false);
                             return value;
                         }
                     }
@@ -1291,7 +1369,7 @@ namespace Cave
                         if (value != 0)
                         {
                             branch.fillStates.Remove((posToTest.x, posToTest.y));
-                            makeBitmap();
+                            makeBitmap(false);
                             return value;
                         }
                     }
@@ -1304,7 +1382,7 @@ namespace Cave
                         if (value != 0)
                         {
                             fillStates.Remove((posToTest.x, posToTest.y));
-                            makeBitmap();
+                            makeBitmap(false);
                             return value;
                         }
                     }

@@ -33,6 +33,8 @@ namespace Cave
     public partial class Form1 : Form
     {
         public const float div32 = 0.03125f;
+        public const float _1On255 = 0.00393f;
+        public const float _1On17 = 0.0588f;
         public class Globals
         {
             public static bool loadStructuresYesOrNo = true;
@@ -831,13 +833,26 @@ namespace Cave
                 }
             }
         }
+        public static Bitmap getLightBitmap(Color color, int radius)
+        {
+            (int radius, int r, int g, int b) col = (radius, (int)((color.R*_1On17)*17), (int)((color.G * _1On17) * 17), (int)((color.B * _1On17) * 17));
+            if (lightBitmaps.ContainsKey(col))
+            {
+                return lightBitmaps[col];
+            }
+            else
+            {
+                lightBitmaps[col] = makeLightBitmap((int)(radius * 0.5f + 0.6f), col);
+                return lightBitmaps[col];
+            }
+        }
         public static void makeLightBitmaps()
         {
-            lightBitmaps = new Dictionary<int, Bitmap> ();
-            for (int i = 0; i <= 20; i++)
+            lightBitmaps = new Dictionary<(int, int, int ,int), Bitmap> ();
+            /*for (int i = 0; i <= 20; i++)
             {
                 lightBitmaps[i] = makeLightBitmap((int)(i*0.5f+0.6f), i);
-            }
+            }*/
         }
         public static void makeBlackBitmap()
         {
