@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Security.Policy;
@@ -20,14 +21,13 @@ using static Cave.Form1.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
+using static Cave.Nests;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
-using System.Drawing.Imaging;
-using System.Xml.Linq;
 
 namespace Cave
 {
@@ -157,7 +157,7 @@ namespace Cave
             public OneAnimation(Bitmap[] framesToPut)
             {
                 frames = framesToPut;
-                (int, int) dimensions = (frames[0].Width, frames[0].Height);
+                //(int, int) dimensions = (frames[0].Width, frames[0].Height);
                 frameCount = frames.Length;
             }
             public OneAnimation(string contentString, bool isFileName, int amoountOfFrames)
@@ -313,30 +313,6 @@ namespace Cave
                 return;
             }
 
-            // NEED TO SCALE BEFOOORE I mean i'll just rectangle fill manuatlly instead of thing below it'll be easier
-            /*int pixelPosX;
-            int pixelPosY;
-            for (int i = drawRange[0]; i < (int)(((drawRange[1]-drawRange[0])/scaleFactor)+0.99f); i++)
-            {
-                for (int j = drawRange[2]; j < (int)(((drawRange[3]-drawRange[2])/scaleFactor)+0.99f); j++)
-                {
-                    pixelPosX = posToDraw.Item1+i*scaleFactor;
-                    pixelPosY = posToDraw.Item2+j*scaleFactor;
-
-                    if (pixelPosX < 0 || pixelPosX >= bigBitmap.Width || pixelPosY < 0 || pixelPosY >= bigBitmap.Height)
-                    {
-                        continue;
-                    }
-
-                    Color color = smallBitmap.GetPixel(i, j);
-
-                    using (var g = Graphics.FromImage(bigBitmap))
-                    {
-                        g.FillRectangle(new SolidBrush(color), pixelPosX, pixelPosY, scaleFactor, scaleFactor);
-                    }
-                }
-            }*/
-
             // Resizing
             Bitmap resizedBitmap;
             if (scaleFactor == 1)
@@ -360,6 +336,53 @@ namespace Cave
                 Rectangle srcRegion = new Rectangle(drawRange[0], drawRange[2], drawRange[1] - drawRange[0], drawRange[3] - drawRange[2]);
                 Rectangle destRegion = new Rectangle(posToDraw.Item1 + drawRange[0], posToDraw.Item2 + drawRange[2], drawRange[1] - drawRange[0], drawRange[3] - drawRange[2]);
                 grD.DrawImage(resizedBitmap, destRegion, srcRegion, GraphicsUnit.Pixel);
+            }
+        }
+
+        public static void drawInventory(Game game, Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities, List<(int index, int subType, int typeOfElement)> inventoryElements, int inventoryCursor)
+        {                         
+            if (inventoryElements.Count > 0)
+            {
+                (int index, int subType, int typeOfElement) element = inventoryElements[inventoryCursor];
+                if (element.typeOfElement == 0)
+                {
+                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, compoundSprites[element.index].bitmap, (340, 64), 4, true);
+                }
+                else if (element.typeOfElement == 1)
+                {
+                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, entitySprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
+                }
+                else if (element.typeOfElement == 2)
+                {
+                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, plantSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
+                }
+                else if (element.typeOfElement == 3)
+                {
+                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, materialSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
+                }
+                int quantity = inventoryQuantities[element];
+                if (quantity == -999)
+                {
+                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, numberSprites[10].bitmap, (408, 64), 4, true);
+                }
+                else
+                {
+                    drawNumber(game.overlayBitmap, quantity, (408, 64), 4, true);
+                }
+            }
+        }
+        public static void drawNumber(Bitmap bitmap, int number, (int x, int y) pos, int scaleFactor, bool centeredDraw)
+        {
+            List<int> numberList = new List<int>();
+            if (number == 0) { numberList.Add(0); }
+            for (int i = 0; number > 0; i++)
+            {
+                numberList.Insert(0, number % 10);
+                number = number / 10;
+            }
+            for (int i = 0; i < numberList.Count; i++)
+            {
+                Sprites.drawSpriteOnCanvas(bitmap, numberSprites[numberList[i]].bitmap, (pos.x + i * 32, pos.y), scaleFactor, centeredDraw);
             }
         }
         public static string findSpritesPath()
@@ -572,7 +595,6 @@ namespace Cave
 
             byte* data1;
             byte* data2;
-            (int x, int y) pos;
             for (int i = 0; i < bData2.Height; ++i)
             {
                 for (int j = 0; j < bData2.Width; ++j)
@@ -609,6 +631,41 @@ namespace Cave
             bitmap.UnlockBits(bData);
 
             return bitmap;
+        }
+
+
+
+        public static Bitmap getLightBitmap(Color color, int radius)
+        {
+            (int radius, int r, int g, int b) col = (radius, (int)((color.R * _1On17) * 17), (int)((color.G * _1On17) * 17), (int)((color.B * _1On17) * 17));
+            if (lightBitmaps.ContainsKey(col))
+            {
+                return lightBitmaps[col];
+            }
+            else
+            {
+                lightBitmaps[col] = makeLightBitmap((int)(radius * 0.5f + 0.6f), col);
+                return lightBitmaps[col];
+            }
+        }
+        public static void makeLightBitmaps()
+        {
+            lightBitmaps = new Dictionary<(int, int, int, int), Bitmap>();
+            /*for (int i = 0; i <= 20; i++)
+            {
+                lightBitmaps[i] = makeLightBitmap((int)(i*0.5f+0.6f), i);
+            }*/
+        }
+        public static void makeBlackBitmap()
+        {
+            black32Bitmap = new Bitmap(32, 32);
+            for (int i = 0; i < 32; i++)
+            {
+                for (int j = 0; j < 32; j++)
+                {
+                    Sprites.setPixelButFaster(black32Bitmap, (i, j), Color.Black);
+                }
+            }
         }
     }
 }

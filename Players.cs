@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Security.Policy;
@@ -20,6 +21,7 @@ using static Cave.Form1.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
+using static Cave.Nests;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
@@ -33,7 +35,6 @@ namespace Cave
     {
         public class Player
         {
-            
             public Screens.Screen screen;
             public int dimension = 0;
 
@@ -156,8 +157,30 @@ namespace Cave
                     (-4, 0, 0)
                 };
             }
+            public void Jump((float x, float y) jumpSpeed)
+            {
+                speedX += jumpSpeed.x;
+                speedY += jumpSpeed.y;
+            }
             public void movePlayer()
             {
+                speedX = Sign(speedX) * (Max(0, Abs(speedX) * (0.85f) - 0.2f));
+                speedY = Sign(speedY) * (Max(0, Abs(speedY) * (0.85f) - 0.2f));
+                int directionState = 0;
+                if (!dimensionSelection)
+                {
+                    if (arrowKeysState[0]) { speedX += 0.5f; directionState += 1; }
+                    if (arrowKeysState[1]) { speedX -= 0.5f; directionState -= 1; }
+                    if (arrowKeysState[2]) { speedY -= 0.5f; }
+                    if (arrowKeysState[3]) { speedY += 1; }
+                }
+                speedY -= 0.5f;
+                if (shiftPress)
+                {
+                    speedX = Sign(speedX) * (Max(0, Abs(speedX) * (0.75f) - 0.7f));
+                    speedY = Sign(speedY) * (Max(0, Abs(speedY) * (0.75f) - 0.7f));
+                }
+
                 if (digPress && timeElapsed > timeAtLastDig /*+ 0.2f*/)
                 {
                     if (arrowKeysState[0] && !arrowKeysState[1])
@@ -204,12 +227,18 @@ namespace Cave
                         {
                             speedX = speedX * 0.8f - Sign(speedX) * Sqrt(Max((int)speedX - 1, 0));
                             speedY = speedY * 0.8f - Sign(speedY) * Sqrt(Max((int)speedY - 1, 0));
+                            if (arrowKeysState[3]) { Jump((directionState, 2)); }
                         }
                     }
                 }
 
                 float toMoveX = speedX;
                 float toMoveY = speedY;
+
+
+
+
+                // Actually move the player
 
                 while (Abs(toMoveY) > 0)
                 {
@@ -269,6 +298,15 @@ namespace Cave
                     }
                     else { break; }
                 }
+
+                int posDiffX = posX - (camPosX + 16 * (screen.chunkResolution - 1)); //*2 is needed cause there's only *8 and not *16 before
+                int posDiffY = posY - (camPosY + 16 * (screen.chunkResolution - 1));
+                speedCamX = Clamp(posDiffX/2, -15f, 15f);
+                speedCamY = Clamp(posDiffY/2, -15f, 15f);
+                realCamPosX += speedCamX;
+                realCamPosY += speedCamY;
+                camPosX = (int)(realCamPosX + 0.5f);
+                camPosY = (int)(realCamPosY + 0.5f);
 
                 updateFogOfWar();
             }
@@ -523,53 +561,6 @@ namespace Cave
                 if (counto == 0) { inventoryCursor = 0; }
                 inventoryCursor = ((inventoryCursor + value) % counto + counto) % counto;
             }
-            public void drawInventory()
-            {
-                if (inventoryElements.Count > 0)
-                {
-                    (int index, int subType, int typeOfElement) element = inventoryElements[inventoryCursor];
-                    if (element.typeOfElement == 0)
-                    {
-                        Sprites.drawSpriteOnCanvas(screen.game.overlayBitmap, compoundSprites[element.index].bitmap, (340, 64), 4, true);
-                    }
-                    else if (element.typeOfElement == 1)
-                    {
-                        Sprites.drawSpriteOnCanvas(screen.game.overlayBitmap, entitySprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
-                    }
-                    else if (element.typeOfElement == 2)
-                    {
-                        Sprites.drawSpriteOnCanvas(screen.game.overlayBitmap, plantSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
-                    }
-                    else if (element.typeOfElement == 3)
-                    {
-                        Sprites.drawSpriteOnCanvas(screen.game.overlayBitmap, materialSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
-                    }
-                    int quantity = inventoryQuantities[element];
-                    if (quantity == -999)
-                    {
-                        Sprites.drawSpriteOnCanvas(screen.game.overlayBitmap, numberSprites[10].bitmap, (408, 64), 4, true);
-                    }
-                    else
-                    {
-                        drawNumber(screen.game.overlayBitmap, quantity, (408, 64), 4, true);
-                    }
-                }
-            }
-        }
-        public static void drawNumber(Bitmap bitmap, int number, (int x, int y) pos, int scaleFactor, bool centeredDraw)
-        {
-            List<int> numberList = new List<int>();
-            if (number == 0) { numberList.Add(0); }
-            for (int i = 0; number > 0; i++)
-            {
-                numberList.Insert(0, number % 10);
-                number = number / 10;
-            }
-            for (int i = 0; i < numberList.Count; i++)
-            {
-                Sprites.drawSpriteOnCanvas(bitmap, numberSprites[numberList[i]].bitmap, (pos.x + i * 32, pos.y), scaleFactor, centeredDraw);
-            }
-
         }
     }
 }

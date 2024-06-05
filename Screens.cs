@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Security.Policy;
@@ -20,14 +21,13 @@ using static Cave.Form1.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
+using static Cave.Nests;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
-using static System.Net.Mime.MediaTypeNames;
-using System.Drawing.Imaging;
 
 namespace Cave
 {
@@ -57,11 +57,24 @@ namespace Cave
 
                 timeElapsed = 0;
 
-                int idToPut = 9;
-                bool isMonoeBiomeToPut = true;
+                // to make biome diagrams for testinggggg
+                for (int i = 0; i < -0; i++)
+                {
+                    int a = rand.Next(4);
+                    int b = 0;
+                    while (b == a) { b = rand.Next(4); }
+                    int c = rand.Next(1024);
+                    int d = rand.Next(1024);
+                    makeBiomeDiagram((a, b), (c, d));
+                }
+
+                int idToPut = 0;
+                bool isMonoeBiomeToPut = false;
+                isPngToExport = false;
                 
                 if (isPngToExport)
                 {
+                    debugMode = true;
                     int oldChunkLength = ChunkLength;
                     ChunkLength = PNGsize;
                     mainScreen = new Screen(this, ChunkLength, idToPut, isMonoeBiomeToPut, true);
@@ -69,7 +82,7 @@ namespace Cave
 
                     //runGame();
 
-                    mainScreen.updateScreen().Save($"{currentDirectory}\\CaveData\\cavee.png");
+                    mainScreen.updateScreen().Save($"{currentDirectory}\\caveMap.png");
                     ChunkLength = oldChunkLength;
                 }
 
@@ -82,42 +95,10 @@ namespace Cave
             {
                 if (inventoryChangePress[0]) { inventoryChangePress[0] = false; player.moveInventoryCursor(-1); }
                 if (inventoryChangePress[1]) { inventoryChangePress[1] = false; player.moveInventoryCursor(1); }
-                player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.85f) - 0.2f));
-                player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.85f) - 0.2f));
-                if (!dimensionSelection)
-                {
-                    if (arrowKeysState[0]) { player.speedX += 0.5f; }
-                    if (arrowKeysState[1]) { player.speedX -= 0.5f; }
-                    if (arrowKeysState[2]) { player.speedY -= 0.5f; }
-                    if (arrowKeysState[3]) { player.speedY += 1; }
-                }
-                player.speedY -= 0.5f;
-                if (shiftPress)
-                {
-                    player.speedX = Sign(player.speedX) * (Max(0, Abs(player.speedX) * (0.75f) - 0.7f));
-                    player.speedY = Sign(player.speedY) * (Max(0, Abs(player.speedY) * (0.75f) - 0.7f));
-                }
+
                 player.movePlayer();
                 screen.checkStructures(player);
 
-                int posDiffX = player.posX - (player.camPosX + 16 * (screen.chunkResolution - 1)); //*2 is needed cause there's only *8 and not *16 before
-                int posDiffY = player.posY - (player.camPosY + 16 * (screen.chunkResolution - 1));
-                float accCamX = Sign(posDiffX) * Max(0, Sqrt(Abs(posDiffX)) - 2);
-                float accCamY = Sign(posDiffY) * Max(0, Sqrt(Abs(posDiffY)) - 2);
-                if (accCamX == 0 || Sign(accCamX) != Sign(player.speedCamX))
-                {
-                    player.speedCamX = Sign(player.speedCamX) * (Max(Abs(player.speedCamX) - 1, 0));
-                }
-                if (accCamY == 0 || Sign(accCamY) != Sign(player.speedCamY))
-                {
-                    player.speedCamY = Sign(player.speedCamY) * (Max(Abs(player.speedCamY) - 1, 0));
-                }
-                player.speedCamX = Clamp(player.speedCamX + accCamX, -15f, 15f);
-                player.speedCamY = Clamp(player.speedCamY + accCamY, -15f, 15f);
-                player.realCamPosX += player.speedCamX;
-                player.realCamPosY += player.speedCamY;
-                player.camPosX = (int)(player.realCamPosX + 0.5f);
-                player.camPosY = (int)(player.realCamPosY + 0.5f);
                 screen.chunkX = Floor(player.camPosX, 32) / 32;
                 screen.chunkY = Floor(player.camPosY, 32) / 32;
                 screen.updateLoadedChunks();
@@ -241,9 +222,9 @@ namespace Cave
                         Sprites.drawSpriteOnCanvas(overlayBitmap, overlayBackground.bitmap, (0, 0), 4, false);
                         if (dimensionSelection)
                         {
-                            Players.drawNumber(overlayBitmap, currentTargetDimension, (200, 64), 4, true);
+                            drawNumber(overlayBitmap, currentTargetDimension, (200, 64), 4, true);
                         }
-                        player.drawInventory();
+                        drawInventory(player.screen.game, player.inventoryQuantities, player.inventoryElements, player.inventoryCursor);
                         overlayPictureBox.Refresh();
                     }
                 }
@@ -818,12 +799,9 @@ namespace Cave
                 // Thank you Stephen from stackOverflow !! !! !
                 //BitmapData bData = bitmapToDraw.LockBits(new Rectangle(0, 0, bitmapToDraw.Width, bitmapToDraw.Height), ImageLockMode.ReadWrite, bitmapToDraw.PixelFormat);
 
-                ColorPalette oldPalette = bitmapToDraw.Palette;
-
-
-
-                if (false)
+                /*if (false)
                 {
+                    ColorPalette oldPalette = bitmapToDraw.Palette;
                     ColorPalette newPalette = bitmapToDraw.Palette;
                     for (int i = 0; i < newPalette.Entries.Length; i++)
                     {
@@ -831,7 +809,7 @@ namespace Cave
                         newPalette.Entries[i] = Color.FromArgb((int)(colorToPaste.A*current.A*_1On255), (int)(colorToPaste.R*current.R*_1On255), (int)(colorToPaste.G*current.G * _1On255), (int)(colorToPaste.B*current.B*_1On255));
                     }
                     bitmapToDraw.Palette = newPalette; // The crucial statement
-                }
+                }*/
 
                 (int x, int y) posToDraw = (position.x - camPos.x - UnloadedChunksAmount * 32, position.y - camPos.y - UnloadedChunksAmount * 32);
                 if (true || posToDraw.x >= -bitmapToDraw.Width && posToDraw.x < (chunkResolution) * 32 && posToDraw.y >= -bitmapToDraw.Height && posToDraw.y < (chunkResolution) * 32)

@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Security.Policy;
@@ -20,6 +21,7 @@ using static Cave.Form1.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
+using static Cave.Nests;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
@@ -665,6 +667,12 @@ namespace Cave
 
         public static void createFolders(long seed)
         {
+            if (!Directory.Exists($"{currentDirectory}\\BiomeDiagrams"))
+            {
+                Directory.CreateDirectory($"{currentDirectory}\\BiomeDiagrams");
+            }
+
+
             if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\DimensionData"))
             {
                 Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\MegaChunkData");

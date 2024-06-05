@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Security.Policy;
@@ -20,12 +21,14 @@ using static Cave.Form1.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
+using static Cave.Nests;
 using static Cave.Entities;
 using static Cave.Files;
 using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using System.Diagnostics;
 
 
 namespace Cave
@@ -38,6 +41,7 @@ namespace Cave
         public class Globals
         {
             public static bool loadStructuresYesOrNo = true;
+            public static bool spawnPlantsAndEntities = false;
 
             public static int ChunkLength = 4;
             public static int UnloadedChunksAmount = 8;
@@ -98,6 +102,7 @@ namespace Cave
 
             public static Dictionary<int, (int, int, int)> biomeDict = new Dictionary<int, (int, int, int)>
             {
+                { -1, (1200, -100, 1200) }, // undefined
                 { 0, (Color.Blue.R,Color.Blue.G,Color.Blue.B) }, // cold biome
                 { 1, (Color.Fuchsia.R,Color.Fuchsia.G,Color.Fuchsia.B) }, // acid biome
                 { 2, (Color.OrangeRed.R,Color.OrangeRed.G,Color.OrangeRed.B) }, // hot biome
@@ -112,19 +117,19 @@ namespace Cave
             };
 
             // 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
-            public static Dictionary<int, (int, int, int, int)> biomeTypicalValues = new Dictionary<int, (int, int, int, int)>
+            public static Dictionary<int, (int temp, int humi, int acid, int toxi, int range, int prio)> biomeTypicalValues = new Dictionary<int, (int temp, int humi, int acid, int toxi, int range, int prio)>
             {
-                { 0, (50, 80, 80, 128) }, // cold biome
-                { 1, (50, 128, 200, 128) }, // acid biome
-                { 2, (210, 128, 128, 128) }, // hot biome
-                { 3, (128, 180, 128, 70) }, // plant biome
-                { 4, (128, 70, 128, 180) }, // toxic biome
-                { 5, (50, 210, 50, 80) }, // fairy biome !
-                { 6, (220, 220, 128, 128) }, // obsidian biome...
-                { 7, (-100, 128, 128, 128) }, // frost biome
-                { 8, (128, 240, 128, 128) }, // ocean biome !
-                { 9, (80, 80, 60, 60) }, // chandeliers biome !
-                { 10, (180, 220, 128, 220) }, // LIVING biome !
+                { 0, (200, 320, 320, 512, 1000, 0) }, // cold biome
+                { 1, (200, 512, 800, 512, 1000, 0) }, // acid biome
+                { 2, (840, 512, 512, 512, 1000, 1) }, // hot biome
+                { 3, (512, 720, 512, 280, 1000, 0) }, // plant biome
+                { 4, (512, 280, 512, 720, 1000, 0) }, // toxic biome
+                { 5, (200, 840, 200, 320, 1000, 0) }, // fairy biome !
+                { 6, (880, 880, 512, 512, 1000, 2) }, // obsidian biome...
+                { 7, (-100, 320, 320, 512, 1000, 2) }, // frost biome
+                { 8, (512, 960, 512, 512, 1000, 0) }, // ocean biome !
+                { 9, (320, 320, 240, 240, 1000, 0) }, // chandeliers biome !
+                { 10, (720, 880, 512, 880, 1000, 0) }, // LIVING biome !
             };
 
             public static string[] nameArray = new string[]
@@ -181,7 +186,8 @@ namespace Cave
             makeBlackBitmap();
             makeLightBitmaps();
 
-            if (false)
+            bool makePngStrings = false;
+            if (makePngStrings)
             {
                 turnPngIntoString("OverlayBackground");
                 turnPngIntoString("Numbers");
@@ -225,9 +231,10 @@ namespace Cave
             Game game;
 
             loadStructuresYesOrNo = false;
+            spawnPlantsAndEntities = false;
 
             bool updatePNG = false;
-            int PNGsize = 120; // in chunks, 300 or more made it out of memory :( so put at 250 okok
+            int PNGsize = 50; // in chunks, 300 or more made it out of memory :( so put at 250 okok
             bool randomSeed = true;
 
             long seed = 123456;
@@ -278,408 +285,6 @@ namespace Cave
             game = new Game(worldSeed, updatePNG, PNGsize);
             timer1.Tag = game;
             timeAtLauch = DateTime.Now;
-        }
-        public static long findPlantSeed(long posX, long posY, Screens.Screen screen, int layer)
-        {
-            long x = posX;
-            long y = posY;
-            long seedX;
-            if (x >= 0)
-            {
-                seedX = screen.LCGCacheListMatrix[layer, 0][(int)(x / 50)];
-                x = x % 50;
-                while (x > 0)
-                {
-                    seedX = LCGxPos(seedX);
-                    x--;
-                }
-            }
-            else
-            {
-                x = -x;
-                seedX = screen.LCGCacheListMatrix[layer, 1][(int)(x / 50)];
-                x = x % 50;
-                while (x > 0)
-                {
-                    seedX = LCGxNeg(seedX);
-                    x--;
-                }
-            }
-            long seedY;
-            if (y >= 0)
-            {
-                seedY = screen.LCGCacheListMatrix[layer, 2][(int)(y / 50)];
-                y = y % 50;
-                while (y > 0)
-                {
-                    seedY = LCGyPos(seedY);
-                    y--;
-                }
-            }
-            else
-            {
-                y = -y;
-                seedY = screen.LCGCacheListMatrix[layer, 3][(int)(y / 50)];
-                y = y % 50;
-                while (y > 0)
-                {
-                    seedY = LCGyNeg(seedY);
-                    y--;
-                }
-            }
-            int z = (int)((256 + seedX % 256 + seedY % 256) % 256);
-            long seedZ = screen.LCGCacheListMatrix[layer, 4][(int)(z / 50)];
-            z = z % 50;
-            while (z > 0)
-            {
-                seedZ = LCGz(seedZ);
-                z--;
-            }
-            return (seedZ + seedX + seedY)/3;
-            //return ((int)(seedX%512)-256, (int)(seedY%512)-256);
-        }
-        public static int findPrimaryNoiseValue(long posX, long posY, long seed, int layer)
-        {
-            long x = posX;
-            long y = posY;
-            long seedX = seed;
-            if (x >= 0)
-            {
-                while (x > 0)
-                {
-                    seedX = LCGxPos(seedX);
-                    x--;
-                }
-            }
-            else
-            {
-                x = -x;
-                while (x > 0)
-                {
-                    seedX = LCGxNeg(seedX);
-                    x--;
-                }
-            }
-            long seedY = seed;
-            if (y >= 0)
-            {
-                while (y > 0)
-                {
-                    seedY = LCGyPos(seedY);
-                    y--;
-                }
-            }
-            else
-            {
-                y = -y;
-                while (y > 0)
-                {
-                    seedY = LCGyNeg(seedY);
-                    y--;
-                }
-            }
-            int z = (int)((256 + seedX % 256 + seedY % 256) % 256);
-            long seedZ = z;
-            while (z > 0)
-            {
-                seedZ = LCGz(seedZ);
-                z--;
-            }
-            return (int)((seedZ + seedX + seedY) % 256);
-        }
-        public static int findPrimaryNoiseValueCACHE(long posX, long posY, Screens.Screen screen, int layer)
-        {
-            long x = posX;
-            long y = posY;
-            long seedX;
-            if (x >= 0)
-            {
-                seedX = screen.LCGCacheListMatrix[layer, 0][(int)(x / 50)];
-                x = x % 50;
-                while (x > 0)
-                {
-                    seedX = LCGxPos(seedX);
-                    x--;
-                }
-            }
-            else
-            {
-                x = -x;
-                seedX = screen.LCGCacheListMatrix[layer, 1][(int)(x / 50)];
-                x = x % 50;
-                while (x > 0)
-                {
-                    seedX = LCGxNeg(seedX);
-                    x--;
-                }
-            }
-            long seedY;
-            if (y >= 0)
-            {
-                seedY = screen.LCGCacheListMatrix[layer, 2][(int)(y / 50)];
-                y = y % 50;
-                while (y > 0)
-                {
-                    seedY = LCGyPos(seedY);
-                    y--;
-                }
-            }
-            else
-            {
-                y = -y;
-                seedY = screen.LCGCacheListMatrix[layer, 3][(int)(y / 50)];
-                y = y % 50;
-                while (y > 0)
-                {
-                    seedY = LCGyNeg(seedY);
-                    y--;
-                }
-            }
-            int z = (int)((256 + seedX % 256 + seedY % 256) % 256);
-            long seedZ = screen.LCGCacheListMatrix[layer, 4][(int)(z / 50)];
-            z = z % 50;
-            while (z > 0)
-            {
-                seedZ = LCGz(seedZ);
-                z--;
-            }
-            return (int)((seedZ + seedX + seedY) % 256);
-        }
-        public static int findPrimaryBiomeValue(long posX, long posY, long seed, long layer)
-        {
-            long x = posX;
-            long y = posY;
-            int counto = 0;
-            while (counto < 10 + layer * 10)
-            {
-                seed = LCGz(seed);
-                counto += 1;
-            }
-            long seedX = seed;
-            if (x >= 0)
-            {
-                while (x > 0)
-                {
-                    seedX = LCGyPos(seedX);
-                    x--;
-                }
-            }
-            else
-            {
-                x = -x;
-                while (x > 0)
-                {
-                    seedX = LCGyNeg(seedX);
-                    x--;
-                }
-            }
-            long seedY = seed;
-            if (y >= 0)
-            {
-                while (y > 0)
-                {
-                    seedY = LCGxPos(seedY);
-                    y--;
-                }
-            }
-            else
-            {
-                y = -y;
-                while (y > 0)
-                {
-                    seedY = LCGxNeg(seedY);
-                    y--;
-                }
-            }
-            int seedXY = (int)((8192 + seedX % 1024 + seedY % 1024) % 1024);
-            long seedZ = Abs(3 + posX + posY * 11);
-            int z = seedXY;
-            while (z > 0)
-            {
-                seedZ = LCGz(seedZ);
-                z--;
-            }
-            return (int)((seedZ + seedXY) % 1024);
-            //return ((int)(seedX%512)-256, (int)(seedY%512)-256);
-        }
-        public static int findSecondaryNoiseValue(Chunk chunk, int varX, int varY, int layer)
-        {
-            int modulo = 16;
-            int modX = GetChunkIndexFromTile1D(chunk.position.Item1 * 16 + varX, modulo);
-            int modY = GetChunkIndexFromTile1D(chunk.position.Item2 * 16 + varY, modulo);
-            int[,] values = chunk.primaryFillValues;
-
-            int quartile = 0;
-            if (varX >= 16) { quartile += 1; }
-            if (varY >= 16) { quartile += 3; }
-
-            int fX1 = values[layer, 0 + quartile] * (modulo - modX) + values[layer, 1 + quartile] * modX;
-            int fX2 = values[layer, 3 + quartile] * (modulo - modX) + values[layer, 4 + quartile] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
-            int fY = fX1 * (modulo - modY) + fX2 * modY;
-            return fY / (modulo * modulo);
-        }
-        public static int findSecondaryBigNoiseValue(Chunk chunk, int varX, int varY, int layer)
-        {
-            int modulo = 64;
-            int modX = GetChunkIndexFromTile1D(chunk.position.Item1 * 32 + varX, modulo);
-            int modY = GetChunkIndexFromTile1D(chunk.position.Item2 * 32 + varY, modulo);
-            int[,] values = chunk.primaryBigFillValues;
-            int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
-            int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
-            int fY = fX1 * (modulo - modY) + fX2 * modY;
-            return fY / (modulo * modulo);
-        }
-        public static int findSecondaryBiomeValue(Chunk chunk, int varX, int varY, int layer)
-        {
-            int modulo = 512;
-            int modX = GetChunkIndexFromTile1D(chunk.position.Item1 * 32 + varX, modulo);
-            int modY = GetChunkIndexFromTile1D(chunk.position.Item2 * 32 + varY, modulo);
-            int[,] values = chunk.primaryBiomeValues;
-            int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
-            int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
-            int fY = fX1 * (modulo - modY) + fX2 * modY;
-            return fY / (modulo * modulo);
-        }
-        public static int findSecondaryBigBiomeValue(Chunk chunk, int varX, int varY, int layer)
-        {
-            int modulo = 1024;
-            int modX = GetChunkIndexFromTile1D(chunk.position.Item1 * 32 + varX, modulo);
-            int modY = GetChunkIndexFromTile1D(chunk.position.Item2 * 32 + varY, modulo); // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
-            int[,] values = chunk.primaryBigBiomeValues;
-            int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
-            int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX;
-            int fY = fX1 * (modulo - modY) + fX2 * modY;
-            return fY / (modulo * modulo);
-        }
-        public static (int, int)[] findBiome(Chunk chunk, int posX, int posY)
-        {
-            //return new (int, int)[]{ (8, 1000) }; // use this to force a biome for debug (infite biome)
-
-
-            // arrite so... 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
-            int temperature = chunk.secondaryBiomeValues[posX, posY, 0] + chunk.secondaryBigBiomeValues[posX, posY, 0] - 512;
-            int humidity = chunk.secondaryBiomeValues[posX, posY, 1] + chunk.secondaryBigBiomeValues[posX, posY, 1] - 512;
-            int acidity = chunk.secondaryBiomeValues[posX, posY, 2] + chunk.secondaryBigBiomeValues[posX, posY, 2] - 512;
-            int toxicity = chunk.secondaryBiomeValues[posX, posY, 3] + chunk.secondaryBigBiomeValues[posX, posY, 3] - 512;
-            List<(int, int)> listo = new List<(int, int)>();
-            int percentageFree = 1000;
-
-            if (chunk.screen.type == 0)
-            {
-
-                if (humidity > 720)
-                {
-                    int oceanness = Min((humidity - 720) * 25, 1000);
-                    if (oceanness > 0)
-                    {
-                        listo.Add((8, oceanness));
-                        percentageFree -= oceanness;
-                    }
-                }
-
-
-                if (percentageFree > 0)
-                {
-                    if (temperature > 720)
-                    {
-                        int hotness = (int)(Min((temperature - 720) * 25, 1000) * percentageFree * 0.001f);
-                        if (temperature > 840 && humidity > 600)
-                        {
-                            int minimo = Min(temperature - 840, humidity - 600);
-                            int obsidianess = minimo * 10;
-                            obsidianess = (int)(Min(obsidianess, 1000) * percentageFree * 0.001f);
-                            hotness -= obsidianess;
-                            listo.Add((6, obsidianess));
-                            percentageFree -= obsidianess;
-                        }
-                        if (hotness > 0)
-                        {
-                            listo.Add((2, hotness));
-                            percentageFree -= hotness;
-                        }
-                    }
-                    else if (temperature < 440)
-                    {
-                        int coldness = (int)(Min((440 - temperature) * 10, 1000) * percentageFree * 0.001f);
-                        if (temperature < 0)
-                        {
-                            int bigColdness = (int)(Min((0 - temperature) * 10, 1000) * coldness * 0.001f);
-                            coldness -= bigColdness;
-                            if (bigColdness > 0)
-                            {
-                                listo.Add((7, bigColdness));
-                                percentageFree -= bigColdness;
-                            }
-                        }
-                        int savedColdness = (int)(Max(0, (Min((120 - temperature) * 10, 1000))) * percentageFree * 0.001f);
-                        savedColdness = Min(savedColdness, coldness);
-                        coldness -= savedColdness;
-                        if (acidity < 440)
-                        {
-                            int acidness = (int)(Min((440 - acidity) * 10, 1000) * coldness * 0.001f);
-                            coldness -= acidness;
-                            listo.Add((1, acidness));
-                            percentageFree -= acidness;
-                        }
-                        if (humidity > toxicity)
-                        {
-                            int fairyness = (int)(Min((humidity - toxicity) * 10, 1000) * coldness * 0.001f);
-                            coldness -= fairyness;
-                            if (fairyness > 0)
-                            {
-                                listo.Add((5, fairyness));
-                                percentageFree -= fairyness;
-                            }
-                        }
-                        coldness += savedColdness;
-                        if (coldness > 0)
-                        {
-                            listo.Add((0, coldness));
-                            percentageFree -= coldness;
-                        }
-                    }
-                }
-
-                if (percentageFree > 0)
-                {
-                    int slimeness = (int)(Clamp((toxicity - humidity + 20) * 10, 0, 1000) * percentageFree * 0.001f);
-                    int forestness = (int)(Clamp((humidity - toxicity + 20) * 10, 0, 1000) * percentageFree * 0.001f);
-                    if (forestness > 0)
-                    {
-                        listo.Add((3, forestness));
-                        percentageFree -= forestness;
-                    }
-                    if (slimeness > 0)
-                    {
-                        listo.Add((4, slimeness));
-                        percentageFree -= slimeness;
-                    }
-                }
-            }
-            else if (true)
-            {
-                if (humidity > 512)
-                {
-                    int oceanness = Min((humidity - 720) * 25, 1000);
-                    if (oceanness > 0)
-                    {
-                        listo.Add((9, oceanness));
-                        percentageFree -= oceanness;
-                    }
-                }
-                if (percentageFree > 0)
-                {
-                    listo.Add((0, percentageFree));
-                }
-            }
-
-            Sort(listo, false);
-            (int, int)[] arrayo = new (int, int)[listo.Count];
-            for (int i = 0; i < arrayo.Length; i++)
-            {
-                arrayo[i] = listo[i];
-            }
-            return arrayo;
         }
         private void pictureBox1_Click(object sender, EventArgs e)
         {
@@ -824,49 +429,6 @@ namespace Cave
                 shiftPress = false;
             }
         }
-        public static void makeTheFilledChunk()
-        {
-            theFilledChunk = new Chunk();
-            for (int i = 0; i < 32; i++)
-            {
-                for (int j = 0; j < 32; j++)
-                {
-                    theFilledChunk.fillStates[i, j] = 1;
-                }
-            }
-        }
-        public static Bitmap getLightBitmap(Color color, int radius)
-        {
-            (int radius, int r, int g, int b) col = (radius, (int)((color.R*_1On17)*17), (int)((color.G * _1On17) * 17), (int)((color.B * _1On17) * 17));
-            if (lightBitmaps.ContainsKey(col))
-            {
-                return lightBitmaps[col];
-            }
-            else
-            {
-                lightBitmaps[col] = makeLightBitmap((int)(radius * 0.5f + 0.6f), col);
-                return lightBitmaps[col];
-            }
-        }
-        public static void makeLightBitmaps()
-        {
-            lightBitmaps = new Dictionary<(int, int, int ,int), Bitmap> ();
-            /*for (int i = 0; i <= 20; i++)
-            {
-                lightBitmaps[i] = makeLightBitmap((int)(i*0.5f+0.6f), i);
-            }*/
-        }
-        public static void makeBlackBitmap()
-        {
-            black32Bitmap = new Bitmap(32, 32);
-            for (int i = 0; i < 32; i++)
-            {
-                for (int j = 0; j < 32; j++)
-                {
-                    Sprites.setPixelButFaster(black32Bitmap, (i, j), Color.Black);
-                }
-            }
-        }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             Game game = (Game)timer1.Tag;
@@ -875,6 +437,58 @@ namespace Cave
                 screen.putEntitiesAndPlantsInChunks();
                 screen.saveAllChunks();
             }
+        }
+        public static void makeBiomeDiagram((int, int) variablesToTest, (int, int) fixedValues)
+        {
+            Dictionary<int, string> dicto = new Dictionary<int, string>
+            {
+                { 0, "temperature" },
+                { 1, "humidity" },
+                { 2, "acidity" },
+                { 3, "toxicity" }
+            };
+            (int, int) fixedValuesIdx = (0, 0);
+
+            int[] values = new int[4];
+            bool addZone = false;
+            for (int i = 0; i < 4; i++)
+            {
+                if (variablesToTest.Item1 == i)
+                {
+                    values[i] = -1;
+                }
+                else if (variablesToTest.Item2 == i)
+                {
+                    values[i] = -1;
+                }
+                else if (!addZone)
+                {
+                    values[i] = fixedValues.Item1;
+                    fixedValuesIdx = (i, fixedValuesIdx.Item2);
+                    addZone = true;
+                }
+                else
+                {
+                    values[i] = fixedValues.Item2;
+                    fixedValuesIdx = (fixedValuesIdx.Item1, i);
+                }
+            }
+            Bitmap bitmap = new Bitmap(256, 256);
+            Color colorToPut;
+            for (int i = 0; i < 256; i++)
+            {
+                values[variablesToTest.Item1] = i*4;
+                for (int j = 0; j < 256; j++)
+                {
+                    values[variablesToTest.Item2] = j*4;
+                    (int, int)[] biomeArray = findBiome(values);
+                    if (biomeArray[0].Item1 == -1 && ((i/4)+(j/4))%2 == 1){ setPixelButFaster(bitmap, (i, 255 - j), Color.Black); continue; }
+                    int[] colorArray = findBiomeColor(biomeArray);
+                    colorToPut = Color.FromArgb(colorArray[0], colorArray[1], colorArray[2]);
+                    setPixelButFaster(bitmap, (i, 255-j), colorToPut);
+                }
+            }
+            bitmap.Save($"{currentDirectory}\\BiomeDiagrams\\biomeDiagram   {dicto[fixedValuesIdx.Item1]}={fixedValues.Item1}, {dicto[fixedValuesIdx.Item2]}={fixedValues.Item2}.png");
         }
     }
     public class MathF
