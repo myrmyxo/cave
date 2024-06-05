@@ -216,6 +216,8 @@ namespace Cave
                 turnPngIntoString("Kelp");
                 turnPngIntoString("MushroomCap");
                 turnPngIntoString("MushroomStem");
+
+                turnPngIntoString("Fire");
             }
 
             loadSpriteDictionaries();
@@ -231,7 +233,7 @@ namespace Cave
             long seed = 123456;
 
             // cool ideas for later !
-            // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ?
+            // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ? And add LITHOPEDIONS
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
             // add a dimension with CANDLE TREES (arbres chandeliers) that could be banger (and darkish gray cement/concrete tiles ?).
             // and like have candelier tree biomes, stoplight biomes, and candle biomes ?

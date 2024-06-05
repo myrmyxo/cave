@@ -56,6 +56,8 @@ namespace Cave
             public float timeAtLastDig = -9999;
             public float timeAtLastPlace = -9999;
 
+            public Color lightColor = Color.FromArgb(255, (Color.Green.R + 255) / 2, (Color.Green.G + 255) / 2, (Color.Green.B + 255) / 2);
+
             public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
             public List<(int index, int subType, int typeOfElement)> inventoryElements;
             public int inventoryCursor = 3;

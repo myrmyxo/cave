@@ -47,6 +47,7 @@ namespace Cave
             public float speedX = 0;
             public float speedY = 0;
             public Color color;
+            public Color lightColor;
 
             public Entity targetEntity = null;
             public (int x, int y) targetPos = (0, 0);
@@ -100,6 +101,7 @@ namespace Cave
                 timeAtLastPlace = entityJson.lastDP.Item2;
                 state = entityJson.state;
                 color = findColor();
+                findLightColor();
             }
             public Entity(Chunk chunk)
             {
@@ -109,6 +111,7 @@ namespace Cave
                 placeEntity(chunk);
                 findType(chunk);
                 color = findColor();
+                findLightColor();
                 initializeInventory();
                 timeAtBirth = timeElapsed;
 
@@ -128,6 +131,7 @@ namespace Cave
                 id = currentEntityId;
                 initializeInventory();
                 color = findColor();
+                findLightColor();
                 timeAtBirth = timeElapsed;
 
                 currentEntityId++;
@@ -212,6 +216,10 @@ namespace Cave
                     }
                 }
                 return Color.Red;
+            }
+            public void findLightColor()
+            {
+                lightColor = Color.FromArgb(255, (color.R + 255) / 2, (color.G + 255) / 2, (color.B + 255) / 2);
             }
             public (int, int) findIntPos(float positionX, float positionY)
             {
@@ -710,6 +718,7 @@ namespace Cave
                             subType = 1;
                             timeAtLastStateChange = timeElapsed;
                             color = findColor();
+                            findLightColor();
                         }
                     }
                     else if (subType == 1)
@@ -730,6 +739,7 @@ namespace Cave
                             subType = 2;
                             timeAtLastStateChange = timeElapsed;
                             color = findColor();
+                            findLightColor();
                             goto AfterTest;
                         }
                         chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
@@ -769,6 +779,7 @@ namespace Cave
                             subType = 3;
                             timeAtLastStateChange = timeElapsed;
                             color = findColor();
+                            findLightColor();
                         }
                     }
                     else if (subType == 3)

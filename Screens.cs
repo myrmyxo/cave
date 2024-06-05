@@ -874,11 +874,13 @@ namespace Cave
 
                 foreach (Plant plant in activePlants.Values)
                 {
-                    if (plant.type == 0 && plant.subType == 1 && (timeElapsed + plant.seed % 100) % 0.2f < 0.1f)
+                    pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos, PNGmultiplicator);
+                    if (plant.type == 0 && plant.subType == 1 && plant.childFlowers.Count > 0)
                     {
-                        pasteImage(gameBitmap, plant.secondaryBitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos, PNGmultiplicator);
+                        Flower fireFlower = plant.childFlowers[0];
+                        int frame = ((int)(timeElapsed*20) + plant.seed % 100) % 6;
+                        pasteImage(gameBitmap, fireAnimation.frames[frame], (plant.posX + fireFlower.pos.x /*!!!!!!!!*/ - 1 /*!!!!!!!*/ + plant.posOffset[0], plant.posY + fireFlower.pos.y + plant.posOffset[1]), camPos, PNGmultiplicator);
                     }
-                    else { pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos, PNGmultiplicator); }
                     if (game.isLight)
                     {
                         int radius = 3;
@@ -887,7 +889,7 @@ namespace Cave
 
                         foreach ((int x, int y) pos in plant.lightPositions)
                         {
-                            lightPositions.Add((pos.x, pos.y, radius, plant.colorDict[plant.lightMaterial]));
+                            lightPositions.Add((pos.x, pos.y, radius, plant.lightColor));
                         }
                     }
                 }
@@ -904,7 +906,7 @@ namespace Cave
                             color = Color.Red;
                         }
                     }
-                    if (game.isLight && entity.type == 0) { lightPositions.Add((entity.posX, entity.posY, 7, entity.color)); }
+                    if (game.isLight && entity.type == 0) { lightPositions.Add((entity.posX, entity.posY, 7, entity.lightColor)); }
                     drawPixel(gameBitmap, color, (entity.posX, entity.posY), camPos, PNGmultiplicator);
                 }
 
@@ -916,7 +918,7 @@ namespace Cave
                     {
                         color = Color.Red;
                     }
-                    if (game.isLight) { lightPositions.Add((player.posX, player.posY, 9, color)); }
+                    if (game.isLight) { lightPositions.Add((player.posX, player.posY, 9, player.lightColor)); }
                     drawPixel(gameBitmap, color, (player.posX, player.posY), camPos, PNGmultiplicator);
                 }
 

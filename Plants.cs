@@ -284,7 +284,7 @@ namespace Cave
                     maxGrowthLevel = 1;
 
                     fillStates = new Dictionary<(int x, int y), int>();
-                    tryFill((-1, 0), 7);
+                    /*tryFill((-1, 0), 7);
                     tryFill((0, 0), 6);
                     tryFill((1, 0), 7);
                     tryFill((0, 1), 7);
@@ -292,7 +292,7 @@ namespace Cave
                     tryFill((-1, 1), 7);
                     tryFill((0, 1), 6);
                     tryFill((1, 1), 7);
-                    tryFill((0, 2), 7);
+                    tryFill((0, 2), 7);*/
                     growthLevel = growthLevelToTest;
                     return true;
                 }
@@ -543,6 +543,7 @@ namespace Cave
             public Bitmap secondaryBitmap = new Bitmap(1, 1);
             public Dictionary<(int x, int y), int> fillStates = new Dictionary<(int x, int y), int>();
             public List<(int x, int y)> lightPositions = new List<(int x, int y)>();
+            public Color lightColor = Color.Black;
             public int lightMaterial = 0;
             public int[] posOffset = new int[3];
             public int[] bounds = new int[4];
@@ -918,11 +919,20 @@ namespace Cave
             }
             public void findLightPositions(List<Branch> branchList, List<Flower> flowerList)
             {
-                if (type == 0 && subType == 1) { lightMaterial = 7; }
+                lightPositions = new List<(int x, int y)>();
+
+                if (type == 0 && subType == 1)
+                {
+                    lightMaterial = 7;
+                    if (childFlowers.Count > 0)
+                    {
+                        Flower fireFlower = childFlowers[0];
+                        lightPositions.Add((fireFlower.pos.x + posX, fireFlower.pos.y + posY + 2)); // !!!!!!!!!! the +1 !!!
+                    }
+                }
                 else if (type == 1 && subType == 1) { lightMaterial = 1; }
                 else { lightMaterial = 0; }
 
-                lightPositions = new List<(int x, int y)>();
                 foreach((int x, int y) pos in fillStates.Keys)
                 {
                     if (fillStates[pos] == lightMaterial)
@@ -950,6 +960,13 @@ namespace Cave
                         }
                     }
                 }
+
+                if (colorDict.ContainsKey(lightMaterial))
+                {
+                    Color col = colorDict[lightMaterial];
+                    lightColor = Color.FromArgb(255, (col.R+255)/2,(col.G+255)/2, (col.B+255)/2);
+                }
+                else { lightColor = Color.Black; }
             }
             public bool tryGrowth() // 0 = nothing, 1 = plantMatter, 2 = wood, 3 = aquaticPlantMatter, 4 = mushroomStem, 5 = mushroomCap, 6 = petal, 7 = flowerPollen
             {

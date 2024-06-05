@@ -1,0 +1,28 @@
+{
+    "version": "1.0",
+    "fileName": "Fire.png",
+    "width": 18,
+    "height": 5,
+    "columns": 6,
+    "rows": 1,
+    "frames": [
+        {
+            "duration": 80
+        },
+        {
+            "duration": 80
+        },
+        {
+            "duration": 80
+        },
+        {
+            "duration": 80
+        },
+        {
+            "duration": 80
+        },
+        {
+            "duration": 80
+        }
+    ]
+}

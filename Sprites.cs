@@ -42,6 +42,8 @@ namespace Cave
         public static OneSprite numbersSprite;
         public static Dictionary<int, OneSprite> numberSprites;
         public static OneSprite overlayBackground;
+
+        public static OneAnimation fireAnimation;
         public static void loadSpriteDictionaries()
         {
             compoundSprites = new Dictionary<int, OneSprite>
@@ -93,24 +95,24 @@ namespace Cave
             };
             overlayBackground = new OneSprite("OverlayBackground", false);
             numbersSprite = new OneSprite("Numbers", false);
-            Bitmap[] numberBitmapArray = numbersSprite.slice(11, 1);
+            Bitmap[] numberBitmapArray = slice(numbersSprite.bitmap, 11, 1);
             numberSprites = new Dictionary<int, OneSprite>();
             for (int i = 0; i < numberBitmapArray.Count(); i++)
             {
                 numberSprites.Add(i, new OneSprite(numberBitmapArray[i]));
             }
+
+            fireAnimation = new OneAnimation("Fire", true, 6);
         }
 
 
         public class OneSprite
         {
-            public Color[] palette;
-            public (int, int) dimensions;
             public Bitmap bitmap;
             public OneSprite(Bitmap bitmapToPut)
             {
                 bitmap = bitmapToPut;
-                dimensions = (bitmapToPut.Width, bitmapToPut.Height);
+                (int, int) dimensions = (bitmapToPut.Width, bitmapToPut.Height);
                 List<Color> paletteList = new List<Color>();
                 for (int j = 0; j < dimensions.Item2; j++)
                 {
@@ -128,7 +130,7 @@ namespace Cave
                     afterTest:;
                     }
                 }
-                palette = new Color[paletteList.Count];
+                Color[] palette = new Color[paletteList.Count];
                 for (int i = 0; i < paletteList.Count; i++)
                 {
                     palette[i] = paletteList[i];
@@ -145,127 +147,153 @@ namespace Cave
                     }
                 }
                 else { contentString = SpriteStrings.spriteStringsDict[contentString]; }
-                makeBitmapFromContentString(contentString);
+                bitmap = makeBitmapFromContentString(contentString);
             }
-            public void makeBitmapFromContentString(string contentString) // read string content, and put it in the variables I guess
+        }
+        public class OneAnimation
+        {
+            public Bitmap[] frames;
+            public int frameCount;
+            public OneAnimation(Bitmap[] framesToPut)
             {
-                // contenu du contentString :
-                // ligne 1 dimensions, x puis y séparés par un *.
-                // ligne 2 palette, ints chacun suivis d'un ; ( se finit par x; ), format RGBA, 4 à la suite = 1 couleur.
-                // ligne 3 chaque case, int tous suivis d'un ; ( se finit par x; ), avec int = l'emplacement dans la palette.
-
-                int currentIdx = 0;
-                int startIdx = 0;
-                int lengthOfSub = 0;
-                List<string> subStrings = new List<string>();
-                while (currentIdx < contentString.Length)
+                frames = framesToPut;
+                (int, int) dimensions = (frames[0].Width, frames[0].Height);
+                frameCount = frames.Length;
+            }
+            public OneAnimation(string contentString, bool isFileName, int amoountOfFrames)
+            {
+                frameCount = amoountOfFrames;
+                if (isFileName)
                 {
-                    if (contentString[currentIdx] == '\n')
+                    contentString = findSpritesPath() + $"\\{contentString}.txt";
+                    using (StreamReader f = new StreamReader(contentString))
                     {
-                        subStrings.Add(contentString.Substring(startIdx, lengthOfSub));
-                        startIdx = currentIdx + 1; // current idx not yet +1ed
-                        lengthOfSub = -1; // it will get +1ed after
+                        contentString = f.ReadToEnd();
                     }
-                    currentIdx++;
-                    lengthOfSub++;
                 }
-                subStrings.Add(contentString.Substring(startIdx));
-                string firstLine = subStrings[0];
-                string secondLine = subStrings[1];
-                string thirdLine = subStrings[2];
+                else { contentString = SpriteStrings.spriteStringsDict[contentString]; }
 
-                currentIdx = 0;
-                while (currentIdx < firstLine.Length)
-                {
-                    if (firstLine[currentIdx] == '*')
-                    {
-                        dimensions = (int.Parse(firstLine.Substring(0, currentIdx)), int.Parse(firstLine.Substring(currentIdx + 1)));
-                        break;
-                    }
-                    currentIdx++;
-                }
+                Bitmap motherBitmap = makeBitmapFromContentString(contentString);
+                frames = slice(motherBitmap, frameCount, 1);
 
-                currentIdx = 0;
-                startIdx = 0;
-                lengthOfSub = 0;
-                List<int> secondLineInts = new List<int>();
-                while (currentIdx < secondLine.Length)
+                foreach (Bitmap bitmap in frames)
                 {
-                    if (secondLine[currentIdx] == ';')
-                    {
-                        secondLineInts.Add(int.Parse(secondLine.Substring(startIdx, lengthOfSub)));
-                        startIdx = currentIdx + 1; // current idx not yet +1ed
-                        lengthOfSub = -1; // it will get +1ed after
-                    }
-                    currentIdx++;
-                    lengthOfSub++;
-                }
-
-                currentIdx = 0;
-                startIdx = 0;
-                lengthOfSub = 0;
-                int currentArrayIdx = 0;
-                int[] thirdLineInts = new int[dimensions.Item1 * dimensions.Item2];
-                while (currentIdx < thirdLine.Length)
-                {
-                    if (thirdLine[currentIdx] == ';')
-                    {
-                        thirdLineInts[currentArrayIdx] = int.Parse(thirdLine.Substring(startIdx, lengthOfSub));
-                        startIdx = currentIdx + 1; // current idx not yet +1ed
-                        lengthOfSub = -1; // it will get +1ed after
-                        currentArrayIdx++;
-                    }
-                    currentIdx++;
-                    lengthOfSub++;
-                }
-
-                palette = new Color[secondLineInts.Count / 4];
-                for (int i = 0; i < secondLineInts.Count / 4; i++)
-                {
-                    palette[i] = Color.FromArgb(secondLineInts[i * 4 + 3], secondLineInts[i * 4], secondLineInts[i * 4 + 1], secondLineInts[i * 4 + 2]);
-                }
-
-                bitmap = new Bitmap(dimensions.Item1, dimensions.Item2);
-                for (int i = 0; i < dimensions.Item1; i++)
-                {
-                    for (int j = 0; j < dimensions.Item2; j++)
-                    {
-                        setPixelButFaster(bitmap, (i, j), palette[thirdLineInts[i + j * dimensions.Item1]]);
-                    }
+                    bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 }
             }
-            /*public void drawBitmap() // not use anymore but I'll keed it cuz idk
+        }
+
+
+        public static Bitmap makeBitmapFromContentString(string contentString) // read string content, and put it in the variables I guess
+        {
+            // contenu du contentString :
+            // ligne 1 dimensions, x puis y séparés par un *.
+            // ligne 2 palette, ints chacun suivis d'un ; ( se finit par x; ), format RGBA, 4 à la suite = 1 couleur.
+            // ligne 3 chaque case, int tous suivis d'un ; ( se finit par x; ), avec int = l'emplacement dans la palette.
+
+            int currentIdx = 0;
+            int startIdx = 0;
+            int lengthOfSub = 0;
+            (int, int) dimensions = (1, 1); ;
+            List<string> subStrings = new List<string>();
+            while (currentIdx < contentString.Length)
             {
-                bitmap = new Bitmap(dimensions.Item1, dimensions.Item2);
-                for (int i = 0; i < dimensions.Item1; i++)
+                if (contentString[currentIdx] == '\n')
                 {
-                    for (int j = 0; j < dimensions.Item2; j++)
-                    {
-                        bitmap.setPixelButFaster(i, j, Color.FromArgb(palette[colors[i, j]].Item1, palette[colors[i, j]].Item2, palette[colors[i, j]].Item3, palette[colors[i, j]].Item4));
-                    }
+                    subStrings.Add(contentString.Substring(startIdx, lengthOfSub));
+                    startIdx = currentIdx + 1; // current idx not yet +1ed
+                    lengthOfSub = -1; // it will get +1ed after
                 }
-            }*/
-            public Bitmap[] slice(int columnAmount, int lineAmount)
-            {
-                (int x, int y) dimensionsChild = (bitmap.Width / columnAmount, bitmap.Height / lineAmount);
-                Bitmap[] tempArray = new Bitmap[columnAmount * lineAmount];
-                for (int j = 0; j < lineAmount; j++)
-                {
-                    for (int i = 0; i < columnAmount; i++)
-                    {
-                        tempArray[i + columnAmount * j] = new Bitmap(dimensionsChild.x, dimensionsChild.y);
-                        Bitmap Child = tempArray[i + columnAmount * j];
-                        // remplace les valeurs du sprite
-                        using (Graphics grD = Graphics.FromImage(Child)) //thanks Amen Ayach on stack overfloww w w
-                        {
-                            Rectangle srcRegion = new Rectangle(dimensionsChild.x * i, dimensionsChild.y * j, dimensionsChild.x, dimensionsChild.y);
-                            Rectangle destRegion = new Rectangle(0, 0, dimensionsChild.x, dimensionsChild.y);
-                            grD.DrawImage(bitmap, destRegion, srcRegion, GraphicsUnit.Pixel);
-                        }
-                    }
-                }
-                return tempArray;
+                currentIdx++;
+                lengthOfSub++;
             }
+            subStrings.Add(contentString.Substring(startIdx));
+            string firstLine = subStrings[0];
+            string secondLine = subStrings[1];
+            string thirdLine = subStrings[2];
+
+            currentIdx = 0;
+            while (currentIdx < firstLine.Length)
+            {
+                if (firstLine[currentIdx] == '*')
+                {
+                    dimensions = (int.Parse(firstLine.Substring(0, currentIdx)), int.Parse(firstLine.Substring(currentIdx + 1)));
+                    break;
+                }
+                currentIdx++;
+            }
+
+            currentIdx = 0;
+            startIdx = 0;
+            lengthOfSub = 0;
+            List<int> secondLineInts = new List<int>();
+            while (currentIdx < secondLine.Length)
+            {
+                if (secondLine[currentIdx] == ';')
+                {
+                    secondLineInts.Add(int.Parse(secondLine.Substring(startIdx, lengthOfSub)));
+                    startIdx = currentIdx + 1; // current idx not yet +1ed
+                    lengthOfSub = -1; // it will get +1ed after
+                }
+                currentIdx++;
+                lengthOfSub++;
+            }
+
+            currentIdx = 0;
+            startIdx = 0;
+            lengthOfSub = 0;
+            int currentArrayIdx = 0;
+            int[] thirdLineInts = new int[dimensions.Item1 * dimensions.Item2];
+            while (currentIdx < thirdLine.Length)
+            {
+                if (thirdLine[currentIdx] == ';')
+                {
+                    thirdLineInts[currentArrayIdx] = int.Parse(thirdLine.Substring(startIdx, lengthOfSub));
+                    startIdx = currentIdx + 1; // current idx not yet +1ed
+                    lengthOfSub = -1; // it will get +1ed after
+                    currentArrayIdx++;
+                }
+                currentIdx++;
+                lengthOfSub++;
+            }
+
+
+            Color[] palette = new Color[secondLineInts.Count / 4];
+            for (int i = 0; i < secondLineInts.Count / 4; i++)
+            {
+                palette[i] = Color.FromArgb(secondLineInts[i * 4 + 3], secondLineInts[i * 4], secondLineInts[i * 4 + 1], secondLineInts[i * 4 + 2]);
+            }
+
+            Bitmap bitmapToReturn = new Bitmap(dimensions.Item1, dimensions.Item2);
+            for (int i = 0; i < dimensions.Item1; i++)
+            {
+                for (int j = 0; j < dimensions.Item2; j++)
+                {
+                    setPixelButFaster(bitmapToReturn, (i, j), palette[thirdLineInts[i + j * dimensions.Item1]]);
+                }
+            }
+            return bitmapToReturn;
+        }
+        public static Bitmap[] slice(Bitmap bitmap, int columnAmount, int lineAmount)
+        {
+            (int x, int y) dimensionsChild = (bitmap.Width / columnAmount, bitmap.Height / lineAmount);
+            Bitmap[] tempArray = new Bitmap[columnAmount * lineAmount];
+            for (int j = 0; j < lineAmount; j++)
+            {
+                for (int i = 0; i < columnAmount; i++)
+                {
+                    tempArray[i + columnAmount * j] = new Bitmap(dimensionsChild.x, dimensionsChild.y);
+                    Bitmap Child = tempArray[i + columnAmount * j];
+                    // remplace les valeurs du sprite
+                    using (Graphics grD = Graphics.FromImage(Child)) //thanks Amen Ayach on stack overfloww w w
+                    {
+                        Rectangle srcRegion = new Rectangle(dimensionsChild.x * i, dimensionsChild.y * j, dimensionsChild.x, dimensionsChild.y);
+                        Rectangle destRegion = new Rectangle(0, 0, dimensionsChild.x, dimensionsChild.y);
+                        grD.DrawImage(bitmap, destRegion, srcRegion, GraphicsUnit.Pixel);
+                    }
+                }
+            }
+            return tempArray;
         }
         public static void drawSpriteOnCanvas(Bitmap bigBitmap, Bitmap smallBitmap, (int, int) posToDraw, int scaleFactor, bool centeredDraw)
         {
