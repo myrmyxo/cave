@@ -69,6 +69,7 @@ namespace Cave
                 }
 
                 int idToPut = 0;
+                PNGsize = 150;
                 bool isMonoeBiomeToPut = false;
                 isPngToExport = false;
                 
@@ -80,7 +81,7 @@ namespace Cave
                     mainScreen = new Screen(this, ChunkLength, idToPut, isMonoeBiomeToPut, true);
                     timeAtLauch = DateTime.Now;
 
-                    //runGame();
+                    runGame(null, null);
 
                     mainScreen.updateScreen().Save($"{currentDirectory}\\caveMap.png");
                     ChunkLength = oldChunkLength;
@@ -214,7 +215,7 @@ namespace Cave
                         goto LoopStart;
                     }
 
-                    if (player.dimension == screen.id)
+                    if (player.dimension == screen.id && !screen.isPngToBeExported)
                     {
                         gamePictureBox.Image = screen.updateScreen();
                         gamePictureBox.Refresh();
@@ -307,6 +308,14 @@ namespace Cave
                 chunkX = Floor(game.playerList[0].posX, 32) / 32;
                 chunkY = Floor(game.playerList[0].posY, 32) / 32;
                 loadChunks();
+
+                foreach ((int x, int y) pos in chunksToSpawnEntitiesIn.Keys)
+                {
+                    if (loadedChunks.ContainsKey(pos))
+                    {
+                        loadedChunks[pos].spawnEntities();
+                    }
+                }
             }
             public void LCGCacheInit()
             {

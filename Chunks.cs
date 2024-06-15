@@ -1145,7 +1145,7 @@ namespace Cave
             int acidity = values[2];
             int toxicity = values[3];
 
-            if (true)
+            if (false)
             {
                 int cumScore = 0; // heehee !
                 foreach ((int biome, int subBiome) i in biomeTypicalValues.Keys)
@@ -1234,7 +1234,7 @@ namespace Cave
                             coldness -= bigColdness;
                             if (bigColdness > 0)
                             {
-                                listo.Add(((7, bigColdness), 0));
+                                listo.Add(((7, 0), bigColdness));
                                 percentageFree -= bigColdness;
                             }
                         }
@@ -1269,8 +1269,8 @@ namespace Cave
 
                 if (percentageFree > 0)
                 {
-                    int slimeness = (int)(Clamp((toxicity - humidity + 20) * 10, 0, 1000) * percentageFree * 0.001f);
-                    int forestness = (int)(Clamp((humidity - toxicity + 20) * 10, 0, 1000) * percentageFree * 0.001f);
+                    int slimeness = (int)(Clamp((toxicity - humidity - 20) * 10, 0, 1000) * percentageFree * 0.001f);
+                    int forestness = percentageFree - slimeness;
                     if (forestness > 0)
                     {
                         listo.Add(((3, 0), forestness));
