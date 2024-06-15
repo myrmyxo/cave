@@ -62,7 +62,7 @@ namespace Cave
         {
             public long seed;
             public int id;
-            public int type;
+            public (int biome, int subBiome) type;
             public bool isMono;
             public DimensionJson(Screens.Screen screen)
             {
@@ -106,6 +106,36 @@ namespace Cave
                             screen.loadedChunks.Add(pos, new Chunk(pos, false, screen));
                         }
                     }
+                }
+            }
+            public void loadAllNests(Screens.Screen screen)
+            {
+                foreach (int nestId in nests)
+                {
+                    if (!screen.activeNests.ContainsKey(nestId))
+                    {
+                        Nest nesto = loadNest(screen, nestId);
+                        foreach ((int, int) chunkPos in nesto.chunkPresence.Keys)
+                        {
+                            if (!screen.loadedChunks.ContainsKey(chunkPos))
+                            {
+                                screen.loadedChunks.Add(chunkPos, new Chunk(chunkPos, false, screen));
+                            }
+                        }
+                        screen.activeNests[nestId] = nesto;
+                    }
+                }
+            }
+            public void unloadAllNestsAndChunks(Screens.Screen screen, Dictionary<(int x, int y), bool> chunksToRemove)
+            {
+                foreach (int nestId in nests)
+                {
+                    saveNest(screen.activeNests[nestId]);
+                    foreach ((int x, int y) pososo in screen.activeNests[nestId].chunkPresence.Keys) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
+                    {
+                       chunksToRemove[pososo] = true;
+                    }
+                    screen.activeNests.Remove(nestId);
                 }
             }
         }

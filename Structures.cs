@@ -360,16 +360,17 @@ namespace Cave
                     Chunk chunkToTest = chunkList[testPos[0] / 32][testPos[1] / 32];
                     (int, int) chunkTestPos = (testPos[0] % 32, testPos[1] % 32);
 
-                    if (chunkToTest.biomeIndex[chunkTestPos.Item1, chunkTestPos.Item2][0].Item1 == 5)
+                    if (chunkToTest.biomeIndex[chunkTestPos.Item1, chunkTestPos.Item2][0].Item1 == (5, 0))
                     {
                         liquidTypeToFill = -3;
                     }
-                    if (chunkToTest.biomeIndex[chunkTestPos.Item1, chunkTestPos.Item2][0].Item1 == 2)
+                    if (chunkToTest.biomeIndex[chunkTestPos.Item1, chunkTestPos.Item2][0].Item1 == (2, 0))
                     {
-                        if (chunkToTest.secondaryBiomeValues[chunkTestPos.Item1, chunkTestPos.Item2, 0] + chunkToTest.secondaryBigBiomeValues[chunkTestPos.Item1, chunkTestPos.Item2, 0] - 128 + rand.Next(200) - 200 > 100)
+                        liquidTypeToFill = 4;
+                        /*if (THIS WAS PUT THERE TO ADD MORE LAVA LAKES THE HIGHER THE TEMPERATURE !!! But fuck it myb i'll use the mean or center tile saved this costs loads of memory    chunkToTest.secondaryBiomeValues[chunkTestPos.Item1, chunkTestPos.Item2, 0] + chunkToTest.secondaryBigBiomeValues[chunkTestPos.Item1, chunkTestPos.Item2, 0] - 128 + rand.Next(200) - 200 > 100)
                         {
                             liquidTypeToFill = -4;
-                        }
+                        }*/
                     }
                 }
 
@@ -737,25 +738,28 @@ namespace Cave
                 Dictionary<(int x, int y), bool> tilesToFill = new Dictionary<(int x, int y), bool>();
                 int[] tilesFilled = new int[]{0};
                 (int x, int y) testPos32 = ((int)(seedo % 32), (int)((seedo / 32) % 32));
-                (int x, int y) testPos = (testPos32.x + chunkBounds.Item1*32, testPos32.y + chunkBounds.Item3*32); 
+                (int x, int y) testPos = (testPos32.x + chunkBounds.Item1*32, testPos32.y + chunkBounds.Item3*32);
 
                 floodPixel(testPos, testPos, tilesToFill, chunkDict, tilesFilled);
-                
+                screen.addChunksToExtraLoaded(chunkDict);
+
+
                 if (tilesFilled[0] <= 2000)
                 {
                     int liquidTypeToFill = -2;
                     Chunk chunkToTest = chunkDict[(Floor(testPos.x, 32) / 32, Floor(testPos.y, 32) / 32)];
 
-                    if (chunkToTest.biomeIndex[testPos32.Item1, testPos32.Item2][0].Item1 == 5)
+                    if (chunkToTest.biomeIndex[testPos32.Item1, testPos32.Item2][0].Item1 == (5, 0))
                     {
                         liquidTypeToFill = -3;
                     }
-                    if (chunkToTest.biomeIndex[testPos32.Item1, testPos32.Item2][0].Item1 == 2)
+                    if (chunkToTest.biomeIndex[testPos32.Item1, testPos32.Item2][0].Item1 == (2, 0))
                     {
-                        if (chunkToTest.secondaryBiomeValues[testPos32.Item1, testPos32.Item2, 0] + chunkToTest.secondaryBigBiomeValues[testPos32.Item1, testPos32.Item2, 0] - 128 + rand.Next(200) - 200 > 100)
+                        liquidTypeToFill = -4;
+                        /*if (THIS WAS PUT THERE TO ADD MORE LAVA LAKES THE HIGHER THE TEMPERATURE !!!But fuck it myb i'll use the mean or center tile saved this costs loads of memory    chunkToTest.secondaryBiomeValues[testPos32.Item1, testPos32.Item2, 0] + chunkToTest.secondaryBigBiomeValues[testPos32.Item1, testPos32.Item2, 0] - 128 + rand.Next(200) - 200 > 100)
                         {
                             liquidTypeToFill = -4;
-                        }
+                        }*/
                     }
                     seedo = LCGyNeg(LCGxNeg(seedo));
                     if (seedo % 1000 == 0) { liquidTypeToFill = -1; }
@@ -786,8 +790,9 @@ namespace Cave
             {
                 if (tilesFilled[0] > 2000) { return; }
                 (int x, int y) chunkPos = (Floor(pos.x, 32) / 32, Floor(pos.y, 32) / 32);
-                if (!chunkDict.ContainsKey(chunkPos)) { chunkDict.Add(chunkPos, new Chunk(chunkPos, true, screen)); }
-                if (!tilesToFill.ContainsKey(pos) && chunkDict[chunkPos].fillStates[(pos.x%32 + 32) % 32, (pos.y%32 + 32) % 32] == 0)
+                Chunk chunkToTest = screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
+                chunkDict[chunkPos] = chunkToTest;
+                if (!tilesToFill.ContainsKey(pos) && chunkToTest.fillStates[(pos.x%32 + 32) % 32, (pos.y%32 + 32) % 32] == 0)
                 {
                     tilesToFill[pos] = true;
                     tilesFilled[0]++;

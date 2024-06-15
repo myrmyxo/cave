@@ -199,7 +199,7 @@ namespace Cave
                     }
                     foreach (Plant plant in screen.activePlants.Values)
                     {
-                        plant.testPlantGrowth();
+                        plant.testPlantGrowth(false);
                     }
                     foreach ((int x, int y) pos in screen.loadedChunks.Keys)
                     {
@@ -263,7 +263,7 @@ namespace Cave
 
             public long seed;
             public int id;
-            public int type;
+            public (int, int) type;
             public bool isMonoBiome; // if yes, then the whole-ass dimension is only made ouf of ONE biome, that is of the type of... well type. If not, type is the type of dimension and not the biome (like idk normal, frozen, lampadaire, shitpiss world...)
 
             public Bitmap gameBitmap;
@@ -298,7 +298,7 @@ namespace Cave
                 game = gameToPut;
                 id = idToPut;
                 seed = game.seed + id;
-                type = id % 11;
+                type = (id % 11, 0);
                 isMonoBiome = isMonoToPut;
                 isPngToBeExported = isPngToExport;
                 chunkResolution = chunkResolutionToPut + UnloadedChunksAmount * 2; // invisible chunks of the sides/top/bottom
@@ -380,7 +380,10 @@ namespace Cave
                 {
                     for (int j = 0; j < chunkResolution; j++)
                     {
-                        loadedChunks.Add((chunkX + i, chunkY + j), new Chunk((chunkX + i, chunkY + j), false, this));
+                        if (!loadedChunks.ContainsKey((chunkX + i, chunkY + j)))
+                        {
+                            loadedChunks.Add((chunkX + i, chunkY + j), new Chunk((chunkX + i, chunkY + j), false, this));
+                        }
                     }
                 }
                 if (isPngToBeExported) { gameBitmap = new Bitmap(32 * (chunkResolution - 1), 32 * (chunkResolution - 1)); }
@@ -593,37 +596,15 @@ namespace Cave
                     else
                     {
                         newMegaChunks[pos] = loadMegaChunk(this, pos);
-                        foreach (int nestId in newMegaChunks[pos].nests)
-                        {
-                            if (!activeNests.ContainsKey(nestId))
-                            {
-                                Nest nesto = loadNest(this, nestId);
-                                foreach ((int, int) chunkPos in nesto.chunkPresence.Keys)
-                                {
-                                    if (!loadedChunks.ContainsKey(chunkPos))
-                                    {
-                                        loadedChunks.Add(chunkPos, new Chunk(chunkPos, false, this));
-                                    }
-                                }
-                                activeNests[nestId] = nesto;
-                            }
-                        }
+                        newMegaChunks[pos].loadAllNests(this);
+                        newMegaChunks[pos].loadAllChunksInNests(this);
                     }
                 }
                 Dictionary<(int x, int y), bool> chunksToRemove = new Dictionary<(int x, int y), bool>();
                 foreach ((int x, int y) pos in megaChunks.Keys) // remove megachunks that have no chunks loaded in anymore
                 {
-                    foreach (int nestId in megaChunks[pos].nests)
-                    {
-                        saveNest(activeNests[nestId]);
-                        foreach ((int x, int y) pososo in activeNests[nestId].chunkPresence.Keys) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
-                        {
-                            chunksToRemove[pososo] = true;
-                        }
-                        activeNests.Remove(nestId);
-                    }
+                    megaChunks[pos].unloadAllNestsAndChunks(this, chunksToRemove);
                     saveMegaChunk(megaChunks[pos], pos, id);
-
                     actuallyUnloadTheChunks(chunksToRemove);
                 }
 
@@ -686,6 +667,7 @@ namespace Cave
                 if (loadStructuresYesOrNo && !System.IO.File.Exists($"{currentDirectory}\\CaveData\\{game.seed}\\MegaChunkData\\{id}\\{posX}.{posY}.json"))
                 {
                     MegaChunk megaChunk = new MegaChunk((posX, posY));
+                    saveMegaChunk(megaChunk, megaChunk.pos, id);
 
                     int x = posY % 10 + 15;
                     long seedX = seed + posX;
@@ -746,11 +728,13 @@ namespace Cave
                             activeNests[nesto.id] = nesto;
                         }
                     }*/
-                    megaChunk.loadAllChunksInNests(this);
                     megaChunks[megaChunk.pos] = megaChunk;
                     saveMegaChunk(megaChunk, megaChunk.pos, id);
                 }
-                else { saveMegaChunk(new MegaChunk((posX, posY)), (posX, posY), id); }
+                else
+                {
+                    saveMegaChunk(new MegaChunk((posX, posY)), (posX, posY), id);
+                }
             }
             public void fillBitmap(Bitmap receiver, Color color)
             {
@@ -936,7 +920,6 @@ namespace Cave
                         g.DrawImage(lightBitmap, 0, 0, resizedBitmap.Width, resizedBitmap.Height);
                     }
                     lightBitmap = resizedBitmap;
-
                     pasteLightBitmapOnGameBitmap(gameBitmap, lightBitmap);
                 }
 
@@ -1021,7 +1004,7 @@ namespace Cave
                         Color colorToDraw = Color.FromArgb(100, 255, 255, 100);
                         drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
                     }
-                    foreach ((int x, int y) poso in nestLoadedChunkIndexes.Keys)
+                    foreach ((int x, int y) poso in extraLoadedChunks.Keys)
                     {
                         Color colorToDraw = Color.Purple;
                         drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
@@ -1109,6 +1092,16 @@ namespace Cave
                     chunkToTest = chunkDict[chunkPos];
                 }
                 return chunkToTest;
+            }
+            public void addChunksToExtraLoaded(Dictionary<(int x, int y), Chunk> chunkDict)
+            {
+                foreach ((int x, int y) pos in chunkDict.Keys)
+                {
+                    if (!loadedChunks.ContainsKey(pos) && !extraLoadedChunks.ContainsKey(pos))
+                    {
+                        extraLoadedChunks[pos] = chunkDict[pos];
+                    }
+                }
             }
         }
     }

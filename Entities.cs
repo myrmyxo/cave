@@ -141,23 +141,23 @@ namespace Cave
             public void findType(Chunk chunk)
             {
                 (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
-                int biome = chunk.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
+                (int biome, int subBiome) biome = chunk.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
                 if (chunk.fillStates[tileIndex.x, tileIndex.y] < 0)
                 {
                     type = 2;
                     subType = 0;
                 }
-                else if (biome == 5)
+                else if (biome == (5, 0))
                 {
                     type = 0;
                     subType = 0;
                 }
-                else if (biome == 6)
+                else if (biome == (6, 0))
                 {
                     type = 0;
                     subType = 1;
                 }
-                else if (biome == 7 || biome == 9)
+                else if (biome == (7, 0) || biome == (9, 0))
                 {
                     type = 0;
                     subType = 2;

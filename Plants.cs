@@ -28,6 +28,7 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using System.Linq.Expressions;
 
 namespace Cave
 {
@@ -119,28 +120,24 @@ namespace Cave
             }
             public bool tryGrowth() // 0 = nothing, 1 = plantMatter, 2 = wood, 3 = aquaticPlantMatter, 4 = mushroomStem, 5 = mushroomCap, 6 = petal, 7 = flowerPollen
             {
+                (int x, int y) drawPos = lastDrawPos;
                 int growthLevelToTest = growthLevel + 1;
                 if (growthLevelToTest == 0)
                 {
-                    growthLevel = growthLevelToTest;
-                    return true;
+                    goto Success;
                 }
-
 
                 if (motherPlant.type == 1) // woody tree
                 {
                     if (motherPlant.subType == 0)
                     {
                         maxGrowthLevel = Min(motherPlant.maxGrowthLevel - pos.y, seed % motherPlant.maxGrowthLevel);
-                        if (growthLevelToTest > maxGrowthLevel)
-                        {
-                            return false;
-                        }
+                        if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
 
                         int direction; // -1 = left, 1 = right
                         direction = (seed % 2) * 2 - 1;
 
-                        (int x, int y) drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
+                        drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
 
                         if (LCGint1(seed + growthLevelToTest) % Max(1, (int)(growthLevelToTest * 0.5f)) == 0 || growthLevelToTest < 3)
                         {
@@ -161,18 +158,13 @@ namespace Cave
                                     flower.pos = absolutePos(drawPos);
                                 }
                             }
-                            lastDrawPos = drawPos;
-                            growthLevel = growthLevelToTest;
-                            return true;
+                            goto Success;
                         }
-                        else
-                        {
-                            return false;
-                        }
+                        goto Fail;
                     }
                     else if (motherPlant.subType == 1)
                     {
-                        (int x, int y) drawPos = lastDrawPos;
+                        drawPos = lastDrawPos;
 
                         int direction; // -1 = left, 1 = right
                         direction = (seed % 2) * 2 - 1;
@@ -181,10 +173,7 @@ namespace Cave
                         int diagoLengto = 1 + seed % 2;
 
                         maxGrowthLevel = Min(turningAge + diagoLengto + motherPlant.maxGrowthLevel - pos.y, turningAge + diagoLengto + seed % motherPlant.maxGrowthLevel);
-                        if (growthLevelToTest > maxGrowthLevel)
-                        {
-                            return false;
-                        }
+                        if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
 
 
                         if (growthLevelToTest >= turningAge)
@@ -217,21 +206,24 @@ namespace Cave
                                     flower.pos = absolutePos(drawPos);
                                 }
                             }
-                            lastDrawPos = drawPos;
-                            growthLevel = growthLevelToTest;
-                            return true;
+                            goto Success;
                         }
-                        else
-                        {
-                            return false;
-                        }
+                        goto Fail;
                     }
                 }
 
 
+            SuccessButStop:;
+                lastDrawPos = drawPos;
+                growthLevel = growthLevelToTest;
 
-                // IF THE ranbrach IS NOT A KNOWN INDEX IT WEIRD.... so just bye bye branchds I guess
+            Fail:;
                 return false;
+
+            Success:;
+                lastDrawPos = drawPos;
+                growthLevel = growthLevelToTest;
+                return true;
             }
         }
         public class Flower
@@ -277,70 +269,138 @@ namespace Cave
                 int growthLevelToTest = growthLevel + 1;
                 if (growthLevelToTest == 0)
                 {
-                    growthLevel = growthLevelToTest;
-                    return true;
+                    goto Success;
                 }
 
-                if (motherPlant.type == 0 && motherPlant.subType == 1)
+                if (motherPlant.type == 0)
                 {
-                    maxGrowthLevel = 1;
-
                     fillStates = new Dictionary<(int x, int y), int>();
-                    /*tryFill((-1, 0), 7);
-                    tryFill((0, 0), 6);
-                    tryFill((1, 0), 7);
-                    tryFill((0, 1), 7);
-                    motherPlant.makeBitmap(true);
-                    tryFill((-1, 1), 7);
-                    tryFill((0, 1), 6);
-                    tryFill((1, 1), 7);
-                    tryFill((0, 2), 7);*/
-                    growthLevel = growthLevelToTest;
-                    return true;
+                    if (motherPlant.subType == 2)                                   // Tulip
+                    {
+                        maxGrowthLevel = 4;
+
+                        if (growthLevelToTest == 1)
+                        {
+                            tryFill((0, 0), 6);
+                        }
+                        else if (growthLevelToTest == 2)
+                        {
+                            tryFill((0, 0), 6);
+                            tryFill((0, 1), 6);
+                        }
+                        else if (growthLevelToTest == 3)
+                        {
+                            tryFill((0, 0), 6);
+                            tryFill((0, 1), 6);
+                            tryFill((0, 2), 6);
+                        }
+                        else if (growthLevelToTest == 4)
+                        {
+                            tryFill((0, 0), 6);
+                            tryFill((-1, 1), 6);
+                            tryFill((0, 1), 6);
+                            tryFill((1, 1), 6);
+                            tryFill((0, 2), 6);
+                        }
+                        else
+                        {
+                            tryFill((0, 0), 6);
+                            tryFill((-1, 1), 6);
+                            tryFill((0, 1), 6);
+                            tryFill((1, 1), 6);
+                            tryFill((-1, 2), 6);
+                            tryFill((1, 2), 6);
+                            goto SuccessButStop;
+                        }
+                        goto Success;
+                    }
+                    if (motherPlant.subType == 3)                                   // Allium
+                    {
+                        maxGrowthLevel = 3;
+
+                        if (growthLevelToTest == 1)
+                        {
+                            tryFill((0, 0), 6);
+                        }
+                        else if (growthLevelToTest == 2)
+                        {
+                            tryFill((-1, 0), 6);
+                            tryFill((0, 0), 6);
+                            tryFill((1, 0), 6);
+                            tryFill((-1, 1), 6);
+                            tryFill((0, 1), 6);
+                            tryFill((1, 1), 6);
+                        }
+                        else if (growthLevelToTest == 3)
+                        {
+                            tryFill((-1, 0), 6);
+                            tryFill((0, 0), 6);
+                            tryFill((1, 0), 6);
+                            tryFill((-1, 1), 6);
+                            tryFill((0, 1), 6);
+                            tryFill((1, 1), 6);
+                            tryFill((-1, 2), 6);
+                            tryFill((0, 2), 6);
+                            tryFill((1, 2), 6);
+                        }
+                        else
+                        {
+                            tryFill((-1, 0), 6);
+                            tryFill((0, 0), 6);
+                            tryFill((1, 0), 6);
+                            tryFill((-2, 1), 6);
+                            tryFill((-1, 1), 6);
+                            tryFill((0, 1), 6);
+                            tryFill((1, 1), 6);
+                            tryFill((2, 1), 6);
+                            tryFill((-2, 2), 6);
+                            tryFill((-1, 2), 6);
+                            tryFill((0, 2), 6);
+                            tryFill((1, 2), 6);
+                            tryFill((2, 2), 6);
+                            tryFill((-1, 3), 6);
+                            tryFill((0, 3), 6);
+                            tryFill((1, 3), 6);
+                            goto SuccessButStop;
+                        }
+                        goto Success;
+                    }
+
+                    // else, case of candle ig
+                    maxGrowthLevel = 1;
+                    goto Fail;
                 }
                 if (motherPlant.type == 1) // tree
                 {
                     if (motherPlant.subType == 1)
                     {
+                        fillStates = new Dictionary<(int x, int y), int>();
                         if (growthLevelToTest == 1)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             tryFill((0, 0), 1);
-                            growthLevel = growthLevelToTest;
-                            return true;
                         }
                         else if (growthLevelToTest == 2)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             tryFill((0, 0), 1);
                             tryFill((0, 1), 2);
-                            growthLevel = growthLevelToTest;
-                            return true;
                         }
                         else if (growthLevelToTest == 3)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             tryFill((0, 0), 1);
                             tryFill((0, 1), 2);
                             tryFill((-1, 1), 2);
                             tryFill((1, 1), 2);
-                            growthLevel = growthLevelToTest;
-                            return true;
                         }
                         else if (growthLevelToTest == 4)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             tryFill((0, 0), 1);
                             tryFill((0, 1), 2);
                             tryFill((-1, 1), 2);
                             tryFill((1, 1), 2);
                             tryFill((0, 2), 2);
-                            growthLevel = growthLevelToTest;
-                            return true;
                         }
-                        else if (growthLevelToTest == 5)
+                        else if (growthLevelToTest >= 5)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             tryFill((-1, -1), 2);
                             tryFill((0, -1), 2);
                             tryFill((1, -1), 2);
@@ -351,24 +411,22 @@ namespace Cave
                             tryFill((1, 1), 2);
                             tryFill((2, 1), 2);
                             tryFill((0, 2), 2);
-                            growthLevel = growthLevelToTest;
-                            return true;
+                            goto SuccessButStop;
                         }
-                        else if (growthLevelToTest > maxGrowthLevel) { return false; }
+                        goto Success;
                     }
                     else
                     {
-                        maxGrowthLevel = 5;
+                        fillStates = new Dictionary<(int x, int y), int>();
 
                         (int x, int y) drawPos = (0, 0);
+
                         if (growthLevelToTest == 1) // test so chandelier is one pixel big
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             tryFill(drawPos, 1);
                         }
                         else if (growthLevelToTest == 2)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             for (int i = -1; i < 2; i++)
                             {
                                 for (int j = -1; j < 2; j++)
@@ -384,7 +442,6 @@ namespace Cave
                         }
                         else if (growthLevelToTest == 3)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             for (int i = -1; i < 2; i++)
                             {
                                 for (int j = -1; j < 2; j++)
@@ -398,7 +455,6 @@ namespace Cave
                         }
                         else if (growthLevelToTest >= 4)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             for (int i = -2; i < 3; i++)
                             {
                                 for (int j = -2; j < 3; j++)
@@ -411,116 +467,99 @@ namespace Cave
                                     }
                                 }
                             }
+                            goto SuccessButStop;
                         }
-                        if (growthLevelToTest > maxGrowthLevel) { return false; }
-                        growthLevel = growthLevelToTest;
-                        return true;
+                        goto Success;
                     }
                 }
                 else if (motherPlant.type == 4) // mushy
                 {
                     maxGrowthLevel = motherPlant.maxGrowthLevel;
+                    if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
 
                     fillStates = new Dictionary<(int x, int y), int>();
 
                     tryFill((-1, 0), 5);
                     tryFill((0, 0), 5);
                     tryFill((1, 0), 5);
-                    if (growthLevel > seed % 8 + 2)
+                    if (growthLevelToTest > seed % 8 + 2)
                     {
                         tryFill((-2, 0), 5);
                         tryFill((2, 0), 5);
-                        if (growthLevel > seed % 8 + 3 + seed % 2)
+                        if (growthLevelToTest > seed % 8 + 3 + seed % 2)
                         {
                             tryFill((-1, 1), 5);
                             tryFill((0, 1), 5);
                             tryFill((1, 1), 5);
                         }
                     }
-
-                    if (growthLevelToTest > maxGrowthLevel) { return false; }
-                    growthLevel = growthLevelToTest;
-                    return true;
+                    goto Success;
                 }
                 else if (motherPlant.type == 5) // vine
                 {
+                    maxGrowthLevel = 3;
+                    fillStates = new Dictionary<(int x, int y), int>();
                     if (type == 0)
                     {
-                        maxGrowthLevel = 3;
-
                         if (growthLevelToTest == 1)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             tryFill((0, 0), 6);
-                            growthLevel = growthLevelToTest;
-                            return true;
                         }
                         else if (growthLevelToTest == 2)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             tryFill((0, 0), 6);
                             tryFill((1, 0), 6);
                             tryFill((-1, 0), 6);
                             tryFill((0, 1), 6);
                             tryFill((0, -1), 6);
-                            growthLevel = growthLevelToTest;
-                            return true;
                         }
-                        else if (growthLevelToTest == 3)
+                        else if (growthLevelToTest >= 3)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             tryFill((0, 0), 7);
                             tryFill((1, 0), 6);
                             tryFill((-1, 0), 6);
                             tryFill((0, 1), 6);
                             tryFill((0, -1), 6);
-                            growthLevel = growthLevelToTest;
-                            return true;
+                            goto SuccessButStop;
                         }
-                        else if (growthLevelToTest > maxGrowthLevel) { return false; }
+                        goto Success;
                     }
-                    else if (type == 1)
+                    else
                     {
-                        int maxGrowthLevel = 3;
-
                         if (growthLevelToTest == 1)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             tryFill((0, 0), 6);
-                            growthLevel = growthLevelToTest;
-                            return true;
                         }
                         else if (growthLevelToTest == 2)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             tryFill((0, 0), 6);
                             tryFill((1, 1), 6);
                             tryFill((-1, 1), 6);
                             tryFill((1, -1), 6);
                             tryFill((-1, -1), 6);
-                            growthLevel = growthLevelToTest;
-                            return true;
                         }
-                        else if (growthLevelToTest == 3)
+                        else if (growthLevelToTest >= 3)
                         {
-                            fillStates = new Dictionary<(int x, int y), int>();
                             tryFill((0, 0), 7);
                             tryFill((1, 1), 6);
                             tryFill((-1, 1), 6);
                             tryFill((1, -1), 6);
                             tryFill((-1, -1), 6);
-                            growthLevel = growthLevelToTest;
-                            return true;
+                            goto SuccessButStop;
                         }
-                        else if (growthLevelToTest > maxGrowthLevel) { return false; }
+                        goto Success;
                     }
                 }
 
+            SuccessButStop:;
+                growthLevel = growthLevelToTest;
 
-
-
-                // IF THE fklower IS NOT A KNOWN INDEX IT WEIRD.... so just bye bye folwer I guess
+            Fail:;
                 return false;
+
+            Success:;
+                growthLevel = growthLevelToTest;
+                return true;
             }
         }
         public class Plant
@@ -578,7 +617,7 @@ namespace Cave
                     childFlowers.Add(new Flower(this, flowerJson));
                 }
                 findColors();
-                makeBitmap(false);
+                makeBitmap();
             }
             public Plant(Chunk chunkToPut, int groupOfPlant)
             {
@@ -593,8 +632,8 @@ namespace Cave
                 findType(groupOfPlant);
                 if (isDeadAndShouldDisappear) { return; }
                 findColors();
-                tryGrowth();
-                makeBitmap(false);
+                growToMaximum();
+                makeBitmap();
                 timeAtLastGrowth = timeElapsed;
 
                 currentPlantId++;
@@ -614,7 +653,7 @@ namespace Cave
                 if (isDeadAndShouldDisappear) { return; }
                 findColors();
                 tryGrowth();
-                makeBitmap(false);
+                makeBitmap();
                 timeAtLastGrowth = timeElapsed;
 
                 currentPlantId++;
@@ -635,7 +674,7 @@ namespace Cave
                 }
                 Chunk chunkToTest = screen.loadedChunks[chunkPos];
 
-                int biome = chunkToTest.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
+                (int biome, int subBiome) biome = chunkToTest.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
                 if (attachPoint == 0)
                 {
                     if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] < 0)
@@ -643,7 +682,7 @@ namespace Cave
                         type = 2;
                         subType = 0;
                     }
-                    else if (biome == 3) // forest
+                    else if (biome == (3, 0)) // forest
                     {
                         if (group == 1)
                         {
@@ -652,16 +691,30 @@ namespace Cave
                         }
                         else
                         {
-                            type = 1;
-                            subType = 0;
+                            int rando = rand.Next(101);
+                            if (rando < 40)
+                            {
+                                type = 0;
+                                subType = 0;
+                            }
+                            else if (rando > 80)
+                            {
+                                type = 0;
+                                subType = 3;
+                            }
+                            else
+                            {
+                                type = 0;
+                                subType = 2;
+                            }
                         }
                     }
-                    else if (biome == 5) // fairy
+                    else if (biome == (5, 0)) // fairy
                     {
                         type = 4;
                         subType = 0;
                     }
-                    else if (biome == 6) // obsidian
+                    else if (biome == (6, 0)) // obsidian
                     {
                         if (rand.Next(100) == 0)
                         {
@@ -674,7 +727,7 @@ namespace Cave
                             subType = 0;
                         }
                     }
-                    else if (biome == 9) // chandelier
+                    else if (biome == (9, 0)) // chandelier
                     {
                         if (group == 0)
                         {
@@ -701,12 +754,12 @@ namespace Cave
                         type = 2;
                         subType = 1;
                     }
-                    else if (biome == 6) // obsidian
+                    else if (biome == (6, 0)) // obsidian
                     {
                         type = 5;
                         subType = 1;
                     }
-                    else if (biome == 9)
+                    else if (biome == (9, 0))
                     {
                         isDeadAndShouldDisappear = true;
                     }
@@ -743,6 +796,16 @@ namespace Cave
                         colorDict.Add(2, Color.FromArgb(40 - shadeVar, 30 - shadeVar, 10 - shadeVar));
                         colorDict.Add(6, Color.FromArgb(220 - shadeVar, 200 - shadeVar, 80 - shadeVar));
                         colorDict.Add(7, Color.FromArgb(200 - shadeVar, 120 - shadeVar, 40 - shadeVar));
+                    }
+                    else if (subType == 2)
+                    {
+                        colorDict.Add(1, Color.FromArgb(50 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
+                        colorDict.Add(6, Color.FromArgb(220 - shadeVar, 110 - hueVar - shadeVar, 130 + hueVar - shadeVar));
+                    }
+                    else if (subType == 3)
+                    {
+                        colorDict.Add(1, Color.FromArgb(50 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
+                        colorDict.Add(6, Color.FromArgb(140 - shadeVar, 80 - hueVar - shadeVar, 220 - shadeVar));
                     }
                     else
                     {
@@ -819,7 +882,7 @@ namespace Cave
                 }
                 return true;
             }
-            public void makeBitmap(bool isSecondaryBitmap)
+            public void makeBitmap()
             {
                 List<Branch> branchList = new List<Branch>(childBranches);
                 List<Flower> flowerList = new List<Flower>(childFlowers);
@@ -884,16 +947,8 @@ namespace Cave
                 int height = maxY - minY + 1;
 
                 Bitmap bitmapToMake;
-                if (isSecondaryBitmap)
-                {
-                    secondaryBitmap = new Bitmap(width, height);
-                    bitmapToMake = secondaryBitmap;
-                }
-                else
-                {
-                    bitmap = new Bitmap(width, height);
-                    bitmapToMake = bitmap;
-                }
+                bitmap = new Bitmap(width, height);
+                bitmapToMake = bitmap;
 
                 foreach ((int x, int y) drawPos in fillDict.Keys)
                 {
@@ -970,50 +1025,65 @@ namespace Cave
                 }
                 else { lightColor = Color.Black; }
             }
+            public void growToMaximum()
+            {
+                isStable = false;
+                while (!isStable)
+                {
+                    isStable = !testPlantGrowth(true);
+                }
+            }
+            public Dictionary<(int type, int subType), (int min, int range)> maxGrowthDict = new Dictionary<(int type, int subType), (int min, int range)>
+            {
+                { (0, 0), (1, 5) }, // grass
+                { (0, 1), (1, 5) }, // candle
+                { (0, 2), (2, 4) }, // tulip
+                { (0, 3), (4, 3) }, // allum
+                { (0, 4), (1, 5) },
+            };
             public bool tryGrowth() // 0 = nothing, 1 = plantMatter, 2 = wood, 3 = aquaticPlantMatter, 4 = mushroomStem, 5 = mushroomCap, 6 = petal, 7 = flowerPollen
             {
                 int seedo = seed;
-
                 int growthLevelToTest = growthLevel + 1;
+                (int x, int y) drawPos = lastDrawPos;
+
                 if (growthLevelToTest == 0)
                 {
-                    if (type == 0 || type == 1 || (type == 2 && subType == 0) || type == 3 || type == 4)
+                    if (type == 5 || (type == 3 && subType == 1))
                     {
-                        lastDrawPos = (0, -1);
+                        drawPos = (0, 1);
                     }
                     else
                     {
-                        lastDrawPos = (0, 1);
+                        drawPos = (0, -1);
                     }
-                    growthLevel = growthLevelToTest;
-                    return true;
+                    goto Success;
                 }
 
                 if (type == 0) // normal plant
                 {
-                    maxGrowthLevel = 1 + seed % 5;
-                    if (growthLevelToTest > maxGrowthLevel) { return false; }
+                    if (!maxGrowthDict.ContainsKey((type, subType))) { goto Fail; }
+                    (int min, int range) maxGrowthTuple = maxGrowthDict[(type, subType)];
+                    if (growthLevelToTest > maxGrowthTuple.min + seed % maxGrowthTuple.range) { goto Fail; }
 
-                    (int x, int y) drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
-                    if (subType == 1)
+                    drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
+                    if (subType == 1 || subType == 2 || subType == 3) // straight growing flowers
                     {
                         if (testIfPositionEmpty((drawPos.x, drawPos.y+2)))
                         {
-                            tryFill(drawPos, 1);
-                            
-                            if (growthLevel == seed % 2)
+                            if (tryFill(drawPos, 1))
                             {
-                                Flower baby = new Flower(this, drawPos, 0, LCGint1(seed + 3 * growthLevelToTest));
-                                childFlowers.Add(baby);
+                                if (growthLevel == seed % 2)
+                                {
+                                    Flower baby = new Flower(this, drawPos, 0, LCGint1(seed + 3 * growthLevelToTest));
+                                    childFlowers.Add(baby);
+                                }
+                                foreach (Flower flower in childFlowers)
+                                {
+                                    flower.pos = (drawPos.x, drawPos.y+1);
+                                }
+                                goto Success;
                             }
-                            foreach (Flower flower in childFlowers)
-                            {
-                                flower.pos = (drawPos.x, drawPos.y+1);
-                            }
-
-                            lastDrawPos = drawPos;
-                            growthLevel = growthLevelToTest;
-                            return true;
                         }
                     }
                     else
@@ -1031,20 +1101,17 @@ namespace Cave
 
                         if (tryFill(drawPos, 1))
                         {
-                            lastDrawPos = drawPos;
-                            growthLevel = growthLevelToTest;
-                            return true;
+                            goto Success;
                         }
                     }
-                    return false;
                 }
                 else if (type == 1) // tree
                 {
                     maxGrowthLevel = 10 + seed % 40;
-                    if (growthLevelToTest > maxGrowthLevel) { return false; }
+                    if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
                     if (growthLevelToTest == 0) { }
 
-                    (int x, int y) drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
+                    drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
 
                     int spacing = 3 + seed % 3;
                     seedo = LCGint1(seed + growthLevelToTest * (seed % 7 + 1));
@@ -1084,73 +1151,59 @@ namespace Cave
                                 flower.pos = drawPos;
                             }
                         }
-                        lastDrawPos = drawPos;
-                        growthLevel = growthLevelToTest;
-                        return true;
+                        goto Success;
                     }
-                    return false;
                 }
                 else if (type == 2) // kelp
                 {
                     if (subType == 0)
                     {
                         maxGrowthLevel = 1 + seed % 10;
-                        if (growthLevelToTest > maxGrowthLevel) { return false; }
+                        if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
 
                         int multo = 2 * (seed % 2) - 1;
-                        (int x, int y) drawPos = (((growthLevelToTest - 1) % 2) * multo, growthLevelToTest - 1);
+                        drawPos = (((growthLevelToTest - 1) % 2) * multo, growthLevelToTest - 1);
 
                         if (tryFill(drawPos, 3))
                         {
-                            lastDrawPos = drawPos;
-                            growthLevel = growthLevelToTest;
-                            return true;
+                            goto Success;
                         }
-                        return false;
                     }
                     else if (subType == 1)
                     {
                         maxGrowthLevel = 1 + seed % 10;
-                        if (growthLevelToTest > maxGrowthLevel) { return false; }
+                        if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
 
                         int multo = 2 * (seed % 2) - 1;
-                        (int x, int y) drawPos = (((growthLevelToTest - 1) % 2) * multo, -(growthLevelToTest - 1));
+                        drawPos = (((growthLevelToTest - 1) % 2) * multo, -(growthLevelToTest - 1));
 
                         if (tryFill(drawPos, 3))
                         {
-                            lastDrawPos = drawPos;
-                            growthLevel = growthLevelToTest;
-                            return true;
+                            goto Success;
                         }
-                        return false;
                     }
                 }
                 else if (type == 3) // obsidian plant
                 {
                     maxGrowthLevel = 1 + seed % 3;
-                    if (growthLevelToTest > maxGrowthLevel) { return false; }
+                    if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
 
-                    (int x, int y) drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
+                    drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
 
                     if (tryFill(drawPos, 1))
                     {
-                        lastDrawPos = drawPos;
-                        growthLevel = growthLevelToTest;
-                        return true;
+                        goto Success;
                     }
-                    return false;
                 }
                 else if (type == 4) // mushroom
                 {
                     maxGrowthLevel = 1 + seed % 7;
-                    if (growthLevelToTest > maxGrowthLevel) { return false; }
+                    if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
 
-                    (int x, int y) drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
+                    drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
 
                     if (tryFill(drawPos, 4))
                     {
-                        lastDrawPos = drawPos;
-
                         if (growthLevel == 1)
                         {
                             Flower baby = new Flower(this, drawPos, 0, LCGint1(seed + 3 * growthLevelToTest));
@@ -1163,24 +1216,19 @@ namespace Cave
                                 flower.pos = drawPos;
                             }
                         }
-                        growthLevel = growthLevelToTest;
-                        return true;
+                        goto Success;
                     }
-                    return false;
                 }
                 else if (type == 5) // vine
                 {
                     maxGrowthLevel = 4 + seed % 60;
-                    if (growthLevelToTest > maxGrowthLevel) { return false; }
+                    if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
 
                     int multo = 2 * (seed % 2) - 1;
-                    (int x, int y) drawPos = (((int)((growthLevelToTest - 1) * 0.5f) % 2) * multo, -(growthLevelToTest - 1));
+                    drawPos = (((int)((growthLevelToTest - 1) * 0.5f) % 2) * multo, -(growthLevelToTest - 1));
 
                     if (tryFill(drawPos, 1))
                     {
-                        lastDrawPos = drawPos;
-                        growthLevel = growthLevelToTest;
-
                         int spacingOfFlowers = 4 + seedo % 4;
                         if (growthLevel % spacingOfFlowers == 2)
                         {
@@ -1188,15 +1236,25 @@ namespace Cave
                             Flower flower = new Flower(this, drawPos, typet, seed + growthLevel);
                             childFlowers.Add(flower);
                         }
-
-                        return true;
+                        goto Success;
                     }
                 }
+
+            SuccessButStop:;
+                lastDrawPos = drawPos;
+                growthLevel = growthLevelToTest;
+
+            Fail:;
                 return false;
+
+            Success:;
+                growthLevel = growthLevelToTest;
+                lastDrawPos = drawPos;
+                return true;
             }
-            public void testPlantGrowth()
+            public bool testPlantGrowth(bool forceGrowth)
             {
-                if (!isStable && timeElapsed >= 0.2f + timeAtLastGrowth)
+                if (forceGrowth || (!isStable && timeElapsed >= 0.2f + timeAtLastGrowth))
                 {
                     isStable = true;
 
@@ -1219,9 +1277,12 @@ namespace Cave
                     {
                         if (flower.tryGrowth()) { isStable = false; }
                     }
-                    makeBitmap(false);
+                    if (!forceGrowth) { makeBitmap(); }   // not to make bitmap when it's not needed (growing to max)
                     timeAtLastGrowth = timeElapsed;
+
+                    return !isStable;
                 }
+                return false;
             }
             public void addPlantInChunks()
             {/*
@@ -1374,7 +1435,7 @@ namespace Cave
                         if (value != 0)
                         {
                             flower.fillStates.Remove((posToTest.x, posToTest.y));
-                            makeBitmap(false);
+                            makeBitmap();
                             return value;
                         }
                     }
@@ -1388,7 +1449,7 @@ namespace Cave
                         if (value != 0)
                         {
                             branch.fillStates.Remove((posToTest.x, posToTest.y));
-                            makeBitmap(false);
+                            makeBitmap();
                             return value;
                         }
                     }
@@ -1401,7 +1462,7 @@ namespace Cave
                         if (value != 0)
                         {
                             fillStates.Remove((posToTest.x, posToTest.y));
-                            makeBitmap(false);
+                            makeBitmap();
                             return value;
                         }
                     }

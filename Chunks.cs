@@ -29,6 +29,7 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using System.Diagnostics;
+using System.Reflection.Emit;
 
 namespace Cave
 {
@@ -42,19 +43,10 @@ namespace Cave
 
             public (int x, int y) position;
 
-            public int[,] primaryFillValues;
-            public int[,] primaryBigFillValues;
-            public int[,] primaryBiomeValues;
-            public int[,] primaryBigBiomeValues; // the biome trends that are bigger than biomes
-            public int[,,] secondaryFillValues;
-            public int[,,] secondaryBigFillValues;
-            public int[,,] secondaryBiomeValues;
-            public int[,,] secondaryBigBiomeValues;
-            public (int, int)[,][] biomeIndex;
+            public ((int biome, int subBiome), int)[,][] biomeIndex;
 
             public int[,] fillStates = new int[32, 32];
             public (int, int, int)[,] baseColors;
-            public Color[,] colors;
             public Bitmap bitmap;
 
             public List<Entity> entityList = new List<Entity>();
@@ -78,6 +70,8 @@ namespace Cave
                 screen = screenToPut;
                 position = posToPut;
 
+                if (!structureGenerated) { testIfMegaChunkGenerated(); }
+
                 bool filePresent = testLoadChunk(structureGenerated);
                 long chunkX = position.x * 2;
                 long chunkY = position.y * 2;
@@ -88,7 +82,7 @@ namespace Cave
                 long bigSeed3 = LCGxNeg(LCGz(LCGyPos(LCGxNeg(bigSeed2))));
 
                 (int x, int y) mod;
-
+                (int x, int y) chunkRealPos = (position.x * 32, position.y * 32);
 
                 // biome shit generation
 
@@ -97,7 +91,7 @@ namespace Cave
 
                 chunkX = Floor(position.x, 16) / 16;
                 chunkY = Floor(position.y, 16) / 16;
-                primaryBiomeValues = new int[6,4];
+                int[,] primaryBiomeValues = new int[6,4];
                 for (int i = layerStart; i < 6; i++)
                 {
                     for (int j = 0; j < 4; j++)
@@ -109,7 +103,7 @@ namespace Cave
 
                 chunkX = Floor(position.Item1, 32) / 32;
                 chunkY = Floor(position.Item2, 32) / 32;
-                primaryBigBiomeValues = new int[6, 4];
+                int[,] primaryBigBiomeValues = new int[6, 4];
                 for (int i = layerStart; i < 6; i++)
                 {
                     for (int j = 0; j < 4; j++)
@@ -119,32 +113,52 @@ namespace Cave
                     }
                 }
 
-                secondaryBiomeValues = new int[32, 32, 6];
-                secondaryBigBiomeValues = new int[32, 32, 6];
-                biomeIndex = new (int, int)[32, 32][];
+                int[,,] secondaryBiomeValues = new int[32, 32, 6];
+                int[,,] secondaryBigBiomeValues = new int[32, 32, 6];
+                biomeIndex = new ((int biome, int subBiome), int)[32, 32][];
                 baseColors = new (int, int, int)[32, 32];
-                colors = new Color[32, 32];
                 bitmap = new Bitmap(32, 32);
 
-                for (int i = 0; i < 32; i++)
+
+                int stepo = 1;
+                if (debugMode2) { stepo = 31; }
+
+                for (int i = 0; i < 32; i+= stepo)
                 {
-                    for (int j = 0; j < 32; j++)
+                    for (int j = 0; j < 32; j+= stepo)
                     {
                         for (int k = layerStart; k < 6; k++)
                         {
-                            secondaryBiomeValues[i, j, k] = findSecondaryBiomeValue(this, i, j, k);
-                            secondaryBigBiomeValues[i, j, k] = findSecondaryBigBiomeValue(this, i, j, k);
+                            secondaryBiomeValues[i, j, k] = findSecondaryBiomeValue(primaryBiomeValues, chunkRealPos.x + i, chunkRealPos.y + j, k);
+                            secondaryBigBiomeValues[i, j, k] = findSecondaryBigBiomeValue(primaryBigBiomeValues, chunkRealPos.x + i, chunkRealPos.y + j, k);
                         }
-                        if (screen.isMonoBiome) { biomeIndex[i, j] = new (int, int)[] { (screen.type, 1000) }; }
-                        else { biomeIndex[i, j] = findBiome(this, i, j); }
+                        if (screen.isMonoBiome) { biomeIndex[i, j] = new ((int biome, int subBiome), int)[] { (screen.type, 1000) }; }
+                        else { biomeIndex[i, j] = findBiome(secondaryBigBiomeValues, secondaryBiomeValues, i, j); }
 
                         int[] colorArray = findBiomeColor(biomeIndex[i,j]);
                         baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
                     }
                 }
+                if (debugMode2)
+                {
+                    for (int i = 0; i < 32; i += 1)
+                    {
+                        for (int j = 0; j < 32; j += 1)
+                        {
+                            if (screen.isMonoBiome) { biomeIndex[i, j] = new ((int biome, int subBiome), int)[] { (screen.type, 1000) }; }
+                            else { biomeIndex[i, j] = findBiomeByMean(biomeIndex, i, j); }
+
+                            int[] colorArray = findBiomeColor(biomeIndex[i, j]);
+                            baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
+                        }
+                    }
+                }
 
 
-
+                int[,,] secondaryFillValues = null;
+                int[,,] secondaryBigFillValues = null;
+                int[,] primaryFillValues = null;
+                int[,] primaryBigFillValues = null;
 
                 // terrain noise shit generation
                 if (!filePresent)
@@ -181,13 +195,13 @@ namespace Cave
                     {
                         if (!filePresent)
                         {
-                            secondaryFillValues[0, i, j] = findSecondaryNoiseValue(this, i, j, 0);
-                            secondaryBigFillValues[0, i, j] = findSecondaryBigNoiseValue(this, i, j, 0);
+                            secondaryFillValues[0, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 0);
+                            secondaryBigFillValues[0, i, j] = findSecondaryBigNoiseValue(primaryBigFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 0);
                             int value1 = secondaryBigFillValues[0, i, j] + (int)(0.25 * secondaryFillValues[0, i, j]) - 32;
                             //value1 = secondaryFillValues[0, i, j];
                             //value1 = 0;
-                            secondaryFillValues[1, i, j] = findSecondaryNoiseValue(this, i, j, 1);
-                            secondaryBigFillValues[1, i, j] = findSecondaryBigNoiseValue(this, i, j, 1);
+                            secondaryFillValues[1, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 1);
+                            secondaryBigFillValues[1, i, j] = findSecondaryBigNoiseValue(primaryBigFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 1);
                             int value2 = secondaryBigFillValues[1, i, j] + (int)(0.25 * secondaryFillValues[1, i, j]) - 32;
                             //value2 = secondaryBigFillValues[1, i, j];
                             //value2 = 128;
@@ -205,18 +219,18 @@ namespace Cave
                             float oceanoSeeSaw = 0;
 
                             float mult;
-                            foreach ((int, int) tupel in biomeIndex[i, j])
+                            foreach (((int biome, int subBiome), int) tupel in biomeIndex[i, j])
                             {
                                 mult = tupel.Item2 * 0.001f;
-                                if (tupel.Item1 == 1)
+                                if (tupel.Item1 == (1, 0))
                                 {
                                     value2modifier += -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11));
                                 }
-                                else if (tupel.Item1 == 3 || tupel.Item1 == 9)
+                                else if (tupel.Item1 == (3, 0) || tupel.Item1 == (9, 0))
                                 {
                                     foresto += mult;
                                 }
-                                else if (tupel.Item1 == 4)
+                                else if (tupel.Item1 == (4, 0))
                                 {
                                     float see1 = Sin(i + mod2 * 0.3f + 0.5f, 16);
                                     float see2 = Sin(j + mod2 * 0.3f + 0.5f, 16);
@@ -224,7 +238,7 @@ namespace Cave
                                     value2modifier += valueToBeAdded;
                                     value1modifier += valueToBeAdded + 2;
                                 }
-                                else if (tupel.Item1 == 6)
+                                else if (tupel.Item1 == (6, 0))
                                 {
                                     float see1 = Obs((position.Item1 * 32) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
                                     float see2 = Obs((position.Item2 * 32) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
@@ -240,7 +254,7 @@ namespace Cave
                                     value2modifier += mult * value2PREmodifier;
                                     mod2divider += mult * 1.5f;
                                 }
-                                else if (tupel.Item1 == 8)
+                                else if (tupel.Item1 == (8, 0))
                                 {
                                     oceano = mult * 10;
                                     oceanoSeeSaw = Min(Seesaw((int)oceano, 8), 8 - oceano);
@@ -258,7 +272,7 @@ namespace Cave
                             mod2 = (int)(mod2 / mod2divider);
 
                             int elementToFillVoidWith;
-                            if (biomeIndex[i, j][0].Item1 == 8) { elementToFillVoidWith = -2; }
+                            if (biomeIndex[i, j][0].Item1 == (8, 0)) { elementToFillVoidWith = -2; }
                             else { elementToFillVoidWith = 0; }
 
                             bool fillTest1 = value1 > 122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw * 0.1f) && value1 < 133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw;
@@ -268,18 +282,19 @@ namespace Cave
                             //else if (fillTest2) { fillStates[i, j] = 2; }
                             if (fillTest1 || fillTest2) { fillStates[i, j] = elementToFillVoidWith; }
                             else { fillStates[i, j] = 1; }
-                            //fillStates[i, j] = 1;
+                            //if (rand.Next(500) != 0){ fillStates[i, j] = 1; }
                         }
 
                         int darkness = 0;
-                        foreach ((int, int) tupel in biomeIndex[i, j])
+                        foreach (((int biome, int subBiome), int) tupel in biomeIndex[i, j])
                         {
                             if (darkBiomes.ContainsKey(tupel.Item1))
                             {
                                 darkness += (int)(tupel.Item2*0.3f);
                             }
                         }
-                        Color colorToDraw = Color.FromArgb(Max(0, 255-darkness), 255, 255, 255);
+                        darkness = Max(0, 255-darkness);
+                        Color colorToDraw = Color.FromArgb(255, darkness, darkness, darkness);
                         setPixelButFaster(lightBitmap, (i, j), colorToDraw);
                     }
                 }
@@ -297,6 +312,19 @@ namespace Cave
                 {
                     screen.chunksToSpawnEntitiesIn[position] = true;
                 }
+            }
+            public void testIfMegaChunkGenerated()
+            {
+                (int x, int y) megaChunkPos = screen.findMegaChunkAbsoluteIndex(position);
+                if (screen.megaChunks.ContainsKey(megaChunkPos))
+                {
+                    return;
+                }
+                if (System.IO.File.Exists($"{currentDirectory}\\CaveData\\{screen.game.seed}\\ChunkData\\{screen.id}\\{megaChunkPos.Item1}.{megaChunkPos.Item2}.json"))
+                {
+                    return;
+                }
+                screen.createStructures(megaChunkPos.x, megaChunkPos.y);
             }
             public bool testLoadChunk(bool structureGenerated)
             {
@@ -381,8 +409,8 @@ namespace Cave
                     colorArray[1] = (int)(colorArray[1] * 0.8f) + 120;
                     colorArray[2] = (int)(colorArray[2] * 0.8f) + 70;
                 }
-                colors[i, j] = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
-                setPixelButFaster(bitmap, (i, j), colors[i, j]);
+                Color colorToSet = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
+                setPixelButFaster(bitmap, (i, j), colorToSet);
             }
             public void spawnEntities()
             {
@@ -1012,71 +1040,102 @@ namespace Cave
             return (int)((seedZ + seedXY) % 1024);
             //return ((int)(seedX%512)-256, (int)(seedY%512)-256);
         }
-        public static int findSecondaryNoiseValue(Chunk chunk, int varX, int varY, int layer)
+        public static int findSecondaryNoiseValue(int[,] values, int posX, int posY, int layer) // posX/Y is real pos and not %32 !!! same for all findSecondary functions
         {
             int modulo = 16;
-            int modX = GetChunkIndexFromTile1D(chunk.position.Item1 * 16 + varX, modulo);
-            int modY = GetChunkIndexFromTile1D(chunk.position.Item2 * 16 + varY, modulo);
-            int[,] values = chunk.primaryFillValues;
+            int modX = GetChunkIndexFromTile1D(posX, modulo);
+            int modY = GetChunkIndexFromTile1D(posY, modulo);
 
             int quartile = 0;
-            if (varX >= 16) { quartile += 1; }
-            if (varY >= 16) { quartile += 3; }
+            if (GetChunkIndexFromTile1D(posX) >= 16) { quartile += 1; }
+            if (GetChunkIndexFromTile1D(posY) >= 16) { quartile += 3; }
 
             int fX1 = values[layer, 0 + quartile] * (modulo - modX) + values[layer, 1 + quartile] * modX;
             int fX2 = values[layer, 3 + quartile] * (modulo - modX) + values[layer, 4 + quartile] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
             int fY = fX1 * (modulo - modY) + fX2 * modY;
             return fY / (modulo * modulo);
         }
-        public static int findSecondaryBigNoiseValue(Chunk chunk, int varX, int varY, int layer)
+        public static int findSecondaryBigNoiseValue(int[,] values, int posX, int posY, int layer)
         {
             int modulo = 64;
-            int modX = GetChunkIndexFromTile1D(chunk.position.Item1 * 32 + varX, modulo);
-            int modY = GetChunkIndexFromTile1D(chunk.position.Item2 * 32 + varY, modulo);
-            int[,] values = chunk.primaryBigFillValues;
+            int modX = GetChunkIndexFromTile1D(posX, modulo);
+            int modY = GetChunkIndexFromTile1D(posY, modulo);
             int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
             int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
             int fY = fX1 * (modulo - modY) + fX2 * modY;
             return fY / (modulo * modulo);
         }
-        public static int findSecondaryBiomeValue(Chunk chunk, int varX, int varY, int layer)
+        public static int findSecondaryBiomeValue(int[,] values, int posX, int posY, int layer)
         {
             int modulo = 512;
-            int modX = GetChunkIndexFromTile1D(chunk.position.Item1 * 32 + varX, modulo);
-            int modY = GetChunkIndexFromTile1D(chunk.position.Item2 * 32 + varY, modulo);
-            int[,] values = chunk.primaryBiomeValues;
+            int modX = GetChunkIndexFromTile1D(posX, modulo);
+            int modY = GetChunkIndexFromTile1D(posY, modulo);
             int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
             int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
             int fY = fX1 * (modulo - modY) + fX2 * modY;
             return fY / (modulo * modulo);
         }
-        public static int findSecondaryBigBiomeValue(Chunk chunk, int varX, int varY, int layer)
+        public static int findSecondaryBigBiomeValue(int[,] values, int posX, int posY, int layer)
         {
             int modulo = 1024;
-            int modX = GetChunkIndexFromTile1D(chunk.position.Item1 * 32 + varX, modulo);
-            int modY = GetChunkIndexFromTile1D(chunk.position.Item2 * 32 + varY, modulo); // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
-            int[,] values = chunk.primaryBigBiomeValues;
+            int modX = GetChunkIndexFromTile1D(posX, modulo);
+            int modY = GetChunkIndexFromTile1D(posY, modulo);
             int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
-            int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX;
+            int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
             int fY = fX1 * (modulo - modY) + fX2 * modY;
             return fY / (modulo * modulo);
         }
-        public static (int, int)[] findBiome(Chunk chunk, int posX, int posY)
+        public static ((int biome, int subBiome), int)[] findBiomeByMean(((int biome, int subBiome), int)[,][] biomeIndex, int posX, int posY) // posX/Y is %32 and not real pos
         {
-            int temperature = chunk.secondaryBiomeValues[posX, posY, 0] + chunk.secondaryBigBiomeValues[posX, posY, 0] - 512;
-            int humidity = chunk.secondaryBiomeValues[posX, posY, 1] + chunk.secondaryBigBiomeValues[posX, posY, 1] - 512;
-            int acidity = chunk.secondaryBiomeValues[posX, posY, 2] + chunk.secondaryBigBiomeValues[posX, posY, 2] - 512;
-            int toxicity = chunk.secondaryBiomeValues[posX, posY, 3] + chunk.secondaryBigBiomeValues[posX, posY, 3] - 512;
+            float step = 0.03226f; // 1/31
+            float pondX2 = posX * step;
+            float pondX = 1 - pondX2;
+            float pondY2 = posY * step;
+            float pondY = 1 - pondY2;
+            Dictionary<(int x, int y), float> ponderation = new Dictionary<(int x, int y), float>
+            {
+                {(0, 0), pondX*pondY},
+                {(1, 0), pondX2*pondY},
+                {(0, 1), pondX*pondY2},
+                {(1, 1), pondX2*pondY2}
+            };
+            Dictionary<(int biome, int subBiome), int> dicto = new Dictionary<(int biome, int subBiome), int>();
+
+            foreach ((int x, int y) pos in squareModArray)
+            {
+                foreach (((int biome, int subBiome), int) biome in biomeIndex[pos.x*31, pos.y*31])
+                {
+                    if (!dicto.ContainsKey(biome.Item1)) { dicto[biome.Item1] = (int)(biome.Item2 * ponderation[pos]); }
+                    else { dicto[biome.Item1] += (int)(biome.Item2 * ponderation[pos]); }
+                }
+            }
+
+            List<((int biome, int subBiome), int)> listo = new List<((int biome, int subBiome), int)>();
+            foreach (KeyValuePair<(int biome, int subBiome), int> pair in dicto) { listo.Add((pair.Key, pair.Value)); }
+            SortByItem2(listo);
+            ((int biome, int subBiome), int)[] arrayo = new ((int biome, int subBiome), int)[listo.Count];
+            for (int i = 0; i < arrayo.Length; i++)
+            {
+                arrayo[i] = listo[i];
+            }
+            return arrayo;
+        }
+        public static ((int biome, int subBiome), int)[] findBiome(int[,,] bigValues, int[,,] values, int posX, int posY)
+        {
+            int temperature = bigValues[posX, posY, 0] + values[posX, posY, 0] - 512;
+            int humidity = bigValues[posX, posY, 1] + values[posX, posY, 1] - 512;
+            int acidity = bigValues[posX, posY, 2] + values[posX, posY, 2] - 512;
+            int toxicity = bigValues[posX, posY, 3] + values[posX, posY, 3] - 512;
             int[] arrayo = new int[4] { temperature, humidity, acidity, toxicity };
             return (findBiome(arrayo));
         }
-        public static (int, int)[] findBiome(int[] values)
+        public static ((int biome, int subBiome), int)[] findBiome(int[] values)
         {
             //return new (int, int)[]{ (8, 1000) }; // use this to force a biome for debug (infite biome)
 
 
             // arrite so... 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
-            List<(int, int)> listo = new List<(int, int)>();
+            List<((int biome, int subBiome), int)> listo = new List<((int biome, int subBiome), int)>();
             int percentageFree = 1000;
             (int, int) current;
             int currentInt;
@@ -1086,10 +1145,10 @@ namespace Cave
             int acidity = values[2];
             int toxicity = values[3];
 
-            if (false)
+            if (true)
             {
                 int cumScore = 0; // heehee !
-                foreach (int i in biomeTypicalValues.Keys)
+                foreach ((int biome, int subBiome) i in biomeTypicalValues.Keys)
                 {
                     int distTemp = Abs(temperature - biomeTypicalValues[i].temp);
                     int distHumi = Abs(humidity - biomeTypicalValues[i].humi);
@@ -1128,19 +1187,19 @@ namespace Cave
                 }
                 if (listo.Count == 0)
                 {
-                    listo.Add((-1, 1000));
+                    listo.Add(((-1, 0), 1000));
                 }
 
             }
             else if (true) // type == 1
             {
-                listo = new List<(int, int)>();
+                listo = new List<((int biome, int subBiome), int)>();
                 if (humidity > 720)
                 {
                     int oceanness = Min((humidity - 720) * 25, 1000);
                     if (oceanness > 0)
                     {
-                        listo.Add((8, oceanness));
+                        listo.Add(((8, 0), oceanness));
                         percentageFree -= oceanness;
                     }
                 }
@@ -1157,12 +1216,12 @@ namespace Cave
                             int obsidianess = minimo * 10;
                             obsidianess = (int)(Min(obsidianess, 1000) * percentageFree * 0.001f);
                             hotness -= obsidianess;
-                            listo.Add((6, obsidianess));
+                            listo.Add(((6, 0), obsidianess));
                             percentageFree -= obsidianess;
                         }
                         if (hotness > 0)
                         {
-                            listo.Add((2, hotness));
+                            listo.Add(((2, 0), hotness));
                             percentageFree -= hotness;
                         }
                     }
@@ -1175,7 +1234,7 @@ namespace Cave
                             coldness -= bigColdness;
                             if (bigColdness > 0)
                             {
-                                listo.Add((7, bigColdness));
+                                listo.Add(((7, bigColdness), 0));
                                 percentageFree -= bigColdness;
                             }
                         }
@@ -1186,7 +1245,7 @@ namespace Cave
                         {
                             int acidness = (int)(Min((440 - acidity) * 10, 1000) * coldness * 0.001f);
                             coldness -= acidness;
-                            listo.Add((1, acidness));
+                            listo.Add(((1, 0), acidness));
                             percentageFree -= acidness;
                         }
                         if (humidity > toxicity)
@@ -1195,14 +1254,14 @@ namespace Cave
                             coldness -= fairyness;
                             if (fairyness > 0)
                             {
-                                listo.Add((5, fairyness));
+                                listo.Add(((5, 0), fairyness));
                                 percentageFree -= fairyness;
                             }
                         }
                         coldness += savedColdness;
                         if (coldness > 0)
                         {
-                            listo.Add((0, coldness));
+                            listo.Add(((0, 0), coldness));
                             percentageFree -= coldness;
                         }
                     }
@@ -1214,12 +1273,12 @@ namespace Cave
                     int forestness = (int)(Clamp((humidity - toxicity + 20) * 10, 0, 1000) * percentageFree * 0.001f);
                     if (forestness > 0)
                     {
-                        listo.Add((3, forestness));
+                        listo.Add(((3, 0), forestness));
                         percentageFree -= forestness;
                     }
                     if (slimeness > 0)
                     {
-                        listo.Add((4, slimeness));
+                        listo.Add(((4, 0), slimeness));
                         percentageFree -= slimeness;
                     }
                 }
@@ -1231,29 +1290,29 @@ namespace Cave
                     int oceanness = Min((humidity - 720) * 25, 1000);
                     if (oceanness > 0)
                     {
-                        listo.Add((9, oceanness));
+                        listo.Add(((9, oceanness), 0));
                         percentageFree -= oceanness;
                     }
                 }
                 if (percentageFree > 0)
                 {
-                    listo.Add((0, percentageFree));
+                    listo.Add(((0, 0), percentageFree));
                 }
             }
 
-            Sort(listo, false);
-            (int, int)[] arrayo = new (int, int)[listo.Count];
+            SortByItem2(listo);
+            ((int biome, int subBiome), int)[] arrayo = new ((int biome, int subBiome), int)[listo.Count];
             for (int i = 0; i < arrayo.Length; i++)
             {
                 arrayo[i] = listo[i];
             }
             return arrayo;
         }
-        public static int[] findBiomeColor((int, int)[] arrayo)
+        public static int[] findBiomeColor(((int biome, int subBiome), int)[] arrayo)
         {
             int[] colorArray = { 0, 0, 0 };
             float mult;
-            foreach ((int, int) tupel in arrayo)
+            foreach (((int biome, int subBiome), int) tupel in arrayo)
             {
                 mult = tupel.Item2 * 0.001f;
 

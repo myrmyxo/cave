@@ -73,9 +73,11 @@ namespace Cave
             plantSprites = new Dictionary<(int, int), OneSprite>
             {
                 { (0, 0), new OneSprite("BasePlant", false)},
-                { (0, 1), new OneSprite("BasePlant", false)},
+                { (0, 1), new OneSprite("Candle", false)},
+                { (0, 2), new OneSprite("Tulip", false)},
+                { (0, 3), new OneSprite("Allium", false)},
                 { (1, 0), new OneSprite("Tree", false)},
-                { (1, 1), new OneSprite("Tree", false)},
+                { (1, 1), new OneSprite("ChandelierTree", false)},
                 { (2, 0), new OneSprite("KelpUpwards", false)},
                 { (2, 1), new OneSprite("KelpDownwards", false)},
                 { (3, 0), new OneSprite("ObsidianPlant", false)},
@@ -102,7 +104,7 @@ namespace Cave
                 numberSprites.Add(i, new OneSprite(numberBitmapArray[i]));
             }
 
-            fireAnimation = new OneAnimation("Fire", true, 6);
+            fireAnimation = new OneAnimation("Fire", false, 6);
         }
 
 
@@ -623,10 +625,14 @@ namespace Cave
 
             byte* data;
             data = scan0 + pos.y * bData.Stride + pos.x * bitsPerPixel / 8;
-            data[0] = Max(colorToDraw.B, data[0]);
-            data[1] = Max(colorToDraw.G, data[1]);
-            data[2] = Max(colorToDraw.R, data[2]);
-            data[3] = Max(colorToDraw.A, data[3]);
+            //data[0] = Max(colorToDraw.B, data[0]);   // idk why this was there
+            //data[1] = Max(colorToDraw.G, data[1]);
+            //data[2] = Max(colorToDraw.R, data[2]);
+            //data[3] = Max(colorToDraw.A, data[3]);
+            data[0] = colorToDraw.B;
+            data[1] = colorToDraw.G;
+            data[2] = colorToDraw.R;
+            data[3] = colorToDraw.A;
 
             bitmap.UnlockBits(bData);
 

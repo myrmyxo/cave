@@ -123,6 +123,8 @@ namespace Cave
                     {(3, 3, 1), -999 },
                     {(0, 0, 2), -999 }, // plants
                     {(0, 1, 2), -999 },
+                    {(0, 2, 2), -999 },
+                    {(0, 3, 2), -999 },
                     {(1, 0, 2), -999 },
                     {(1, 1, 2), -999 },
                     {(2, 0, 2), -999 },
@@ -145,6 +147,8 @@ namespace Cave
                     (3, 3, 1),
                     (0, 0, 2), // plants
                     (0, 1, 2),
+                    (0, 2, 2),
+                    (0, 3, 2),
                     (1, 0, 2),
                     (1, 1, 2),
                     (2, 0, 2),
@@ -157,24 +161,63 @@ namespace Cave
                     (-4, 0, 0)
                 };
             }
-            public void Jump((float x, float y) jumpSpeed)
+            public void applyGravity()
             {
-                speedX += jumpSpeed.x;
-                speedY += jumpSpeed.y;
+                speedY -= 0.5f;
+            }
+            public void ariGeoSlowDown(float ari, float geo)
+            {
+                speedX = Sign(speedX) * Max(0, Abs(speedX) * geo - ari);
+                speedY = Sign(speedY) * Max(0, Abs(speedY) * geo - ari);
+            }
+            public void ariGeoSlowDownX(float geo, float ari)
+            {
+                speedX = Sign(speedX) * Max(0, Abs(speedX) * geo - ari);
+            }
+            public void Jump(int direction, float jumpSpeed)
+            {
+                speedX += direction;
+                speedY = Max(0, speedY) + jumpSpeed;
             }
             public void movePlayer()
             {
-                speedX = Sign(speedX) * (Max(0, Abs(speedX) * (0.85f) - 0.2f));
-                speedY = Sign(speedY) * (Max(0, Abs(speedY) * (0.85f) - 0.2f));
+                bool onGround = false;
+                bool inWater = false;
+                {
+                    (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
+                    if (screen.loadedChunks.ContainsKey(chunkPos))
+                    {
+                        if (screen.loadedChunks[chunkPos].fillStates[(posX % 32 + 32) % 32, (posY % 32 + 32) % 32] < 0)
+                        {
+                            inWater = true;
+                        }
+                    }
+                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
+                    if (screen.loadedChunks.ContainsKey(chunkPos))
+                    {
+                        if (screen.loadedChunks[chunkPos].fillStates[(posX % 32 + 32) % 32, ((posY - 1) % 32 + 32) % 32] > 0)
+                        {
+                            onGround = true;
+                        }
+                    }
+                }
+
+                ariGeoSlowDownX(0.8f, 0.15f);
+                if (inWater) { ariGeoSlowDown(0.95f, 0.2f); }
                 int directionState = 0;
                 if (!dimensionSelection)
                 {
                     if (arrowKeysState[0]) { speedX += 0.5f; directionState += 1; }
                     if (arrowKeysState[1]) { speedX -= 0.5f; directionState -= 1; }
+                    if (onGround && (directionState == 0 || (directionState == 1 && speedX < 0) || (directionState == -1 && speedX > 0))) { ariGeoSlowDownX(0.7f, 0.3f); }
                     if (arrowKeysState[2]) { speedY -= 0.5f; }
-                    if (arrowKeysState[3]) { speedY += 1; }
+                    if (arrowKeysState[3])
+                    {
+                        if (onGround) { Jump(directionState, 4); }
+                        else if (debugMode || inWater) { speedY += 1f; }
+                    }
                 }
-                speedY -= 0.5f;
+                applyGravity();
                 if (shiftPress)
                 {
                     speedX = Sign(speedX) * (Max(0, Abs(speedX) * (0.75f) - 0.7f));
@@ -217,18 +260,6 @@ namespace Cave
                     else if (arrowKeysState[3] && !arrowKeysState[2])
                     {
                         Place(posX, posY + 1);
-                    }
-                }
-                {
-                    (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
-                    if (screen.loadedChunks.ContainsKey(chunkPos))
-                    {
-                        if (screen.loadedChunks[chunkPos].fillStates[(posX % 32 + 32) % 32, (posY % 32 + 32) % 32] < 0)
-                        {
-                            speedX = speedX * 0.8f - Sign(speedX) * Sqrt(Max((int)speedX - 1, 0));
-                            speedY = speedY * 0.8f - Sign(speedY) * Sqrt(Max((int)speedY - 1, 0));
-                            if (arrowKeysState[3]) { Jump((directionState, 2)); }
-                        }
                     }
                 }
 
