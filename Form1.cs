@@ -103,33 +103,59 @@ namespace Cave
             public static Dictionary<(int biome, int subBiome), (int, int, int)> biomeDict = new Dictionary<(int biome, int subBiome), (int, int, int)>
             {
                 { (-1, 0), (1200, -100, 1200) }, // undefined
+
                 { (0, 0), (Color.Blue.R,Color.Blue.G,Color.Blue.B) }, // cold biome
+                { (0, 1), (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) }, // frost biome
+
                 { (1, 0), (Color.Fuchsia.R,Color.Fuchsia.G,Color.Fuchsia.B) }, // acid biome
+
                 { (2, 0), (Color.OrangeRed.R,Color.OrangeRed.G,Color.OrangeRed.B) }, // hot biome
-                { (3, 0), (Color.Green.R,Color.Green.G,Color.Green.B)}, // plant biome
+                { (2, 1), (Color.OrangeRed.R + 90,Color.OrangeRed.G + 30,Color.OrangeRed.B) }, // lava ocean biome
+                { (2, 2), (-100,-100,-100) }, // obsidian biome...
+
+                { (3, 0), (Color.Green.R,Color.Green.G,Color.Green.B)}, // forest biome
+                { (3, 1), (Color.Green.R,Color.Green.G + 40,Color.Green.B + 80)}, // flower forest biome
+
                 { (4, 0), (Color.GreenYellow.R,Color.GreenYellow.G,Color.GreenYellow.B) }, // toxic biome
+
                 { (5, 0), (Color.LightPink.R,Color.LightPink.G,Color.LightPink.B) }, // fairy biome !
-                { (6, 0), (-100,-100,-100) }, // obsidian biome...
-                { (7, 0), (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) }, // frost biome
+
                 { (8, 0), (Color.LightBlue.R,Color.LightBlue.G+60,Color.LightBlue.B+130) }, // ocean biome !
+
                 { (9, 0), (Color.Gray.R,Color.Gray.G,Color.Gray.B) }, // stoplights and chandeliers biome !?!
+
                 { (10, 0), (Color.Red.R,Color.Red.G,Color.Red.B) }, // Livinggg biome !?!
+                
+                { (11, 0), (Color.White.R,Color.White.G,Color.White.B) }, // Bone biome...
             };
 
             // 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
             public static Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int range, int prio)> biomeTypicalValues = new Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int range, int prio)>
             {
                 { (0, 0), (200, 320, 320, 512, 1000, 0) }, // cold biome
+                { (0, 1), (-100, 320, 320, 512, 1000, 2) }, // frost biome
+
                 { (1, 0), (200, 512, 800, 512, 1000, 0) }, // acid biome
+
                 { (2, 0), (840, 512, 512, 512, 1000, 1) }, // hot biome
-                { (3, 0), (512, 720, 512, 280, 1000, 0) }, // plant biome
-                { (4, 0), (512, 280, 512, 720, 1000, 0) }, // toxic biome
+                { (2, 1), (1024, 512, 512, 512, 1000, 3) }, // lava ocean biome
+                { (2, 2), (880, 880, 512, 512, 1000, 2) }, // obsidian biome...
+
+                { (3, 0), (512, 720, 768, 340, 1000, 0) }, // forest biome
+                { (3, 1), (512, 720, 256, 220, 1000, 0) }, // flower forest biome
+
+                { (4, 0), (512, 280, 512, 680, 1000, 0) }, // toxic biome
+
                 { (5, 0), (200, 840, 200, 320, 1000, 0) }, // fairy biome !
-                { (6, 0), (880, 880, 512, 512, 1000, 2) }, // obsidian biome...
-                { (7, 0), (-100, 320, 320, 512, 1000, 2) }, // frost biome
+
                 { (8, 0), (512, 960, 512, 512, 1000, 0) }, // ocean biome !
+
                 { (9, 0), (320, 320, 240, 240, 1000, 0) }, // chandeliers biome !
+
                 { (10, 0), (720, 880, 512, 880, 1000, 0) }, // LIVING biome !
+
+                { (11, 0), (320, 600, 256, 512, 1000, 0) }, // Bone biome...
+
             };
 
             public static string[] nameArray = new string[]
@@ -246,13 +272,13 @@ namespace Cave
             // cool ideas for later !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ? And add LITHOPEDIONS
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
-            // add a dimension with CANDLE TREES (arbres chandeliers) that could be banger (and darkish gray cement/concrete tiles ?).
-            // and like have candelier tree biomes, stoplight biomes, and candle biomes ?
+            // add stoplight biomes not just candelier biome. and make candles have their own biome ?
             // make it possible to visit entities/players inventories lmfao
             // looping dimensions ???? Could be cool. And serve as TELEPORT HUBS ???
             // bone trees and shrubs... like ribs. Maybe a BONE dimension ! Or biome inside the living dimension... kinda good yesyes, a dead part of the living dimension.
             // maybe depending on a parameter of the dimension, some living world dimensions would be more dead or not dead at all.
             // Lolitadimension ?? ? ? or CANDYDIMENSION ???? idk ? ? ? sugar cane trees would be poggers. Or a candy dimension with candies... yeah and uh idk a lolita biome and a super rare variant being a gothic lolita biome ??? idk wtf i'm on ngl
+            // Add a portal that is inside lava oceans; in a structure (obsidian city ?), that needs to be turned on with maybe liquid obsidian or oil, and teleports to like hell, or an obsidian dimension made ouf of only obsidian shit ?.
 
             //
             // cool seeds !!!! DO NOT DELETE
@@ -487,17 +513,17 @@ namespace Cave
             }
             Bitmap bitmap = new Bitmap(256, 256);
             Color colorToPut;
-            for (int i = 0; i < 256; i++)
+            for (int i = -64; i < 192; i++)
             {
-                values[variablesToTest.Item1] = i*4;
-                for (int j = 0; j < 256; j++)
+                values[variablesToTest.Item1] = i*8;
+                for (int j = -64; j < 192; j++)
                 {
-                    values[variablesToTest.Item2] = j*4;
+                    values[variablesToTest.Item2] = j*8;
                     ((int biome, int subBiome), int)[] biomeArray = findBiome(values);
                     if (biomeArray[0].Item1 == (-1, 0) && ((i/4)+(j/4))%2 == 1){ setPixelButFaster(bitmap, (i, 255 - j), Color.Black); continue; }
                     int[] colorArray = findBiomeColor(biomeArray);
                     colorToPut = Color.FromArgb(colorArray[0], colorArray[1], colorArray[2]);
-                    setPixelButFaster(bitmap, (i, 255-j), colorToPut);
+                    setPixelButFaster(bitmap, (i+64, 191-j), colorToPut);
                 }
             }
             bitmap.Save($"{currentDirectory}\\BiomeDiagrams\\biomeDiagram   {dicto[fixedValuesIdx.Item1]}={fixedValues.Item1}, {dicto[fixedValuesIdx.Item2]}={fixedValues.Item2}.png");
@@ -611,13 +637,13 @@ namespace Cave
             if (a < b) { return a; }
             return b;
         }
-        public static float Clamp(float value, float min, float max)
+        public static float Clamp(float min, float value, float max)
         {
             if (value > max) { return max; }
             if (value < min) { return min; }
             return value;
         }
-        public static int Clamp(int value, int min, int max)
+        public static int Clamp(int min, int value, int max)
         {
             if (value > max) { return max; }
             if (value < min) { return min; }

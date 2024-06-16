@@ -152,12 +152,12 @@ namespace Cave
                     type = 0;
                     subType = 0;
                 }
-                else if (biome == (6, 0))
+                else if (biome == (2, 2))
                 {
                     type = 0;
                     subType = 1;
                 }
-                else if (biome == (7, 0) || biome == (9, 0))
+                else if (biome == (0, 1) || biome == (9, 0))
                 {
                     type = 0;
                     subType = 2;

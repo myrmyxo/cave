@@ -619,16 +619,16 @@ namespace Cave
                 findColors();
                 makeBitmap();
             }
-            public Plant(Chunk chunkToPut, int groupOfPlant)
+            public Plant(Chunk chunkToPut, int groupOfPlant, int attachPointToPut, (int x, int y) posToPut)
             {
-                posX = chunkToPut.position.x*32;
-                posY = chunkToPut.position.y*32;
+                posX = posToPut.x;
+                posY = posToPut.y;
                 screen = chunkToPut.screen;
                 seed = LCGint1(Abs((int)chunkToPut.chunkSeed));
                 seed = Abs(seed + rand.Next(100000)); // TO CHANGE TOCHANGE cuz false randommmm
                 id = currentPlantId;
                 growthLevel = -1;
-                placePlant();
+                attachPoint = attachPointToPut;
                 findType(groupOfPlant);
                 if (isDeadAndShouldDisappear) { return; }
                 findColors();
@@ -682,7 +682,7 @@ namespace Cave
                         type = 2;
                         subType = 0;
                     }
-                    else if (biome == (3, 0)) // forest
+                    else if (biome.biome == 3) // forest and flower forest
                     {
                         if (group == 1)
                         {
@@ -714,7 +714,7 @@ namespace Cave
                         type = 4;
                         subType = 0;
                     }
-                    else if (biome == (6, 0)) // obsidian
+                    else if (biome == (2, 2)) // obsidian
                     {
                         if (rand.Next(100) == 0)
                         {
@@ -754,7 +754,7 @@ namespace Cave
                         type = 2;
                         subType = 1;
                     }
-                    else if (biome == (6, 0)) // obsidian
+                    else if (biome == (2, 2)) // obsidian
                     {
                         type = 5;
                         subType = 1;
@@ -1325,7 +1325,7 @@ namespace Cave
             public void placePlant()
             {
                 int counto = 0;
-                while (counto < 10000)
+                while (counto < 1000)
                 {
                     int randX = rand.Next(32);
                     int randY = rand.Next(32);

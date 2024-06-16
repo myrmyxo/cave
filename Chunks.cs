@@ -91,7 +91,7 @@ namespace Cave
 
                 chunkX = Floor(position.x, 16) / 16;
                 chunkY = Floor(position.y, 16) / 16;
-                int[,] primaryBiomeValues = new int[6,4];
+                int[,] primaryBiomeValues = new int[6, 4];
                 for (int i = layerStart; i < 6; i++)
                 {
                     for (int j = 0; j < 4; j++)
@@ -123,9 +123,9 @@ namespace Cave
                 int stepo = 1;
                 if (debugMode2) { stepo = 31; }
 
-                for (int i = 0; i < 32; i+= stepo)
+                for (int i = 0; i < 32; i += stepo)
                 {
-                    for (int j = 0; j < 32; j+= stepo)
+                    for (int j = 0; j < 32; j += stepo)
                     {
                         for (int k = layerStart; k < 6; k++)
                         {
@@ -135,7 +135,7 @@ namespace Cave
                         if (screen.isMonoBiome) { biomeIndex[i, j] = new ((int biome, int subBiome), int)[] { (screen.type, 1000) }; }
                         else { biomeIndex[i, j] = findBiome(secondaryBigBiomeValues, secondaryBiomeValues, i, j); }
 
-                        int[] colorArray = findBiomeColor(biomeIndex[i,j]);
+                        int[] colorArray = findBiomeColor(biomeIndex[i, j]);
                         baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
                     }
                 }
@@ -238,7 +238,7 @@ namespace Cave
                                     value2modifier += valueToBeAdded;
                                     value1modifier += valueToBeAdded + 2;
                                 }
-                                else if (tupel.Item1 == (6, 0))
+                                else if (tupel.Item1 == (2, 2))
                                 {
                                     float see1 = Obs((position.Item1 * 32) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
                                     float see2 = Obs((position.Item2 * 32) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
@@ -254,25 +254,27 @@ namespace Cave
                                     value2modifier += mult * value2PREmodifier;
                                     mod2divider += mult * 1.5f;
                                 }
-                                else if (tupel.Item1 == (8, 0))
+                                else if (tupel.Item1 == (8, 0) || tupel.Item1 == (2, 1))
                                 {
-                                    oceano = mult * 10;
-                                    oceanoSeeSaw = Min(Seesaw((int)oceano, 8), 8 - oceano);
-                                    if (oceanoSeeSaw < 0)
-                                    {
-                                        oceanoSeeSaw = oceanoSeeSaw * oceanoSeeSaw * oceanoSeeSaw;
-                                    }
-                                    else { oceanoSeeSaw = oceanoSeeSaw * Abs(oceanoSeeSaw); }
-                                    oceano *= 10;
-                                    oceanoSeeSaw *= 10;
+                                    oceano += mult * 10;
                                 }
                                 else { value2modifier += mult * ((2 * value1) % 32); }
                             }
 
+                            oceanoSeeSaw = Min(Seesaw((int)oceano, 8), 8 - oceano);
+                            if (oceanoSeeSaw < 0)
+                            {
+                                oceanoSeeSaw = oceanoSeeSaw * oceanoSeeSaw * oceanoSeeSaw;
+                            }
+                            else { oceanoSeeSaw = oceanoSeeSaw * Abs(oceanoSeeSaw); }
+                            oceano *= 10;
+                            oceanoSeeSaw *= 10;
+
                             mod2 = (int)(mod2 / mod2divider);
 
                             int elementToFillVoidWith;
-                            if (biomeIndex[i, j][0].Item1 == (8, 0)) { elementToFillVoidWith = -2; }
+                            if (biomeIndex[i, j][0].Item1 == (8, 0)) { elementToFillVoidWith = -2; } // ocean
+                            else if (biomeIndex[i, j][0].Item1 == (2, 1)) { elementToFillVoidWith = -4; } // lava ocean
                             else { elementToFillVoidWith = 0; }
 
                             bool fillTest1 = value1 > 122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw * 0.1f) && value1 < 133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw;
@@ -290,10 +292,10 @@ namespace Cave
                         {
                             if (darkBiomes.ContainsKey(tupel.Item1))
                             {
-                                darkness += (int)(tupel.Item2*0.3f);
+                                darkness += (int)(tupel.Item2 * 0.3f);
                             }
                         }
-                        darkness = Max(0, 255-darkness);
+                        darkness = Max(0, 255 - darkness);
                         Color colorToDraw = Color.FromArgb(255, darkness, darkness, darkness);
                         setPixelButFaster(lightBitmap, (i, j), colorToDraw);
                     }
@@ -414,6 +416,7 @@ namespace Cave
             }
             public void spawnEntities()
             {
+                Dictionary<(int x, int y), bool> forbiddenPositions = new Dictionary<(int x, int y), bool>();
                 if (spawnPlantsAndEntities)
                 {
                     Entity newEntity = new Entity(this);
@@ -421,21 +424,130 @@ namespace Cave
                     {
                         screen.activeEntities[newEntity.id] = newEntity;
                     }
-                    for (int i = 0; i < 4; i++)
+
+                    int smallPlantsToSpawn = 4;
+                    int vinesToSpawn = 1;
+                    int treesToSpawn = 0;
+                    (int biome, int subBiome) mainBiome = biomeIndex[16, 16][0].Item1;
+                    if (mainBiome == (3, 0))
                     {
-                        Plant newPlanto = new Plant(this, 0);
-                        if (!newPlanto.isDeadAndShouldDisappear)
+                        smallPlantsToSpawn = 6;
+                        vinesToSpawn = 3;
+                        treesToSpawn = 2;
+                    }
+                    else if (mainBiome == (3, 1))
+                    {
+                        smallPlantsToSpawn = 16;
+                        vinesToSpawn = 2;
+                    }
+                    else if (mainBiome == (8, 0))
+                    {
+                        vinesToSpawn = 4;
+                    }
+                    else if (mainBiome == (9, 0))
+                    {
+                        treesToSpawn = 1;
+                    }
+
+                    for (int i = 0; i < vinesToSpawn; i++)
+                    {
+                        ((int x, int y), bool valid) returnTuple = findCeilingPlantPosition(forbiddenPositions);
+                        if (returnTuple.valid)
                         {
-                            screen.activePlants[newPlanto.id] = newPlanto;
+                            Plant newPlant = new Plant(this, 0, 3, returnTuple.Item1);
+                            if (!newPlant.isDeadAndShouldDisappear)
+                            {
+                                screen.activePlants[newPlant.id] = newPlant;
+                            }
                         }
                     }
-                    Plant newPlant = new Plant(this, 1);
-                    if (!newPlant.isDeadAndShouldDisappear)
+                    for (int i = 0; i < treesToSpawn; i++)
                     {
-                        screen.activePlants[newPlant.id] = newPlant;
+                        ((int x, int y), bool valid) returnTuple = findGroundPlantPosition(forbiddenPositions);
+                        if (returnTuple.valid)
+                        {
+                            Plant newPlant = new Plant(this, 1, 0, returnTuple.Item1);
+                            if (!newPlant.isDeadAndShouldDisappear)
+                            {
+                                screen.activePlants[newPlant.id] = newPlant;
+                            }
+                        }
+                    }
+                    for (int i = 0; i < smallPlantsToSpawn; i++)
+                    {
+                        ((int x, int y), bool valid) returnTuple = findGroundPlantPosition(forbiddenPositions);
+                        if (returnTuple.valid)
+                        {
+                            Plant newPlant = new Plant(this, 0, 0, returnTuple.Item1);
+                            if (!newPlant.isDeadAndShouldDisappear)
+                            {
+                                screen.activePlants[newPlant.id] = newPlant;
+                            }
+                        }
                     }
                     entitiesAndPlantsSpawned = true;
                 }
+            }
+            public ((int x, int y), bool valid) findGroundPlantPosition(Dictionary<(int x, int y), bool> forbiddenPositions)
+            {
+                int counto = 0;
+                (int x, int y) chunkPos;
+                (int x, int y) tileIndex;
+                while (counto < 1000)
+                {
+                    int randX = rand.Next(32);
+                    int randY = rand.Next(32);
+                    if (forbiddenPositions.ContainsKey((randX, randY))) { }
+                    else if (screen.loadedChunks.TryGetValue(position, out Chunk chunkToTest))
+                    {
+                        if (chunkToTest.fillStates[randX, randY] <= 0)
+                        {
+                            chunkPos = screen.findChunkAbsoluteIndex(position.x*32 + randX, position.y*32 + randY - 1);
+                            if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
+                            {
+                                tileIndex = GetChunkIndexFromTile(randX, randY - 1);
+                                if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y] > 0)
+                                {
+                                    forbiddenPositions[(randX, randY)] = true;
+                                    return ((position.x*32 + randX, position.y*32 + randY), true);
+                                }
+                            }
+                        }
+                    }
+                    counto++;
+                }
+                return ((0, 0), false);
+            }
+            public ((int x, int y), bool valid) findCeilingPlantPosition(Dictionary<(int x, int y), bool> forbiddenPositions)
+            {
+                int counto = 0;
+                (int x, int y) chunkPos;
+                (int x, int y) tileIndex;
+                while (counto < 1000)
+                {
+                    int randX = rand.Next(32);
+                    int randY = rand.Next(32);
+                    if (forbiddenPositions.ContainsKey((randX, randY))) { }
+                    else if (screen.loadedChunks.TryGetValue(position, out Chunk chunkToTest))
+                    {
+                        tileIndex = GetChunkIndexFromTile(randX, randY);
+                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] <= 0)
+                        {
+                            chunkPos = screen.findChunkAbsoluteIndex(position.x*32 + randX, position.y*32 + randY + 1);
+                            if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
+                            {
+                                tileIndex = GetChunkIndexFromTile(randX, randY + 1);
+                                if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y] > 0)
+                                {
+                                    forbiddenPositions[(randX, randY)] = true;
+                                    return ((position.x*32 + randX, position.y*32 + randY), true);
+                                }
+                            }
+                        }
+                    }
+                    counto++;
+                }
+                return ((0, 0), false);
             }
             public void moveLiquids()
             {
@@ -1103,7 +1215,7 @@ namespace Cave
 
             foreach ((int x, int y) pos in squareModArray)
             {
-                foreach (((int biome, int subBiome), int) biome in biomeIndex[pos.x*31, pos.y*31])
+                foreach (((int biome, int subBiome), int) biome in biomeIndex[pos.x * 31, pos.y * 31])
                 {
                     if (!dicto.ContainsKey(biome.Item1)) { dicto[biome.Item1] = (int)(biome.Item2 * ponderation[pos]); }
                     else { dicto[biome.Item1] += (int)(biome.Item2 * ponderation[pos]); }
@@ -1129,6 +1241,27 @@ namespace Cave
             int[] arrayo = new int[4] { temperature, humidity, acidity, toxicity };
             return (findBiome(arrayo));
         }
+        public static int testAddBiome(List<((int biome, int subBiome), int)> biomeList, (int biome, int subBiome) biomeToTest, int biomeness)
+        {
+            if (biomeness > 0)
+            {
+                biomeList.Add((biomeToTest, biomeness));
+            }
+            return biomeness;
+        }
+        public static int calculateBiome(int percentageFree, int valueToTest, (int min, int max) bounds)
+        {
+            return (int)(Clamp(0, Min(valueToTest - bounds.min, bounds.max - valueToTest) * 25, 1000) * percentageFree * 0.001f);
+        }
+        public static int calculateAndAddBiome(List<((int biome, int subBiome), int)> biomeList, (int biome, int subBiome) biomeToTest, int percentageFree, int valueToTest, (int min, int max) bounds)
+        {
+            int biomeness = (int)(Clamp(0, Min(valueToTest - bounds.min, bounds.max - valueToTest) * 25, 1000) * percentageFree * 0.001f);
+            if (biomeness > 0)
+            {
+                biomeList.Add((biomeToTest, biomeness));
+            }
+            return biomeness;
+        }
         public static ((int biome, int subBiome), int)[] findBiome(int[] values)
         {
             //return new (int, int)[]{ (8, 1000) }; // use this to force a biome for debug (infite biome)
@@ -1145,7 +1278,7 @@ namespace Cave
             int acidity = values[2];
             int toxicity = values[3];
 
-            if (false)
+            if (false) // distance shit that's slow asf and bad asf
             {
                 int cumScore = 0; // heehee !
                 foreach ((int biome, int subBiome) i in biomeTypicalValues.Keys)
@@ -1190,100 +1323,76 @@ namespace Cave
                     listo.Add(((-1, 0), 1000));
                 }
 
-            }
-            else if (true) // type == 1
+            } // distance shit that's slow asf and bad asf
+            else if (true) // type == 1, normal dimension
             {
                 listo = new List<((int biome, int subBiome), int)>();
-                if (humidity > 720)
+                if (humidity - Abs((int)(0.4f*(temperature - 512))) > 720)
                 {
-                    int oceanness = Min((humidity - 720) * 25, 1000);
-                    if (oceanness > 0)
-                    {
-                        listo.Add(((8, 0), oceanness));
-                        percentageFree -= oceanness;
-                    }
+                    percentageFree -= calculateAndAddBiome(listo, (8, 0), percentageFree, humidity - Abs((int)(0.4f*(temperature - 512))), (720, 999999)); // ocean
                 }
 
+                if (percentageFree <= 0) { goto AfterTest; }
 
-                if (percentageFree > 0)
+                if (temperature > 720)
                 {
-                    if (temperature > 720)
+                    int hotness = calculateBiome(percentageFree, temperature, (720, 999999));
+                    if (temperature > 1024)
                     {
-                        int hotness = (int)(Min((temperature - 720) * 25, 1000) * percentageFree * 0.001f);
-                        if (temperature > 840 && humidity > 600)
-                        {
-                            int minimo = Min(temperature - 840, humidity - 600);
-                            int obsidianess = minimo * 10;
-                            obsidianess = (int)(Min(obsidianess, 1000) * percentageFree * 0.001f);
-                            hotness -= obsidianess;
-                            listo.Add(((6, 0), obsidianess));
-                            percentageFree -= obsidianess;
-                        }
-                        if (hotness > 0)
-                        {
-                            listo.Add(((2, 0), hotness));
-                            percentageFree -= hotness;
-                        }
+                        int lavaness = calculateAndAddBiome(listo, (2, 1), hotness, temperature - Max(0, humidity - 512), (1024, 999999));
+                        percentageFree -= lavaness;
+                        hotness -= lavaness;
                     }
-                    else if (temperature < 440)
+                    if (temperature > 840 && humidity > 600)
                     {
-                        int coldness = (int)(Min((440 - temperature) * 10, 1000) * percentageFree * 0.001f);
-                        if (temperature < 0)
-                        {
-                            int bigColdness = (int)(Min((0 - temperature) * 10, 1000) * coldness * 0.001f);
-                            coldness -= bigColdness;
-                            if (bigColdness > 0)
-                            {
-                                listo.Add(((7, 0), bigColdness));
-                                percentageFree -= bigColdness;
-                            }
-                        }
-                        int savedColdness = (int)(Max(0, (Min((120 - temperature) * 10, 1000))) * percentageFree * 0.001f);
-                        savedColdness = Min(savedColdness, coldness);
-                        coldness -= savedColdness;
-                        if (acidity < 440)
-                        {
-                            int acidness = (int)(Min((440 - acidity) * 10, 1000) * coldness * 0.001f);
-                            coldness -= acidness;
-                            listo.Add(((1, 0), acidness));
-                            percentageFree -= acidness;
-                        }
-                        if (humidity > toxicity)
-                        {
-                            int fairyness = (int)(Min((humidity - toxicity) * 10, 1000) * coldness * 0.001f);
-                            coldness -= fairyness;
-                            if (fairyness > 0)
-                            {
-                                listo.Add(((5, 0), fairyness));
-                                percentageFree -= fairyness;
-                            }
-                        }
-                        coldness += savedColdness;
-                        if (coldness > 0)
-                        {
-                            listo.Add(((0, 0), coldness));
-                            percentageFree -= coldness;
-                        }
+                        int obsidianess = calculateAndAddBiome(listo, (2, 2), hotness, Min(temperature - 840, humidity - 600), (0, 999999));
+                        percentageFree -= obsidianess;
+                        hotness -= obsidianess;
                     }
+                    percentageFree -= testAddBiome(listo, (2, 0), hotness);
+                }
+                else if (temperature < 440)
+                {
+                    int coldness = calculateBiome(percentageFree, temperature, (-999999, 440));
+                    if (temperature < 0)
+                    {
+                        int frostness = calculateAndAddBiome(listo, (0, 1), coldness, temperature, (-999999, 0));
+                        percentageFree -= frostness;
+                        coldness -= frostness;
+                    }
+
+                    int savedColdness = calculateBiome(coldness, temperature, (-999999, 120));
+                    coldness -= savedColdness;
+
+                    if (acidity > 700)
+                    {
+                        int acidness = calculateAndAddBiome(listo, (1, 0), coldness, acidity, (700, 999999));
+                        percentageFree -= acidness;
+                        coldness -= acidness;
+                    }
+                    if (humidity > toxicity)
+                    {
+                        int fairyness = calculateAndAddBiome(listo, (5, 0), coldness, humidity - toxicity, (0, 999999));
+                        percentageFree -= fairyness;
+                        coldness -= fairyness;
+                    }
+
+                    coldness += savedColdness;
+                    percentageFree -= testAddBiome(listo, (0, 0), coldness);
                 }
 
                 if (percentageFree > 0)
                 {
-                    int slimeness = (int)(Clamp((toxicity - humidity - 20) * 10, 0, 1000) * percentageFree * 0.001f);
-                    int forestness = percentageFree - slimeness;
-                    if (forestness > 0)
-                    {
-                        listo.Add(((3, 0), forestness));
-                        percentageFree -= forestness;
-                    }
-                    if (slimeness > 0)
-                    {
-                        listo.Add(((4, 0), slimeness));
-                        percentageFree -= slimeness;
-                    }
+                    percentageFree -= calculateAndAddBiome(listo, (4, 0), percentageFree, toxicity, (715, 999999));  // add slime
+                    percentageFree -= calculateAndAddBiome(listo, (3, 1), percentageFree, (500 - toxicity) + (int)(0.4f*(humidity - temperature)), (0, 999999));  // add flower forest
+                    testAddBiome(listo, (3, 0), percentageFree); // add what's remaining as forest
                 }
             }
-            else if (true)
+            else if (true) // type == 1, chandelier dimension
+            {
+                listo.Add(((9, 0), 1000));
+            }
+            else if (true) // type == 2, living dimension
             {
                 if (humidity > 512)
                 {
@@ -1299,6 +1408,8 @@ namespace Cave
                     listo.Add(((0, 0), percentageFree));
                 }
             }
+
+        AfterTest:;
 
             SortByItem2(listo);
             ((int biome, int subBiome), int)[] arrayo = new ((int biome, int subBiome), int)[listo.Count];

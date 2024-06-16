@@ -57,8 +57,8 @@ namespace Cave
 
                 timeElapsed = 0;
 
-                // to make biome diagrams for testinggggg
-                for (int i = 0; i < -0; i++)
+                // to make biome diagrams for testinggggg       order : temp, humi, acid, toxi
+                for (int i = 0; i < 0; i++)
                 {
                     int a = rand.Next(4);
                     int b = 0;
@@ -67,10 +67,14 @@ namespace Cave
                     int d = rand.Next(1024);
                     makeBiomeDiagram((a, b), (c, d));
                 }
+                for (int i = -512; i < -1000/*1536*/; i += 64)
+                {
+                    makeBiomeDiagram((0, 1), (512, i));
+                }
 
-                int idToPut = 0;
+                int idToPut = 9;
                 PNGsize = 150;
-                bool isMonoeBiomeToPut = false;
+                bool isMonoeBiomeToPut = true;
                 isPngToExport = false;
                 
                 if (isPngToExport)
