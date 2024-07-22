@@ -41,7 +41,7 @@ namespace Cave
             public long seed;
 
             public bool isLight = true;
-            public Game(long seedToPut, bool isPngToExport, int PNGsize)
+            public Game(long seedToPut)
             {
                 seed = seedToPut;
                 playerList = new List<Player>();
@@ -65,17 +65,19 @@ namespace Cave
                     while (b == a) { b = rand.Next(4); }
                     int c = rand.Next(1024);
                     int d = rand.Next(1024);
-                    makeBiomeDiagram((a, b), (c, d));
+                    makeBiomeDiagram((0, 0), (a, b), (c, d));
                 }
                 for (int i = -512; i < -1000/*1536*/; i += 64)
                 {
-                    makeBiomeDiagram((0, 1), (512, i));
+                    makeBiomeDiagram((0, 0), (0, 1), (512, i));
                 }
 
-                int idToPut = 9;
-                PNGsize = 150;
-                bool isMonoeBiomeToPut = true;
-                isPngToExport = false;
+                int idToPut = 2;
+                int PNGsize = 150;
+                PNGsize = 50;
+
+                bool isMonoeBiomeToPut = false;
+                bool isPngToExport = false;
                 
                 if (isPngToExport)
                 {
@@ -876,7 +878,7 @@ namespace Cave
                     if (loadedChunks.ContainsKey(chunkPos))
                     {
                         Chunk chunkToTest = loadedChunks[chunkPos];
-                        if (chunkToTest.fillStates[(entity.posX % 32 + 32) % 32, (entity.posY % 32 + 32) % 32] > 0)
+                        if (chunkToTest.fillStates[(entity.posX % 32 + 32) % 32, (entity.posY % 32 + 32) % 32].type > 0)
                         {
                             color = Color.Red;
                         }
@@ -889,7 +891,7 @@ namespace Cave
                     Color color = Color.Green;
                     (int, int) chunkPos = findChunkAbsoluteIndex(player.posX, player.posY);
                     Chunk chunkToTest = loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[(player.posX % 32 + 32) % 32, (player.posY % 32 + 32) % 32] > 0)
+                    if (chunkToTest.fillStates[(player.posX % 32 + 32) % 32, (player.posY % 32 + 32) % 32].type > 0)
                     {
                         color = Color.Red;
                     }
@@ -1079,13 +1081,13 @@ namespace Cave
                     }
                     chunkToTest = extraLoadedChunks[chunkPos];
                 }
-                return chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+                return chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
             }
             public int getTileContent((int x, int y) posToTest, Dictionary<(int x, int y), Chunk> extraDictToCheckFrom)
             {
                 (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
                 Chunk chunkToTest = getChunkEvenIfNotLoaded(chunkPos, extraDictToCheckFrom);
-                return chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+                return chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
             }
             public Chunk getChunkEvenIfNotLoaded((int x, int y) chunkPos, Dictionary<(int x, int y), Chunk> chunkDict)
             {

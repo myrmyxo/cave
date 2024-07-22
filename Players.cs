@@ -98,7 +98,7 @@ namespace Cave
                     int randX = rand.Next((ChunkLength - 1) * 32);
                     int randY = rand.Next((ChunkLength - 1) * 32);
                     Chunk randChunk = screen.loadedChunks[(randX / 32, randY / 32)];
-                    if (randChunk.fillStates[randX % 32, randY % 32] == 0)
+                    if (randChunk.fillStates[randX % 32, randY % 32].type == 0)
                     {
                         posX = randX;
                         realPosX = randX;
@@ -187,7 +187,7 @@ namespace Cave
                     (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
                     if (screen.loadedChunks.ContainsKey(chunkPos))
                     {
-                        if (screen.loadedChunks[chunkPos].fillStates[(posX % 32 + 32) % 32, (posY % 32 + 32) % 32] < 0)
+                        if (screen.loadedChunks[chunkPos].fillStates[(posX % 32 + 32) % 32, (posY % 32 + 32) % 32].type < 0)
                         {
                             inWater = true;
                         }
@@ -195,7 +195,7 @@ namespace Cave
                     chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
                     if (screen.loadedChunks.ContainsKey(chunkPos))
                     {
-                        if (screen.loadedChunks[chunkPos].fillStates[(posX % 32 + 32) % 32, ((posY - 1) % 32 + 32) % 32] > 0)
+                        if (screen.loadedChunks[chunkPos].fillStates[(posX % 32 + 32) % 32, ((posY - 1) % 32 + 32) % 32].type > 0)
                         {
                             onGround = true;
                         }
@@ -276,7 +276,7 @@ namespace Cave
                     (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX, posY + (int)Sign(toMoveY));
                     if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                     {
-                        if (chunkToTest.fillStates[(posX % 32 + 32) % 32, (posY % 32 + 32 + (int)Sign(toMoveY)) % 32] <= 0)
+                        if (chunkToTest.fillStates[(posX % 32 + 32) % 32, (posY % 32 + 32 + (int)Sign(toMoveY)) % 32].type <= 0)
                         {
                             if (Abs(toMoveY) >= 1)
                             {
@@ -305,7 +305,7 @@ namespace Cave
                     (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX + (int)Sign(toMoveX), posY);
                     if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                     {
-                        if (chunkToTest.fillStates[(posX % 32 + 32 + (int)Sign(toMoveX)) % 32, (posY % 32 + 32) % 32] <= 0)
+                        if (chunkToTest.fillStates[(posX % 32 + 32 + (int)Sign(toMoveX)) % 32, (posY % 32 + 32) % 32].type <= 0)
                         {
                             if (Abs(toMoveX) >= 1)
                             {
@@ -457,7 +457,7 @@ namespace Cave
                         chunkPos = screen.findChunkAbsoluteIndex(currentPosInt.x, currentPosInt.y);
                         chunkToTest = screen.tryToGetChunk(chunkPos);
                         posList.Add(currentPosInt);
-                        if (lives < 3 || chunkToTest.fillStates[GetChunkIndexFromTile1D(currentPosInt.x), GetChunkIndexFromTile1D(currentPosInt.y)] > 0)
+                        if (lives < 3 || chunkToTest.fillStates[GetChunkIndexFromTile1D(currentPosInt.x), GetChunkIndexFromTile1D(currentPosInt.y)].type > 0)
                         {
                             lives--;
                             if (lives <= 0) { return posList; }
@@ -470,7 +470,7 @@ namespace Cave
                         chunkPos = screen.findChunkAbsoluteIndex(currentPosInt.x, currentPosInt.y);
                         chunkToTest = screen.tryToGetChunk(chunkPos);
                         posList.Add(currentPosInt);
-                        if (lives < 3 || chunkToTest.fillStates[GetChunkIndexFromTile1D(currentPosInt.x), GetChunkIndexFromTile1D(currentPosInt.y)] > 0)
+                        if (lives < 3 || chunkToTest.fillStates[GetChunkIndexFromTile1D(currentPosInt.x), GetChunkIndexFromTile1D(currentPosInt.y)].type > 0)
                         {
                             lives--;
                             if (lives <= 0) { return posList; }
@@ -519,26 +519,26 @@ namespace Cave
                     }
                 }
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return; }
-                int tileContent = chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32];
-                if (tileContent != 0)
+                (int type, int subType) tileContent = chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32];
+                if (tileContent.type != 0)
                 {
                     (int index, int subType, int typeOfElement)[] inventoryKeys = inventoryQuantities.Keys.ToArray();
                     for (int i = 0; i < inventoryKeys.Length; i++)
                     {
-                        if (inventoryKeys[i].index == tileContent && inventoryKeys[i].typeOfElement == 0)
+                        if (inventoryKeys[i] == (tileContent.type, tileContent.subType, 0))
                         {
-                            if (inventoryQuantities[(tileContent, 0, 0)] != -999)
+                            if (inventoryQuantities[(tileContent.type, tileContent.subType, 0)] != -999)
                             {
-                                inventoryQuantities[(tileContent, 0, 0)]++;
+                                inventoryQuantities[(tileContent.type, tileContent.subType, 0)]++;
                             }
                             goto AfterTest;
                         }
                     }
                     // there was none of the thing present in the inventory already so gotta create it
-                    inventoryQuantities.Add((tileContent, 0, 0), 1);
-                    inventoryElements.Add((tileContent, 0, 0));
+                    inventoryQuantities.Add((tileContent.type, tileContent.subType, 0), 1);
+                    inventoryElements.Add((tileContent.type, tileContent.subType, 0));
                 AfterTest:;
-                    chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = 0;
+                    chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = (0, 0);
                     chunkToTest.findTileColor((posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32);
                     chunkToTest.testLiquidUnstableAir(posToDigX, posToDigY);
                     chunkToTest.modificationCount += 1;
@@ -549,13 +549,13 @@ namespace Cave
             {
                 (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return; }
-                (int index, int subType, int typeOfElement) tileContent = inventoryElements[inventoryCursor];
-                int tileState = chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32];
-                if (tileState == 0 || tileState < 0 && tileContent.typeOfElement > 0)
+                (int type, int subType, int typeOfElement) tileContent = inventoryElements[inventoryCursor];
+                (int type, int subType) tileState = chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32];
+                if (tileState.type == 0 || tileState.type < 0 && tileContent.typeOfElement > 0)
                 {
                     if (tileContent.typeOfElement == 0)
                     {
-                        chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = tileContent.index;
+                        chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = (tileContent.type, tileContent.subType);
                         chunkToTest.findTileColor((posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32);
                         chunkToTest.testLiquidUnstableLiquid(posToDigX, posToDigY);
                         chunkToTest.modificationCount += 1;
@@ -563,13 +563,13 @@ namespace Cave
                     }
                     else if (tileContent.typeOfElement == 1)
                     {
-                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), tileContent.index, tileContent.subType);
+                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), tileContent.type, tileContent.subType);
                         screen.activeEntities[newEntity.id] = newEntity;
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (tileContent.typeOfElement == 2)
                     {
-                        Plant newPlant = new Plant(screen, (posToDigX, posToDigY), tileContent.index, tileContent.subType);
+                        Plant newPlant = new Plant(screen, (posToDigX, posToDigY), tileContent.type, tileContent.subType);
                         if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
                         timeAtLastPlace = timeElapsed;
                     }

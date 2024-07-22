@@ -677,7 +677,7 @@ namespace Cave
                 (int biome, int subBiome) biome = chunkToTest.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
                 if (attachPoint == 0)
                 {
-                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] < 0)
+                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type < 0)
                     {
                         type = 2;
                         subType = 0;
@@ -749,7 +749,7 @@ namespace Cave
 
                 else if (attachPoint == 3)
                 {
-                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] < 0)
+                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type < 0)
                     {
                         type = 2;
                         subType = 1;
@@ -868,7 +868,7 @@ namespace Cave
 
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
-                    if (screen.loadedChunks[chunkPos].fillStates[pixelTileIndex.x, pixelTileIndex.y] > 0)
+                    if (screen.loadedChunks[chunkPos].fillStates[pixelTileIndex.x, pixelTileIndex.y].type > 0)
                     {
                         return false;
                     }
@@ -876,7 +876,7 @@ namespace Cave
                 }
 
                 if (!screen.extraLoadedChunks.ContainsKey(chunkPos)) { screen.extraLoadedChunks.Add(chunkPos, new Chunk(chunkPos, true, screen)); }
-                if (screen.extraLoadedChunks[chunkPos].fillStates[pixelTileIndex.x, pixelTileIndex.y] > 0)
+                if (screen.extraLoadedChunks[chunkPos].fillStates[pixelTileIndex.x, pixelTileIndex.y].type > 0)
                 {
                     return false;
                 }
@@ -1335,13 +1335,13 @@ namespace Cave
                     if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                     {
                         (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
-                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] <= 0)
+                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0)
                         {
                             chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
                             if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
                             {
                                 tileIndex = GetChunkIndexFromTile(posX, posY - 1);
-                                if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y] > 0)
+                                if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type > 0)
                                 {
                                     attachPoint = 0;
                                     return;
@@ -1351,7 +1351,7 @@ namespace Cave
                             if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesto))
                             {
                                 tileIndex = GetChunkIndexFromTile(posX, posY + 1);
-                                if (chunkToTesto.fillStates[tileIndex.x, tileIndex.y] > 0)
+                                if (chunkToTesto.fillStates[tileIndex.x, tileIndex.y].type > 0)
                                 {
                                     attachPoint = 3;
                                     return;
@@ -1371,13 +1371,13 @@ namespace Cave
                 if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                 {
                     (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
-                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] <= 0)
+                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0)
                     {
                         chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
                         if (attachPoint == 0 && screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesto))
                         {
                             tileIndex = GetChunkIndexFromTile(posX, posY - 1);
-                            if (chunkToTesto.fillStates[tileIndex.x, tileIndex.y] > 0)
+                            if (chunkToTesto.fillStates[tileIndex.x, tileIndex.y].type > 0)
                             {
                                 return;
                             }
@@ -1386,7 +1386,7 @@ namespace Cave
                         if (attachPoint == 3 && screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
                         {
                             tileIndex = GetChunkIndexFromTile(posX, posY + 1);
-                            if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y] > 0)
+                            if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type > 0)
                             {
                                 return;
                             }

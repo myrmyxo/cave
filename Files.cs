@@ -73,7 +73,7 @@ namespace Cave
             }
             public DimensionJson()
             {
-            
+
             }
         }
         public class MegaChunk
@@ -133,7 +133,7 @@ namespace Cave
                     saveNest(screen.activeNests[nestId]);
                     foreach ((int x, int y) pososo in screen.activeNests[nestId].chunkPresence.Keys) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
                     {
-                       chunksToRemove[pososo] = true;
+                        chunksToRemove[pososo] = true;
                     }
                     screen.activeNests.Remove(nestId);
                 }
@@ -143,7 +143,8 @@ namespace Cave
         {
             public long seed;
             public (int, int) pos;
-            public int[,] fill;
+            public int[,] fill1;
+            public int[,] fill2;
             public bool spwnd;
             public List<int> eLst;
             public List<int> pLst;
@@ -153,7 +154,9 @@ namespace Cave
             {
                 seed = chunk.chunkSeed;
                 pos = chunk.position;
-                fill = chunk.fillStates;
+                (int[,] one, int[,] two) returnTuple = ChunkToChunkJsonfillStates(chunk.fillStates);
+                fill1 = returnTuple.one;
+                fill2 = returnTuple.two;
                 spwnd = chunk.entitiesAndPlantsSpawned;
                 eLst = new List<int>();
                 foreach (Entity entity in chunk.entityList)
@@ -482,6 +485,32 @@ namespace Cave
             }
             return listo;
         }
+        public static (int type, int subType)[,] ChunkJsonToChunkfillStates(int[,] array1, int[,] array2)
+        {
+            (int type, int subType)[,] arrayo = new (int type, int subType)[32, 32];
+            for (int i = 0; i < 32; i++)
+            {
+                for (int j = 0; j < 32; j++)
+                {
+                    arrayo[i, j] = (array1[i, j], array2[i, j]);
+                }
+            }
+            return arrayo;
+        }
+        public static (int[,], int[,]) ChunkToChunkJsonfillStates((int type, int subType)[,] array)
+        {
+            int[,] arrayo1 = new int[32, 32];
+            int[,] arrayo2 = new int[32, 32];
+            for (int i = 0; i < 32; i++)
+            {
+                for (int j = 0; j < 32; j++)
+                {
+                    arrayo1[i, j] = array[i, j].type;
+                    arrayo2[i, j] = array[i, j].subType;
+                }
+            }
+            return (arrayo1, arrayo2);
+        }
         public static (Dictionary<(int index, int subType, int typeOfElement), int>, List<(int index, int subType, int typeOfElement)>) arrayToInventory(int[,] arrayo)
         {
             Dictionary<(int index, int subType, int typeOfElement), int> dicto = new Dictionary<(int index, int subType, int typeOfElement), int>();
@@ -550,7 +579,7 @@ namespace Cave
 
                 chunk.chunkSeed = chunkJson.seed;
                 chunk.position = chunkJson.pos;
-                chunk.fillStates = chunkJson.fill;
+                chunk.fillStates = ChunkJsonToChunkfillStates(chunkJson.fill1, chunkJson.fill2);
                 chunk.entitiesAndPlantsSpawned = chunkJson.spwnd;
 
                 if (loadEntitiesAndPlants)

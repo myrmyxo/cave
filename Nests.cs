@@ -258,7 +258,7 @@ namespace Cave
                         if (!chunkDict.ContainsKey(chunkPos)) { chunkDict.Add(chunkPos, new Chunk(chunkPos, true, nest.screen)); }
                         chunkToTest = chunkDict[chunkPos];
                     }
-                    chunkToTest.fillStates[(poso.x % 32 + 32) % 32, (poso.y % 32 + 32) % 32] = typeToFill;
+                    chunkToTest.fillStates[(poso.x % 32 + 32) % 32, (poso.y % 32 + 32) % 32].type = typeToFill;
                     chunkToTest.modificationCount = 1;
                     chunkToTest.findTileColor((poso.x % 32 + 32) % 32, (poso.y % 32 + 32) % 32);
                 }
@@ -375,7 +375,7 @@ namespace Cave
                         posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
                         (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
                         Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                        int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+                        int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
                         if (fillState <= 0 || fillState > 1 || nest.tiles.ContainsKey(posToTest))
                         {
                             goto SkipToNextIteration;
@@ -428,7 +428,7 @@ namespace Cave
 
                     (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
                     Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                    int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+                    int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
                     if (fillState <= 0)
                     {
                         if (fillState != -4)
@@ -492,7 +492,7 @@ namespace Cave
                             posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
                             (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
                             Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                            int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+                            int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
                             if (((fillState <= 0 || fillState > 1) || nest.tiles.ContainsKey(posToTest)) && repeatCounter >= startPosList.Count) //cumsum yummy yum
                             {
                                 goto SkipToNextIteration;
@@ -542,7 +542,7 @@ namespace Cave
                 {
                     (int x, int y) chunkPos = (Floor(pos.x, 32) / 32, Floor(pos.y, 32) / 32);
                     Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                    int fillState = chunkToTest.fillStates[(pos.x % 32 + 32) % 32, (pos.y % 32 + 32) % 32];
+                    int fillState = chunkToTest.fillStates[(pos.x % 32 + 32) % 32, (pos.y % 32 + 32) % 32].type;
                     if (pos.y == maxBordelLevel - 1)
                     {
                         dropPositions.Add(pos);
@@ -599,7 +599,7 @@ namespace Cave
                     {
                         (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
                         Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                        int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+                        int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
                         if (posToTest.y < maxBordelLevel)
                         {
                             if (fillState == -5)
@@ -632,7 +632,7 @@ namespace Cave
                     tileList.RemoveAt(idxToTest);
                     (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
                     Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                    int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+                    int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
                     if (fillState == typeToFind)
                     {
                         return (posToTest, true);
@@ -807,7 +807,7 @@ namespace Cave
                     currentPos = tilesToTest[repeatCounter];
                     (int x, int y) chunkPos = (Floor(currentPos.x, 32) / 32, Floor(currentPos.y, 32) / 32);
                     Chunk chunkToTest = screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                    int fillState = chunkToTest.fillStates[(currentPos.x % 32 + 32) % 32, (currentPos.y % 32 + 32) % 32];
+                    int fillState = chunkToTest.fillStates[(currentPos.x % 32 + 32) % 32, (currentPos.y % 32 + 32) % 32].type;
                     if (fillState <= 0 || fillState > 2 || tiles.ContainsKey(currentPos))
                     {
                         return false;
@@ -986,9 +986,9 @@ namespace Cave
                 {
                     (int x, int y) chunkPos = (Floor(pos.x, 32) / 32, Floor(pos.y, 32) / 32);
                     Chunk chunkToTest = screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                    int fillState = chunkToTest.fillStates[(pos.x % 32 + 32) % 32, (pos.y % 32 + 32) % 32];
+                    (int type, int subType) fillState = chunkToTest.fillStates[(pos.x % 32 + 32) % 32, (pos.y % 32 + 32) % 32];
                     Room room = rooms[getRoomId(pos)];
-                    if (fillState == 0 || (fillState == -5 && room.type == 2)) { }
+                    if (fillState.type == 0 || (fillState.type == -5 && room.type == 2)) { }
                     else
                     {
                         digErrands.Add(pos);

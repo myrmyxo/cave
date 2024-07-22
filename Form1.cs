@@ -263,8 +263,6 @@ namespace Cave
             loadStructuresYesOrNo = true;
             spawnPlantsAndEntities = true;
 
-            bool updatePNG = false;
-            int PNGsize = 25; // in chunks, 300 or more made it out of memory :( so put at 250 okok
             bool randomSeed = true;
 
             long seed = 123456;
@@ -279,6 +277,7 @@ namespace Cave
             // maybe depending on a parameter of the dimension, some living world dimensions would be more dead or not dead at all.
             // Lolitadimension ?? ? ? or CANDYDIMENSION ???? idk ? ? ? sugar cane trees would be poggers. Or a candy dimension with candies... yeah and uh idk a lolita biome and a super rare variant being a gothic lolita biome ??? idk wtf i'm on ngl
             // Add a portal that is inside lava oceans; in a structure (obsidian city ?), that needs to be turned on with maybe liquid obsidian or oil, and teleports to like hell, or an obsidian dimension made ouf of only obsidian shit ?.
+            // Make it so fairies and other creatures have songs. Like maybe in a fairy village there's a village theme song that's procedurally generated. Idk. ANd they can teach u the song and u can sing it with instrument or voice idk.
 
             //
             // cool seeds !!!! DO NOT DELETE
@@ -300,7 +299,7 @@ namespace Cave
 
             if (randomSeed)
             {
-                seed = (long)rand.Next(1000000);
+                seed = rand.Next(1000000);
                 int counto = rand.Next(1000);
                 while (counto > 0)
                 {
@@ -312,7 +311,7 @@ namespace Cave
 
             Files.createFolders(seed);
 
-            game = new Game(worldSeed, updatePNG, PNGsize);
+            game = new Game(worldSeed);
             timer1.Tag = game;
             timeAtLauch = DateTime.Now;
         }
@@ -476,7 +475,7 @@ namespace Cave
                 screen.saveAllChunks();
             }
         }
-        public static void makeBiomeDiagram((int, int) variablesToTest, (int, int) fixedValues)
+        public static void makeBiomeDiagram((int, int) dimensionType, (int, int) variablesToTest, (int, int) fixedValues)
         {
             Dictionary<int, string> dicto = new Dictionary<int, string>
             {
@@ -519,7 +518,7 @@ namespace Cave
                 for (int j = -64; j < 192; j++)
                 {
                     values[variablesToTest.Item2] = j*8;
-                    ((int biome, int subBiome), int)[] biomeArray = findBiome(values);
+                    ((int biome, int subBiome), int)[] biomeArray = findBiome(dimensionType, values);
                     if (biomeArray[0].Item1 == (-1, 0) && ((i/4)+(j/4))%2 == 1){ setPixelButFaster(bitmap, (i, 255 - j), Color.Black); continue; }
                     int[] colorArray = findBiomeColor(biomeArray);
                     colorToPut = Color.FromArgb(colorArray[0], colorArray[1], colorArray[2]);

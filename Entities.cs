@@ -142,7 +142,7 @@ namespace Cave
             {
                 (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
                 (int biome, int subBiome) biome = chunk.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
-                if (chunk.fillStates[tileIndex.x, tileIndex.y] < 0)
+                if (chunk.fillStates[tileIndex.x, tileIndex.y].type < 0)
                 {
                     type = 2;
                     subType = 0;
@@ -234,7 +234,7 @@ namespace Cave
                 {
                     int randX = rand.Next(32);
                     int randY = rand.Next(32);
-                    if (chunk.fillStates[randX, randY] <= 0)
+                    if (chunk.fillStates[randX, randY].type <= 0)
                     {
                         posX = chunk.position.Item1 * 32 + randX;
                         realPosX = posX;
@@ -325,7 +325,7 @@ namespace Cave
                 if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                 {
                     (int x, int y) tileIndex = GetChunkIndexFromTile(location);
-                    int tileContent = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
+                    int tileContent = chunkToTest.fillStates[tileIndex.x, tileIndex.y].type;
                     if (tileContent <= 0)
                     {
                         costOfTiles[location] = costDict[tileContent];
@@ -636,7 +636,7 @@ namespace Cave
                     if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                     {
                         (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY - 1);
-                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] > 0)
+                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type > 0)
                         {
                             ariGeoSlowDownX(0.2f, 0.85f);
                             if (rand.NextDouble() > 0.05f)
@@ -653,7 +653,7 @@ namespace Cave
                     if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
                     {
                         (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
-                        if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y] < 0)
+                        if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type < 0)
                         {
                             if (state >= 2)
                             {
@@ -699,7 +699,7 @@ namespace Cave
                         if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                         {
                             (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY - 1);
-                            if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] > 0)
+                            if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type > 0)
                             {
                                 speedX = speedX * 0.9f - Sign(speedX) * 0.12f;
                                 if (rand.Next(10) != 0)
@@ -748,7 +748,7 @@ namespace Cave
                         if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                         {
                             (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY - 1);
-                            if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] > 0)
+                            if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type > 0)
                             {
                                 ariGeoSlowDownX(0.2f, 0.85f);
                                 if (rand.NextDouble() < 0.05f)
@@ -950,11 +950,11 @@ namespace Cave
                         {
                             if (timeAtLastDig + 1 < timeElapsed)
                             {
-                                int dugTile = Dig(targetPos.x, targetPos.y);
+                                (int type, int subType) dugTile = Dig(targetPos.x, targetPos.y);
                                 if (nest != null)
                                 {
-                                    if (dugTile >= 0) { nest.digErrands.Remove(targetPos); }
-                                    if (dugTile == -5 && nest.hungryLarvae.Count > 0)
+                                    if (dugTile.type >= 0) { nest.digErrands.Remove(targetPos); }
+                                    if (dugTile.type == -5 && nest.hungryLarvae.Count > 0)
                                     {
                                         targetEntity = nest.hungryLarvae[rand.Next(nest.hungryLarvae.Count)];
                                         targetPos = (targetEntity.posX, targetEntity.posY);
@@ -1041,7 +1041,7 @@ namespace Cave
                     if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                     {
                         (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
-                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] < 0)
+                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type < 0)
                         {
                             speedX = speedX * 0.85f - Sign(speedX) * 0.15f;
                             speedY = speedY * 0.85f - Sign(speedY) * 0.15f;
@@ -1060,7 +1060,7 @@ namespace Cave
                         return;
                     }
                     (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
-                    if (type != 0 && chunkToTest.fillStates[tileIndex.x, tileIndex.y] == -3)
+                    if (type != 0 && chunkToTest.fillStates[tileIndex.x, tileIndex.y].type == -3)
                     {
                         if (rand.Next(10) == 0)
                         {
@@ -1068,7 +1068,7 @@ namespace Cave
                             this.color = Color.Purple;
                         }
                     }
-                    if (type != 2 && chunkToTest.fillStates[tileIndex.x, tileIndex.y] == -4)
+                    if (type != 2 && chunkToTest.fillStates[tileIndex.x, tileIndex.y].type == -4)
                     {
                         if (rand.Next(10) == 0)
                         {
@@ -1094,7 +1094,7 @@ namespace Cave
                         return;
                     }
                     (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY + (int)Sign(toMoveY));
-                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] <= 0)
+                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0)
                     {
                         if (Abs(toMoveY) >= 1)
                         {
@@ -1127,7 +1127,7 @@ namespace Cave
                         return;
                     }
                     (int x, int y) tileIndex = GetChunkIndexFromTile(posX + (int)Sign(toMoveX), posY);
-                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y] <= 0)
+                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0)
                     {
                         if (Abs(toMoveX) >= 1)
                         {
@@ -1209,16 +1209,16 @@ namespace Cave
                 }
                 return false;
             }
-            public int Dig(int posToDigX, int posToDigY)
+            public (int type, int subType) Dig(int posToDigX, int posToDigY)
             {
                 (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
-                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return 0; }
+                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return (0, 0); }
                 (int x, int y) tileIndex = GetChunkIndexFromTile(posToDigX, posToDigY);
-                int tileContent = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
-                if (tileContent != 0)
+                (int type, int subType) tileContent = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
+                if (tileContent.type != 0)
                 {
-                    addElementToInventory((tileContent, 0, 0));
-                    chunkToTest.fillStates[tileIndex.x, tileIndex.y] = 0;
+                    addElementToInventory((tileContent.type, tileContent.subType, 0));
+                    chunkToTest.fillStates[tileIndex.x, tileIndex.y] = (0, 0);
                     chunkToTest.findTileColor(tileIndex.x, tileIndex.y);
                     chunkToTest.testLiquidUnstableAir(posToDigX, posToDigY);
                     chunkToTest.modificationCount += 1;
@@ -1227,18 +1227,18 @@ namespace Cave
                 }
                 return tileContent;
             }
-            public bool Place(int posToDigX, int posToDigY, (int index, int subType, int typeOfElement) elementToPlace, bool forcePlace)
+            public bool Place(int posToDigX, int posToDigY, (int type, int subType, int typeOfElement) elementToPlace, bool forcePlace)
             {
                 (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return false; }
                 if (!forcePlace && !inventoryElements.Contains(elementToPlace)) { return false; } 
                 (int x, int y) tileIndex = GetChunkIndexFromTile(posToDigX, posToDigY);
-                int tileState = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
+                int tileState = chunkToTest.fillStates[tileIndex.x, tileIndex.y].type;
                 if (tileState == 0 || tileState < 0 && elementToPlace.typeOfElement > 0)
                 {
                     if (elementToPlace.typeOfElement == 0)
                     {
-                        chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = elementToPlace.index;
+                        chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = (elementToPlace.type, elementToPlace.subType);
                         chunkToTest.findTileColor((posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32);
                         chunkToTest.testLiquidUnstableLiquid(posToDigX, posToDigY);
                         chunkToTest.modificationCount += 1;
@@ -1246,13 +1246,13 @@ namespace Cave
                     }
                     else if (elementToPlace.typeOfElement == 1)
                     {
-                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), elementToPlace.index, elementToPlace.subType);
+                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), elementToPlace.type, elementToPlace.subType);
                         screen.entitesToAdd.Add(newEntity);
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (elementToPlace.typeOfElement == 2)
                     {
-                        Plant newPlant = new Plant(screen, (posToDigX, posToDigY), elementToPlace.index, elementToPlace.subType);
+                        Plant newPlant = new Plant(screen, (posToDigX, posToDigY), elementToPlace.type, elementToPlace.subType);
                         if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
                         timeAtLastPlace = timeElapsed;
                     }

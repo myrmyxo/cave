@@ -46,7 +46,7 @@ namespace Cave
             public (int, int) centerChunkPos;
             public (int, int) size;
             public (int, int, int, int) chunkBounds; // (Start X, end X not included, Start Y, end Y not included)
-            public int[,][,] structureArray;
+            public (int type, int subType)[,][,] structureArray;
 
             public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>();
             public Structure(int posX, int posY, long seedXToPut, long seedYToPut, bool isLake, (int, int) structChunkPositionToPut, Screens.Screen screenToPut)
@@ -126,7 +126,7 @@ namespace Cave
                         tileList.Add(new List<int>());
                         for (int j = 0; j < lenY * 32; j++)
                         {
-                            if(chunkList[lenX][j / 32].fillStates[i, j % 32] == 0)
+                            if(chunkList[lenX][j / 32].fillStates[i, j % 32].type == 0)
                             {
                                 tileList[lenX * 32 + i].Add(0);
                             }
@@ -157,7 +157,7 @@ namespace Cave
                         tileList.Insert(i, new List<int>());
                         for (int j = 0; j < lenY * 32; j++)
                         {
-                            if (chunkList[0][j / 32].fillStates[i, j % 32] == 0)
+                            if (chunkList[0][j / 32].fillStates[i, j % 32].type == 0)
                             {
                                 tileList[i].Add(0);
                             }
@@ -183,7 +183,7 @@ namespace Cave
                     {
                         for (int j = 0; j < 32; j++)
                         {
-                            if (chunkList[i / 32][lenY].fillStates[i % 32, j] == 0)
+                            if (chunkList[i / 32][lenY].fillStates[i % 32, j].type == 0)
                             {
                                 tileList[i].Add(0);
                             }
@@ -210,7 +210,7 @@ namespace Cave
                     {
                         for (int j = 0; j < 32; j++)
                         {
-                            if (chunkList[i / 32][0].fillStates[i % 32, j] == 0)
+                            if (chunkList[i / 32][0].fillStates[i % 32, j].type == 0)
                             {
                                 tileList[i].Insert(j, 0);
                             }
@@ -237,7 +237,7 @@ namespace Cave
                     tileList.Add(new List<int>());
                     for (int j = 0; j < 32; j++)
                     {
-                        tileList[i].Add(chunkList[0][0].fillStates[i, j]);
+                        tileList[i].Add(chunkList[0][0].fillStates[i, j].type);
                     }
                 }
 
@@ -250,7 +250,7 @@ namespace Cave
                 tilesToFill = 5000;
                 int tilesFilled = 0;
 
-                int liquidTypeToFill = -2;
+                (int type, int subType) liquidTypeToFill = (-2, 0);
                 int numberOfSubLakes = 0; // the total number of mini lakes, connected or not, basically the amount of times the code passed through "searchForBottom"
                 //int numberOfConnectedSubLakes = 1; // the total number of mini lakes, that are touching the first minilake (basically those that are connected only, to not make separated lakes when saving and ignoring the non connected ones)
 
@@ -362,11 +362,11 @@ namespace Cave
 
                     if (chunkToTest.biomeIndex[chunkTestPos.Item1, chunkTestPos.Item2][0].Item1 == (5, 0))
                     {
-                        liquidTypeToFill = -3;
+                        liquidTypeToFill = (-3, 0);
                     }
                     if (chunkToTest.biomeIndex[chunkTestPos.Item1, chunkTestPos.Item2][0].Item1 == (2, 0))
                     {
-                        liquidTypeToFill = 4;
+                        liquidTypeToFill = (-4, 0);
                         /*if (THIS WAS PUT THERE TO ADD MORE LAVA LAKES THE HIGHER THE TEMPERATURE !!! But fuck it myb i'll use the mean or center tile saved this costs loads of memory    chunkToTest.secondaryBiomeValues[chunkTestPos.Item1, chunkTestPos.Item2, 0] + chunkToTest.secondaryBigBiomeValues[chunkTestPos.Item1, chunkTestPos.Item2, 0] - 128 + rand.Next(200) - 200 > 100)
                         {
                             liquidTypeToFill = -4;
@@ -472,8 +472,8 @@ namespace Cave
                 Bitmap bitmapo = new Bitmap(tileList.Count*2, tileList[0].Count*2);
 
                 seedo = LCGyNeg(LCGxNeg(seedo));
-                if (seedo % 1000 == 0) { liquidTypeToFill = -1; }
-                else if (seedo % 1000 < 5) { liquidTypeToFill = -3; }
+                if (seedo % 1000 == 0) { liquidTypeToFill = (-1, 0); }
+                else if (seedo % 1000 < 5) { liquidTypeToFill = (-3, 0); }
 
                 for (int i = 0; i < tileList.Count; i++)
                 {
@@ -536,7 +536,7 @@ namespace Cave
                 int tilesFilled = 0;
                 int maximumY = 0;
 
-                int liquidTypeToFill = -2;
+                (int type, int subType) liquidTypeToFill = (-2, 0);
 
                 int numberOfSubLakes = 0; // the total number of mini lakes, connected or not, basically the amount of times the code passed through "searchForBottom"
                 //int numberOfConnectedSubLakes = 1; // the total number of mini lakes, that are touching the first minilake (basically those that are connected only, to not make separated lakes when saving and ignoring the non connected ones)
@@ -551,7 +551,7 @@ namespace Cave
                     tileList.Add(new List<int>());
                     for (int j = 0; j < 32; j++)
                     {
-                        tileList[i].Add(chunkList[0][0].fillStates[i, j]);
+                        tileList[i].Add(chunkList[0][0].fillStates[i, j].type);
                     }
                 }
 
@@ -685,8 +685,8 @@ namespace Cave
                 Bitmap bitmapo = new Bitmap(tileList.Count * 2, tileList[0].Count * 2);
 
                 seedo = LCGyNeg(LCGxNeg(seedo));
-                if (seedo % 1000 == 0) { liquidTypeToFill = -1; }
-                else if (seedo % 1000 < 5) { liquidTypeToFill = -3; }
+                if (seedo % 1000 == 0) { liquidTypeToFill = (-1, 0); }
+                else if (seedo % 1000 < 5) { liquidTypeToFill = (-3, 0); }
 
                 for (int i = 0; i < tileList.Count; i++)
                 {
@@ -746,24 +746,24 @@ namespace Cave
 
                 if (tilesFilled[0] <= 2000)
                 {
-                    int liquidTypeToFill = -2;
+                    (int type, int subType) liquidTypeToFill = (-2, 0);
                     Chunk chunkToTest = chunkDict[(Floor(testPos.x, 32) / 32, Floor(testPos.y, 32) / 32)];
 
                     if (chunkToTest.biomeIndex[testPos32.Item1, testPos32.Item2][0].Item1 == (5, 0))
                     {
-                        liquidTypeToFill = -3;
+                        liquidTypeToFill = (-3, 0);
                     }
                     if (chunkToTest.biomeIndex[testPos32.Item1, testPos32.Item2][0].Item1 == (2, 0))
                     {
-                        liquidTypeToFill = -4;
+                        liquidTypeToFill = (-4, 0);
                         /*if (THIS WAS PUT THERE TO ADD MORE LAVA LAKES THE HIGHER THE TEMPERATURE !!!But fuck it myb i'll use the mean or center tile saved this costs loads of memory    chunkToTest.secondaryBiomeValues[testPos32.Item1, testPos32.Item2, 0] + chunkToTest.secondaryBigBiomeValues[testPos32.Item1, testPos32.Item2, 0] - 128 + rand.Next(200) - 200 > 100)
                         {
                             liquidTypeToFill = -4;
                         }*/
                     }
                     seedo = LCGyNeg(LCGxNeg(seedo));
-                    if (seedo % 1000 == 0) { liquidTypeToFill = -1; }
-                    else if (seedo % 1000 < 5) { liquidTypeToFill = -3; }
+                    if (seedo % 1000 == 0) { liquidTypeToFill = (-1, 0); }
+                    else if (seedo % 1000 < 5) { liquidTypeToFill = (-3, 0); }
 
                     foreach ((int x, int y) poso in tilesToFill.Keys)
                     {
@@ -792,7 +792,7 @@ namespace Cave
                 (int x, int y) chunkPos = (Floor(pos.x, 32) / 32, Floor(pos.y, 32) / 32);
                 Chunk chunkToTest = screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
                 chunkDict[chunkPos] = chunkToTest;
-                if (!tilesToFill.ContainsKey(pos) && chunkToTest.fillStates[(pos.x%32 + 32) % 32, (pos.y%32 + 32) % 32] == 0)
+                if (!tilesToFill.ContainsKey(pos) && chunkToTest.fillStates[(pos.x % 32 + 32) % 32, (pos.y % 32 + 32) % 32].type == 0)
                 {
                     tilesToFill[pos] = true;
                     tilesFilled[0]++;
@@ -804,17 +804,17 @@ namespace Cave
             }
             public void drawStructure()
             {
-                structureArray = new int[size.Item1, size.Item2][,];
+                structureArray = new (int type, int subType)[size.Item1, size.Item2][,];
                 for (int i = 0; i < size.Item1; i++)
                 {
                     for (int j = 0; j < size.Item2; j++)
                     {
-                        structureArray[i, j] = new int[32, 32];
+                        structureArray[i, j] = new (int type, int subType)[32, 32];
                         for (int k = 0; k < 32; k++)
                         {
                             for (int l = 0; l < 32; l++)
                             {
-                                structureArray[i, j][k, l] = -999;
+                                structureArray[i, j][k, l] = (-999, 0);
                             }
                         }
                     }
@@ -851,7 +851,7 @@ namespace Cave
                         {
                             int ii = relativeCenterX + i;
                             int jj = relativeCenterY + j;
-                            structureArray[ii / 32, jj / 32][ii % 32, jj % 32] = 0;
+                            structureArray[ii / 32, jj / 32][ii % 32, jj % 32] = (0, 0);
                         }
                     }
                     for (int i = -sizo; i <= sizo; i += 2 * sizo)
@@ -860,7 +860,7 @@ namespace Cave
                         {
                             int ii = relativeCenterX + i;
                             int jj = relativeCenterY + j;
-                            structureArray[ii / 32, jj / 32][ii % 32, jj % 32] = 1;
+                            structureArray[ii / 32, jj / 32][ii % 32, jj % 32] = (1, 0);
                         }
                     }
                     for (int i = -sizo; i <= sizo; i++)
@@ -869,7 +869,7 @@ namespace Cave
                         {
                             int ii = relativeCenterX + i;
                             int jj = relativeCenterY + j;
-                            structureArray[ii / 32, jj / 32][ii % 32, jj % 32] = 1;
+                            structureArray[ii / 32, jj / 32][ii % 32, jj % 32] = (1, 0);
                         }
                     }
                 }
@@ -896,57 +896,57 @@ namespace Cave
 
                         if (distance < sizo)
                         {
-                            structureArray[i / 32, j / 32][i % 32, j % 32] = 0;
+                            structureArray[i / 32, j / 32][i % 32, j % 32] = (0, 0);
 
 
                             //outline
 
                             int newi = i - 1;
                             int newj = j;
-                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == -999)
+                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == (-999, 0))
                             {
-                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = 1;
+                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = (1, 0);
                             }
                             newi = i + 1;
                             newj = j;
-                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == -999)
+                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == (-999, 0))
                             {
-                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = 1;
+                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = (1, 0);
                             }
                             newi = i;
                             newj = j - 1;
-                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == -999)
+                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == (-999, 0))
                             {
-                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = 1;
+                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = (1, 0);
                             }
                             newi = i;
                             newj = j + 1;
-                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == -999)
+                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == (-999, 0))
                             {
-                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = 1;
+                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = (1, 0);
                             }
                         }
 
                     }
                 }
                 (int, int) tupelo = (centerCoords.Item1 - 1, centerCoords.Item2 - 1);
-                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = 2;
+                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = (2, 0);
                 tupelo = (centerCoords.Item1, centerCoords.Item2 - 1);
-                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = 0;
+                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = (0, 0);
                 tupelo = (centerCoords.Item1 + 1, centerCoords.Item2 - 1);
-                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = 2;
+                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = (2, 0);
                 tupelo = (centerCoords.Item1 - 1, centerCoords.Item2);
-                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = 0;
+                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = (0, 0);
                 tupelo = (centerCoords.Item1, centerCoords.Item2);
-                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = 1;
+                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = (1, 0);
                 tupelo = (centerCoords.Item1 + 1, centerCoords.Item2);
-                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = 0;
+                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = (0, 0);
                 tupelo = (centerCoords.Item1 - 1, centerCoords.Item2 + 1);
-                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = 2;
+                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = (2, 0);
                 tupelo = (centerCoords.Item1, centerCoords.Item2 + 1);
-                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = 0;
+                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = (0, 0);
                 tupelo = (centerCoords.Item1 + 1, centerCoords.Item2 + 1);
-                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = 2;
+                structureArray[tupelo.Item1 / 32, tupelo.Item2 / 32][tupelo.Item1 % 32, tupelo.Item2 % 32] = (2, 0);
             }
             public void star()
             {
@@ -970,34 +970,34 @@ namespace Cave
 
                         if (distance < sizo)
                         {
-                            structureArray[i / 32, j / 32][i % 32, j % 32] = 0;
+                            structureArray[i / 32, j / 32][i % 32, j % 32] = (0, 0);
 
 
                             //outline
 
                             int newi = i - 1;
                             int newj = j;
-                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == -999)
+                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == (-999, 0))
                             {
-                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = 1;
+                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = (1, 0);
                             }
                             newi = i + 1;
                             newj = j;
-                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == -999)
+                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == (-999, 0))
                             {
-                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = 1;
+                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = (1, 0);
                             }
                             newi = i;
                             newj = j - 1;
-                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == -999)
+                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == (-999, 0))
                             {
-                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = 1;
+                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = (1, 0);
                             }
                             newi = i;
                             newj = j + 1;
-                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == -999)
+                            if (newi >= 0 && newi < size.Item1 * 32 && newj >= 0 && newj < size.Item1 * 32 && structureArray[newi / 32, newj / 32][newi % 32, newj % 32] == (-999, 0))
                             {
-                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = 1;
+                                structureArray[newi / 32, newj / 32][newi % 32, newj % 32] = (1, 0);
                             }
                         }
 
@@ -1017,7 +1017,7 @@ namespace Cave
                         {
                             for (int l = 0; l < 32; l++)
                             {
-                                if (structureArray[i, j][k, l] != -999)
+                                if (structureArray[i, j][k, l] != (-999, 0))
                                 {
                                     chunko.fillStates[k, l] = structureArray[i, j][k, l];
                                 }
