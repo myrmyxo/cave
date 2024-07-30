@@ -35,7 +35,7 @@ namespace Cave
     {
         public static Dictionary<(int, int, int, int), Bitmap> lightBitmaps;
 
-        public static Dictionary<int, OneSprite> compoundSprites;
+        public static Dictionary<(int, int), OneSprite> compoundSprites;
         public static Dictionary<(int, int), OneSprite> entitySprites;
         public static Dictionary<(int, int), OneSprite> plantSprites;
         public static Dictionary<(int, int), OneSprite> materialSprites;
@@ -46,19 +46,21 @@ namespace Cave
         public static OneAnimation fireAnimation;
         public static void loadSpriteDictionaries()
         {
-            compoundSprites = new Dictionary<int, OneSprite>
+            compoundSprites = new Dictionary<(int, int), OneSprite>
             {
-                { -5, new OneSprite("Honey", false)},
-                { -4, new OneSprite("Lava", false)},
-                { -3, new OneSprite("FairyLiquid", false)},
-                { -2, new OneSprite("Water", false)},
-                { -1, new OneSprite("Piss", false)},
-                { 1, new OneSprite("BasicTile", false)},
-                { 2, new OneSprite("BasicTile", false)},
-                { 3, new OneSprite("BasicTile", false)},
-                { 4, new OneSprite("BasicTile", false)},
-                { 5, new OneSprite("BasicTile", false)},
-                { 6, new OneSprite("BasicTile", false)}
+                { (-5, 0), new OneSprite("Honey", false)},
+                { (-4, 0), new OneSprite("Lava", false)},
+                { (-3, 0), new OneSprite("FairyLiquid", false)},
+                { (-2, 0), new OneSprite("Water", false)},
+                { (-1, 0), new OneSprite("Piss", false)},
+                { (1, 0), new OneSprite("BasicTile", false)},
+                { (1, 1), new OneSprite("BasicTile", false)},      // make new sprite for it
+                { (2, 0), new OneSprite("BasicTile", false)},
+                { (3, 0), new OneSprite("PlantMatter", false)},
+                { (4, 0), new OneSprite("Flesh", true)},          // TO CHANGE
+                { (4, 1), new OneSprite("Bone", true)},            // TO CHANGE
+                { (5, 0), new OneSprite("BasicTile", false)},
+                { (6, 0), new OneSprite("BasicTile", false)}
             };
             entitySprites = new Dictionary<(int, int), OneSprite>
             {
@@ -348,7 +350,7 @@ namespace Cave
                 (int index, int subType, int typeOfElement) element = inventoryElements[inventoryCursor];
                 if (element.typeOfElement == 0)
                 {
-                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, compoundSprites[element.index].bitmap, (340, 64), 4, true);
+                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, compoundSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
                 }
                 else if (element.typeOfElement == 1)
                 {

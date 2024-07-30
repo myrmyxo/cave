@@ -71,16 +71,16 @@ namespace Cave
 
             public static string currentDirectory;
 
-            public static int currentStructureId  = 0;
-            public static int currentEntityId   = 0;
-            public static int currentPlantId  = 0;
+            public static int currentStructureId = 0;
+            public static int currentEntityId = 0;
+            public static int currentPlantId = 0;
             public static int currentNestId = 0;
             public static int currentScreenId = 0;
 
             public static long worldSeed = 0;
 
             public static (int, int)[] squareModArray = new (int, int)[4] { (0, 0), (1, 0), (0, 1), (1, 1) };
-            public static (int, int)[] bigSquareModArray = new (int, int)[9] { (0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2)};
+            public static (int, int)[] bigSquareModArray = new (int, int)[9] { (0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2) };
             public static (int, int)[] neighbourArray = new (int, int)[4] { (-1, 0), (1, 0), (0, 1), (0, -1) };
             public static (int, int)[] bubbleNeighbourArray = new (int, int)[8] { (-1, 0), (1, 0), (0, 1), (0, -1), (-2, 0), (2, 0), (0, 2), (0, -2) };
             public static (int, int)[] diagNeighbourArray = new (int, int)[4] { (-1, 1), (1, 1), (1, -1), (-1, -1) };
@@ -124,7 +124,8 @@ namespace Cave
 
                 { (9, 0), (Color.Gray.R,Color.Gray.G,Color.Gray.B) }, // stoplights and chandeliers biome !?!
 
-                { (10, 0), (Color.Red.R,Color.Red.G,Color.Red.B) }, // Livinggg biome !?!
+                { (10, 0), (Color.Red.R,Color.Red.G,Color.Red.B) }, // flesh biome
+                { (10, 1), (Color.Pink.R,Color.Pink.G,Color.Pink.B) }, // flesh and bone biome
                 
                 { (11, 0), (Color.White.R,Color.White.G,Color.White.B) }, // Bone biome...
             };
@@ -152,10 +153,35 @@ namespace Cave
 
                 { (9, 0), (320, 320, 240, 240, 1000, 0) }, // chandeliers biome !
 
-                { (10, 0), (720, 880, 512, 880, 1000, 0) }, // LIVING biome !
+                { (10, 0), (720, 880, 512, 880, 1000, 0) }, // Flesh biome !
+                { (10, 1), (512, 880, 380, 650, 1000, 0) }, // Flesh and bone biome !
 
                 { (11, 0), (320, 600, 256, 512, 1000, 0) }, // Bone biome...
 
+            };
+            public static Dictionary<(int type, int subType), (int r, int g, int b, float mult)> materialColors = new Dictionary<(int type, int subType), (int r, int g, int b, float mult)>
+            { // mult is in percent (0-100) : how much biome color is taken into account on the modifiying of the color shite.
+                { (-5, 0), (160, 120, 70, 0.2f)}, // honey
+                
+                { (-4, 0), (165, 50, 80, 0.2f)}, // lava
+                
+                { (-3, 0), (105, 80, 120, 0.2f)}, // fairy liquid
+                
+                { (-2, 0), (80, 80, 120, 0.2f)}, // water
+                
+                { (-1, 0), (120, 120, 80, 0.2f)}, // piss
+                
+                { (0, 0), (140, 140, 140, 0.5f)}, // air lol
+
+                { (1, 0), (30, 30, 30, 0.2f)}, // normal rock
+                { (1, 1), (10, 10, 10, 0.2f)}, // dense rock... no... DANCE ROCK !! Yay ! Dance !! Luka Luka Night Fever !!
+                
+                { (2, 0), (80, 60, 20, 0.5f)}, // dirt
+                
+                { (3, 0), (10, 60, 30, 0.35f)}, // plant matter
+                
+                { (4, 0), (120, 40, 40, 0.2f)}, // flesh tile
+                { (4, 1), (240, 230, 245, 0.2f)}, // bone tile
             };
 
             public static string[] nameArray = new string[]
@@ -217,7 +243,6 @@ namespace Cave
             {
                 turnPngIntoString("OverlayBackground");
                 turnPngIntoString("Numbers");
-                turnPngIntoString("BasicTile");
 
                 turnPngIntoString("Fairy");
                 turnPngIntoString("ObsidianFairy");
@@ -226,11 +251,14 @@ namespace Cave
                 turnPngIntoString("Fish");
                 turnPngIntoString("Hornet");
 
-                turnPngIntoString("Piss");
-                turnPngIntoString("Water");
-                turnPngIntoString("FairyLiquid");
-                turnPngIntoString("Lava");
                 turnPngIntoString("Honey");
+                turnPngIntoString("Lava");
+                turnPngIntoString("FairyLiquid");
+                turnPngIntoString("Water");
+                turnPngIntoString("Piss");
+                turnPngIntoString("BasicTile");
+                turnPngIntoString("Flesh");
+                turnPngIntoString("Bone");
 
                 turnPngIntoString("BasePlant");
                 turnPngIntoString("Candle");

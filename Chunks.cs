@@ -166,12 +166,14 @@ namespace Cave
                 {
                     chunkX = position.x * 2;
                     chunkY = position.y * 2;
-                    primaryFillValues = new int[2, 9];
+                    primaryFillValues = new int[4, 9];
                     for (int j = 0; j < 9; j++)
                     {
                         mod = bigSquareModArray[j];
                         primaryFillValues[0, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, screen.seed);
                         primaryFillValues[1, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed);
+                        primaryFillValues[2, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed2, 2048);
+                        primaryFillValues[3, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed3, 2048);
                     }
 
 
@@ -185,7 +187,7 @@ namespace Cave
                         primaryBigFillValues[1, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed3);
                     }
 
-                    secondaryFillValues = new int[2, 32, 32];
+                    secondaryFillValues = new int[4, 32, 32];
                     secondaryBigFillValues = new int[2, 32, 32];
                     fillStates = new (int type, int subType)[32, 32];
                 }
@@ -284,7 +286,12 @@ namespace Cave
                             //else if (fillTest1) { fillStates[i, j] = 3; }
                             //else if (fillTest2) { fillStates[i, j] = 2; }
                             if (fillTest1 || fillTest2) { fillStates[i, j] = elementToFillVoidWith; }
-                            else { fillStates[i, j] = (1, 0); }
+                            else
+                            {
+                                secondaryFillValues[2, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 2);
+                                secondaryFillValues[3, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 3);
+                                fillStates[i, j] = findMaterialToFillWith((secondaryFillValues[2, i, j], secondaryFillValues[3, i, j]), biomeIndex[i, j][0].Item1);
+                            }
                             //if (rand.Next(500) != 0){ fillStates[i, j] = 1; }
                         }
 
@@ -315,6 +322,36 @@ namespace Cave
                 {
                     screen.chunksToSpawnEntitiesIn[position] = true;
                 }
+            }
+            public (int type, int subType) findMaterialToFillWith((int, int) values, (int type, int subType) biome)
+            {
+                int value = (int)((values.Item1 + values.Item2) * 0.5f);
+                if (biome == (10, 0)) // flesh
+                {
+                    return (4, 0);
+                }
+                else if (biome == (10, 1)) // flesh and bone
+                {
+                    if (Abs(values.Item1 - 1024) - values.Item2 % 256 > 512)
+                    {
+                        return (4, 1);
+                    }
+                    return (4, 0);
+                }
+                else if (biome == (11, 0)) // bone
+                {
+                    return (4, 1);
+                }
+
+                if (value % 256 - (512 - (int)(value * 0.25f)) > 0 && Abs(values.Item1 - values.Item2) < 512 - (512 - (int)(value * 0.25f)))
+                {
+                    return (1, 1);
+                }
+
+
+
+
+                return (1, 0);
             }
             public void testIfMegaChunkGenerated()
             {
@@ -349,70 +386,24 @@ namespace Cave
             public void findTileColor(int i, int j)
             {
                 int[] colorArray = { baseColors[i, j].Item1, baseColors[i, j].Item2, baseColors[i, j].Item3 };
-                if (fillStates[i, j].type == 0)
+                Color colorToSet;
+                if (materialColors.ContainsKey(fillStates[i, j]))
                 {
+                    (int r, int g, int b, float mult) materialColor = materialColors[fillStates[i, j]];
                     for (int k = 0; k < 3; k++)
                     {
-                        colorArray[k] += 70;
+                        colorArray[k] = (int)(colorArray[k] * materialColor.mult);
                     };
+                    colorArray[0] += (int)(materialColor.r * (1 - materialColor.mult));
+                    colorArray[1] += (int)(materialColor.g * (1 - materialColor.mult));
+                    colorArray[2] += (int)(materialColor.b * (1 - materialColor.mult));
+                    colorToSet = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
                 }
-                else if (fillStates[i, j].type == 2)
+                else
                 {
-                    for (int k = 0; k < 3; k++)
-                    {
-                        colorArray[k] = (int)(colorArray[k] * 0.5f) + 120;
-                    };
+                    if ((i + j) % 2 == 0) { colorToSet = Color.Black; }
+                    else { colorToSet = Color.FromArgb(255, 00, 255); }
                 }
-                else if (fillStates[i, j].type == 3)
-                {
-                    for (int k = 0; k < 3; k++)
-                    {
-                        colorArray[k] = (int)(colorArray[k] * 0.5f) + 120;
-                    };
-                    colorArray[0] += 50;
-                    colorArray[1] += 50;
-                }
-                else if (fillStates[i, j].type == 4)
-                {
-                    for (int k = 0; k < 3; k++)
-                    {
-                        colorArray[k] = (int)(colorArray[k] * 0.5f) + 120;
-                    };
-                    colorArray[0] += 140;
-                    colorArray[1] += 60;
-                    colorArray[1] += 30;
-                }
-                else if (fillStates[i, j].type == -1)
-                {
-                    colorArray[0] = (int)(colorArray[0] * 0.8f) + 100;
-                    colorArray[1] = (int)(colorArray[1] * 0.8f) + 100;
-                    colorArray[2] = (int)(colorArray[2] * 0.8f) + 60;
-                }
-                else if (fillStates[i, j].type == -2)
-                {
-                    colorArray[0] = (int)(colorArray[0] * 0.8f) + 60;
-                    colorArray[1] = (int)(colorArray[1] * 0.8f) + 60;
-                    colorArray[2] = (int)(colorArray[2] * 0.8f) + 100;
-                }
-                else if (fillStates[i, j].type == -3)
-                {
-                    colorArray[0] = (int)(colorArray[0] * 0.8f) + 85;
-                    colorArray[1] = (int)(colorArray[1] * 0.8f) + 60;
-                    colorArray[2] = (int)(colorArray[2] * 0.8f) + 100;
-                }
-                else if (fillStates[i, j].type == -4)
-                {
-                    colorArray[0] = (int)(colorArray[0] * 0.8f) + 145;
-                    colorArray[1] = (int)(colorArray[1] * 0.8f) + 30;
-                    colorArray[2] = (int)(colorArray[2] * 0.8f) + 60;
-                }
-                else if (fillStates[i, j].type == -5)
-                {
-                    colorArray[0] = (int)(colorArray[0] * 0.8f) + 140;
-                    colorArray[1] = (int)(colorArray[1] * 0.8f) + 120;
-                    colorArray[2] = (int)(colorArray[2] * 0.8f) + 70;
-                }
-                Color colorToSet = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
                 setPixelButFaster(bitmap, (i, j), colorToSet);
             }
             public void spawnEntities()
@@ -989,7 +980,7 @@ namespace Cave
             return (seedZ + seedX + seedY) / 3;
             //return ((int)(seedX%512)-256, (int)(seedY%512)-256);
         }
-        public static int findPrimaryNoiseValue(long posX, long posY, long seed)
+        public static int findPrimaryNoiseValue(long posX, long posY, long seed, int maxValue = 256)
         {
             long x = posX;
             long y = posY;
@@ -1036,7 +1027,7 @@ namespace Cave
                 seedZ = LCGz(seedZ);
                 z--;
             }
-            return (int)((seedZ + seedX + seedY) % 256);
+            return (int)((seedZ + seedX + seedY) % maxValue);
         }
         public static int findPrimaryNoiseValueCACHE(long posX, long posY, Screens.Screen screen, int layer)
         {
@@ -1394,16 +1385,9 @@ namespace Cave
             }
             else if (dimensionType == (2, 0)) // type == 2, living dimension
             {
-                if (humidity > 512)
-                {
-                    int livingness = Min((humidity - 512) * 25, 1000);
-                    listo.Add(((10, 0), livingness));
-                    percentageFree -= livingness;
-                }
-                if (percentageFree > 0)
-                {
-                    listo.Add(((11, 0), percentageFree));
-                }
+                percentageFree -= calculateAndAddBiome(listo, (10, 0), percentageFree, humidity, (660, 999999)); // flesh
+                percentageFree -= calculateAndAddBiome(listo, (11, 0), percentageFree, humidity, (-999999, 340)); // bone
+                testAddBiome(listo, (10, 1), percentageFree); // flesh and bone
             }
 
         AfterTest:;
@@ -1431,7 +1415,7 @@ namespace Cave
             }
             for (int k = 0; k < 3; k++)
             {
-                colorArray[k] = (int)(colorArray[k] * 0.15f);
+                colorArray[k] = (int)(colorArray[k] * 0.3f);
                 colorArray[k] += 20;
             }
             return colorArray;
