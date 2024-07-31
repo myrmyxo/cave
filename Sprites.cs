@@ -48,6 +48,8 @@ namespace Cave
         {
             compoundSprites = new Dictionary<(int, int), OneSprite>
             {
+                { (-7, 0), new OneSprite("Acid", true)},          // TO CHANGE
+                { (-6, 0), new OneSprite("Blood", true)},          // TO CHANGE
                 { (-5, 0), new OneSprite("Honey", false)},
                 { (-4, 0), new OneSprite("Lava", false)},
                 { (-3, 0), new OneSprite("FairyLiquid", false)},
@@ -69,6 +71,7 @@ namespace Cave
                 { (0, 2), new OneSprite("FrostFairy", false)},
                 { (1, 0), new OneSprite("Frog", false)},
                 { (2, 0), new OneSprite("Fish", false)},
+                { (2, 1), new OneSprite("SkeletonFish", true)},       // TO CHANGE
                 { (3, 0), new OneSprite("Hornet", false)},
                 { (3, 3), new OneSprite("Hornet", false)}
             };

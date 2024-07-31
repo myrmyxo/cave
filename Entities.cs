@@ -192,6 +192,11 @@ namespace Cave
                 }
                 if (type == 2)
                 {
+                    if (subType == 1)
+                    {
+                        shadeVar = (int)(0.34f * shadeVar);
+                        return Color.FromArgb(245 + shadeVar, 245 + shadeVar, 245 + shadeVar);
+                    }
                     return Color.FromArgb(190 + shadeVar, 80 - hueVar + shadeVar, 80 + hueVar + shadeVar);
                 }
                 if (type == 3)
@@ -1060,15 +1065,25 @@ namespace Cave
                         return;
                     }
                     (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
-                    if (type != 0 && chunkToTest.fillStates[tileIndex.x, tileIndex.y].type == -3)
+                    (int type, int subType) material = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
+                    if (type != 0 && material == (-3, 0))
                     {
                         if (rand.Next(10) == 0)
                         {
                             type = 0;
-                            this.color = Color.Purple;
+                            subType = 0;
+                            color = findColor();
                         }
                     }
-                    if (type != 2 && chunkToTest.fillStates[tileIndex.x, tileIndex.y].type == -4)
+                    if (type == 2 && material == (-7, 0))
+                    {
+                        if (rand.Next(10) == 0)
+                        {
+                            subType = 1;
+                            color = findColor();
+                        }
+                    }
+                    if (type != 2 && (material == (-4, 0) || material == (-7, 0)))
                     {
                         if (rand.Next(10) == 0)
                         {

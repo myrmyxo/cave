@@ -748,18 +748,27 @@ namespace Cave
                 {
                     (int type, int subType) liquidTypeToFill = (-2, 0);
                     Chunk chunkToTest = chunkDict[(Floor(testPos.x, 32) / 32, Floor(testPos.y, 32) / 32)];
+                    (int type, int subType) biome = chunkToTest.biomeIndex[testPos32.Item1, testPos32.Item2][0].Item1;
 
-                    if (chunkToTest.biomeIndex[testPos32.Item1, testPos32.Item2][0].Item1 == (5, 0))
+                    if (biome == (5, 0)) // if fairy biome : put fairy liquid
                     {
                         liquidTypeToFill = (-3, 0);
                     }
-                    if (chunkToTest.biomeIndex[testPos32.Item1, testPos32.Item2][0].Item1 == (2, 0))
+                    else if (biome == (2, 0)) // if hot biome : put lava
                     {
                         liquidTypeToFill = (-4, 0);
                         /*if (THIS WAS PUT THERE TO ADD MORE LAVA LAKES THE HIGHER THE TEMPERATURE !!!But fuck it myb i'll use the mean or center tile saved this costs loads of memory    chunkToTest.secondaryBiomeValues[testPos32.Item1, testPos32.Item2, 0] + chunkToTest.secondaryBigBiomeValues[testPos32.Item1, testPos32.Item2, 0] - 128 + rand.Next(200) - 200 > 100)
                         {
                             liquidTypeToFill = -4;
                         }*/
+                    }
+                    else if (biome == (11, 0) || biome == (10, 1)) // if bone or flesh and bone : put blood
+                    {
+                        liquidTypeToFill = (-6, 0);
+                    }
+                    else if (biome == (10, 0)) // if flesh : put acid
+                    {
+                        liquidTypeToFill = (-7, 0);
                     }
                     seedo = LCGyNeg(LCGxNeg(seedo));
                     if (seedo % 1000 == 0) { liquidTypeToFill = (-1, 0); }

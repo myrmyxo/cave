@@ -212,6 +212,8 @@ namespace Cave
                             int mod1 = (int)(secondaryBiomeValues[i, j, 4] * 0.25);
                             int mod2 = (int)(secondaryBiomeValues[i, j, 5] * 0.25);
 
+                            int plateauPos = (int)(chunkSeed % 32);
+
                             float valueToBeAdded;
                             float value1modifier = 0;
                             float value2PREmodifier;
@@ -280,12 +282,15 @@ namespace Cave
                             else if (biomeIndex[i, j][0].Item1 == (2, 1)) { elementToFillVoidWith = (-4, 0); } // lava ocean
                             else { elementToFillVoidWith = (0, 0); }
 
-                            bool fillTest1 = value1 > 122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw * 0.1f) && value1 < 133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw;
-                            bool fillTest2 = value2 > 200 + value2modifier + oceano || value2 < (foresto - 1) * 75f - oceano;
+                            float score1 = Min(value1 - (122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw * 0.1f)), -value1 + (133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw));
+                            bool fillTest1 = score1 > 0;
+                            float score2 = Max(value2 - (200 + value2modifier + oceano), -value2 + ((foresto - 1) * 75f - oceano));
+                            bool fillTest2 = score2 > 0;
+                            float plateauScore = Max(score1, score2) - (Abs(plateauPos - j) - 5) * 10;
                             //if (fillTest1 && fillTest2) { fillStates[i, j] = 4; }
                             //else if (fillTest1) { fillStates[i, j] = 3; }
                             //else if (fillTest2) { fillStates[i, j] = 2; }
-                            if (fillTest1 || fillTest2) { fillStates[i, j] = elementToFillVoidWith; }
+                            if (((fillTest1 || fillTest2 ) && true) || ( false && plateauScore >= 0)) { fillStates[i, j] = elementToFillVoidWith; }
                             else
                             {
                                 secondaryFillValues[2, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 2);

@@ -161,9 +161,13 @@ namespace Cave
             };
             public static Dictionary<(int type, int subType), (int r, int g, int b, float mult)> materialColors = new Dictionary<(int type, int subType), (int r, int g, int b, float mult)>
             { // mult is in percent (0-100) : how much biome color is taken into account on the modifiying of the color shite.
+                { (-7, 0), (120, 180, 60, 0.2f)}, // acid
+                
+                { (-6, 0), (120, 20, 30, 0.2f)}, // blood
+
                 { (-5, 0), (160, 120, 70, 0.2f)}, // honey
                 
-                { (-4, 0), (165, 50, 80, 0.2f)}, // lava
+                { (-4, 0), (255, 90, 0, 0.05f)}, // lava
                 
                 { (-3, 0), (105, 80, 120, 0.2f)}, // fairy liquid
                 
@@ -173,7 +177,7 @@ namespace Cave
                 
                 { (0, 0), (140, 140, 140, 0.5f)}, // air lol
 
-                { (1, 0), (30, 30, 30, 0.2f)}, // normal rock
+                { (1, 0), (30, 30, 30, 0.5f)}, // normal rock
                 { (1, 1), (10, 10, 10, 0.2f)}, // dense rock... no... DANCE ROCK !! Yay ! Dance !! Luka Luka Night Fever !!
                 
                 { (2, 0), (80, 60, 20, 0.5f)}, // dirt
@@ -249,8 +253,11 @@ namespace Cave
                 turnPngIntoString("FrostFairy");
                 turnPngIntoString("Frog");
                 turnPngIntoString("Fish");
+                turnPngIntoString("SkeletonFish");
                 turnPngIntoString("Hornet");
 
+                turnPngIntoString("Acid");
+                turnPngIntoString("Blood");
                 turnPngIntoString("Honey");
                 turnPngIntoString("Lava");
                 turnPngIntoString("FairyLiquid");
