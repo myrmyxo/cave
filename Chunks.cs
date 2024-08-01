@@ -31,6 +31,7 @@ using static Cave.Players;
 using System.Diagnostics;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.CodeDom.Compiler;
 
 namespace Cave
 {
@@ -116,6 +117,7 @@ namespace Cave
 
                 int[,,] secondaryBiomeValues = new int[32, 32, 6];
                 int[,,] secondaryBigBiomeValues = new int[32, 32, 6];
+                (int temp, int humi, int acid, int toxi)[,] tileValuesArray = new (int temp, int humi, int acid, int toxi)[32, 32];
                 biomeIndex = new ((int biome, int subBiome), int)[32, 32][];
                 baseColors = new (int, int, int)[32, 32];
                 bitmap = new Bitmap(32, 32);
@@ -133,8 +135,10 @@ namespace Cave
                             secondaryBiomeValues[i, j, k] = findSecondaryBiomeValue(primaryBiomeValues, chunkRealPos.x + i, chunkRealPos.y + j, k);
                             secondaryBigBiomeValues[i, j, k] = findSecondaryBigBiomeValue(primaryBigBiomeValues, chunkRealPos.x + i, chunkRealPos.y + j, k);
                         }
+                        (int temp, int humi, int acid, int toxi) tileValues = makeTileBiomeValueArray(secondaryBigBiomeValues, secondaryBiomeValues, i, j);
+                        tileValuesArray[i, j] = tileValues;
                         if (screen.isMonoBiome) { biomeIndex[i, j] = new ((int biome, int subBiome), int)[] { (screen.type, 1000) }; }
-                        else { biomeIndex[i, j] = findBiome(this.screen.type, secondaryBigBiomeValues, secondaryBiomeValues, i, j); }
+                        else { biomeIndex[i, j] = findBiome(this.screen.type, tileValues); }
 
                         int[] colorArray = findBiomeColor(biomeIndex[i, j]);
                         baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
@@ -259,9 +263,9 @@ namespace Cave
                                     value2modifier += mult * value2PREmodifier;
                                     mod2divider += mult * 1.5f;
                                 }
-                                else if (tupel.Item1 == (8, 0) || tupel.Item1 == (2, 1))
+                                else if (tupel.Item1 == (8, 0) || tupel.Item1 == (2, 1) || tupel.Item1 == (10, 2) || tupel.Item1 == (10, 3))
                                 {
-                                    oceano += mult * 10;
+                                    oceano = Max(oceano, mult * 10); // To make separation between OCEAN biomes (like acid and blood). CHANGE THIS to make ocean biomes that can merge with one another (like idk cool water ocean and temperate water ocean idk)
                                 }
                                 else { value2modifier += mult * ((2 * value1) % 32); }
                             }
@@ -280,6 +284,8 @@ namespace Cave
                             (int type, int subType) elementToFillVoidWith;
                             if (biomeIndex[i, j][0].Item1 == (8, 0)) { elementToFillVoidWith = (-2, 0); } // ocean
                             else if (biomeIndex[i, j][0].Item1 == (2, 1)) { elementToFillVoidWith = (-4, 0); } // lava ocean
+                            else if (biomeIndex[i, j][0].Item1 == (10, 2)) { elementToFillVoidWith = (-6, 0); } // blood ocean
+                            else if (biomeIndex[i, j][0].Item1 == (10, 3)) { elementToFillVoidWith = (-7, 0); } // acid ocean
                             else { elementToFillVoidWith = (0, 0); }
 
                             float score1 = Min(value1 - (122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw * 0.1f)), -value1 + (133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw));
@@ -295,7 +301,8 @@ namespace Cave
                             {
                                 secondaryFillValues[2, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 2);
                                 secondaryFillValues[3, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 3);
-                                fillStates[i, j] = findMaterialToFillWith((secondaryFillValues[2, i, j], secondaryFillValues[3, i, j]), biomeIndex[i, j][0].Item1);
+                                Dictionary<(int type, int subType), float> dicto = findTransitions(biomeIndex[i, j], tileValuesArray[i, j]);
+                                fillStates[i, j] = findMaterialToFillWith((secondaryFillValues[2, i, j], secondaryFillValues[3, i, j]), biomeIndex[i, j][0].Item1, dicto);
                             }
                             //if (rand.Next(500) != 0){ fillStates[i, j] = 1; }
                         }
@@ -328,16 +335,16 @@ namespace Cave
                     screen.chunksToSpawnEntitiesIn[position] = true;
                 }
             }
-            public (int type, int subType) findMaterialToFillWith((int, int) values, (int type, int subType) biome)
+            public (int type, int subType) findMaterialToFillWith((int, int) values, (int type, int subType) biome, Dictionary<(int type, int subType), float> dicto)
             {
                 int value = (int)((values.Item1 + values.Item2) * 0.5f);
-                if (biome == (10, 0)) // flesh
+                if (biome == (10, 0) || biome == (10, 2) || biome == (10, 3)) // flesh
                 {
                     return (4, 0);
                 }
                 else if (biome == (10, 1)) // flesh and bone
                 {
-                    if (Abs(values.Item1 - 1024) - values.Item2 % 256 > 512)
+                    if (Abs(values.Item1 - 1024) - values.Item2 % 256 > 512 - dicto[(10, 1)]*512)
                     {
                         return (4, 1);
                     }
@@ -1229,14 +1236,42 @@ namespace Cave
             }
             return arrayo;
         }
-        public static ((int biome, int subBiome), int)[] findBiome((int, int) dimensionType, int[,,] bigValues, int[,,] values, int posX, int posY)
+        public static Dictionary<(int type, int subType), float> findTransitions(((int biome, int subBiome), int)[] biomeArray, (int temp, int humi, int acid, int toxi) values)
+        {
+            Dictionary<(int type, int subType), float> dicto = new Dictionary<(int type, int subType), float>();
+            foreach (((int type, int subType), int) key in biomeArray)
+            {
+                if (key.Item1 == (10, 1))
+                {
+                    dicto[(10, 1)] = findTransition((10, 1), values);
+                }
+            }
+            return dicto;
+        }
+        public static float findTransition((int type, int subType) biome, (int temp, int humi, int acid, int toxi) values)
+        {
+            if (biome == (10, 1))
+            {
+                return Max(0, 660 - values.humi) / 320f;
+            }
+
+            return 0;
+        }
+        public static (int temp, int humi, int acid, int toxi) makeTileBiomeValueArray(int[,,] bigValues, int[,,] values, int posX, int posY)
         {
             int temperature = bigValues[posX, posY, 0] + values[posX, posY, 0] - 512;
             int humidity = bigValues[posX, posY, 1] + values[posX, posY, 1] - 512;
             int acidity = bigValues[posX, posY, 2] + values[posX, posY, 2] - 512;
             int toxicity = bigValues[posX, posY, 3] + values[posX, posY, 3] - 512;
-            int[] arrayo = new int[4] { temperature, humidity, acidity, toxicity };
-            return (findBiome(dimensionType, arrayo));
+            return (temperature, humidity, acidity, toxicity);
+        }
+        public static (int temp, int humi, int acid, int toxi) makeTileBiomeValueArray(int[] values, int posX, int posY)
+        {
+            int temperature = values[0];
+            int humidity = values[1];
+            int acidity = values[2];
+            int toxicity = values[3];
+            return (temperature, humidity, acidity, toxicity);
         }
         public static int testAddBiome(List<((int biome, int subBiome), int)> biomeList, (int biome, int subBiome) biomeToTest, int biomeness)
         {
@@ -1261,6 +1296,10 @@ namespace Cave
         }
         public static ((int biome, int subBiome), int)[] findBiome((int, int) dimensionType, int[] values)
         {
+            return findBiome(dimensionType, (values[0], values[1], values[2], values[3]));
+        }
+        public static ((int biome, int subBiome), int)[] findBiome((int, int) dimensionType, (int temp, int humi, int acid, int toxi) values)
+        {
             //return new (int, int)[]{ (8, 1000) }; // use this to force a biome for debug (infite biome)
 
 
@@ -1269,10 +1308,10 @@ namespace Cave
             int percentageFree = 1000;
             int currentInt;
 
-            int temperature = values[0];
-            int humidity = values[1];
-            int acidity = values[2];
-            int toxicity = values[3];
+            int temperature = values.temp;
+            int humidity = values.humi;
+            int acidity = values.acid;
+            int toxicity = values.toxi;
 
             if (false) // distance shit that's slow asf and bad asf
             {
@@ -1390,6 +1429,8 @@ namespace Cave
             }
             else if (dimensionType == (2, 0)) // type == 2, living dimension
             {
+                percentageFree -= calculateAndAddBiome(listo, (10, 3), percentageFree, acidity, (700, 999999)); // acid ocean
+                percentageFree -= calculateAndAddBiome(listo, (10, 2), percentageFree, temperature, (-999999, 400)); // blood ocean
                 percentageFree -= calculateAndAddBiome(listo, (10, 0), percentageFree, humidity, (660, 999999)); // flesh
                 percentageFree -= calculateAndAddBiome(listo, (11, 0), percentageFree, humidity, (-999999, 340)); // bone
                 testAddBiome(listo, (10, 1), percentageFree); // flesh and bone

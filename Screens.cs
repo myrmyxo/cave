@@ -72,12 +72,12 @@ namespace Cave
                     makeBiomeDiagram((0, 0), (0, 1), (512, i));
                 }
 
-                int idToPut = 0;
+                int idToPut = 2;
                 int PNGsize = 150;
                 PNGsize = 50;
 
                 bool isMonoeBiomeToPut = false;
-                bool isPngToExport = false;
+                bool isPngToExport = true;
                 
                 if (isPngToExport)
                 {

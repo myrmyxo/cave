@@ -126,6 +126,8 @@ namespace Cave
 
                 { (10, 0), (Color.Red.R,Color.Red.G,Color.Red.B) }, // flesh biome
                 { (10, 1), (Color.Pink.R,Color.Pink.G,Color.Pink.B) }, // flesh and bone biome
+                { (10, 2), (Color.DarkRed.R,Color.DarkRed.G,Color.DarkRed.B) }, // blood ocean
+                { (10, 3), (Color.YellowGreen.R,Color.YellowGreen.G,Color.YellowGreen.B) }, // acid ocean
                 
                 { (11, 0), (Color.White.R,Color.White.G,Color.White.B) }, // Bone biome...
             };
@@ -153,17 +155,19 @@ namespace Cave
 
                 { (9, 0), (320, 320, 240, 240, 1000, 0) }, // chandeliers biome !
 
-                { (10, 0), (720, 880, 512, 880, 1000, 0) }, // Flesh biome !
-                { (10, 1), (512, 880, 380, 650, 1000, 0) }, // Flesh and bone biome !
+                { (10, 0), (720, 512, 512, 512, 1000, 0) }, // Flesh biome !
+                { (10, 1), (512, 360, 380, 512, 1000, 0) }, // Flesh and bone biome !
+                { (10, 2), (320, 880, 380, 360, 1000, 0) }, // Blood ocean biome !
+                { (10, 3), (720, 600, 880, 880, 1000, 0) }, // Acid ocean biome !
 
-                { (11, 0), (320, 600, 256, 512, 1000, 0) }, // Bone biome...
+                { (11, 0), (320, 200, 256, 512, 1000, 0) }, // Bone biome...
 
             };
             public static Dictionary<(int type, int subType), (int r, int g, int b, float mult)> materialColors = new Dictionary<(int type, int subType), (int r, int g, int b, float mult)>
             { // mult is in percent (0-100) : how much biome color is taken into account on the modifiying of the color shite.
                 { (-7, 0), (120, 180, 60, 0.2f)}, // acid
                 
-                { (-6, 0), (120, 20, 30, 0.2f)}, // blood
+                { (-6, 0), (100, 15, 25, 0.2f)}, // blood
 
                 { (-5, 0), (160, 120, 70, 0.2f)}, // honey
                 
@@ -184,7 +188,7 @@ namespace Cave
                 
                 { (3, 0), (10, 60, 30, 0.35f)}, // plant matter
                 
-                { (4, 0), (120, 40, 40, 0.2f)}, // flesh tile
+                { (4, 0), (135, 55, 55, 0.2f)}, // flesh tile
                 { (4, 1), (240, 230, 245, 0.2f)}, // bone tile
             };
 
@@ -554,6 +558,7 @@ namespace Cave
                 {
                     values[variablesToTest.Item2] = j*8;
                     ((int biome, int subBiome), int)[] biomeArray = findBiome(dimensionType, values);
+                    //(int temp, int humi, int acid, int toxi) tileValues = makeTileBiomeValueArray(values, i, j);
                     if (biomeArray[0].Item1 == (-1, 0) && ((i/4)+(j/4))%2 == 1){ setPixelButFaster(bitmap, (i, 255 - j), Color.Black); continue; }
                     int[] colorArray = findBiomeColor(biomeArray);
                     colorToPut = Color.FromArgb(colorArray[0], colorArray[1], colorArray[2]);
