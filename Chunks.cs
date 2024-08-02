@@ -124,7 +124,8 @@ namespace Cave
 
 
                 int stepo = 1;
-                if (debugMode2) { stepo = 31; }
+                bool doSecondMethodOfFindingBiomeValue = false;// debugMode2;
+                if (doSecondMethodOfFindingBiomeValue) { stepo = 31; }
 
                 for (int i = 0; i < 32; i += stepo)
                 {
@@ -144,7 +145,7 @@ namespace Cave
                         baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
                     }
                 }
-                if (debugMode2)
+                if (doSecondMethodOfFindingBiomeValue)
                 {
                     for (int i = 0; i < 32; i += 1)
                     {
@@ -653,8 +654,8 @@ namespace Cave
                         fillStates[i, j] = (0, 0);
                         findTileColor(i, j);
                         middleTestPositionChunk.findTileColor(i, jb);
-                        testLiquidUnstableLiquid(middleTestPositionChunk.position.Item1 * 32 + i, middleTestPositionChunk.position.Item1 * 32 + jb);
-                        testLiquidUnstableAir(position.Item1 * 32 + i, position.Item1 * 32 + j);
+                        testLiquidUnstableLiquid(middleTestPositionChunk.position.Item1 * 32 + i, middleTestPositionChunk.position.Item2 * 32 + jb);
+                        testLiquidUnstableAir(position.Item1 * 32 + i, position.Item2 * 32 + j);
                         unstableLiquidCount++;
                         return true;
                     } // THIS ONE WAS FUCKING BUGGYYYYY BRUH
@@ -664,8 +665,8 @@ namespace Cave
                         fillStates[i, j] = (0, 0);
                         findTileColor(i, j);
                         rightDiagTestPositionChunk.findTileColor(ir, jb);
-                        testLiquidUnstableLiquid(rightDiagTestPositionChunk.position.Item1 * 32 + ir, rightDiagTestPositionChunk.position.Item1 * 32 + jb);
-                        testLiquidUnstableAir(position.Item1 * 32 + i, position.Item1 * 32 + j);
+                        testLiquidUnstableLiquid(rightDiagTestPositionChunk.position.Item1 * 32 + ir, rightDiagTestPositionChunk.position.Item2 * 32 + jb);
+                        testLiquidUnstableAir(position.Item1 * 32 + i, position.Item2 * 32 + j);
                         unstableLiquidCount++;
                         return true;
                     } //this ONE WAS BUGGY
@@ -682,8 +683,8 @@ namespace Cave
                         fillStates[i, j] = (0, 0);
                         findTileColor(i, j);
                         leftDiagTestPositionChunk.findTileColor(il, jb);
-                        testLiquidUnstableLiquid(leftDiagTestPositionChunk.position.Item1 * 32 + il, leftDiagTestPositionChunk.position.Item1 * 32 + jb);
-                        testLiquidUnstableAir(position.Item1 * 32 + i, position.Item1 * 32 + j);
+                        testLiquidUnstableLiquid(leftDiagTestPositionChunk.position.Item1 * 32 + il, leftDiagTestPositionChunk.position.Item2 * 32 + jb);
+                        testLiquidUnstableAir(position.Item1 * 32 + i, position.Item2 * 32 + j);
                         return true;
                     } // THIS ONE WAS ALSO BUGGY
                     if ((leftTestPositionChunk.fillStates[il, j].type == 0 || middleTestPositionChunk.fillStates[i, jb].type < 0) && leftDiagTestPositionChunk.fillStates[il, jb].type < 0)
@@ -707,6 +708,9 @@ namespace Cave
                 (int, int) chunkCoords = screen.findChunkAbsoluteIndex(absChunkX * 32, absChunkY * 32);
                 Chunk chunkToTest = screen.tryToGetChunk(chunkCoords);
 
+                List<(int x, int y)> posVisited = new List<(int x, int y)> { (absChunkX * 32 + iTested, absChunkY*32 + jTested) };
+                (int x, int y) posToTest;
+
                 int repeatCounter = 0;
                 while (repeatCounter < 500)
                 {
@@ -717,26 +721,30 @@ namespace Cave
                         chunkCoords = screen.findChunkAbsoluteIndex(absChunkX * 32, absChunkY * 32);
                         chunkToTest = screen.tryToGetChunk(chunkCoords);
                         iTested -= 32;
+                        if (absChunkX >= screen.chunkX + screen.chunkResolution) { break; }
                     }
-                    if (absChunkX >= screen.chunkX + screen.chunkResolution)
-                    {
-                        return false;
-                    }
-                    if (chunkToTest.fillStates[iTested, jTested].type > 0)
-                    {
-                        return false;
-                    }
+                    posToTest = (absChunkX * 32 + iTested, absChunkY * 32 + jTested);
+                    if (chunkToTest.fillStates[iTested, jTested].type > 0 || screen.liquidsThatCantGoRight.ContainsKey(posToTest)) { goto bumpedOnSolid; }
                     if (chunkToTest.fillStates[iTested, jTested].type == 0)
                     {
                         chunkToTest.fillStates[iTested, jTested] = fillStates[i, j];
                         fillStates[i, j] = (0, 0);
                         findTileColor(i, j);
                         chunkToTest.findTileColor(iTested, jTested);
-                        chunkToTest.testLiquidUnstableLiquid(chunkToTest.position.Item1 * 32 + iTested, chunkToTest.position.Item1 * 32 + jTested);
-                        testLiquidUnstableAir(position.Item1 * 32 + iTested, position.Item1 * 32 + jTested);
+                        chunkToTest.testLiquidUnstableLiquid(chunkToTest.position.Item1 * 32 + iTested, chunkToTest.position.Item2 * 32 + jTested);
+                        testLiquidUnstableAir(position.Item1 * 32 + i, position.Item2 * 32 + j);
                         return true;
                     }
+                    posVisited.Add(posToTest);
+                    liquidSlideCount++;
                     repeatCounter++;
+                }
+                return false;
+            bumpedOnSolid:;
+                if (debugMode2) { return false; }
+                foreach ((int x, int y) pos in posVisited)
+                {
+                    screen.liquidsThatCantGoRight[pos] = true;
                 }
                 return false;
             }
@@ -751,6 +759,9 @@ namespace Cave
                 (int, int) chunkCoords = screen.findChunkAbsoluteIndex(absChunkX * 32, absChunkY * 32);
                 Chunk chunkToTest = screen.tryToGetChunk(chunkCoords);
 
+                List<(int x, int y)> posVisited = new List<(int x, int y)> { (absChunkX * 32 + iTested, absChunkY * 32 + jTested) };
+                (int x, int y) posToTest;
+
                 int repeatCounter = 0;
                 while (repeatCounter < 500)
                 {
@@ -761,26 +772,30 @@ namespace Cave
                         chunkCoords = screen.findChunkAbsoluteIndex(absChunkX * 32, absChunkY * 32);
                         chunkToTest = screen.tryToGetChunk(chunkCoords);
                         iTested += 32;
+                        if (absChunkX < screen.chunkX) { break; }
                     }
-                    if (absChunkX < screen.chunkX)
-                    {
-                        return false;
-                    }
-                    if (chunkToTest.fillStates[iTested, jTested].type > 0)
-                    {
-                        return false;
-                    }
+                    posToTest = (absChunkX * 32 + iTested, absChunkY * 32 + jTested);
+                    if (chunkToTest.fillStates[iTested, jTested].type > 0 || screen.liquidsThatCantGoLeft.ContainsKey(posToTest)) { goto bumpedOnSolid; }
                     if (chunkToTest.fillStates[iTested, jTested].type == 0)
                     {
                         chunkToTest.fillStates[iTested, jTested] = fillStates[i, j];
                         fillStates[i, j] = (0, 0);
                         findTileColor(i, j);
                         chunkToTest.findTileColor(iTested, jTested);
-                        chunkToTest.testLiquidUnstableLiquid(chunkToTest.position.Item1 * 32 + iTested, chunkToTest.position.Item1 * 32 + jTested);
-                        testLiquidUnstableAir(position.Item1 * 32 + iTested, position.Item1 * 32 + jTested);
+                        chunkToTest.testLiquidUnstableLiquid(chunkToTest.position.Item1 * 32 + iTested, chunkToTest.position.Item2 * 32 + jTested);
+                        testLiquidUnstableAir(position.Item1 * 32 + i, position.Item2 * 32 + j);
                         return true;
                     }
+                    posVisited.Add(posToTest);
+                    liquidSlideCount++;
                     repeatCounter++;
+                }
+                return false;
+            bumpedOnSolid:;
+                if (debugMode2) { return false; }
+                foreach ((int x, int y) pos in posVisited)
+                {
+                    screen.liquidsThatCantGoLeft[pos] = true;
                 }
                 return false;
             }

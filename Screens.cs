@@ -77,7 +77,7 @@ namespace Cave
                 PNGsize = 50;
 
                 bool isMonoeBiomeToPut = false;
-                bool isPngToExport = true;
+                bool isPngToExport = false;
                 
                 if (isPngToExport)
                 {
@@ -112,6 +112,8 @@ namespace Cave
             }
             public void runGame(PictureBox gamePictureBox, PictureBox overlayPictureBox)
             {
+                liquidSlideCount = 0;
+
                 Player player = playerList[0];
 
                 if (pausePress) { return; }
@@ -132,7 +134,8 @@ namespace Cave
                 LoopStart:;
                     timeElapsed += 0.02f;
                     screen.extraLoadedChunks.Clear(); // this will make many bugs
-                    screen.broadTestUnstableLiquidList = new List<(int, int)>();
+                    screen.liquidsThatCantGoLeft = new Dictionary<(int, int), bool>();
+                    screen.liquidsThatCantGoRight = new Dictionary<(int, int), bool>();
                     if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { screen.zoom(true); }
                     if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
                     if (player.dimension == screen.id)
@@ -210,7 +213,7 @@ namespace Cave
                     }
                     foreach ((int x, int y) pos in screen.loadedChunks.Keys)
                     {
-                        if (rand.Next(100) == 0) { screen.loadedChunks[(pos.x, pos.y)].unstableLiquidCount++; }
+                        if (rand.Next(200) == 0) { screen.loadedChunks[(pos.x, pos.y)].unstableLiquidCount++; }
                         screen.loadedChunks[(pos.x, pos.y)].moveLiquids();
                     }
 
@@ -236,6 +239,9 @@ namespace Cave
                     }
                 }
                 saveSettings(this);
+
+                int gouga = liquidSlideCount;
+                gouga = gouga + 1 - 1;
             }
             public void renderScreen()
             {
@@ -289,7 +295,8 @@ namespace Cave
 
             public Dictionary<(int, int), List<Plant>> outOfBoundsPlants = new Dictionary<(int, int), List<Plant>>(); // not used as of now but in some functions so can't remove LMAO
 
-            public List<(int, int)> broadTestUnstableLiquidList = new List<(int, int)>();
+            public Dictionary<(int, int), bool> liquidsThatCantGoLeft = new Dictionary<(int, int), bool>();
+            public Dictionary<(int, int), bool> liquidsThatCantGoRight = new Dictionary<(int, int), bool>();
 
             public bool initialLoadFinished = false;
 
@@ -1028,7 +1035,17 @@ namespace Cave
                     {
                         Color colorToDraw = Color.FromArgb(150, 0, 128, 0);
                         if (nestLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.Cyan; }
+                        else if (loadedChunks[poso].unstableLiquidCount > 0) { colorToDraw = Color.DarkBlue; }
                         drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
+                    }
+
+                    for (int i = UnloadedChunksAmount; i < chunkResolution - UnloadedChunksAmount; i++)
+                    {
+                        for (int j = UnloadedChunksAmount; j < chunkResolution - UnloadedChunksAmount; j++)
+                        {
+                            chunko = loadedChunks[(chunkX + i, chunkY + j)];
+                            if (chunko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator); }
+                        }
                     }
                 }
 

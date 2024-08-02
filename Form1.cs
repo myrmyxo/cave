@@ -47,6 +47,7 @@ namespace Cave
             public static int UnloadedChunksAmount = 8;
 
             public static Bitmap black32Bitmap = new Bitmap(32, 32);
+            public static Bitmap transBlue32Bitmap = new Bitmap(32, 32);
             public static Chunk theFilledChunk;
             public static Color transparentColor = Color.FromArgb(0, 255, 255, 255);
 
@@ -68,6 +69,8 @@ namespace Cave
             public static float lastZoom = 0;
             public static DateTime timeAtLauch;
             public static float timeElapsed = 0;
+
+            public static int liquidSlideCount = 0;
 
             public static string currentDirectory;
 

@@ -677,6 +677,15 @@ namespace Cave
                     Sprites.setPixelButFaster(black32Bitmap, (i, j), Color.Black);
                 }
             }
+            Color colortoSet = Color.FromArgb(128, 0, 80, 255);
+            transBlue32Bitmap = new Bitmap(32, 32);
+            for (int i = 0; i < 32; i++)
+            {
+                for (int j = 0; j < 32; j++)
+                {
+                    Sprites.setPixelButFaster(transBlue32Bitmap, (i, j), colortoSet);
+                }
+            }
         }
     }
 }
