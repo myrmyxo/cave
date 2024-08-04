@@ -143,7 +143,11 @@ namespace Cave
                 (int biome, int subBiome) biome = chunk.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
                 (int type, int subType) material = chunk.fillStates[tileIndex.x, tileIndex.y];
                 if (screen.type.Item1 == 2) { transformEntity((4, 1)); }
-                else if (material.type < 0) { transformEntity((2, 0)); }
+                else if (material.type < 0)
+                {
+                    if (rand.Next(2) == 0) { transformEntity((2, 0)); }
+                    else { transformEntity((5, 0)); }
+                }
                 else if (material.type > 0)
                 {
                     if (rand.Next(10) > 0) { isDeadAndShouldDisappear = true; }
@@ -223,6 +227,11 @@ namespace Cave
                         return Color.FromArgb(220 - hueVar + shadeVar, 220 + hueVar + shadeVar, 220 + shadeVar);
                     }
                     return Color.FromArgb(210 + shadeVar, 140 + hueVar + shadeVar, 140 + hueVar + shadeVar);
+                }
+                if (type == 5)
+                {
+                    hueVar = Abs((int)(hueVar * 0.4f));
+                    return Color.FromArgb(110 + shadeVar, 110 + shadeVar, 140 + hueVar + shadeVar);
                 }
                 return Color.Red;
             }
@@ -1081,6 +1090,31 @@ namespace Cave
                         }
                     }
                 }
+                else if (type == 5) // water skipper
+                {
+                    bool isFalling = false;
+                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
+                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesto))
+                    {
+                        (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY - 1);
+                        (int type, int subType) material = chunkToTesto.fillStates[tileIndex.x, tileIndex.y];
+                        if (material.type != 0)
+                        {
+                            if (rand.Next(20) == 0) { jumpRandom(7, 0); }
+                        }
+                        else if (material.type == 0) { isFalling = true; }
+                    }
+                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
+                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                    {
+                        (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
+                        (int type, int subType) material = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
+                        if (material.type < 0) { speedY += 0.4f; }
+                        else if (material.type == 0 && isFalling) { applyGravity(); }
+                        ariGeoSlowDownY(0.15f, 0.8f);
+                        ariGeoSlowDownX(0.1f, 0.9f);
+                    }
+                }
                 if (type != 2 && (type, subType) != (4, 1))
                 {
                     chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
@@ -1089,8 +1123,7 @@ namespace Cave
                         (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
                         if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type < 0)
                         {
-                            speedX = speedX * 0.85f - Sign(speedX) * 0.15f;
-                            speedY = speedY * 0.85f - Sign(speedY) * 0.15f;
+                            ariGeoSlowDownX(0.15f, 0.85f);
                         }
                     }
                 }
@@ -1150,17 +1183,21 @@ namespace Cave
             {
                 if (type == 4)
                 {
-                    length = 2 + seed % 5;
+                    if (subType == 1) { length = 2 + seed % 9; }
+                    else { length = 2 + seed % 5; }
                 }
                 else { length = 0; }
             }
             public void updatePastPositions((int x, int y) posToAdd)    // if lenght DECREASES it will not work anymore probably idk
             {
-                pastPositions.Insert(0, posToAdd);
                 int counto = pastPositions.Count;
-                if (counto >= length)
+                if (counto == 0 || pastPositions[0].x == posX || pastPositions[0].y == posY || manhattanDistance(pastPositions[0], (posX, posY)) > 2) // if pos-2 and current pos have no x and y in common, means there are diag and pos - 1 should not be added
                 {
-                    pastPositions.RemoveAt(counto - 1);
+                    pastPositions.Insert(0, posToAdd);
+                    if (counto >= length)
+                    {
+                        pastPositions.RemoveAt(counto - 1);
+                    }
                 }
             }
             public void actuallyMoveTheEntity()

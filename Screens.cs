@@ -258,6 +258,20 @@ namespace Cave
                 player.screen = loadedScreens[targetDimension];
                 player.dimension = targetDimension;
                 player.screen.checkStructuresOnSpawn(player);
+                unloadAllDimensions(false);
+            }
+            public void unloadAllDimensions(bool unloadDimensionPlayerIsInToo)
+            {
+                Screen screen;
+                foreach (int id in loadedScreens.Keys)
+                {
+                    if (unloadDimensionPlayerIsInToo || playerList[0].dimension != id)
+                    {
+                        screen = loadedScreens[id];
+                        screen.saveAllChunks();
+                        loadedScreens.Remove(id);
+                    }
+                }
             }
         }
         public class Screen

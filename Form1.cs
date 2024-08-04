@@ -93,9 +93,11 @@ namespace Cave
                 { 0, 1 }, // air
                 { -1, 3 }, // piss
                 { -2, 3 }, // water
-                { -3, 3 }, // fairy liquid
+                { -3, 10 }, // fairy liquid
                 { -4, 999999 }, // lava (cannot cross)
                 { -5, 5 }, // honey
+                { -6, 3 }, // blood
+                { -7, 999999 }, // acid (cannot cross)
             };
 
             public static Dictionary<(int biome, int subBiome), bool> darkBiomes = new Dictionary<(int biome, int subBiome), bool>
@@ -265,6 +267,7 @@ namespace Cave
                 turnPngIntoString("Hornet");
                 turnPngIntoString("Worm");
                 turnPngIntoString("Nematode");
+                turnPngIntoString("WaterSkipper");
 
                 turnPngIntoString("Acid");
                 turnPngIntoString("Blood");
@@ -321,6 +324,7 @@ namespace Cave
             // bone trees and shrubs... like ribs. Maybe a BONE dimension ! Or biome inside the living dimension... kinda good yesyes, a dead part of the living dimension.
             // maybe depending on a parameter of the dimension, some living world dimensions would be more dead or not dead at all.
             // Lolitadimension ?? ? ? or CANDYDIMENSION ???? idk ? ? ? sugar cane trees would be poggers. Or a candy dimension with candies... yeah and uh idk a lolita biome and a super rare variant being a gothic lolita biome ??? idk wtf i'm on ngl
+            // Whipped cream biome, chocolate biome... idk
             // Add a portal that is inside lava oceans; in a structure (obsidian city ?), that needs to be turned on with maybe liquid obsidian or oil, and teleports to like hell, or an obsidian dimension made ouf of only obsidian shit ?.
             // Make it so fairies and other creatures have songs. Like maybe in a fairy village there's a village theme song that's procedurally generated. Idk. ANd they can teach u the song and u can sing it with instrument or voice idk.
 
