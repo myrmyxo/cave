@@ -258,6 +258,7 @@ namespace Cave
                 turnPngIntoString("Fairy");
                 turnPngIntoString("ObsidianFairy");
                 turnPngIntoString("FrostFairy");
+                turnPngIntoString("SkeletonFairy");
                 turnPngIntoString("Frog");
                 turnPngIntoString("Fish");
                 turnPngIntoString("SkeletonFish");

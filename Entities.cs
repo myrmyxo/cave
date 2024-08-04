@@ -184,6 +184,12 @@ namespace Cave
                         shadeVar = Abs(shadeVar);
                         return Color.FromArgb(255 - hueVar - shadeVar, 255 - hueVar - shadeVar, 255 - shadeVar);
                     }
+                    if (subType == 3)
+                    {
+                        hueVar = Abs((int)(hueVar * 0.6f));
+                        shadeVar = Abs(shadeVar);
+                        return Color.FromArgb(230 - hueVar - shadeVar, 230 - hueVar - shadeVar, 230 - shadeVar);
+                    }
                     return Color.FromArgb(130 + hueVar + shadeVar, 130 - hueVar + shadeVar, 210 + shadeVar);
                 }
                 if (type == 1)
@@ -1070,20 +1076,18 @@ namespace Cave
                     {
                         if (rand.Next(10) == 0)
                         {
-                            type = 0;
-                            subType = 0;
-                            color = findColor();
+                            if (type == 2 && subType == 1) { transformEntity((0, 3)); }
+                            else { transformEntity((0, 0)); }
                         }
                     }
                     if (type == 2 && material == (-7, 0))
                     {
                         if (rand.Next(10) == 0)
                         {
-                            subType = 1;
-                            color = findColor();
+                            transformEntity((2, 1));
                         }
                     }
-                    if (type != 2 && (material == (-4, 0) || material == (-7, 0)))
+                    if (type != 2 && (type, subType) != (0, 3) && (material == (-4, 0) || material == (-7, 0)))
                     {
                         if (rand.Next(10) == 0)
                         {
@@ -1091,6 +1095,12 @@ namespace Cave
                         }
                     }
                 }
+            }
+            public void transformEntity((int type, int subType) newType)
+            {
+                type = newType.type;
+                subType = newType.subType;
+                color = findColor();
             }
             public void actuallyMoveTheEntity()
             {
