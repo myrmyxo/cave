@@ -339,13 +339,13 @@ namespace Cave
             public (int type, int subType) findMaterialToFillWith((int, int) values, (int type, int subType) biome, Dictionary<(int type, int subType), float> dicto)
             {
                 int value = (int)((values.Item1 + values.Item2) * 0.5f);
-                if (biome == (10, 0) || biome == (10, 2) || biome == (10, 3)) // flesh
+                if (biome == (10, 0)) // flesh
                 {
                     return (4, 0);
                 }
-                else if (biome == (10, 1)) // flesh and bone
+                else if (biome == (10, 1) || biome == (10, 2) || biome == (10, 3)) // flesh and bone
                 {
-                    if (Abs(values.Item1 - 1024) - values.Item2 % 256 > 512 - dicto[(10, 1)]*512)
+                    if (Max(0, (int)(Abs(Abs(values.Item1 - 1024)*0.49f) + values.Item2 % 256)) >= 512 - dicto[biome]*513)
                     {
                         return (4, 1);
                     }
@@ -1256,18 +1256,18 @@ namespace Cave
             Dictionary<(int type, int subType), float> dicto = new Dictionary<(int type, int subType), float>();
             foreach (((int type, int subType), int) key in biomeArray)
             {
-                if (key.Item1 == (10, 1))
+                if (key.Item1 == (10, 1) || key.Item1 == (10, 2) || key.Item1 == (10,3 ))
                 {
-                    dicto[(10, 1)] = findTransition((10, 1), values);
+                    dicto[key.Item1] = findTransition((10, 1), values);
                 }
             }
             return dicto;
         }
         public static float findTransition((int type, int subType) biome, (int temp, int humi, int acid, int toxi) values)
         {
-            if (biome == (10, 1))
+            if (biome == (10, 1) || biome == (10, 2) || biome == (10, 3))
             {
-                return Max(0, 660 - values.humi) / 320f;
+                return Clamp(0, (660 - values.humi) / 320f, 1);
             }
 
             return 0;
