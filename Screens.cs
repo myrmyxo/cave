@@ -885,13 +885,22 @@ namespace Cave
                     if (loadedChunks.ContainsKey(chunkPos))
                     {
                         Chunk chunkToTest = loadedChunks[chunkPos];
-                        if (chunkToTest.fillStates[(entity.posX % 32 + 32) % 32, (entity.posY % 32 + 32) % 32].type > 0)
+                        if (false && chunkToTest.fillStates[(entity.posX % 32 + 32) % 32, (entity.posY % 32 + 32) % 32].type > 0) // debug to see if entity stuck in wall or smth
                         {
                             color = Color.Red;
                         }
                     }
                     if (game.isLight && entity.type == 0) { lightPositions.Add((entity.posX, entity.posY, 7, entity.lightColor)); }
                     drawPixel(gameBitmap, color, (entity.posX, entity.posY), camPos, PNGmultiplicator);
+                    if (entity.length > 0)
+                    {
+                        int county = entity.pastPositions.Count;
+                        for (int i = 0; i < entity.length - 1; i++)
+                        {
+                            if (i >= county) { break; }
+                            drawPixel(gameBitmap, color, entity.pastPositions[i], camPos, PNGmultiplicator);
+                        }
+                    }
                 }
 
                 { // player

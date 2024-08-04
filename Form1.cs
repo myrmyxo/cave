@@ -263,6 +263,8 @@ namespace Cave
                 turnPngIntoString("Fish");
                 turnPngIntoString("SkeletonFish");
                 turnPngIntoString("Hornet");
+                turnPngIntoString("Worm");
+                turnPngIntoString("Nematode");
 
                 turnPngIntoString("Acid");
                 turnPngIntoString("Blood");

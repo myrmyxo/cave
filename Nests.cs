@@ -247,7 +247,7 @@ namespace Cave
                     Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
                 }
 
-                int typeToFill = 0;
+                (int type, int subType) typeToFill = (0, 0);
                 foreach ((int x, int y) poso in tiles)
                 {
                     (int x, int y) chunkPos = (Floor(poso.x, 32) / 32, Floor(poso.y, 32) / 32);
@@ -258,7 +258,7 @@ namespace Cave
                         if (!chunkDict.ContainsKey(chunkPos)) { chunkDict.Add(chunkPos, new Chunk(chunkPos, true, nest.screen)); }
                         chunkToTest = chunkDict[chunkPos];
                     }
-                    chunkToTest.fillStates[(poso.x % 32 + 32) % 32, (poso.y % 32 + 32) % 32].type = typeToFill;
+                    chunkToTest.fillStates[(poso.x % 32 + 32) % 32, (poso.y % 32 + 32) % 32] = typeToFill;
                     chunkToTest.modificationCount = 1;
                     chunkToTest.findTileColor((poso.x % 32 + 32) % 32, (poso.y % 32 + 32) % 32);
                 }
@@ -744,7 +744,7 @@ namespace Cave
 
                 for (int i = 0; i < 5; i++)
                 {
-                    Entity hornet = new Entity(screen, posToPut, 3, 3);
+                    Entity hornet = new Entity(screen, posToPut, (3, 3));
                     screen.activeEntities[hornet.id] = hornet;
                     adults.Add(hornet);
                     hornet.nest = this;

@@ -121,6 +121,8 @@ namespace Cave
                     {(2, 0, 1), -999 },
                     {(3, 0, 1), -999 },
                     {(3, 3, 1), -999 },
+                    {(4, 0, 1), -999 },
+                    {(4, 1, 1), -999 },
                     {(0, 0, 2), -999 }, // plants
                     {(0, 1, 2), -999 },
                     {(0, 2, 2), -999 },
@@ -145,6 +147,8 @@ namespace Cave
                     (2, 0, 1),
                     (3, 0, 1),
                     (3, 3, 1),
+                    (4, 0, 1),
+                    (4, 1, 1),
                     (0, 0, 2), // plants
                     (0, 1, 2),
                     (0, 2, 2),
@@ -563,7 +567,7 @@ namespace Cave
                     }
                     else if (tileContent.typeOfElement == 1)
                     {
-                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), tileContent.type, tileContent.subType);
+                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), (tileContent.type, tileContent.subType));
                         screen.activeEntities[newEntity.id] = newEntity;
                         timeAtLastPlace = timeElapsed;
                     }

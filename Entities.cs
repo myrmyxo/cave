@@ -51,6 +51,9 @@ namespace Cave
             public Color color;
             public Color lightColor;
 
+            public List<(int x, int y)> pastPositions = new List<(int x, int y)>();
+            public int length;
+
             public Entity targetEntity = null;
             public (int x, int y) targetPos = (0, 0);
             public List<(int x, int y)> pathToTarget = new List<(int x, int y)>();
@@ -78,9 +81,7 @@ namespace Cave
                 realPosY = entityJson.pos.Item2;
                 posY = (int)realPosY;
                 targetPos = entityJson.tPos;
-                type = entityJson.type.Item1;
-                subType = entityJson.type.Item2;
-                seed = entityJson.seed;
+                seed = entityJson.seed;;
                 id = entityJson.id;
                 if (entityJson.nstId >= 0)
                 {
@@ -102,7 +103,7 @@ namespace Cave
                 timeAtLastDig = entityJson.lastDP.Item1;
                 timeAtLastPlace = entityJson.lastDP.Item2;
                 state = entityJson.state;
-                color = findColor();
+                transformEntity(entityJson.type);
                 findLightColor();
             }
             public Entity(Chunk chunk)
@@ -119,7 +120,7 @@ namespace Cave
 
                 currentEntityId++;
             }
-            public Entity(Screens.Screen screenToPut, (int, int) positionToPut, int typeToPut, int subTypeToPut)
+            public Entity(Screens.Screen screenToPut, (int, int) positionToPut, (int type, int subType) typeToPut)
             {
                 screen = screenToPut;
                 posX = positionToPut.Item1;
@@ -127,12 +128,10 @@ namespace Cave
                 posY = positionToPut.Item2;
                 realPosY = posY;
                 targetPos = positionToPut;
-                type = typeToPut;
-                subType = subTypeToPut;
                 seed = rand.Next(1000000000); //                               FALSE RANDOM NOT SEEDED ARGHHEHEEEE
+                transformEntity(typeToPut);
                 id = currentEntityId;
                 initializeInventory();
-                color = findColor();
                 findLightColor();
                 timeAtBirth = timeElapsed;
 
@@ -142,31 +141,18 @@ namespace Cave
             {
                 (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
                 (int biome, int subBiome) biome = chunk.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
-                if (chunk.fillStates[tileIndex.x, tileIndex.y].type < 0)
+                (int type, int subType) material = chunk.fillStates[tileIndex.x, tileIndex.y];
+                if (screen.type.Item1 == 2) { transformEntity((4, 1)); }
+                else if (material.type < 0) { transformEntity((2, 0)); }
+                else if (material.type > 0)
                 {
-                    type = 2;
-                    subType = 0;
+                    if (rand.Next(10) > 0) { isDeadAndShouldDisappear = true; }
+                    else { transformEntity((4, 0)); }
                 }
-                else if (biome == (5, 0))
-                {
-                    type = 0;
-                    subType = 0;
-                }
-                else if (biome == (2, 2))
-                {
-                    type = 0;
-                    subType = 1;
-                }
-                else if (biome == (0, 1) || biome == (9, 0))
-                {
-                    type = 0;
-                    subType = 2;
-                }
-                else
-                {
-                    type = 1;
-                    subType = 0;
-                }
+                else if (biome == (5, 0)) { transformEntity((0, 0)); }
+                else if (biome == (2, 2)) { transformEntity((0, 1)); }
+                else if (biome == (0, 1) || biome == (9, 0)) { transformEntity((0, 2)); }
+                else { transformEntity((1, 0)); }
             }
             public Color findColor()
             {
@@ -228,6 +214,16 @@ namespace Cave
                         return Color.FromArgb(190 + (int)(hueVar * 0.2f) + shadeVar, 190 - (int)(hueVar * 0.2f) + shadeVar, 80 + shadeVar);
                     }
                 }
+                if (type == 4)
+                {
+                    shadeVar = -Abs(shadeVar);
+                    hueVar = Abs((int)(hueVar * 0.4f));
+                    if (subType == 1)
+                    {
+                        return Color.FromArgb(220 - hueVar + shadeVar, 220 + hueVar + shadeVar, 220 + shadeVar);
+                    }
+                    return Color.FromArgb(210 + shadeVar, 140 + hueVar + shadeVar, 140 + hueVar + shadeVar);
+                }
                 return Color.Red;
             }
             public void findLightColor()
@@ -240,23 +236,25 @@ namespace Cave
             }
             public void placeEntity(Chunk chunk)
             {
+                int randX = rand.Next(32);
+                int randY = rand.Next(32);
                 int counto = 0;
-                while (counto < 10000)
+                while (counto < 3) // try 3 times to spawn entity NOT in terrain, to make more chance for frog fish fairies and shit instead of worms.
                 {
-                    int randX = rand.Next(32);
-                    int randY = rand.Next(32);
                     if (chunk.fillStates[randX, randY].type <= 0)
                     {
-                        posX = chunk.position.Item1 * 32 + randX;
-                        realPosX = posX;
-                        posY = chunk.position.Item2 * 32 + randY;
-                        realPosY = posY;
-                        targetPos = (posX, posY);
-                        return;
+                        break;
                     }
+                    randX = rand.Next(32);
+                    randY = rand.Next(32);
                     counto += 1;
                 }
-                isDeadAndShouldDisappear = true;
+                posX = chunk.position.Item1 * 32 + randX;
+                realPosX = posX;
+                posY = chunk.position.Item2 * 32 + randY;
+                realPosY = posY;
+                targetPos = (posX, posY);
+                return;
             }
             public void findRandomDestination(int distance)
             {
@@ -620,6 +618,11 @@ namespace Cave
                 {
                     state = 1;
                 }
+            }
+            public void clampSpeed(float clampX, float clampY)
+            {
+                speedX = Clamp(-clampX, speedX, clampX);
+                speedY = Clamp(-clampY, speedY, clampY);
             }
             public void moveEntity()
             {
@@ -1046,7 +1049,39 @@ namespace Cave
                     }
                 AfterTest:;
                 }
-                if (type != 2)
+                else if (type == 4)
+                {
+                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
+                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                    {
+                        (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY - 1);
+                        (int type, int subType) material = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
+                        if (material.type == 0)
+                        {
+                            applyGravity();
+                            changeSpeedRandom(0.5f);
+                        }
+                        else if (material.type < 0)
+                        {
+                            if (subType == 1)
+                            {
+                                changeSpeedRandom(0.1f);
+                                clampSpeed(1, 1);
+                            }
+                            else
+                            {
+                                applyGravity();
+                                changeSpeedRandom(0.5f);
+                            }
+                        }
+                        else
+                        {
+                            changeSpeedRandom(0.05f);
+                            clampSpeed(0.2f, 0.2f);
+                        }
+                    }
+                }
+                if (type != 2 && (type, subType) != (4, 1))
                 {
                     chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
                     if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
@@ -1062,8 +1097,9 @@ namespace Cave
 
                 actuallyMoveTheEntity();
 
-                // test what happens if in special liquids (fairy lake, lava...)
 
+
+                // test what happens if in special liquids (fairy lake, lava...)
                 {
                     chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
                     if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
@@ -1087,7 +1123,14 @@ namespace Cave
                             transformEntity((2, 1));
                         }
                     }
-                    if (type != 2 && (type, subType) != (0, 3) && (material == (-4, 0) || material == (-7, 0)))
+                    if (material == (-4, 0) && type != 2 && (type, subType) != (0, 3))
+                    {
+                        if (rand.Next(10) == 0)
+                        {
+                            screen.entitesToRemove[id] = this;
+                        }
+                    }
+                    if (material == (-7, 0) && type != 2 && (type, subType) != (0, 3) && (type, subType) != (4, 1))
                     {
                         if (rand.Next(10) == 0)
                         {
@@ -1100,11 +1143,30 @@ namespace Cave
             {
                 type = newType.type;
                 subType = newType.subType;
+                findLength();
                 color = findColor();
+            }
+            public void findLength()
+            {
+                if (type == 4)
+                {
+                    length = 2 + seed % 5;
+                }
+                else { length = 0; }
+            }
+            public void updatePastPositions((int x, int y) posToAdd)    // if lenght DECREASES it will not work anymore probably idk
+            {
+                pastPositions.Insert(0, posToAdd);
+                int counto = pastPositions.Count;
+                if (counto >= length)
+                {
+                    pastPositions.RemoveAt(counto - 1);
+                }
             }
             public void actuallyMoveTheEntity()
             {
                 (int x, int y) chunkPos;
+                (int x, int y) previousPos = (posX, posY);
                 float toMoveX = speedX;
                 float toMoveY = speedY;
 
@@ -1113,13 +1175,14 @@ namespace Cave
                     chunkPos = screen.findChunkAbsoluteIndex(posX, posY + (int)Sign(toMoveY));
                     if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                     {
+                        // no need to update past positions since byebye
                         posY += (int)Sign(toMoveY);
                         saveEntity(this);
                         screen.entitesToRemove[id] = this;
                         return;
                     }
                     (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY + (int)Sign(toMoveY));
-                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0)
+                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0 || type == 4)
                     {
                         if (Abs(toMoveY) >= 1)
                         {
@@ -1133,6 +1196,8 @@ namespace Cave
                             posY = (int)Floor(realPosY, 1);
                             toMoveY = 0;
                         }
+                        if (type == 4 && (posX, posY) != previousPos) { updatePastPositions(previousPos); }
+                        previousPos = (posX, posY);
                     }
                     else
                     {
@@ -1146,13 +1211,14 @@ namespace Cave
                     chunkPos = screen.findChunkAbsoluteIndex(posX + (int)Sign(toMoveX), posY);
                     if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                     {
+                        // no need to update past positions since byebye
                         posX += (int)Sign(toMoveX);
                         saveEntity(this);
                         screen.entitesToRemove[id] = this;
                         return;
                     }
                     (int x, int y) tileIndex = GetChunkIndexFromTile(posX + (int)Sign(toMoveX), posY);
-                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0)
+                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0 || type == 4)
                     {
                         if (Abs(toMoveX) >= 1)
                         {
@@ -1166,6 +1232,8 @@ namespace Cave
                             posX = (int)Floor(realPosX, 1);
                             toMoveX = 0;
                         }
+                        if (type == 4 && (posX, posY) != previousPos) { updatePastPositions(previousPos); }
+                        previousPos = (posX, posY);
                     }
                     else
                     {
@@ -1271,7 +1339,7 @@ namespace Cave
                     }
                     else if (elementToPlace.typeOfElement == 1)
                     {
-                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), elementToPlace.type, elementToPlace.subType);
+                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), (elementToPlace.type, elementToPlace.subType));
                         screen.entitesToAdd.Add(newEntity);
                         timeAtLastPlace = timeElapsed;
                     }
