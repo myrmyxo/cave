@@ -71,6 +71,8 @@ namespace Cave
                 { (0, 2), new OneSprite("FrostFairy", false)},
                 { (0, 3), new OneSprite("SkeletonFairy", true)},       // TO CHANGE
                 { (1, 0), new OneSprite("Frog", false)},
+                { (1, 1), new OneSprite("Carnal", true)},       // TO CHANGE
+                { (1, 2), new OneSprite("Skeletal", true)},       // TO CHANGE
                 { (2, 0), new OneSprite("Fish", false)},
                 { (2, 1), new OneSprite("SkeletonFish", true)},       // TO CHANGE
                 { (3, 0), new OneSprite("Hornet", false)},

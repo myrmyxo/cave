@@ -262,6 +262,8 @@ namespace Cave
                 turnPngIntoString("FrostFairy");
                 turnPngIntoString("SkeletonFairy");
                 turnPngIntoString("Frog");
+                turnPngIntoString("Carnal");
+                turnPngIntoString("Skeletal");
                 turnPngIntoString("Fish");
                 turnPngIntoString("SkeletonFish");
                 turnPngIntoString("Hornet");
@@ -733,7 +735,7 @@ namespace Cave
             if (a >= 0) { return 1; }
             return -1;
         }
-        public static float Sign(float a)
+        public static int Sign(float a)
         {
             if (a >= 0) { return 1; }
             return -1;

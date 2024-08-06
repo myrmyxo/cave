@@ -1108,7 +1108,7 @@ namespace Cave
                 }
                 return theFilledChunk;
             }
-            public int getTileContent((int x, int y) posToTest)
+            public (int type, int subType) getTileContent((int x, int y) posToTest)
             {
                 (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
                 Chunk chunkToTest;
@@ -1121,7 +1121,7 @@ namespace Cave
                     }
                     chunkToTest = extraLoadedChunks[chunkPos];
                 }
-                return chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
+                return chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
             }
             public int getTileContent((int x, int y) posToTest, Dictionary<(int x, int y), Chunk> extraDictToCheckFrom)
             {

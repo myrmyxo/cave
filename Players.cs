@@ -118,6 +118,8 @@ namespace Cave
                     {(0, 1, 1), -999 },
                     {(0, 2, 1), -999 },
                     {(1, 0, 1), -999 },
+                    {(1, 1, 1), -999 },
+                    {(1, 2, 1), -999 },
                     {(2, 0, 1), -999 },
                     {(3, 0, 1), -999 },
                     {(3, 3, 1), -999 },
@@ -145,6 +147,8 @@ namespace Cave
                     (0, 1, 1),
                     (0, 2, 1),
                     (1, 0, 1),
+                    (1, 1, 1),
+                    (1, 2, 1),
                     (2, 0, 1),
                     (3, 0, 1),
                     (3, 3, 1),
@@ -269,72 +273,68 @@ namespace Cave
                     }
                 }
 
-                float toMoveX = speedX;
-                float toMoveY = speedY;
+
 
 
 
 
                 // Actually move the player
 
-                while (Abs(toMoveY) > 0)
+                (int type, int subType) material;
+                int posToTest;
+                float realPosToTest;
+                float diff;
+                float toMoveX = speedX;
+                float toMoveY = speedY;
+
+                while (toMoveY != 0)
                 {
-                    (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX, posY + (int)Sign(toMoveY));
-                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                    diff = Sign(toMoveY) * Min(1, Abs(toMoveY));
+                    realPosToTest = realPosY + diff;
+                    posToTest = (int)realPosToTest;
+                    if (posY == posToTest) // if movement is too small to move by one whole pixel, update realPosY, and stop
                     {
-                        if (chunkToTest.fillStates[(posX % 32 + 32) % 32, (posY % 32 + 32 + (int)Sign(toMoveY)) % 32].type <= 0)
-                        {
-                            if (Abs(toMoveY) >= 1)
-                            {
-                                posY += (int)Sign(toMoveY);
-                                realPosY += Sign(toMoveY);
-                                toMoveY = Sign(toMoveY) * (Abs(toMoveY) - 1);
-                            }
-                            else
-                            {
-                                realPosY += toMoveY;
-                                posY = (int)Floor(realPosY, 1);
-                                toMoveY = 0;
-                            }
-                        }
-                        else
-                        {
-                            speedY = 0;
-                            toMoveY = 0;
-                            break;
-                        }
+                        realPosY = realPosToTest;
+                        break;
                     }
-                    else { break; }
+                    material = screen.getTileContent((posX, posToTest));
+                    if (material.type <= 0) // if is not a solid tile, update positions and continue
+                    {
+                        realPosY = realPosToTest;
+                        posY = posToTest;
+                        toMoveY -= diff;
+                    }
+                    else
+                    {
+                        speedY = 0;
+                        break;
+                    }
                 }
-                while (Abs(toMoveX) > 0)
+                while (toMoveX != 0)
                 {
-                    (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX + (int)Sign(toMoveX), posY);
-                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                    diff = Sign(toMoveX) * Min(1, Abs(toMoveX));
+                    realPosToTest = realPosX + diff;
+                    posToTest = (int)realPosToTest;
+                    if (posX == posToTest) // if movement is too small to move by one whole pixel, update realPosY, and stop
                     {
-                        if (chunkToTest.fillStates[(posX % 32 + 32 + (int)Sign(toMoveX)) % 32, (posY % 32 + 32) % 32].type <= 0)
-                        {
-                            if (Abs(toMoveX) >= 1)
-                            {
-                                posX += (int)Sign(toMoveX);
-                                realPosX += Sign(toMoveX);
-                                toMoveX = Sign(toMoveX) * (Abs(toMoveX) - 1);
-                            }
-                            else
-                            {
-                                realPosX += toMoveX;
-                                posX = (int)Floor(realPosX, 1);
-                                toMoveX = 0;
-                            }
-                        }
-                        else
-                        {
-                            speedX = 0;
-                            toMoveX = 0;
-                            break;
-                        }
+                        realPosX = realPosToTest;
+                        break;
                     }
-                    else { break; }
+                    material = screen.getTileContent((posToTest, posY));
+                    if (material.type <= 0) // if is not a solid tile, update positions and continue
+                    {
+                        realPosX = realPosToTest;
+                        posX = posToTest;
+                        toMoveX -= diff;
+                    }
+                    else
+                    {
+                        speedX = 0;
+                        break;
+                    }
                 }
+
+                // camera stuff (not really working anymore which makes it better than it was before yayyy) 
 
                 int posDiffX = posX - (camPosX + 16 * (screen.chunkResolution - 1)); //*2 is needed cause there's only *8 and not *16 before
                 int posDiffY = posY - (camPosY + 16 * (screen.chunkResolution - 1));

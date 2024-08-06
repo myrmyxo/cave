@@ -142,21 +142,30 @@ namespace Cave
                 (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
                 (int biome, int subBiome) biome = chunk.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
                 (int type, int subType) material = chunk.fillStates[tileIndex.x, tileIndex.y];
-                if (screen.type.Item1 == 2) { transformEntity((4, 1)); }
-                else if (material.type < 0)
+                if (screen.type.Item1 == 2)
                 {
-                    if (rand.Next(2) == 0) { transformEntity((2, 0)); }
-                    else { transformEntity((5, 0)); }
+                    if (material.type < 0) {  transformEntity(4, 1); }
+                    else if (biome == (10, 0) || biome == (10, 1)) { transformEntity(1, 1); }
+                    else if (biome == (11, 0)) { transformEntity(1, 2); }
+                    else { transformEntity(4, 1); }
                 }
-                else if (material.type > 0)
+                else
                 {
-                    if (rand.Next(10) > 0) { isDeadAndShouldDisappear = true; }
-                    else { transformEntity((4, 0)); }
+                    if (material.type < 0)
+                    {
+                        if (rand.Next(2) == 0) { transformEntity(2, 0); }
+                        else { transformEntity(5, 0); }
+                    }
+                    else if (material.type > 0)
+                    {
+                        if (rand.Next(10) > 0) { isDeadAndShouldDisappear = true; }
+                        else { transformEntity(4, 0); }
+                    }
+                    else if (biome == (5, 0)) { transformEntity(0, 0); }
+                    else if (biome == (2, 2)) { transformEntity(0, 1); }
+                    else if (biome == (0, 1) || biome == (9, 0)) { transformEntity(0, 2); }
+                    else { transformEntity(1, 0); }
                 }
-                else if (biome == (5, 0)) { transformEntity((0, 0)); }
-                else if (biome == (2, 2)) { transformEntity((0, 1)); }
-                else if (biome == (0, 1) || biome == (9, 0)) { transformEntity((0, 2)); }
-                else { transformEntity((1, 0)); }
             }
             public Color findColor()
             {
@@ -184,6 +193,18 @@ namespace Cave
                 }
                 if (type == 1)
                 {
+                    if (subType == 1)
+                    {
+                        hueVar = Abs((int)(hueVar * 0.6f));
+                        shadeVar = -Abs(shadeVar);
+                        return Color.FromArgb(135 - shadeVar, 55 - hueVar - shadeVar, 55 - hueVar - shadeVar);
+                    }
+                    if (subType == 2)
+                    {
+                        hueVar = Abs((int)(hueVar * 0.6f));
+                        shadeVar = Abs(shadeVar);
+                        return Color.FromArgb(230 - hueVar - shadeVar, 230 - hueVar - shadeVar, 230 - shadeVar);
+                    }
                     return Color.FromArgb(90 + hueVar + shadeVar, 210 + shadeVar, 110 - hueVar + shadeVar);
                 }
                 if (type == 2)
@@ -248,7 +269,7 @@ namespace Cave
                 int randX = rand.Next(32);
                 int randY = rand.Next(32);
                 int counto = 0;
-                while (counto < 3) // try 3 times to spawn entity NOT in terrain, to make more chance for frog fish fairies and shit instead of worms.
+                while (counto < 5) // try 5 times to spawn entity NOT in terrain, to make more chance for frog fish fairies and shit instead of worms.
                 {
                     if (chunk.fillStates[randX, randY].type <= 0)
                     {
@@ -399,13 +420,13 @@ namespace Cave
             {
                 //TEST IF THE TILE IS EXPOSED TO AIR/LIQUID AT LEAST NOT TO PATHFIND FOR NUTHIN LOL
                 if (
-                    screen.getTileContent((targetLocation.x+1, targetLocation.y)) > 0
+                    screen.getTileContent((targetLocation.x+1, targetLocation.y)).type > 0
                     &&
-                    screen.getTileContent((targetLocation.x-1, targetLocation.y)) > 0
+                    screen.getTileContent((targetLocation.x-1, targetLocation.y)).type > 0
                     &&
-                    screen.getTileContent((targetLocation.x, targetLocation.y+1)) > 0
+                    screen.getTileContent((targetLocation.x, targetLocation.y+1)).type > 0
                     &&
-                    screen.getTileContent((targetLocation.x, targetLocation.y-1)) > 0
+                    screen.getTileContent((targetLocation.x, targetLocation.y-1)).type > 0
                     )
                 {
                     return false;
@@ -655,38 +676,29 @@ namespace Cave
                 else if (type == 1) // frog
                 {
                     applyGravity();
-                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
-                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                    (int type, int subType) material = screen.getTileContent((posX, posY - 1));
+                    if (material.type > 0)
                     {
-                        (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY - 1);
-                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type > 0)
+                        ariGeoSlowDownX(0.2f, 0.85f);
+                        if (rand.NextDouble() > 0.05f)
                         {
-                            ariGeoSlowDownX(0.2f, 0.85f);
-                            if (rand.NextDouble() > 0.05f)
-                            {
-                                jumpRandom(2.5f, 2.5f);
-                            }
+                            jumpRandom(2.5f, 2.5f);
                         }
                     }
                 }
                 else if (type == 2) // fish
                 {
-                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
-
-                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
+                    (int type, int subType) material = screen.getTileContent((posX, posY));
+                    if (material.type < 0)
                     {
-                        (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
-                        if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type < 0)
+                        if (state >= 2)
                         {
-                            if (state >= 2)
-                            {
-                                state = 1;
-                            }
+                            state = 1;
                         }
-                        else
-                        {
-                            state = 2;
-                        }
+                    }
+                    else
+                    {
+                        state = 2;
                     }
 
                     if (state == 0) // idle
@@ -717,18 +729,13 @@ namespace Cave
                     else if (state == 2) // outside water
                     {
                         applyGravity();
-                        chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1); // +1 cause coordinates are inverted lol (no)
-
-                        if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                        (int type, int subType) material2 = screen.getTileContent((posX, posY - 1)); // +1 cause coordinates are inverted lol (no)
+                        if (material2.type > 0)
                         {
-                            (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY - 1);
-                            if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type > 0)
+                            ariGeoSlowDownX(0.12f, 0.9f);
+                            if (rand.Next(10) != 0)
                             {
-                                speedX = speedX * 0.9f - Sign(speedX) * 0.12f;
-                                if (rand.Next(10) != 0)
-                                {
-                                    jumpRandom(1, 2);
-                                }
+                                jumpRandom(1, 2);
                             }
                         }
                     }
@@ -767,17 +774,13 @@ namespace Cave
                             findLightColor();
                             goto AfterTest;
                         }
-                        chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
-                        if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                        (int type, int subType) material = screen.getTileContent((posX, posY - 1));
+                        if (material.type > 0)
                         {
-                            (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY - 1);
-                            if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type > 0)
+                            ariGeoSlowDownX(0.2f, 0.85f);
+                            if (rand.NextDouble() < 0.05f)
                             {
-                                ariGeoSlowDownX(0.2f, 0.85f);
-                                if (rand.NextDouble() < 0.05f)
-                                {
-                                    jumpRandom(1, 1.5f);
-                                }
+                                jumpRandom(1, 1.5f);
                             }
                         }
                     }
@@ -1060,71 +1063,54 @@ namespace Cave
                 }
                 else if (type == 4)
                 {
-                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
-                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                    (int type, int subType) material = screen.getTileContent((posX, posY));
+                    if (material.type == 0)
                     {
-                        (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY - 1);
-                        (int type, int subType) material = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
-                        if (material.type == 0)
+                        applyGravity();
+                        changeSpeedRandom(0.5f);
+                    }
+                    else if (material.type < 0)
+                    {
+                        if (subType == 1)
+                        {
+                            changeSpeedRandom(0.1f);
+                            clampSpeed(1, 1);
+                        }
+                        else
                         {
                             applyGravity();
                             changeSpeedRandom(0.5f);
                         }
-                        else if (material.type < 0)
-                        {
-                            if (subType == 1)
-                            {
-                                changeSpeedRandom(0.1f);
-                                clampSpeed(1, 1);
-                            }
-                            else
-                            {
-                                applyGravity();
-                                changeSpeedRandom(0.5f);
-                            }
-                        }
-                        else
-                        {
-                            changeSpeedRandom(0.05f);
-                            clampSpeed(0.2f, 0.2f);
-                        }
+                    }
+                    else
+                    {
+                        changeSpeedRandom(0.05f);
+                        clampSpeed(0.2f, 0.2f);
                     }
                 }
                 else if (type == 5) // water skipper
                 {
                     bool isFalling = false;
-                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
-                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesto))
+                    (int type, int subType) material = screen.getTileContent((posX, posY));
+                    (int type, int subType) materialUnder = screen.getTileContent((posX, posY - 1));
+
+                    if (materialUnder.type != 0)
                     {
-                        (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY - 1);
-                        (int type, int subType) material = chunkToTesto.fillStates[tileIndex.x, tileIndex.y];
-                        if (material.type != 0)
-                        {
-                            if (rand.Next(20) == 0) { jumpRandom(7, 0); }
-                        }
-                        else if (material.type == 0) { isFalling = true; }
+                        if (rand.Next(20) == 0) { jumpRandom(7, 0); }
                     }
-                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
-                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
-                    {
-                        (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
-                        (int type, int subType) material = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
-                        if (material.type < 0) { speedY += 0.4f; }
-                        else if (material.type == 0 && isFalling) { applyGravity(); }
-                        ariGeoSlowDownY(0.15f, 0.8f);
-                        ariGeoSlowDownX(0.1f, 0.9f);
-                    }
+                    else if (materialUnder.type == 0) { isFalling = true; }
+
+                    if (material.type < 0) { speedY += 0.4f; }
+                    else if (material.type == 0 && isFalling) { applyGravity(); }
+                    ariGeoSlowDownY(0.15f, 0.8f);
+                    ariGeoSlowDownX(0.1f, 0.9f);
                 }
                 if (type != 2 && (type, subType) != (4, 1))
                 {
-                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
-                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                    (int type, int subType) material = screen.getTileContent((posX, posY));
+                    if (material.type < 0)
                     {
-                        (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
-                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type < 0)
-                        {
-                            ariGeoSlowDownX(0.15f, 0.85f);
-                        }
+                        ariGeoSlowDownX(0.15f, 0.85f);
                     }
                 }
 
@@ -1134,26 +1120,20 @@ namespace Cave
 
                 // test what happens if in special liquids (fairy lake, lava...)
                 {
-                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
-                    if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
-                    {
-                        return;
-                    }
-                    (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
-                    (int type, int subType) material = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
+                    (int type, int subType) material = screen.getTileContent((posX, posY));
                     if (type != 0 && material == (-3, 0))
                     {
                         if (rand.Next(10) == 0)
                         {
-                            if (type == 2 && subType == 1) { transformEntity((0, 3)); }
-                            else { transformEntity((0, 0)); }
+                            if (type == 2 && subType == 1) { transformEntity(0, 3); }
+                            else { transformEntity(0, 0); }
                         }
                     }
                     if (type == 2 && material == (-7, 0))
                     {
                         if (rand.Next(10) == 0)
                         {
-                            transformEntity((2, 1));
+                            transformEntity(2, 1);
                         }
                     }
                     if (material == (-4, 0) && type != 2 && (type, subType) != (0, 3))
@@ -1163,7 +1143,7 @@ namespace Cave
                             screen.entitesToRemove[id] = this;
                         }
                     }
-                    if (material == (-7, 0) && type != 2 && (type, subType) != (0, 3) && (type, subType) != (4, 1))
+                    if (material == (-7, 0) && type != 2 && (type, subType) != (0, 3) && (type, subType) != (4, 1) && (type, subType) != (1, 1) && (type, subType) != (1, 2))
                     {
                         if (rand.Next(10) == 0)
                         {
@@ -1171,6 +1151,13 @@ namespace Cave
                         }
                     }
                 }
+            }
+            public void transformEntity(int typeToPut, int subTypeToPut)
+            {
+                type = typeToPut;
+                subType = subTypeToPut;
+                findLength();
+                color = findColor();
             }
             public void transformEntity((int type, int subType) newType)
             {
@@ -1204,78 +1191,76 @@ namespace Cave
             {
                 (int x, int y) chunkPos;
                 (int x, int y) previousPos = (posX, posY);
+                (int type, int subType) material;
+                int posToTest;
+                float realPosToTest;
+                float diff;
                 float toMoveX = speedX;
                 float toMoveY = speedY;
 
-                while (Abs(toMoveY) > 0)
+                while (toMoveY != 0)
                 {
-                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY + (int)Sign(toMoveY));
-                    if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                    diff = Sign(toMoveY) * Min(1, Abs(toMoveY));
+                    realPosToTest = realPosY + diff;
+                    posToTest = (int)realPosToTest;
+                    if (posY == posToTest) // if movement is too small to move by one whole pixel, update realPosY, and stop
                     {
-                        // no need to update past positions since byebye
-                        posY += (int)Sign(toMoveY);
+                        realPosY = realPosToTest;
+                        break;
+                    }
+                    chunkPos = screen.findChunkAbsoluteIndex(posX, posToTest);
+                    if (!screen.loadedChunks.ContainsKey(chunkPos)) // if chunk to test is outside loaded chunks, save Entity in the non-loaded chunk
+                    {
+                        realPosY = realPosToTest;
                         saveEntity(this);
                         screen.entitesToRemove[id] = this;
                         return;
                     }
-                    (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY + (int)Sign(toMoveY));
-                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0 || type == 4)
+                    material = screen.getTileContent((posX, posToTest));
+                    if (material.type <= 0 || type == 4) // if a worm or the material is not a solid tile, update positions and continue
                     {
-                        if (Abs(toMoveY) >= 1)
-                        {
-                            posY += (int)Sign(toMoveY);
-                            realPosY += Sign(toMoveY);
-                            toMoveY = Sign(toMoveY) * (Abs(toMoveY) - 1);
-                        }
-                        else
-                        {
-                            realPosY += toMoveY;
-                            posY = (int)Floor(realPosY, 1);
-                            toMoveY = 0;
-                        }
-                        if (type == 4 && (posX, posY) != previousPos) { updatePastPositions(previousPos); }
+                        realPosY = realPosToTest;
+                        posY = posToTest;
+                        toMoveY -= diff;
+                        if (type == 4) { updatePastPositions(previousPos); } // to make worm's tails
                         previousPos = (posX, posY);
                     }
                     else
                     {
                         speedY = 0;
-                        toMoveY = 0;
                         break;
                     }
                 }
-                while (Abs(toMoveX) > 0)
+                while (toMoveX != 0)
                 {
-                    chunkPos = screen.findChunkAbsoluteIndex(posX + (int)Sign(toMoveX), posY);
-                    if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                    diff = Sign(toMoveX) * Min(1, Abs(toMoveX));
+                    realPosToTest = realPosX + diff;
+                    posToTest = (int)realPosToTest;
+                    if (posX == posToTest) // if movement is too small to move by one whole pixel, update realPosY, and stop
                     {
-                        // no need to update past positions since byebye
-                        posX += (int)Sign(toMoveX);
+                        realPosX = realPosToTest;
+                        break;
+                    }
+                    chunkPos = screen.findChunkAbsoluteIndex(posToTest, posY);
+                    if (!screen.loadedChunks.ContainsKey(chunkPos)) // if chunk to test is outside loaded chunks, save Entity in the non-loaded chunk
+                    {
+                        realPosX = realPosToTest;
                         saveEntity(this);
                         screen.entitesToRemove[id] = this;
                         return;
                     }
-                    (int x, int y) tileIndex = GetChunkIndexFromTile(posX + (int)Sign(toMoveX), posY);
-                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0 || type == 4)
+                    material = screen.getTileContent((posToTest, posY));
+                    if (material.type <= 0 || type == 4) // if a worm or the material is not a solid tile, update positions and continue
                     {
-                        if (Abs(toMoveX) >= 1)
-                        {
-                            posX += (int)Sign(toMoveX);
-                            realPosX += Sign(toMoveX);
-                            toMoveX = Sign(toMoveX) * (Abs(toMoveX) - 1);
-                        }
-                        else
-                        {
-                            realPosX += toMoveX;
-                            posX = (int)Floor(realPosX, 1);
-                            toMoveX = 0;
-                        }
-                        if (type == 4 && (posX, posY) != previousPos) { updatePastPositions(previousPos); }
+                        realPosX = realPosToTest;
+                        posX = posToTest;
+                        toMoveX -= diff;
+                        if (type == 4) { updatePastPositions(previousPos); } // to make worm's tails
                         previousPos = (posX, posY);
                     }
                     else
                     {
                         speedX = 0;
-                        toMoveX = 0;
                         break;
                     }
                 }
