@@ -214,6 +214,7 @@ namespace Cave
             public (float, float) speed;
             public int[,] inv;
             public (float, float) lastDP;
+            public int hp;
             public float brth;
             public float sttCh;
             public EntityJson(Entity entity)
@@ -229,6 +230,7 @@ namespace Cave
                 speed = (entity.speedX, entity.speedY);
                 inv = inventoryToArray(entity.inventoryQuantities, entity.inventoryElements);
                 lastDP = (entity.timeAtLastDig, entity.timeAtLastPlace);
+                hp = entity.hp;
                 brth = entity.timeAtBirth;
                 sttCh = entity.timeAtLastStateChange;
             }

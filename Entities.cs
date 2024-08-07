@@ -62,12 +62,15 @@ namespace Cave
             public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
             public List<(int index, int subType, int typeOfElement)> inventoryElements;
             public int elementsPossessed = 0;
+
+            public int hp = 1;
             public int food = 0;
 
             public float timeAtBirth = 0;
             public float timeAtLastStateChange = 0;
             public float timeAtLastDig = -9999;
             public float timeAtLastPlace = -9999;
+            public float timeAtLastGottenHit = -9999;
 
             public bool isDeadAndShouldDisappear = false;
 
@@ -98,12 +101,13 @@ namespace Cave
                 (Dictionary<(int index, int subType, int typeOfElement), int>, List<(int index, int subType, int typeOfElement)>) returnTuple = arrayToInventory(entityJson.inv);
                 inventoryQuantities = returnTuple.Item1;
                 inventoryElements = returnTuple.Item2;
+                hp = entityJson.hp;
                 timeAtBirth = entityJson.brth;
                 timeAtLastStateChange = entityJson.sttCh;
                 timeAtLastDig = entityJson.lastDP.Item1;
                 timeAtLastPlace = entityJson.lastDP.Item2;
                 state = entityJson.state;
-                transformEntity(entityJson.type);
+                transformEntity(entityJson.type, false); // false to not reinitialize hp
                 findLightColor();
             }
             public Entity(Chunk chunk)
@@ -128,8 +132,8 @@ namespace Cave
                 posY = positionToPut.Item2;
                 realPosY = posY;
                 targetPos = positionToPut;
-                seed = rand.Next(1000000000); //                               FALSE RANDOM NOT SEEDED ARGHHEHEEEE
-                transformEntity(typeToPut);
+                seed = rand.Next(1000000000); //                              TO CHANGE FALSE RANDOM NOT SEEDED ARGHHEHEEEE
+                transformEntity(typeToPut, true);
                 id = currentEntityId;
                 initializeInventory();
                 findLightColor();
@@ -144,27 +148,27 @@ namespace Cave
                 (int type, int subType) material = chunk.fillStates[tileIndex.x, tileIndex.y];
                 if (screen.type.Item1 == 2)
                 {
-                    if (material.type < 0) {  transformEntity(4, 1); }
-                    else if (biome == (10, 0) || biome == (10, 1)) { transformEntity(1, 1); }
-                    else if (biome == (11, 0)) { transformEntity(1, 2); }
-                    else { transformEntity(4, 1); }
+                    if (material.type > 0) {  transformEntity(4, 1, true); }
+                    else if (biome == (10, 0) || biome == (10, 1)) { transformEntity(1, 1, true); }
+                    else if (biome == (11, 0)) { transformEntity(1, 2, true); }
+                    else { transformEntity(4, 1, true); }
                 }
                 else
                 {
                     if (material.type < 0)
                     {
-                        if (rand.Next(2) == 0) { transformEntity(2, 0); }
-                        else { transformEntity(5, 0); }
+                        if (rand.Next(2) == 0) { transformEntity(2, 0, true); }
+                        else { transformEntity(5, 0, true); }
                     }
                     else if (material.type > 0)
                     {
                         if (rand.Next(10) > 0) { isDeadAndShouldDisappear = true; }
-                        else { transformEntity(4, 0); }
+                        else { transformEntity(4, 0, true); }
                     }
-                    else if (biome == (5, 0)) { transformEntity(0, 0); }
-                    else if (biome == (2, 2)) { transformEntity(0, 1); }
-                    else if (biome == (0, 1) || biome == (9, 0)) { transformEntity(0, 2); }
-                    else { transformEntity(1, 0); }
+                    else if (biome == (5, 0)) { transformEntity(0, 0, true); }
+                    else if (biome == (2, 2)) { transformEntity(0, 1, true); }
+                    else if (biome == (0, 1) || biome == (9, 0)) { transformEntity(0, 2, true); }
+                    else { transformEntity(1, 0, true); }
                 }
             }
             public Color findColor()
@@ -747,7 +751,7 @@ namespace Cave
                         applyGravity();
                         if (timeElapsed - timeAtBirth > 30)
                         {
-                            subType = 1;
+                            transformEntity(3, 1, true);
                             timeAtLastStateChange = timeElapsed;
                             color = findColor();
                             findLightColor();
@@ -768,7 +772,7 @@ namespace Cave
                         }
                         else if (timeElapsed - timeAtLastStateChange > 60)
                         {
-                            subType = 2;
+                            transformEntity(3, 2, true);
                             timeAtLastStateChange = timeElapsed;
                             color = findColor();
                             findLightColor();
@@ -804,7 +808,7 @@ namespace Cave
                                 }
                                 nest.adults.Add(this);
                             }
-                            subType = 3;
+                            transformEntity(3, 2, true);
                             timeAtLastStateChange = timeElapsed;
                             color = findColor();
                             findLightColor();
@@ -1125,15 +1129,15 @@ namespace Cave
                     {
                         if (rand.Next(10) == 0)
                         {
-                            if (type == 2 && subType == 1) { transformEntity(0, 3); }
-                            else { transformEntity(0, 0); }
+                            if (type == 2 && subType == 1) { transformEntity(0, 3, true); }
+                            else { transformEntity(0, 0, true); }
                         }
                     }
                     if (type == 2 && material == (-7, 0))
                     {
                         if (rand.Next(10) == 0)
                         {
-                            transformEntity(2, 1);
+                            transformEntity(2, 1, true);
                         }
                     }
                     if (material == (-4, 0) && type != 2 && (type, subType) != (0, 3))
@@ -1152,17 +1156,19 @@ namespace Cave
                     }
                 }
             }
-            public void transformEntity(int typeToPut, int subTypeToPut)
+            public void transformEntity(int typeToPut, int subTypeToPut, bool setHp)
             {
                 type = typeToPut;
                 subType = subTypeToPut;
+                if (setHp) { hp = entityStartingHp[(type, subType)]; }
                 findLength();
                 color = findColor();
             }
-            public void transformEntity((int type, int subType) newType)
+            public void transformEntity((int type, int subType) newType, bool setHp)
             {
                 type = newType.type;
                 subType = newType.subType;
+                if (setHp) { hp = entityStartingHp[(type, subType)]; }
                 findLength();
                 color = findColor();
             }

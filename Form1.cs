@@ -53,7 +53,7 @@ namespace Cave
 
             public static Random rand = new Random();
 
-            public static bool[] arrowKeysState = { false, false, false, false };
+            public static bool[] arrowKeysState = { false, false, false, false }; //
             public static bool digPress = false;
             public static bool[] placePress = { false, false };
             public static bool[] zoomPress = { false, false };
@@ -87,6 +87,37 @@ namespace Cave
             public static (int, int)[] neighbourArray = new (int, int)[4] { (-1, 0), (1, 0), (0, 1), (0, -1) };
             public static (int, int)[] bubbleNeighbourArray = new (int, int)[8] { (-1, 0), (1, 0), (0, 1), (0, -1), (-2, 0), (2, 0), (0, 2), (0, -2) };
             public static (int, int)[] diagNeighbourArray = new (int, int)[4] { (-1, 1), (1, 1), (1, -1), (-1, -1) };
+            public static (int x, int y)[] directionPositionArray = new (int x, int y)[] { (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), };
+            public static Dictionary<(int x, int y), int> directionPositionDictionary = new Dictionary<(int x, int y), int>
+            {
+                { (-1, 0), 0 },
+                { (-1, 1), 1 },
+                { (0, 1), 2 },
+                { (1, 1), 3 },
+                { (1, 0), 4},
+                { (1, -1), 5 },
+                { (0, -1), 6 },
+                { (-1, -1), 7 },
+            };
+            public static Dictionary<(int type, int subType), int> entityStartingHp = new Dictionary<(int type, int subType), int>
+            {
+                { (0, 0), 2}, // Fairy
+                { (0, 1), 4}, // ObsidianFairy
+                { (0, 2), 2}, // FrostFairy
+                { (0, 3), 5}, // SkeletonFairy
+                { (1, 0), 1}, // Frog
+                { (1, 1), 3}, // Carnal
+                { (1, 2), 3}, // Skeletal
+                { (2, 0), 1}, // Fish
+                { (2, 1), 1}, // SkeletonFish
+                { (3, 0), 1}, // HornetEgg 
+                { (3, 1), 2}, // HornetLarva
+                { (3, 2), 5}, // HornetCocoon
+                { (3, 3), 3}, // Hornet
+                { (4, 0), 3}, // Worm
+                { (4, 1), 1}, // Nematode
+                { (5, 0), 1}, // WaterSkipper
+            };
 
             public static Dictionary<int, int> costDict = new Dictionary<int, int>
             {
@@ -266,6 +297,9 @@ namespace Cave
                 turnPngIntoString("Skeletal");
                 turnPngIntoString("Fish");
                 turnPngIntoString("SkeletonFish");
+                turnPngIntoString("HornetEgg");
+                turnPngIntoString("HornetLarva");
+                turnPngIntoString("HornetCocoon");
                 turnPngIntoString("Hornet");
                 turnPngIntoString("Worm");
                 turnPngIntoString("Nematode");
@@ -303,6 +337,9 @@ namespace Cave
                 turnPngIntoString("MushroomCap");
                 turnPngIntoString("MushroomStem");
 
+                turnPngIntoString("Sword");
+                turnPngIntoString("Pickaxe");
+
                 turnPngIntoString("Fire");
             }
 
@@ -329,6 +366,11 @@ namespace Cave
             // Whipped cream biome, chocolate biome... idk
             // Add a portal that is inside lava oceans; in a structure (obsidian city ?), that needs to be turned on with maybe liquid obsidian or oil, and teleports to like hell, or an obsidian dimension made ouf of only obsidian shit ?.
             // Make it so fairies and other creatures have songs. Like maybe in a fairy village there's a village theme song that's procedurally generated. Idk. ANd they can teach u the song and u can sing it with instrument or voice idk.
+
+            // Lore ideas shit !
+            // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.
+            // However they need to be at war to live, so they periodically decide, when there's not enough skeletals alive, to put like half of the tribe in ACID,
+            // Which turns them into skeletals, these skeletals migrate to the bone biome, and then the war can start again lol. Periodic even that can be witnessed by the player maybe ?
 
             //
             // cool seeds !!!! DO NOT DELETE
@@ -377,11 +419,11 @@ namespace Cave
         }
         private void KeyIsDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Right)
+            if (e.KeyCode == Keys.Left)
             {
                 arrowKeysState[0] = true;
             }
-            if (e.KeyCode == Keys.Left)
+            if (e.KeyCode == Keys.Right)
             {
                 arrowKeysState[1] = true;
             }
@@ -448,11 +490,11 @@ namespace Cave
         }
         private void KeyIsUp(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Right)
+            if (e.KeyCode == Keys.Left)
             {
                 arrowKeysState[0] = false;
             }
-            if (e.KeyCode == Keys.Left)
+            if (e.KeyCode == Keys.Right)
             {
                 arrowKeysState[1] = false;
             }

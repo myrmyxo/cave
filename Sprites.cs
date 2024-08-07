@@ -39,6 +39,7 @@ namespace Cave
         public static Dictionary<(int, int), OneSprite> entitySprites;
         public static Dictionary<(int, int), OneSprite> plantSprites;
         public static Dictionary<(int, int), OneSprite> materialSprites;
+        public static Dictionary<(int, int), OneSprite> toolsSprites;
         public static OneSprite numbersSprite;
         public static Dictionary<int, OneSprite> numberSprites;
         public static OneSprite overlayBackground;
@@ -75,7 +76,9 @@ namespace Cave
                 { (1, 2), new OneSprite("Skeletal", true)},       // TO CHANGE
                 { (2, 0), new OneSprite("Fish", false)},
                 { (2, 1), new OneSprite("SkeletonFish", true)},       // TO CHANGE
-                { (3, 0), new OneSprite("Hornet", false)},
+                { (3, 0), new OneSprite("HornetEgg", true)},       // TO CHANGE 
+                { (3, 1), new OneSprite("HornetLarva", true)},       // TO CHANGE
+                { (3, 2), new OneSprite("HornetCocoon", true)},       // TO CHANGE
                 { (3, 3), new OneSprite("Hornet", false)},
                 { (4, 0), new OneSprite("Worm", true)},       // TO CHANGE
                 { (4, 1), new OneSprite("Nematode", true)},       // TO CHANGE
@@ -105,6 +108,11 @@ namespace Cave
                 { (5, 0), new OneSprite("MushroomCap", false)},
                 { (6, 0), new OneSprite("FlowerPetal", false)},
                 { (7, 0), new OneSprite("Pollen", false)},
+            };
+            toolsSprites = new Dictionary<(int, int), OneSprite>
+            {
+                { (0, 0), new OneSprite("Sword", true)},       // TO CHANGE
+                { (1, 0), new OneSprite("Pickaxe", true)},       // TO CHANGE
             };
             overlayBackground = new OneSprite("OverlayBackground", false);
             numbersSprite = new OneSprite("Numbers", false);
@@ -372,6 +380,10 @@ namespace Cave
                 else if (element.typeOfElement == 3)
                 {
                     Sprites.drawSpriteOnCanvas(game.overlayBitmap, materialSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
+                }
+                else if (element.typeOfElement == 4)
+                {
+                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, toolsSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
                 }
                 int quantity = inventoryQuantities[element];
                 if (quantity == -999)

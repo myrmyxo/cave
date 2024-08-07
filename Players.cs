@@ -28,6 +28,7 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using System.Runtime.InteropServices;
 
 namespace Cave
 {
@@ -46,6 +47,12 @@ namespace Cave
             public int structureY = 0;
             public float speedX = 0;
             public float speedY = 0;
+            public (int x, int y) direction = (-1, 0);
+
+            public (int type, int subType) currentAttack = (-1, -1);
+            public int attackState = 0;
+            public Dictionary<int, bool> entitiesAlreadyHitByCurrentAttack = new Dictionary<int, bool>();
+            public bool willBeSetAsNotAttacking = false;
 
             public float realCamPosX = 0;
             public float realCamPosY = 0;
@@ -61,7 +68,7 @@ namespace Cave
 
             public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
             public List<(int index, int subType, int typeOfElement)> inventoryElements;
-            public int inventoryCursor = 3;
+            public int inventoryCursor = 0;
             public Player(SettingsJson settingsJson)
             {
                 if (settingsJson == null)
@@ -114,28 +121,18 @@ namespace Cave
             {
                 inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
                 {
+                    {(0, 0, 4), -999 }, // tools
+                    {(1, 0, 4), -999 },
                     {(0, 0, 1), -999 }, // entitities
-                    {(0, 1, 1), -999 },
-                    {(0, 2, 1), -999 },
                     {(1, 0, 1), -999 },
-                    {(1, 1, 1), -999 },
-                    {(1, 2, 1), -999 },
                     {(2, 0, 1), -999 },
-                    {(3, 0, 1), -999 },
-                    {(3, 3, 1), -999 },
                     {(4, 0, 1), -999 },
                     {(4, 1, 1), -999 },
                     {(5, 0, 1), -999 },
                     {(0, 0, 2), -999 }, // plants
                     {(0, 1, 2), -999 },
-                    {(0, 2, 2), -999 },
-                    {(0, 3, 2), -999 },
                     {(1, 0, 2), -999 },
                     {(1, 1, 2), -999 },
-                    {(2, 0, 2), -999 },
-                    {(2, 1, 2), -999 },
-                    {(3, 0, 2), -999 },
-                    {(4, 0, 2), -999 },
                     {(5, 0, 2), -999 },
                     {(5, 1, 2), -999 },
                     {(-1, 0, 0), -999 }, // materials
@@ -143,28 +140,18 @@ namespace Cave
                 };
                 inventoryElements = new List<(int index, int subType, int typeOfElement)>
                 {
+                    (0, 0, 4), // tools
+                    (1, 0, 4),
                     (0, 0, 1), // entitititities
-                    (0, 1, 1),
-                    (0, 2, 1),
                     (1, 0, 1),
-                    (1, 1, 1),
-                    (1, 2, 1),
                     (2, 0, 1),
-                    (3, 0, 1),
-                    (3, 3, 1),
                     (4, 0, 1),
                     (4, 1, 1),
                     (5, 0, 1),
                     (0, 0, 2), // plants
                     (0, 1, 2),
-                    (0, 2, 2),
-                    (0, 3, 2),
                     (1, 0, 2),
                     (1, 1, 2),
-                    (2, 0, 2),
-                    (2, 1, 2),
-                    (3, 0, 2),
-                    (4, 0, 2),
                     (5, 0, 2),
                     (5, 1, 2),
                     (-1, 0, 0), // materials
@@ -217,13 +204,13 @@ namespace Cave
                 int directionState = 0;
                 if (!dimensionSelection)
                 {
-                    if (arrowKeysState[0]) { speedX += 0.5f; directionState += 1; }
-                    if (arrowKeysState[1]) { speedX -= 0.5f; directionState -= 1; }
+                    if (arrowKeysState[0]) { speedX -= 0.5f; directionState -= 1; }
+                    if (arrowKeysState[1]) { speedX += 0.5f; directionState += 1; }
                     if (onGround && (directionState == 0 || (directionState == 1 && speedX < 0) || (directionState == -1 && speedX > 0))) { ariGeoSlowDownX(0.7f, 0.3f); }
                     if (arrowKeysState[2]) { speedY -= 0.5f; }
                     if (arrowKeysState[3])
                     {
-                        if (onGround) { Jump(directionState, 4); }
+                        if (onGround && !shiftPress) { Jump(directionState, 4); }
                         else if (debugMode || inWater) { speedY += 1f; }
                     }
                 }
@@ -238,11 +225,11 @@ namespace Cave
                 {
                     if (arrowKeysState[0] && !arrowKeysState[1])
                     {
-                        Dig(posX + 1, posY);
+                        Dig(posX - 1, posY);
                     }
                     else if (arrowKeysState[1] && !arrowKeysState[0])
                     {
-                        Dig(posX - 1, posY);
+                        Dig(posX + 1, posY);
                     }
                     else if (arrowKeysState[2] && !arrowKeysState[3])
                     {
@@ -257,11 +244,11 @@ namespace Cave
                 {
                     if (arrowKeysState[0] && !arrowKeysState[1])
                     {
-                        Place(posX + 1, posY);
+                        Place(posX - 1, posY);
                     }
                     else if (arrowKeysState[1] && !arrowKeysState[0])
                     {
-                        Place(posX - 1, posY);
+                        Place(posX + 1, posY);
                     }
                     else if (arrowKeysState[2] && !arrowKeysState[3])
                     {
@@ -275,6 +262,11 @@ namespace Cave
 
 
 
+
+                if (currentAttack.type == (-1)) // only update direction for attack if player is not attacking lol
+                {
+                    updateDirectionForAttack();
+                }
 
 
 
@@ -346,6 +338,7 @@ namespace Cave
                 camPosY = (int)(realCamPosY + 0.5f);
 
                 updateFogOfWar();
+                updateAttack();
             }
             public void updateFogOfWar()
             {
@@ -487,6 +480,109 @@ namespace Cave
 
                 return posList;
             }
+            public void updateDirectionForAttack()
+            {
+                if (arrowKeysState[0] && !arrowKeysState[1]) { direction = (-1, direction.y); }
+                else if (arrowKeysState[1] && !arrowKeysState[0]) { direction = (1, direction.y); }
+
+                if (arrowKeysState[2] && !arrowKeysState[3]) { direction = (direction.x, -1); }
+                else if (arrowKeysState[3] && !arrowKeysState[2]) { direction = (direction.x, 1); }
+                else if (direction.x != 0) { direction = (direction.x, 0); }
+
+                if (arrowKeysState[0] == arrowKeysState[1] && direction.y != 0) { direction = (0, direction.y); }
+            }
+            public void updateAttack()
+            {
+                List<((int x, int y), Color color)> posToDrawList = new List<((int x, int y), Color color)>();
+                List<(int x, int y)> posToAttackList = new List<(int x, int y)>();
+                (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
+                if (digPress && currentItem == (0, 0, 4) && currentAttack.type == -1)  // if current selected item is not pickaxe, can't dig lol
+                {
+                    startAttack((0, 0));
+                }
+                if (currentAttack.type != -1)
+                {
+                    attackState++;
+                    willBeSetAsNotAttacking = false;
+                    int sign = 1;
+                    if (direction.x > 0) { sign = -1; }
+                    (int x, int y) attackDirection = directionPositionArray[PosMod(directionPositionDictionary[direction] + (sign * (attackState - 2)), 8)];
+
+                    // draw 2 pixels, at attack direction, attack direction*2
+                    posToDrawList.Add(((posX + attackDirection.x, posY + attackDirection.y), Color.White));
+                    posToDrawList.Add(((posX + 2 * attackDirection.x, posY + 2 * attackDirection.y), Color.White));
+
+                    if (attackDirection.x != 0 && attackDirection.y != 0) // diagonal, add 4 attack pixels (sword + sides)
+                    {
+                        posToAttackList.Add((posX + attackDirection.x, posY + attackDirection.y));
+                        posToAttackList.Add((posX + 2 * attackDirection.x, posY + attackDirection.y));
+                        posToAttackList.Add((posX + attackDirection.x, posY + 2 * + attackDirection.y));
+                        posToAttackList.Add((posX + 2 * attackDirection.x, posY + 2 * attackDirection.y));
+
+                    }
+                    else if (attackDirection.x != 0) // not diagonal, add attack pixels (sword + sides)
+                    {
+                        posToAttackList.Add((posX + attackDirection.x, posY - 1));
+                        posToAttackList.Add((posX + attackDirection.x, posY));
+                        posToAttackList.Add((posX + attackDirection.x, posY + 1));
+                        posToAttackList.Add((posX + 2 * attackDirection.x, posY - 1));
+                        posToAttackList.Add((posX + 2 * attackDirection.x, posY));
+                        posToAttackList.Add((posX + 2 * attackDirection.x, posY + 1));
+                    }
+                    else
+                    {
+                        posToAttackList.Add((posX - 1, posY + attackDirection.y));
+                        posToAttackList.Add((posX, posY + attackDirection.y));
+                        posToAttackList.Add((posX + 1, posY + attackDirection.y));
+                        posToAttackList.Add((posX - 1, posY + 2 * attackDirection.y));
+                        posToAttackList.Add((posX, posY + 2 * attackDirection.y));
+                        posToAttackList.Add((posX + 1, posY + 2 * attackDirection.y));
+                    }
+
+                    if (attackState == 4) { willBeSetAsNotAttacking = true; }
+                }
+                else { willBeSetAsNotAttacking = true; }
+
+                foreach ((int x, int y) pos in posToAttackList)
+                {
+                    screen.attacksToDo.Add(pos);
+                }
+                foreach (((int x, int y), Color) pos in posToDrawList)
+                {
+                    screen.attacksToDraw.Add(pos);
+                }
+                // send to list of attacks to draw
+            }
+            public void startAttack((int type, int subType) attackToStart)
+            {
+                attackState = -1;
+                currentAttack = (0, 0);
+            }
+            public void setAsNotAttacking()
+            {
+                attackState = 0;
+                currentAttack = (-1, -1);
+                entitiesAlreadyHitByCurrentAttack = new Dictionary<int, bool>();
+            }
+            public void sendAttack((int x, int y) posToTest)
+            {
+                (int x, int y) chunkIndex = screen.findChunkAbsoluteIndex(posToTest);
+                if (!screen.loadedChunks.ContainsKey(chunkIndex)) { return; }
+                Chunk chunkToTest = screen.loadedChunks[chunkIndex];
+                foreach (Entity entity in chunkToTest.entityList)
+                {
+                    if ((entity.posX, entity.posY) == posToTest && !entitiesAlreadyHitByCurrentAttack.ContainsKey(entity.id))
+                    {
+                        entity.hp -= 1;
+                        entitiesAlreadyHitByCurrentAttack[entity.id] = true;
+                        entity.timeAtLastGottenHit = timeElapsed;
+                        if (entity.hp <= 0)
+                        {
+                            screen.entitesToRemove[entity.id] = entity;
+                        }
+                    }
+                }
+            }
             public bool CheckStructurePosChange()
             {
                 (int, int) oldStructurePos = (structureX, structureY);
@@ -497,6 +593,8 @@ namespace Cave
             }
             public void Dig(int posToDigX, int posToDigY)
             {
+                (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
+                if (currentItem != (1, 0, 4)) { return; }   // if current selected item is not pickaxe, can't dig lol
                 (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
                 int value;
                 foreach (Plant plant in screen.activePlants.Values)
@@ -555,38 +653,38 @@ namespace Cave
             {
                 (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return; }
-                (int type, int subType, int typeOfElement) tileContent = inventoryElements[inventoryCursor];
+                (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
                 (int type, int subType) tileState = chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32];
-                if (tileState.type == 0 || tileState.type < 0 && tileContent.typeOfElement > 0)
+                if (tileState.type == 0 || tileState.type < 0 && currentItem.typeOfElement > 0)
                 {
-                    if (tileContent.typeOfElement == 0)
+                    if (currentItem.typeOfElement == 0)
                     {
-                        chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = (tileContent.type, tileContent.subType);
+                        chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = (currentItem.type, currentItem.subType);
                         chunkToTest.findTileColor((posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32);
                         chunkToTest.testLiquidUnstableLiquid(posToDigX, posToDigY);
                         chunkToTest.modificationCount += 1;
                         timeAtLastPlace = timeElapsed;
                     }
-                    else if (tileContent.typeOfElement == 1)
+                    else if (currentItem.typeOfElement == 1)
                     {
-                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), (tileContent.type, tileContent.subType));
+                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), (currentItem.type, currentItem.subType));
                         screen.activeEntities[newEntity.id] = newEntity;
                         timeAtLastPlace = timeElapsed;
                     }
-                    else if (tileContent.typeOfElement == 2)
+                    else if (currentItem.typeOfElement == 2)
                     {
-                        Plant newPlant = new Plant(screen, (posToDigX, posToDigY), tileContent.type, tileContent.subType);
+                        Plant newPlant = new Plant(screen, (posToDigX, posToDigY), currentItem.type, currentItem.subType);
                         if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
                         timeAtLastPlace = timeElapsed;
                     }
                     else { return; }
-                    if (inventoryQuantities[tileContent] != -999)
+                    if (inventoryQuantities[currentItem] != -999)
                     {
-                        inventoryQuantities[tileContent]--;
-                        if (inventoryQuantities[tileContent] <= 0)
+                        inventoryQuantities[currentItem]--;
+                        if (inventoryQuantities[currentItem] <= 0)
                         {
-                            inventoryQuantities.Remove(tileContent);
-                            inventoryElements.Remove(tileContent);
+                            inventoryQuantities.Remove(currentItem);
+                            inventoryElements.Remove(currentItem);
                             moveInventoryCursor(0);
                         }
                     }

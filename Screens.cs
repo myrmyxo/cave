@@ -72,7 +72,7 @@ namespace Cave
                     makeBiomeDiagram((0, 0), (0, 1), (512, i));
                 }
 
-                int idToPut = 2;
+                int idToPut = 0;
                 int PNGsize = 150;
                 PNGsize = 50;
 
@@ -108,7 +108,6 @@ namespace Cave
 
                 screen.chunkX = Floor(player.camPosX, 32) / 32;
                 screen.chunkY = Floor(player.camPosY, 32) / 32;
-                screen.updateLoadedChunks();
             }
             public void runGame(PictureBox gamePictureBox, PictureBox overlayPictureBox)
             {
@@ -136,18 +135,30 @@ namespace Cave
                     screen.extraLoadedChunks.Clear(); // this will make many bugs
                     screen.liquidsThatCantGoLeft = new Dictionary<(int, int), bool>();
                     screen.liquidsThatCantGoRight = new Dictionary<(int, int), bool>();
+                    screen.entitesToRemove = new Dictionary<int, Entity>();
+                    screen.entitesToAdd = new List<Entity>();
+                    screen.attacksToDo = new List<(int x, int y)>();
+                    screen.attacksToDraw = new List<((int x, int y) pos, Color color)>();
                     if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { screen.zoom(true); }
                     if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
                     if (player.dimension == screen.id)
                     {
                         if (dimensionSelection && timeElapsed%0.3f < 0.019f)
                         {
-                            if (arrowKeysState[0] || arrowKeysState[2]) { 
-                                currentTargetDimension++; 
-                            }
-                            if (arrowKeysState[1] || arrowKeysState[3]) { currentTargetDimension--; }
+                            if (arrowKeysState[0] || arrowKeysState[2]) { currentTargetDimension--; }
+                            if (arrowKeysState[1] || arrowKeysState[3]) { currentTargetDimension++; }
                         }
                         movePlayerStuff(screen, player);
+                        screen.updateLoadedChunks();
+                    }
+
+                    foreach (Entity entity in screen.entitesToRemove.Values)
+                    {
+                        screen.activeEntities.Remove(entity.id);
+                    }
+                    foreach (Entity entity in screen.entitesToAdd)
+                    {
+                        screen.activeEntities[entity.id] = entity;
                     }
 
                     if (timeElapsed > 3 && screen.activeNests.Count > 0)
@@ -159,9 +170,6 @@ namespace Cave
                             nestToTest.randomlyExtendNest();
                         }
                     }
-
-                    screen.unloadFarawayChunks();
-                    screen.manageMegaChunks();
 
                     foreach ((int x, int y) pos in screen.chunksToSpawnEntitiesIn.Keys)
                     {
@@ -217,6 +225,33 @@ namespace Cave
                         screen.loadedChunks[(pos.x, pos.y)].moveLiquids();
                     }
 
+
+                    screen.entitesToRemove = new Dictionary<int, Entity>();
+                    screen.entitesToAdd = new List<Entity>();
+                    screen.putEntitiesAndPlantsInChunks();
+
+
+                    // attack shit
+                    foreach ((int x, int y) pos in screen.attacksToDo)
+                    {
+                        player.sendAttack(pos);
+                    }
+                    if (player.willBeSetAsNotAttacking) { player.setAsNotAttacking(); }
+
+
+
+                    screen.unloadFarawayChunks();
+                    screen.manageMegaChunks();
+
+                    screen.removeEntitiesAndPlantsFromChunks(true);
+                    foreach (Entity entity in screen.entitesToRemove.Values)
+                    {
+                        screen.activeEntities.Remove(entity.id);
+                    }
+                    foreach (Entity entity in screen.entitesToAdd)
+                    {
+                        screen.activeEntities[entity.id] = entity;
+                    }
 
                     if (fastForward && framesFastForwarded < 10)
                     {
@@ -306,6 +341,9 @@ namespace Cave
             public Dictionary<int, Plant> activePlants = new Dictionary<int, Plant>();
             public Dictionary<int, Nest> activeNests = new Dictionary<int, Nest>();
             public Dictionary<int, Structure> activeStructures = new Dictionary<int, Structure>();
+
+            public List<(int x, int y)> attacksToDo = new List<(int x, int y)>();
+            public List<((int x, int y) pos, Color color)> attacksToDraw = new List<((int x, int y), Color color)>();
 
             public Dictionary<(int, int), List<Plant>> outOfBoundsPlants = new Dictionary<(int, int), List<Plant>>(); // not used as of now but in some functions so can't remove LMAO
 
@@ -450,9 +488,10 @@ namespace Cave
                 Chunk chunk;
                 int id;
                 List<Entity> cringeEntities = new List<Entity>();
-                while (activeEntities.Count() > 0)
+                int[] entityIdArray = activeEntities.Keys.ToArray();
+                for (int i = 0; i < entityIdArray.Length; i++)
                 {
-                    id = activeEntities.Keys.ToArray()[0]; // kinda cring, very inneficient :(
+                    id = entityIdArray[i];
                     chunkIndex = findChunkAbsoluteIndex(activeEntities[id].posX, activeEntities[id].posY);
                     if (loadedChunks.ContainsKey(chunkIndex))
                     {
@@ -466,9 +505,10 @@ namespace Cave
                         activeEntities.Remove(id);
                     }
                 }
-                while (activePlants.Count() > 0)
+                int[] plantIdArray = activePlants.Keys.ToArray();
+                for (int i = 0; i < plantIdArray.Length; i++)
                 {
-                    id = activePlants.Keys.ToArray()[0]; // kinda cring, very inneficient :(
+                    id = plantIdArray[i];
                     chunkIndex = findChunkAbsoluteIndex(activePlants[id].posX, activePlants[id].posY);
                     chunk = loadedChunks[chunkIndex];
                     chunk.plantList.Add(activePlants[id]);
@@ -477,6 +517,27 @@ namespace Cave
                 foreach (Entity entito in cringeEntities)
                 {
                     activeEntities[entito.id] = entito;
+                }
+            }
+            public void removeEntitiesAndPlantsFromChunks(bool reinitializeActivePlantsAndEntities)
+            {
+                if (reinitializeActivePlantsAndEntities)
+                {
+                    activeEntities = new Dictionary<int, Entity>();
+                    activePlants = new Dictionary<int, Plant>();
+                }
+                foreach (Chunk chunko in loadedChunks.Values)
+                {
+                    foreach (Entity entity in chunko.entityList)
+                    {
+                        activeEntities[entity.id] = entity;
+                    }
+                    foreach (Plant plant in chunko.plantList)
+                    {
+                        activePlants[plant.id] = plant;
+                    }
+                    chunko.entityList = new List<Entity>();
+                    chunko.plantList = new List<Plant>();
                 }
             }
             public void updateLoadedChunks()
@@ -578,12 +639,10 @@ namespace Cave
 
                 actuallyUnloadTheChunks(chunksToRemove);
             }
-            public void actuallyUnloadTheChunks(Dictionary<(int x, int y), bool> chunksDict)
+            public void actuallyUnloadTheChunks(Dictionary<(int x, int y), bool> chunksDict)  // Be careful to have put entities and plants inside the chunk before or else they won't be unloaded !! ! ! ! !
             {
                 if (chunksDict.Count > 0 && true)
                 {
-                    putEntitiesAndPlantsInChunks();
-
                     foreach ((int, int) chunkPos in chunksDict.Keys)
                     {
                         if (loadedChunks.ContainsKey(chunkPos))
@@ -592,20 +651,6 @@ namespace Cave
                             Files.saveChunk(loadedChunks[chunkPos]);
                             loadedChunks.Remove(chunkPos);
                         }
-                    }
-
-                    foreach (Chunk chunko in loadedChunks.Values)
-                    {
-                        foreach (Entity entity in chunko.entityList)
-                        {
-                            activeEntities[entity.id] = entity;
-                        }
-                        foreach (Plant plant in chunko.plantList)
-                        {
-                            activePlants[plant.id] = plant;
-                        }
-                        chunko.entityList = new List<Entity>();
-                        chunko.plantList = new List<Plant>();
                     }
                 }
             }
@@ -895,14 +940,11 @@ namespace Cave
                 foreach (Entity entity in activeEntities.Values)
                 {
                     Color color = entity.color;
-                    (int, int) chunkPos = findChunkAbsoluteIndex(entity.posX, entity.posY);
-                    if (loadedChunks.ContainsKey(chunkPos))
+                    if (entity.timeAtLastGottenHit > timeElapsed - 0.5f)
                     {
-                        Chunk chunkToTest = loadedChunks[chunkPos];
-                        if (false && chunkToTest.fillStates[(entity.posX % 32 + 32) % 32, (entity.posY % 32 + 32) % 32].type > 0) // debug to see if entity stuck in wall or smth
-                        {
-                            color = Color.Red;
-                        }
+                        float redMult = Min(1, (entity.timeAtLastGottenHit - timeElapsed + 0.5f) * 3);
+                        float entityMult = 1 - redMult;
+                        color = Color.FromArgb((int)(entityMult * color.R + redMult * 255), (int)(entityMult * color.G), (int)(entityMult * color.B));
                     }
                     if (game.isLight && entity.type == 0) { lightPositions.Add((entity.posX, entity.posY, 7, entity.lightColor)); }
                     drawPixel(gameBitmap, color, (entity.posX, entity.posY), camPos, PNGmultiplicator);
@@ -927,6 +969,18 @@ namespace Cave
                     }
                     if (game.isLight) { lightPositions.Add((player.posX, player.posY, 9, player.lightColor)); }
                     drawPixel(gameBitmap, color, (player.posX, player.posY), camPos, PNGmultiplicator);
+                }
+
+                foreach (((int x, int y) pos, Color color) item in attacksToDraw)
+                {
+                    drawPixel(gameBitmap, item.color, item.pos, camPos, PNGmultiplicator);
+                }
+                if (debugMode)
+                {
+                    foreach ((int x, int y) pos in attacksToDo)
+                    {
+                        drawPixel(gameBitmap, Color.IndianRed, pos, camPos, PNGmultiplicator);
+                    }
                 }
 
                 if (game.isLight && !debugMode) // light shit
