@@ -60,8 +60,8 @@ namespace Cave
                 { (1, 1), new OneSprite("BasicTile", false)},      // make new sprite for it
                 { (2, 0), new OneSprite("BasicTile", false)},
                 { (3, 0), new OneSprite("PlantMatter", false)},
-                { (4, 0), new OneSprite("Flesh", true)},          // TO CHANGE
-                { (4, 1), new OneSprite("Bone", true)},            // TO CHANGE
+                { (4, 0), new OneSprite("FleshTile", true)},          // TO CHANGE
+                { (4, 1), new OneSprite("BoneTile", true)},            // TO CHANGE
                 { (5, 0), new OneSprite("BasicTile", false)},
                 { (6, 0), new OneSprite("BasicTile", false)}
             };
@@ -108,6 +108,8 @@ namespace Cave
                 { (5, 0), new OneSprite("MushroomCap", false)},
                 { (6, 0), new OneSprite("FlowerPetal", false)},
                 { (7, 0), new OneSprite("Pollen", false)},
+                { (8, 0), new OneSprite("Flesh", true)},        // TO CHANGE
+                { (9, 0), new OneSprite("Bone", true )},        // TO CHANGE
             };
             toolsSprites = new Dictionary<(int, int), OneSprite>
             {

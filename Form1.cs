@@ -114,13 +114,32 @@ namespace Cave
                 { (3, 1), 2}, // HornetLarva
                 { (3, 2), 5}, // HornetCocoon
                 { (3, 3), 3}, // Hornet
-                { (4, 0), 3}, // Worm
-                { (4, 1), 1}, // Nematode
+                { (4, 0), 4}, // Worm
+                { (4, 1), 2}, // Nematode
                 { (5, 0), 1}, // WaterSkipper
             };
-
-            public static Dictionary<int, int> costDict = new Dictionary<int, int>
+            public static Dictionary<(int type, int subType), ((int type, int subType, int megaType) element, int count)> entityDrops = new Dictionary<(int type, int subType), ((int type, int subType, int megaType), int count)>
             {
+                { (0, 0), ((-3, 0, 0), 1)}, // Fairy          --> Fairy Liquid
+                { (0, 1), ((-3, 0, 0), 1)}, // ObsidianFairy  --> Fairy Liquid
+                { (0, 2), ((-3, 0, 0), 1)}, // FrostFairy     --> Fairy Liquid
+                { (0, 3), ((9, 0, 3), 1)}, // SkeletonFairy   --> Bone
+                { (1, 0), ((8, 0, 3), 1)}, // Frog            --> Flesh
+                { (1, 1), ((8, 0, 3), 1)}, // Carnal          --> Flesh
+                { (1, 2), ((9, 0, 3), 1)}, // Skeletal        --> Bone
+                { (2, 0), ((8, 0, 3), 1)}, // Fish            --> Flesh
+                { (2, 1), ((9, 0, 3), 1)}, // SkeletonFish    --> Bone
+                { (3, 0), ((8, 0, 3), 1)}, // HornetEgg       --> Flesh
+                { (3, 1), ((8, 0, 3), 1)}, // HornetLarva     --> Flesh
+                { (3, 2), ((8, 0, 3), 1)}, // HornetCocoon    --> Flesh
+                { (3, 3), ((8, 0, 3), 1)}, // Hornet          --> Flesh
+                { (4, 0), ((8, 0, 3), 1)}, // Worm            --> Flesh
+                { (4, 1), ((8, 0, 3), 1)}, // Nematode        --> Flesh
+                { (5, 0), ((8, 0, 3), 1)}, // WaterSkipper    --> Flesh
+            };                  
+                                
+            public static Dictionary<int, int> costDict = new Dictionary<int, int>
+            {                   
                 { 0, 1 }, // air
                 { -1, 3 }, // piss
                 { -2, 3 }, // water
@@ -129,8 +148,8 @@ namespace Cave
                 { -5, 5 }, // honey
                 { -6, 3 }, // blood
                 { -7, 999999 }, // acid (cannot cross)
-            };
-
+            };                  
+                                
             public static Dictionary<(int biome, int subBiome), bool> darkBiomes = new Dictionary<(int biome, int subBiome), bool>
             {
                 { (9, 0), true }, // chandelier biome
@@ -313,8 +332,8 @@ namespace Cave
                 turnPngIntoString("Water");
                 turnPngIntoString("Piss");
                 turnPngIntoString("BasicTile");
-                turnPngIntoString("Flesh");
-                turnPngIntoString("Bone");
+                turnPngIntoString("FleshTile");
+                turnPngIntoString("BoneTile");
 
                 turnPngIntoString("BasePlant");
                 turnPngIntoString("Candle");
@@ -336,6 +355,8 @@ namespace Cave
                 turnPngIntoString("Kelp");
                 turnPngIntoString("MushroomCap");
                 turnPngIntoString("MushroomStem");
+                turnPngIntoString("Flesh");
+                turnPngIntoString("Bone");
 
                 turnPngIntoString("Sword");
                 turnPngIntoString("Pickaxe");

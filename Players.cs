@@ -578,7 +578,7 @@ namespace Cave
                         entity.timeAtLastGottenHit = timeElapsed;
                         if (entity.hp <= 0)
                         {
-                            screen.entitesToRemove[entity.id] = entity;
+                            entity.dieAndDrop(this);
                         }
                     }
                 }
@@ -602,22 +602,7 @@ namespace Cave
                     value = plant.testDig(posToDigX, posToDigY);
                     if (value != 0)
                     {
-                        (int index, int subType, int typeOfElement)[] inventoryKeys = inventoryQuantities.Keys.ToArray();
-                        for (int i = 0; i < inventoryKeys.Length; i++)
-                        {
-                            if (inventoryKeys[i].index == value && inventoryKeys[i].typeOfElement == 3)
-                            {
-                                if (inventoryQuantities[(value, 0, 3)] != -999)
-                                {
-                                    inventoryQuantities[(value, 0, 3)]++;
-                                }
-                                goto AfterTest;
-                            }
-                        }
-                        // there was none of the thing present in the inventory already so gotta create it
-                        inventoryQuantities.Add((value, 0, 3), 1);
-                        inventoryElements.Add((value, 0, 3));
-                    AfterTest:;
+                        addElementToInventory((value, 0, 3));
                         timeAtLastDig = timeElapsed;
                         return;
                     }
@@ -626,22 +611,7 @@ namespace Cave
                 (int type, int subType) tileContent = chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32];
                 if (tileContent.type != 0)
                 {
-                    (int index, int subType, int typeOfElement)[] inventoryKeys = inventoryQuantities.Keys.ToArray();
-                    for (int i = 0; i < inventoryKeys.Length; i++)
-                    {
-                        if (inventoryKeys[i] == (tileContent.type, tileContent.subType, 0))
-                        {
-                            if (inventoryQuantities[(tileContent.type, tileContent.subType, 0)] != -999)
-                            {
-                                inventoryQuantities[(tileContent.type, tileContent.subType, 0)]++;
-                            }
-                            goto AfterTest;
-                        }
-                    }
-                    // there was none of the thing present in the inventory already so gotta create it
-                    inventoryQuantities.Add((tileContent.type, tileContent.subType, 0), 1);
-                    inventoryElements.Add((tileContent.type, tileContent.subType, 0));
-                AfterTest:;
+                    addElementToInventory((tileContent.type, tileContent.subType, 0));
                     chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = (0, 0);
                     chunkToTest.findTileColor((posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32);
                     chunkToTest.testLiquidUnstableAir(posToDigX, posToDigY);
@@ -680,13 +650,39 @@ namespace Cave
                     else { return; }
                     if (inventoryQuantities[currentItem] != -999)
                     {
-                        inventoryQuantities[currentItem]--;
-                        if (inventoryQuantities[currentItem] <= 0)
+                        removeElementFromInventory(currentItem);
+                    }
+                }
+            }
+            public void addElementToInventory((int index, int subType, int typeOfElement) elementToAdd, int quantityToAdd = 1)
+            {
+                (int index, int subType, int typeOfElement)[] inventoryKeys = inventoryQuantities.Keys.ToArray();
+                for (int i = 0; i < inventoryKeys.Length; i++)
+                {
+                    if (inventoryKeys[i] == elementToAdd)
+                    {
+                        if (inventoryQuantities[elementToAdd] != -999)
                         {
-                            inventoryQuantities.Remove(currentItem);
-                            inventoryElements.Remove(currentItem);
-                            moveInventoryCursor(0);
+                            inventoryQuantities[elementToAdd] += quantityToAdd;
                         }
+                        timeAtLastDig = timeElapsed;
+                        return;
+                    }
+                }
+                // there was none of the thing present in the inventory already so gotta create it
+                inventoryQuantities.Add(elementToAdd, quantityToAdd);
+                inventoryElements.Add(elementToAdd);
+            }
+            public void removeElementFromInventory((int index, int subType, int typeOfElement) elementToRemove, int quantityToRemove = 1)
+            {
+                if (inventoryQuantities[elementToRemove] != -999)
+                {
+                    inventoryQuantities[elementToRemove] -= quantityToRemove;
+                    if (inventoryQuantities[elementToRemove] <= 0)
+                    {
+                        inventoryQuantities.Remove(elementToRemove);
+                        inventoryElements.Remove(elementToRemove);
+                        moveInventoryCursor(0);
                     }
                 }
             }

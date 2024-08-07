@@ -1172,6 +1172,13 @@ namespace Cave
                 findLength();
                 color = findColor();
             }
+            public void dieAndDrop(Player playerToGive)
+            {
+                ((int type, int subType, int megaType) element, int count) entityDrop = entityDrops[(type, subType)];
+                if (type == 4) { entityDrop = (entityDrop.element, length); }
+                playerToGive.addElementToInventory(entityDrop.element, entityDrop.count);
+                screen.entitesToRemove[id] = this;
+            }
             public void findLength()
             {
                 if (type == 4)
