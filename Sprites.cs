@@ -28,6 +28,7 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using System.Xml.Linq;
 
 namespace Cave
 {
@@ -42,6 +43,14 @@ namespace Cave
         public static Dictionary<(int, int), OneSprite> toolsSprites;
         public static OneSprite numbersSprite;
         public static Dictionary<int, OneSprite> numberSprites;
+        public static OneSprite lettersUpSprite;
+        public static Dictionary<int, OneSprite> letterUpSprites;
+        public static OneSprite lettersLowSprite;
+        public static Dictionary<int, OneSprite> letterLowSprites;
+        public static OneSprite arrowsSprite;
+        public static Dictionary<int, OneSprite> arrowSprites;
+        public static OneSprite operationSignsSprite;
+        public static Dictionary<int, OneSprite> operationSignSprites;
         public static OneSprite overlayBackground;
 
         public static OneAnimation fireAnimation;
@@ -115,14 +124,49 @@ namespace Cave
             {
                 { (0, 0), new OneSprite("Sword", true)},       // TO CHANGE
                 { (1, 0), new OneSprite("Pickaxe", true)},       // TO CHANGE
+                { (2, 0), new OneSprite("Scythe", true)},       // TO CHANGE
             };
             overlayBackground = new OneSprite("OverlayBackground", false);
+
             numbersSprite = new OneSprite("Numbers", false);
+            lettersUpSprite = new OneSprite("LettersUp", true);      // TO CHANGE
+            lettersLowSprite = new OneSprite("LettersMin", true);      // TO CHANGE       // be careful also it's LettersMin and not LettersLow that are 2 different fonts ! LetterMin look better so i chose it lol
+            arrowsSprite = new OneSprite("Arrows", true);        // TO CHANGE
+            operationSignsSprite = new OneSprite("OperationSigns", true);        // TO CHANGE
+
             Bitmap[] numberBitmapArray = slice(numbersSprite.bitmap, 11, 1);
             numberSprites = new Dictionary<int, OneSprite>();
             for (int i = 0; i < numberBitmapArray.Count(); i++)
             {
                 numberSprites.Add(i, new OneSprite(numberBitmapArray[i]));
+            }
+
+            Bitmap[] letterUpBitmapArray = slice(lettersUpSprite.bitmap, 26, 1);
+            letterUpSprites = new Dictionary<int, OneSprite>();
+            for (int i = 0; i < letterUpBitmapArray.Count(); i++)
+            {
+                letterUpSprites.Add(i, new OneSprite(letterUpBitmapArray[i]));
+            }
+
+            Bitmap[] letterLowBitmapArray = slice(lettersLowSprite.bitmap, 26, 1);
+            letterLowSprites = new Dictionary<int, OneSprite>();
+            for (int i = 0; i < letterLowBitmapArray.Count(); i++)
+            {
+                letterLowSprites.Add(i, new OneSprite(letterLowBitmapArray[i]));
+            }
+
+            Bitmap[] arrowBitmapArray = slice(arrowsSprite.bitmap, 4, 1);
+            arrowSprites = new Dictionary<int, OneSprite>();
+            for (int i = 0; i < arrowBitmapArray.Count(); i++)
+            {
+                arrowSprites.Add(i, new OneSprite(arrowBitmapArray[i]));
+            }
+
+            Bitmap[] operationSignBitmapArray = slice(operationSignsSprite.bitmap, 6, 1);
+            operationSignSprites = new Dictionary<int, OneSprite>();
+            for (int i = 0; i < operationSignBitmapArray.Count(); i++)
+            {
+                operationSignSprites.Add(i, new OneSprite(operationSignBitmapArray[i]));
             }
 
             fireAnimation = new OneAnimation("Fire", false, 6);
@@ -362,44 +406,108 @@ namespace Cave
             }
         }
 
+        public static void drawElement(Bitmap bigBitmap, (int type, int subType, int megaType) element, (int, int) posToDraw, int scaleFactor, bool centeredDraw)
+        {
+            if (element.megaType == 0)
+            {
+                Sprites.drawSpriteOnCanvas(bigBitmap, compoundSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw);
+            }
+            else if (element.megaType == 1)
+            {
+                Sprites.drawSpriteOnCanvas(bigBitmap, entitySprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw);
+            }
+            else if (element.megaType == 2)
+            {
+                Sprites.drawSpriteOnCanvas(bigBitmap, plantSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw);
+            }
+            else if (element.megaType == 3)
+            {
+                Sprites.drawSpriteOnCanvas(bigBitmap, materialSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw);
+            }
+            else if (element.megaType == 4)
+            {
+                Sprites.drawSpriteOnCanvas(bigBitmap, toolsSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw);
+            }
+        }
+
         public static void drawInventory(Game game, Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities, List<(int index, int subType, int typeOfElement)> inventoryElements, int inventoryCursor)
         {                         
             if (inventoryElements.Count > 0)
             {
-                (int index, int subType, int typeOfElement) element = inventoryElements[inventoryCursor];
-                if (element.typeOfElement == 0)
-                {
-                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, compoundSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
-                }
-                else if (element.typeOfElement == 1)
-                {
-                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, entitySprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
-                }
-                else if (element.typeOfElement == 2)
-                {
-                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, plantSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
-                }
-                else if (element.typeOfElement == 3)
-                {
-                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, materialSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
-                }
-                else if (element.typeOfElement == 4)
-                {
-                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, toolsSprites[(element.index, element.subType)].bitmap, (340, 64), 4, true);
-                }
+                (int type, int subType, int megaType) element = inventoryElements[inventoryCursor];
+                drawElement(game.overlayBitmap, element, (360, 64), 4, true);
+
                 int quantity = inventoryQuantities[element];
                 if (quantity == -999)
                 {
-                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, numberSprites[10].bitmap, (408, 64), 4, true);
+                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, numberSprites[10].bitmap, (420, 64), 4, true);
                 }
                 else
                 {
-                    drawNumber(game.overlayBitmap, quantity, (408, 64), 4, true);
+                    int scaleFactor = 4;
+                    if (quantity >= 10000) { scaleFactor = 2; }
+                    else if (quantity >= 1000) { scaleFactor = 3; }
+                    drawNumber(game.overlayBitmap, quantity, (420, 64), scaleFactor, true);
                 }
             }
         }
-        public static void drawNumber(Bitmap bitmap, int number, (int x, int y) pos, int scaleFactor, bool centeredDraw)
+        public static void drawCraftRecipe(Game game, ((int type, int subType, int megaType) material, int count)[] Recipe)
         {
+            List<((int type, int subType, int megaType) material, int count)> reactives = new List<((int type, int subType, int megaType) material, int count)>();
+            List<((int type, int subType, int megaType) material, int count)> products = new List<((int type, int subType, int megaType) material, int count)>();
+
+            int scaleCount = 1;
+
+            foreach (((int type, int subType, int megaType) material, int count) tupel in Recipe)
+            {
+                if (tupel.count < 0) { reactives.Add(tupel); }
+                else if (tupel.count > 0) { products.Add(tupel); }
+                else { continue; }
+                scaleCount++;
+            }
+
+            int scaleFactor = 4;
+            if (scaleCount > 6) { scaleFactor = 1; }
+            else if (scaleCount > 4) { scaleFactor = 2; }
+            else if (scaleCount > 3) { scaleFactor = 3; }
+
+            int posX = 5 * scaleFactor;
+            for( int i = 0; i < reactives.Count; i++)
+            {
+                ((int type, int subType, int megaType) element, int count) tupel = reactives[i];
+                posX += drawNumber(game.overlayBitmap, -tupel.count, (posX, 64), scaleFactor, true);         // -tuple.count cause it's negative it's not work lol if not minus
+                drawElement(game.overlayBitmap, tupel.element, (posX + 4 * scaleFactor, 64), scaleFactor, true);
+                posX += 16 * scaleFactor;
+                if (i < reactives.Count - 1)
+                {
+                    posX += 2 * scaleFactor;
+                    drawSpriteOnCanvas(game.overlayBitmap, operationSignSprites[0].bitmap, (posX, 64), scaleFactor, true);
+                    posX += 10 * scaleFactor;
+                }
+            }
+
+            posX += 2 * scaleFactor;
+            drawSpriteOnCanvas(game.overlayBitmap, arrowSprites[1].bitmap, (posX, 64), scaleFactor, true);
+            posX += 10 * scaleFactor;
+
+            for (int i = 0; i < products.Count; i++)
+            {
+                ((int type, int subType, int megaType) element, int count) tupel = products[i];
+                posX += drawNumber(game.overlayBitmap, tupel.count, (posX, 64), scaleFactor, true);
+                drawElement(game.overlayBitmap, tupel.element, (posX + 4 * scaleFactor, 64), scaleFactor, true);
+                posX += 16 * scaleFactor;
+                if (i < products.Count - 1)
+                {
+                    posX += 2 * scaleFactor;
+                    drawSpriteOnCanvas(game.overlayBitmap, operationSignSprites[0].bitmap, (posX, 64), scaleFactor, true);
+                    posX += 10 * scaleFactor;
+                }
+            }
+
+        }
+        public static int drawNumber(Bitmap bitmap, int number, (int x, int y) pos, int scaleFactor, bool centeredDraw)
+        {
+            int counto = 0;
             List<int> numberList = new List<int>();
             if (number == 0) { numberList.Add(0); }
             for (int i = 0; number > 0; i++)
@@ -409,8 +517,11 @@ namespace Cave
             }
             for (int i = 0; i < numberList.Count; i++)
             {
-                Sprites.drawSpriteOnCanvas(bitmap, numberSprites[numberList[i]].bitmap, (pos.x + i * 32, pos.y), scaleFactor, centeredDraw);
+                Sprites.drawSpriteOnCanvas(bitmap, numberSprites[numberList[i]].bitmap, (pos.x + i * 8 * scaleFactor, pos.y), scaleFactor, centeredDraw);
+                counto += 8 * scaleFactor;
             }
+
+            return counto;
         }
         public static string findSpritesPath()
         {

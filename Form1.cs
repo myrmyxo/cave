@@ -61,9 +61,10 @@ namespace Cave
             public static bool pausePress = false;
             public static bool fastForward = false;
             public static bool debugMode = false;
-            public static bool debugMode2 = false;
+            public static bool craftPress = false;
+            public static bool craftSelection = false;
             public static bool shiftPress = false;
-            public static bool doShitPress = false;
+            public static bool dimensionChangePress = false;
             public static bool dimensionSelection = false;
             public static int currentTargetDimension = 0;
             public static float lastZoom = 0;
@@ -136,10 +137,10 @@ namespace Cave
                 { (4, 0), ((8, 0, 3), 1)}, // Worm            --> Flesh
                 { (4, 1), ((8, 0, 3), 1)}, // Nematode        --> Flesh
                 { (5, 0), ((8, 0, 3), 1)}, // WaterSkipper    --> Flesh
-            };                  
-                                
+            };
+
             public static Dictionary<int, int> costDict = new Dictionary<int, int>
-            {                   
+            {
                 { 0, 1 }, // air
                 { -1, 3 }, // piss
                 { -2, 3 }, // water
@@ -148,8 +149,8 @@ namespace Cave
                 { -5, 5 }, // honey
                 { -6, 3 }, // blood
                 { -7, 999999 }, // acid (cannot cross)
-            };                  
-                                
+            };
+
             public static Dictionary<(int biome, int subBiome), bool> darkBiomes = new Dictionary<(int biome, int subBiome), bool>
             {
                 { (9, 0), true }, // chandelier biome
@@ -246,7 +247,50 @@ namespace Cave
                 { (4, 0), (135, 55, 55, 0.2f)}, // flesh tile
                 { (4, 1), (240, 230, 245, 0.2f)}, // bone tile
             };
+            public static List<((int type, int subType, int megaType) material, int count)[]> craftRecipes = new List<((int type, int subType, int megaType) material, int count)[]>
+            {
+                new ((int type, int subType, int megaType) material, int count)[] // flesh to flesh tile
+                {
+                    ((8, 0, 3), -10),
+                    ((4, 0, 0), 1),
+                },
+                new ((int type, int subType, int megaType) material, int count)[] // bone to bone tile
+                {
+                    ((9, 0, 3), -10),
+                    ((4, 1, 0), 1),
+                },
 
+                new ((int type, int subType, int megaType) material, int count)[] // blood to water and flesh
+                {
+                    ((-6, 0, 0), -3),
+                    ((-2, 0, 0), 3),
+                    ((8, 0, 3), 1),
+                },
+                
+                new ((int type, int subType, int megaType) material, int count)[] // INFINITE FLESH
+                {
+                    ((8, 0, 3), 100),
+                },
+
+                new ((int type, int subType, int megaType) material, int count)[] // test 1
+                {
+                    ((1, 0, 3), -1),
+                    ((2, 0, 3), -2),
+                    ((3, 0, 3), 1),
+                    ((4, 0, 3), 10),
+                },
+
+                new ((int type, int subType, int megaType) material, int count)[] // test 2
+                {
+                    ((1, 0, 3), -10),
+                    ((2, 0, 3), -1),
+                    ((3, 0, 3), -10),
+                    ((4, 0, 3), 6),
+                    ((5, 0, 3), 2),
+                    ((6, 0, 3), 10),
+                },
+            };
+            
             public static string[] nameArray = new string[]
             {
                 "ka",
@@ -306,6 +350,11 @@ namespace Cave
             {
                 turnPngIntoString("OverlayBackground");
                 turnPngIntoString("Numbers");
+                turnPngIntoString("LettersUp");
+                turnPngIntoString("LettersLow");
+                turnPngIntoString("LettersMin");
+                turnPngIntoString("Arrows");
+                turnPngIntoString("OperationSigns");
 
                 turnPngIntoString("Fairy");
                 turnPngIntoString("ObsidianFairy");
@@ -360,6 +409,7 @@ namespace Cave
 
                 turnPngIntoString("Sword");
                 turnPngIntoString("Pickaxe");
+                turnPngIntoString("Scythe");
 
                 turnPngIntoString("Fire");
             }
@@ -492,17 +542,17 @@ namespace Cave
             {
                 fastForward = true;
             }
-            if (e.KeyCode == Keys.K)
+            if (e.KeyCode == Keys.K && !dimensionChangePress)
             {
-                doShitPress = true;
+                craftPress = true;
             }
             if (e.KeyCode == Keys.M)
             {
                 debugMode = !debugMode;
             }
-            if (e.KeyCode == Keys.L)
+            if (e.KeyCode == Keys.L && !craftPress)
             {
-                debugMode2 = !debugMode2;
+                dimensionChangePress = true;
             }
             if ((Control.ModifierKeys & Keys.Shift) != 0)
             {

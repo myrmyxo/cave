@@ -72,9 +72,9 @@ namespace Cave
                     makeBiomeDiagram((0, 0), (0, 1), (512, i));
                 }
 
-                int idToPut = 2;
+                int idToPut = 1;
                 int PNGsize = 150;
-                PNGsize = 50;
+                PNGsize = 100;
 
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
@@ -116,7 +116,7 @@ namespace Cave
                 Player player = playerList[0];
 
                 if (pausePress) { return; }
-                if (doShitPress)
+                if (dimensionChangePress)
                 {
                     if (dimensionSelection)
                     {
@@ -124,7 +124,16 @@ namespace Cave
                         setPlayerDimension(player, currentTargetDimension);
                     }
                     else { dimensionSelection = true; }
-                    doShitPress = false;
+                    dimensionChangePress = false;
+                }
+                if (craftPress)
+                {
+                    if (craftSelection)
+                    {
+                        craftSelection = false;
+                    }
+                    else { craftSelection = true; }
+                    craftPress = false;
                 }
 
                 foreach (Screen screen in loadedScreens.Values)
@@ -143,12 +152,17 @@ namespace Cave
                     if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
                     if (player.dimension == screen.id)
                     {
-                        if (dimensionSelection && timeElapsed%0.3f < 0.019f)
+                        if (dimensionSelection && player.timeAtLastMenuChange + 0.2f < timeElapsed)
                         {
                             if (arrowKeysState[0] || arrowKeysState[2]) { currentTargetDimension--; }
                             if (arrowKeysState[1] || arrowKeysState[3]) { currentTargetDimension++; }
                         }
-                        movePlayerStuff(screen, player);
+                        else if (craftSelection && player.timeAtLastMenuChange + 0.2f < timeElapsed)
+                        {
+                            if (arrowKeysState[0] || arrowKeysState[2]) { player.moveCraftCursor(-1); }
+                            if (arrowKeysState[1] || arrowKeysState[3]) { player.moveCraftCursor(1); }
+                        }
+                        movePlayerStuff(screen, player); // move player, load new chunks, test craft, and stuff
                         screen.updateLoadedChunks();
                     }
 
@@ -265,10 +279,8 @@ namespace Cave
                         gamePictureBox.Refresh();
                         overlayPictureBox.Image = overlayBitmap;
                         Sprites.drawSpriteOnCanvas(overlayBitmap, overlayBackground.bitmap, (0, 0), 4, false);
-                        if (dimensionSelection)
-                        {
-                            drawNumber(overlayBitmap, currentTargetDimension, (200, 64), 4, true);
-                        }
+                        if (dimensionSelection) { drawNumber(overlayBitmap, currentTargetDimension, (200, 64), 4, true); }
+                        else if (craftSelection) { drawCraftRecipe(this, craftRecipes[player.craftCursor]); }
                         drawInventory(player.screen.game, player.inventoryQuantities, player.inventoryElements, player.inventoryCursor);
                         overlayPictureBox.Refresh();
                     }
@@ -295,17 +307,22 @@ namespace Cave
                 player.screen.checkStructuresOnSpawn(player);
                 unloadAllDimensions(false);
             }
-            public void unloadAllDimensions(bool unloadDimensionPlayerIsInToo)
+            public void unloadAllDimensions(bool unloadDimensionPlayerIsInAsWell)
             {
                 Screen screen;
+                List<int> screensToRemove = new List<int>();
                 foreach (int id in loadedScreens.Keys)
                 {
-                    if (unloadDimensionPlayerIsInToo || playerList[0].dimension != id)
+                    if (unloadDimensionPlayerIsInAsWell || playerList[0].dimension != id)
                     {
                         screen = loadedScreens[id];
                         screen.saveAllChunks();
-                        loadedScreens.Remove(id);
+                        screensToRemove.Add(id);
                     }
+                }
+                foreach (int id in screensToRemove)
+                {
+                    loadedScreens.Remove(id);
                 }
             }
         }
@@ -975,7 +992,7 @@ namespace Cave
                 {
                     drawPixel(gameBitmap, item.color, item.pos, camPos, PNGmultiplicator);
                 }
-                if (debugMode)
+                if (debugMode && !isPngToBeExported)
                 {
                     foreach ((int x, int y) pos in attacksToDo)
                     {
@@ -1041,7 +1058,7 @@ namespace Cave
                     }
                 }
 
-                if (debugMode) // debug for nests
+                if (debugMode && !isPngToBeExported) // debug for nests
                 {
                     foreach (Nest nest in activeNests.Values)
                     {
@@ -1075,7 +1092,7 @@ namespace Cave
                         }
                     }
                 }
-                if (debugMode) // debug for paths
+                if (debugMode && !isPngToBeExported) // debug for paths
                 {
                     foreach (Entity entity in activeEntities.Values)
                     {
@@ -1090,7 +1107,7 @@ namespace Cave
                     }
                 }
 
-                if (debugMode) // debug shit for chunks and megachunks
+                if (debugMode && !isPngToBeExported) // debug shit for chunks and megachunks
                 {
                     (int x, int y) cameraChunkIdx = (Floor(game.playerList[0].camPosX, 32) / 32, Floor(game.playerList[0].camPosY, 32) / 32);
                     foreach ((int x, int y) poso in megaChunks.Keys)

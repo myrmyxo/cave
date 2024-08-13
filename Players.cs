@@ -29,6 +29,7 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using System.Runtime.InteropServices;
+using System.Diagnostics.Eventing.Reader;
 
 namespace Cave
 {
@@ -63,12 +64,14 @@ namespace Cave
 
             public float timeAtLastDig = -9999;
             public float timeAtLastPlace = -9999;
+            public float timeAtLastMenuChange = -9999;
 
             public Color lightColor = Color.FromArgb(255, (Color.Green.R + 255) / 2, (Color.Green.G + 255) / 2, (Color.Green.B + 255) / 2);
 
             public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
             public List<(int index, int subType, int typeOfElement)> inventoryElements;
             public int inventoryCursor = 0;
+            public int craftCursor = 0;
             public Player(SettingsJson settingsJson)
             {
                 if (settingsJson == null)
@@ -202,7 +205,7 @@ namespace Cave
                 ariGeoSlowDownX(0.8f, 0.15f);
                 if (inWater) { ariGeoSlowDown(0.95f, 0.2f); }
                 int directionState = 0;
-                if (!dimensionSelection)
+                if (!dimensionSelection && !craftSelection)
                 {
                     if (arrowKeysState[0]) { speedX -= 0.5f; directionState -= 1; }
                     if (arrowKeysState[1]) { speedX += 0.5f; directionState += 1; }
@@ -339,6 +342,7 @@ namespace Cave
 
                 updateFogOfWar();
                 updateAttack();
+                if (craftSelection && digPress && tryCraft()) { digPress = false; }
             }
             public void updateFogOfWar()
             {
@@ -656,25 +660,21 @@ namespace Cave
             }
             public void addElementToInventory((int index, int subType, int typeOfElement) elementToAdd, int quantityToAdd = 1)
             {
-                (int index, int subType, int typeOfElement)[] inventoryKeys = inventoryQuantities.Keys.ToArray();
-                for (int i = 0; i < inventoryKeys.Length; i++)
+                if (!inventoryQuantities.ContainsKey(elementToAdd))
                 {
-                    if (inventoryKeys[i] == elementToAdd)
-                    {
-                        if (inventoryQuantities[elementToAdd] != -999)
-                        {
-                            inventoryQuantities[elementToAdd] += quantityToAdd;
-                        }
-                        timeAtLastDig = timeElapsed;
-                        return;
-                    }
+                    inventoryQuantities.Add(elementToAdd, quantityToAdd);
+                    inventoryElements.Add(elementToAdd);
+                    return;
                 }
-                // there was none of the thing present in the inventory already so gotta create it
-                inventoryQuantities.Add(elementToAdd, quantityToAdd);
-                inventoryElements.Add(elementToAdd);
+                if (inventoryQuantities[elementToAdd] != -999)
+                {
+                    inventoryQuantities[elementToAdd] += quantityToAdd;
+                }
+                return;
             }
             public void removeElementFromInventory((int index, int subType, int typeOfElement) elementToRemove, int quantityToRemove = 1)
             {
+                if (!inventoryQuantities.ContainsKey(elementToRemove)) { return; }
                 if (inventoryQuantities[elementToRemove] != -999)
                 {
                     inventoryQuantities[elementToRemove] -= quantityToRemove;
@@ -691,6 +691,31 @@ namespace Cave
                 int counto = inventoryElements.Count;
                 if (counto == 0) { inventoryCursor = 0; }
                 inventoryCursor = ((inventoryCursor + value) % counto + counto) % counto;
+            }
+            public void moveCraftCursor(int value)
+            {
+                int counto = craftRecipes.Count;
+                if (counto == 0) { craftCursor = 0; }
+                craftCursor = ((craftCursor + value) % counto + counto) % counto;
+            }
+            public bool tryCraft()
+            {
+                if (craftRecipes.Count <= 0 || craftCursor >= craftRecipes.Count || craftCursor < 0) { return false; }
+                ((int type, int subType, int megaType) material, int count)[] currentCraftRecipe = craftRecipes[craftCursor];
+
+                foreach (((int type, int subType, int megaType) material, int count) tupel in currentCraftRecipe) // test if player has all ingredients to craft, and in sufficient amounts
+                {
+                    if (tupel.count < 0 && (!inventoryQuantities.ContainsKey(tupel.material) || (inventoryQuantities[tupel.material] != -999 && inventoryQuantities[tupel.material] < -tupel.count))) // if it got pollen, try to make honey
+                    { return false; }
+                }
+
+                foreach (((int type, int subType, int megaType) material, int count) tupel in currentCraftRecipe) // craft each shit
+                {
+                    if (tupel.count < 0) { removeElementFromInventory(tupel.material, -tupel.count); } // since quantityToRemove is NEGATIVE it needs to be put positive else it will add lol
+                    else if (tupel.count > 0) { addElementToInventory(tupel.material, tupel.count); }
+                }
+
+                return true;
             }
         }
     }

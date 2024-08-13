@@ -1056,6 +1056,10 @@ namespace Cave
                     f.Write(stringo);
                 }
             }
+            public void testForBloodAltar()
+            {
+
+            }
         }
     }
 }

@@ -39,8 +39,8 @@ namespace Cave
 
             public int seed;
             public int id;
-            public int type; // 0 = fairy , 1 = frog , 2 = fish, 3 = hornet
-            public int subType;
+            public int type; // 0 = fairy , 1 = frog , 2 = fish, 3 = hornet, 4 = worm, 5 = waterSkipper
+            public int subType; // (0 : normal, obsidian, frost, skeleton). (1 : frog, carnal, skeletal). (2 : fish, skeleton). (3 : egg, larva, cocoon, adult). (4 : worm, nematode). ( 5 : waterSkipper) 
             public int state; // 0 = idle I guess idk
             public float realPosX = 0;
             public float realPosY = 0;
@@ -1289,37 +1289,31 @@ namespace Cave
 
                 };
             }
-            public void addElementToInventory((int index, int subType, int typeOfElement) elementToAdd)
+            public void addElementToInventory((int index, int subType, int typeOfElement) elementToAdd, int quantityToAdd = 1)
             {
-                (int index, int subType, int typeOfElement)[] inventoryKeys = inventoryQuantities.Keys.ToArray();
-                for (int i = 0; i < inventoryKeys.Length; i++)
+                if (!inventoryQuantities.ContainsKey(elementToAdd))
                 {
-                    if (inventoryKeys[i] == elementToAdd)
-                    {
-                        if (inventoryQuantities[elementToAdd] != -999)
-                        {
-                            inventoryQuantities[elementToAdd]++;
-                        }
-                        elementsPossessed++;
-                        timeAtLastDig = timeElapsed;
-                        return;
-                    }
+                    inventoryQuantities.Add(elementToAdd, quantityToAdd);
+                    inventoryElements.Add(elementToAdd);
+                    return;
                 }
-                // there was none of the thing present in the inventory already so gotta create it
-                inventoryQuantities.Add(elementToAdd, 1);
-                inventoryElements.Add(elementToAdd);
+                if (inventoryQuantities[elementToAdd] != -999)
+                {
+                    inventoryQuantities[elementToAdd] += quantityToAdd;
+                }
+                return;
             }
-            public void removeElementFromInventory((int index, int subType, int typeOfElement) elementToRemove)
+            public void removeElementFromInventory((int index, int subType, int typeOfElement) elementToRemove, int quantityToRemove = 1)
             {
+                if (!inventoryQuantities.ContainsKey(elementToRemove)) { return; }
                 if (inventoryQuantities[elementToRemove] != -999)
                 {
-                    inventoryQuantities[elementToRemove]--;
+                    inventoryQuantities[elementToRemove] -= quantityToRemove;
                     if (inventoryQuantities[elementToRemove] <= 0)
                     {
                         inventoryQuantities.Remove(elementToRemove);
                         inventoryElements.Remove(elementToRemove);
                     }
-                    elementsPossessed--;
                 }
             }
             public bool tryPlantDig(int posToDigX, int posToDigY)

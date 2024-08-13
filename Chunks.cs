@@ -741,7 +741,6 @@ namespace Cave
                 }
                 return false;
             bumpedOnSolid:;
-                if (debugMode2) { return false; }
                 foreach ((int x, int y) pos in posVisited)
                 {
                     screen.liquidsThatCantGoRight[pos] = true;
@@ -792,7 +791,6 @@ namespace Cave
                 }
                 return false;
             bumpedOnSolid:;
-                if (debugMode2) { return false; }
                 foreach ((int x, int y) pos in posVisited)
                 {
                     screen.liquidsThatCantGoLeft[pos] = true;
