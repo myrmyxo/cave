@@ -265,7 +265,13 @@ namespace Cave
                     ((-2, 0, 0), 3),
                     ((8, 0, 3), 1),
                 },
-                
+
+                new ((int type, int subType, int megaType) material, int count)[] // fleshTile to blood
+                {
+                    ((4, 0, 0), -3),
+                    ((-6, 0, 0), 1),
+                },
+
                 new ((int type, int subType, int megaType) material, int count)[] // INFINITE FLESH
                 {
                     ((8, 0, 3), 100),

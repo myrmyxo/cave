@@ -126,6 +126,8 @@ namespace Cave
                 {
                     {(0, 0, 4), -999 }, // tools
                     {(1, 0, 4), -999 },
+                    {(2, 0, 4), -999 },
+                    {(3, 0, 4), -999 },
                     {(0, 0, 1), -999 }, // entitities
                     {(1, 0, 1), -999 },
                     {(2, 0, 1), -999 },
@@ -145,6 +147,8 @@ namespace Cave
                 {
                     (0, 0, 4), // tools
                     (1, 0, 4),
+                    (2, 0, 4),
+                    (3, 0, 4),
                     (0, 0, 1), // entitititities
                     (1, 0, 1),
                     (2, 0, 1),
@@ -498,16 +502,18 @@ namespace Cave
             public void updateAttack()
             {
                 List<((int x, int y), Color color)> posToDrawList = new List<((int x, int y), Color color)>();
-                List<(int x, int y)> posToAttackList = new List<(int x, int y)>();
-                (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
-                if (digPress && currentItem == (0, 0, 4) && currentAttack.type == -1)  // if current selected item is not pickaxe, can't dig lol
+                List<((int x, int y) pos, (int type, int subType) attack)> posToAttackList = new List<((int x, int y) pos, (int type, int subType) attack)>();
+                (int type, int subType, int megaType) currentItem = inventoryElements[inventoryCursor];
+
+                if (digPress && currentAttack.type == -1 && currentItem.megaType == 4 )  // start an attack if a tool that can attack is selected, X is pressed, and player is not already attacking
                 {
-                    startAttack((0, 0));
+                    if (currentItem == (0, 0, 4)) { startAttack((0, 0)); }
+                    else if (currentItem == (3, 0, 4)) { startAttack((3, 0)); }
                 }
-                if (currentAttack.type != -1)
+
+                if (currentAttack == (0, 0)) // if sword attack
                 {
                     attackState++;
-                    willBeSetAsNotAttacking = false;
                     int sign = 1;
                     if (direction.x > 0) { sign = -1; }
                     (int x, int y) attackDirection = directionPositionArray[PosMod(directionPositionDictionary[direction] + (sign * (attackState - 2)), 8)];
@@ -518,38 +524,59 @@ namespace Cave
 
                     if (attackDirection.x != 0 && attackDirection.y != 0) // diagonal, add 4 attack pixels (sword + sides)
                     {
-                        posToAttackList.Add((posX + attackDirection.x, posY + attackDirection.y));
-                        posToAttackList.Add((posX + 2 * attackDirection.x, posY + attackDirection.y));
-                        posToAttackList.Add((posX + attackDirection.x, posY + 2 * + attackDirection.y));
-                        posToAttackList.Add((posX + 2 * attackDirection.x, posY + 2 * attackDirection.y));
+                        posToAttackList.Add(((posX + attackDirection.x, posY + attackDirection.y), currentAttack));
+                        posToAttackList.Add(((posX + 2 * attackDirection.x, posY + attackDirection.y), currentAttack));
+                        posToAttackList.Add(((posX + attackDirection.x, posY + 2 * + attackDirection.y), currentAttack));
+                        posToAttackList.Add(((posX + 2 * attackDirection.x, posY + 2 * attackDirection.y), currentAttack));
 
                     }
                     else if (attackDirection.x != 0) // not diagonal, add attack pixels (sword + sides)
                     {
-                        posToAttackList.Add((posX + attackDirection.x, posY - 1));
-                        posToAttackList.Add((posX + attackDirection.x, posY));
-                        posToAttackList.Add((posX + attackDirection.x, posY + 1));
-                        posToAttackList.Add((posX + 2 * attackDirection.x, posY - 1));
-                        posToAttackList.Add((posX + 2 * attackDirection.x, posY));
-                        posToAttackList.Add((posX + 2 * attackDirection.x, posY + 1));
+                        posToAttackList.Add(((posX + attackDirection.x, posY - 1), currentAttack));
+                        posToAttackList.Add(((posX + attackDirection.x, posY), currentAttack));
+                        posToAttackList.Add(((posX + attackDirection.x, posY + 1), currentAttack));
+                        posToAttackList.Add(((posX + 2 * attackDirection.x, posY - 1), currentAttack));
+                        posToAttackList.Add(((posX + 2 * attackDirection.x, posY), currentAttack));
+                        posToAttackList.Add(((posX + 2 * attackDirection.x, posY + 1), currentAttack));
                     }
                     else
                     {
-                        posToAttackList.Add((posX - 1, posY + attackDirection.y));
-                        posToAttackList.Add((posX, posY + attackDirection.y));
-                        posToAttackList.Add((posX + 1, posY + attackDirection.y));
-                        posToAttackList.Add((posX - 1, posY + 2 * attackDirection.y));
-                        posToAttackList.Add((posX, posY + 2 * attackDirection.y));
-                        posToAttackList.Add((posX + 1, posY + 2 * attackDirection.y));
+                        posToAttackList.Add(((posX - 1, posY + attackDirection.y), currentAttack));
+                        posToAttackList.Add(((posX, posY + attackDirection.y), currentAttack));
+                        posToAttackList.Add(((posX + 1, posY + attackDirection.y), currentAttack));
+                        posToAttackList.Add(((posX - 1, posY + 2 * attackDirection.y), currentAttack));
+                        posToAttackList.Add(((posX, posY + 2 * attackDirection.y), currentAttack));
+                        posToAttackList.Add(((posX + 1, posY + 2 * attackDirection.y), currentAttack));
                     }
 
-                    if (attackState == 4) { willBeSetAsNotAttacking = true; }
+                    if (attackState >= 4) { willBeSetAsNotAttacking = true; }
+                }
+                else if (currentAttack == (3, 0))
+                {
+                    attackState++;
+                    int sign = -1;
+                    if (direction.x > 0) { sign = 1; }
+
+                    // draw the wooden staff, 1 pixel, starts on top of player, then diag, then in front. If in front of player, add the "magic pixel" (lmao) that's purple
+                    (int x, int y) mod;
+                    if (attackState < 1) { mod = (0, 1); }
+                    else if (attackState == 1) { mod = (1, 1); }
+                    else
+                    {
+                        mod = (1, 0);
+                        posToDrawList.Add(((posX + 3 * sign, posY), Color.BlueViolet));
+                        posToAttackList.Add(((posX + 3 * sign, posY), currentAttack));
+                    }
+                    posToDrawList.Add(((posX + mod.x * sign, posY + mod.y), Color.FromArgb(140, 140, 50)));
+
+
+                    if (attackState >= 6) { willBeSetAsNotAttacking = true; }
                 }
                 else { willBeSetAsNotAttacking = true; }
 
-                foreach ((int x, int y) pos in posToAttackList)
+                foreach (((int x, int y) pos, (int type, int subType) attack) attack in posToAttackList)
                 {
-                    screen.attacksToDo.Add(pos);
+                    screen.attacksToDo.Add(attack);
                 }
                 foreach (((int x, int y), Color) pos in posToDrawList)
                 {
@@ -560,7 +587,8 @@ namespace Cave
             public void startAttack((int type, int subType) attackToStart)
             {
                 attackState = -1;
-                currentAttack = (0, 0);
+                currentAttack = attackToStart;
+                willBeSetAsNotAttacking = false;
             }
             public void setAsNotAttacking()
             {
@@ -568,22 +596,32 @@ namespace Cave
                 currentAttack = (-1, -1);
                 entitiesAlreadyHitByCurrentAttack = new Dictionary<int, bool>();
             }
-            public void sendAttack((int x, int y) posToTest)
+            public void sendAttack(((int x, int y) pos, (int type, int subType) attack) attack)
             {
-                (int x, int y) chunkIndex = screen.findChunkAbsoluteIndex(posToTest);
+                (int x, int y) chunkIndex = screen.findChunkAbsoluteIndex(attack.pos);
                 if (!screen.loadedChunks.ContainsKey(chunkIndex)) { return; }
                 Chunk chunkToTest = screen.loadedChunks[chunkIndex];
-                foreach (Entity entity in chunkToTest.entityList)
+                if (attack.attack == (0, 0))
                 {
-                    if ((entity.posX, entity.posY) == posToTest && !entitiesAlreadyHitByCurrentAttack.ContainsKey(entity.id))
+                    foreach (Entity entity in chunkToTest.entityList)
                     {
-                        entity.hp -= 1;
-                        entitiesAlreadyHitByCurrentAttack[entity.id] = true;
-                        entity.timeAtLastGottenHit = timeElapsed;
-                        if (entity.hp <= 0)
+                        if ((entity.posX, entity.posY) == attack.pos && !entitiesAlreadyHitByCurrentAttack.ContainsKey(entity.id))
                         {
-                            entity.dieAndDrop(this);
+                            entity.hp -= 1;
+                            entitiesAlreadyHitByCurrentAttack[entity.id] = true;
+                            entity.timeAtLastGottenHit = timeElapsed;
+                            if (entity.hp <= 0)
+                            {
+                                entity.dieAndDrop(this);
+                            }
                         }
+                    }
+                }
+                else if (attack.attack == (3, 0))
+                {
+                    if (testForBloodAltar(screen, attack.pos))
+                    {
+                        screen.setTileContent(attack.pos, (-7, 0));
                     }
                 }
             }
@@ -633,10 +671,7 @@ namespace Cave
                 {
                     if (currentItem.typeOfElement == 0)
                     {
-                        chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = (currentItem.type, currentItem.subType);
-                        chunkToTest.findTileColor((posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32);
-                        chunkToTest.testLiquidUnstableLiquid(posToDigX, posToDigY);
-                        chunkToTest.modificationCount += 1;
+                        chunkToTest.screen.setTileContent((posToDigX, posToDigY), (currentItem.type, currentItem.subType));
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (currentItem.typeOfElement == 1)

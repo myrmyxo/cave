@@ -146,7 +146,7 @@ namespace Cave
                     screen.liquidsThatCantGoRight = new Dictionary<(int, int), bool>();
                     screen.entitesToRemove = new Dictionary<int, Entity>();
                     screen.entitesToAdd = new List<Entity>();
-                    screen.attacksToDo = new List<(int x, int y)>();
+                    screen.attacksToDo = new List<((int x, int y) pos, (int type, int subType) attack)>();
                     screen.attacksToDraw = new List<((int x, int y) pos, Color color)>();
                     if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { screen.zoom(true); }
                     if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
@@ -246,9 +246,9 @@ namespace Cave
 
 
                     // attack shit
-                    foreach ((int x, int y) pos in screen.attacksToDo)
+                    foreach (((int x, int y) pos, (int type, int subType) attack) attack in screen.attacksToDo)
                     {
-                        player.sendAttack(pos);
+                        player.sendAttack(attack);
                     }
                     if (player.willBeSetAsNotAttacking) { player.setAsNotAttacking(); }
 
@@ -359,7 +359,7 @@ namespace Cave
             public Dictionary<int, Nest> activeNests = new Dictionary<int, Nest>();
             public Dictionary<int, Structure> activeStructures = new Dictionary<int, Structure>();
 
-            public List<(int x, int y)> attacksToDo = new List<(int x, int y)>();
+            public List<((int x, int y) pos, (int type, int subType) attack)> attacksToDo = new List<((int x, int y) pos, (int type, int subType) attack)>();
             public List<((int x, int y) pos, Color color)> attacksToDraw = new List<((int x, int y), Color color)>();
 
             public Dictionary<(int, int), List<Plant>> outOfBoundsPlants = new Dictionary<(int, int), List<Plant>>(); // not used as of now but in some functions so can't remove LMAO
@@ -994,9 +994,9 @@ namespace Cave
                 }
                 if (debugMode && !isPngToBeExported)
                 {
-                    foreach ((int x, int y) pos in attacksToDo)
+                    foreach (((int x, int y) pos, (int type, int subType) attack) attack in attacksToDo)
                     {
-                        drawPixel(gameBitmap, Color.IndianRed, pos, camPos, PNGmultiplicator);
+                        drawPixel(gameBitmap, Color.IndianRed, attack.pos, camPos, PNGmultiplicator);
                     }
                 }
 
@@ -1193,6 +1193,27 @@ namespace Cave
                     chunkToTest = extraLoadedChunks[chunkPos];
                 }
                 return chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+            }
+            public (int type, int subType) setTileContent((int x, int y) posToTest, (int type, int subType) typeToSet)
+            {
+                (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                Chunk chunkToTest;
+                if (loadedChunks.ContainsKey(chunkPos)) { chunkToTest = loadedChunks[chunkPos]; }
+                else
+                {
+                    if (!extraLoadedChunks.ContainsKey(chunkPos))
+                    {
+                        extraLoadedChunks.Add(chunkPos, new Chunk(chunkPos, true, this));
+                    }
+                    chunkToTest = extraLoadedChunks[chunkPos];
+                }
+                (int x, int y) chunkIdx = GetChunkIndexFromTile(posToTest);
+                (int type, int subType) previous = chunkToTest.fillStates[chunkIdx.x, chunkIdx.y];
+                chunkToTest.fillStates[chunkIdx.x, chunkIdx.y] = typeToSet;
+                chunkToTest.testLiquidUnstableNonspecific(posToTest.x, posToTest.y);
+                chunkToTest.findTileColor(chunkIdx.x, chunkIdx.y);
+                chunkToTest.modificationCount += 1;
+                return previous;
             }
             public int getTileContent((int x, int y) posToTest, Dictionary<(int x, int y), Chunk> extraDictToCheckFrom)
             {

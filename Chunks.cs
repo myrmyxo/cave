@@ -797,13 +797,31 @@ namespace Cave
                 }
                 return false;
             }
+            public void testLiquidUnstableNonspecific(int posX, int posY)
+            {
+                (int, int) chunkPos;
+                Chunk chunkToTest;
+
+                foreach ((int x, int y) mod in directionPositionArray)
+                {
+                    chunkPos = screen.findChunkAbsoluteIndex(posX + mod.x, posY + mod.y);
+                    if (screen.loadedChunks.ContainsKey(chunkPos))
+                    {
+                        chunkToTest = screen.loadedChunks[chunkPos];
+                        if (chunkToTest.fillStates[((posX + mod.x) % 32 + 32) % 32, ((posY + mod.y) % 32 + 32) % 32].type <= 0)
+                        {
+                            chunkToTest.unstableLiquidCount++;
+                        }
+                    }
+                }
+            }
             public void testLiquidUnstableAir(int posX, int posY)
             {
                 (int, int) chunkPos;
                 Chunk chunkToTest;
 
                 chunkPos = screen.findChunkAbsoluteIndex(posX + 1, posY);
-                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[((posX + 1) % 32 + 32) % 32, ((posY) % 32 + 32) % 32].type < 0)
@@ -813,7 +831,7 @@ namespace Cave
                 }
 
                 chunkPos = screen.findChunkAbsoluteIndex(posX - 1, posY + 1);
-                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[((posX - 1) % 32 + 32) % 32, ((posY + 1) % 32 + 32) % 32].type < 0)
@@ -823,7 +841,7 @@ namespace Cave
                 }
 
                 chunkPos = screen.findChunkAbsoluteIndex(posX + 1, posY + 1);
-                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[((posX + 1) % 32 + 32) % 32, ((posY + 1) % 32 + 32) % 32].type < 0)
@@ -833,7 +851,7 @@ namespace Cave
                 }
 
                 chunkPos = screen.findChunkAbsoluteIndex(posX - 1, posY);
-                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     ;
                     chunkToTest = screen.loadedChunks[chunkPos];
@@ -844,7 +862,7 @@ namespace Cave
                 }
 
                 chunkPos = screen.findChunkAbsoluteIndex(posX, posY + 1);
-                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[((posX) % 32 + 32) % 32, ((posY + 1) % 32 + 32) % 32].type < 0)
@@ -854,7 +872,7 @@ namespace Cave
                 }
 
                 chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
-                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[((posX) % 32 + 32) % 32, ((posY - 1) % 32 + 32) % 32].type < 0) // CHANGE THIS TOO FUCKER
@@ -869,7 +887,7 @@ namespace Cave
                 Chunk chunkToTest;
 
                 chunkPos = screen.findChunkAbsoluteIndex(posX + 1, posY);
-                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[((posX + 1) % 32 + 32) % 32, ((posY) % 32 + 32) % 32].type <= 0)
@@ -880,7 +898,7 @@ namespace Cave
                 }
 
                 chunkPos = screen.findChunkAbsoluteIndex(posX - 1, posY - 1);
-                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[((posX - 1) % 32 + 32) % 32, ((posY - 1) % 32 + 32) % 32].type <= 0)
@@ -891,7 +909,7 @@ namespace Cave
                 }
 
                 chunkPos = screen.findChunkAbsoluteIndex(posX + 1, posY - 1);
-                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[((posX + 1) % 32 + 32) % 32, ((posY - 1) % 32 + 32) % 32].type <= 0)
@@ -902,7 +920,7 @@ namespace Cave
                 }
 
                 chunkPos = screen.findChunkAbsoluteIndex(posX - 1, posY);
-                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[((posX - 1) % 32 + 32) % 32, (posY % 32 + 32) % 32].type <= 0)
@@ -913,7 +931,7 @@ namespace Cave
                 }
 
                 chunkPos = screen.findChunkAbsoluteIndex(posX, posY + 1);
-                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[((posX) % 32 + 32) % 32, ((posY + 1) % 32 + 32) % 32].type <= 0)
@@ -924,7 +942,7 @@ namespace Cave
                 }
 
                 chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
-                if (chunkPos.Item1 >= screen.chunkX && chunkPos.Item1 < screen.chunkX + screen.chunkResolution && chunkPos.Item2 >= screen.chunkY && chunkPos.Item2 < screen.chunkY + screen.chunkResolution)
+                if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[((posX) % 32 + 32) % 32, ((posY - 1) % 32 + 32) % 32].type <= 0)

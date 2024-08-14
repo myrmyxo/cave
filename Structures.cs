@@ -1056,10 +1056,74 @@ namespace Cave
                     f.Write(stringo);
                 }
             }
-            public void testForBloodAltar()
-            {
+        }
+        public static bool testForBloodAltar(Screens.Screen screen, (int x, int y) startPos)
+        {
+            (int x, int y) posToTest;
+            (int type, int subType) material = screen.getTileContent(startPos);
+            if (material != (4, 0)) { return false; } // if start tile isn't fleshTIle, fail
 
+            (int x, int y) chunkPos;
+            Chunk chunkToTest;
+            foreach ((int x, int y) mod in directionPositionArray)
+            {
+                chunkPos = screen.findChunkAbsoluteIndex(startPos.x + mod.x, startPos.y + mod.y);
+                if (screen.loadedChunks.ContainsKey(chunkPos))
+                {
+                    chunkToTest = screen.loadedChunks[chunkPos];
+                    if (chunkToTest.fillStates[GetChunkIndexFromTile1D(startPos.x + mod.x), GetChunkIndexFromTile1D(startPos.y + mod.y)].type != 0) { return false; }
+                }
+                else { return false; } // if chunks loaded DO NOT make altar lololol
             }
+
+            int count = 1;
+            while (true) // go down until finding a blood tile.
+            {
+                if (count > 5) { return false; } // If went down more than 5 tiles, fail
+                posToTest = (startPos.x, startPos.y - count); 
+                material = screen.getTileContent(posToTest);
+                if (material != (0, 0))
+                {
+                    if (material == (-6, 0)) { break; } // if bumps on blood tile, proceed
+                    else { return false; } // if bumps on a tile other than air or blood, fail
+                }
+                count++;
+            }
+
+            (bool left, bool right) validity = (false, false);
+            count = 1; // Length of the blood pool. 1 at first because blood tile it bumped on needs to be counted
+            int currentX = 1;
+
+            while (validity != (true, true) && count <= 15)
+            {
+                if (!validity.left)
+                {
+                    material = screen.getTileContent((posToTest.x - currentX, posToTest.y));
+                    if (material == (-6, 0)) // if blood :
+                    {
+                        if (screen.getTileContent((posToTest.x - currentX, posToTest.y - 1)) != (1, 1)) { return false; } // test if tile under it is denseRock (if not fail)
+                        if (screen.getTileContent((posToTest.x - currentX, posToTest.y + 1)).type != 0) { return false; } // test if tile over it is air (if not fail)
+                        count++;
+                    }
+                    else if (material == (1, 1)) { validity = (true, validity.right); } // if dense rock, continue and stop testing on the left (no blood so don't count it)
+                    else { return false; } // if other than dense rock or blood, fail
+                }
+                if (!validity.right)
+                {
+                    material = screen.getTileContent((posToTest.x + currentX, posToTest.y));
+                    if (material == (-6, 0)) // if blood :
+                    {
+                        if (screen.getTileContent((posToTest.x + currentX, posToTest.y - 1)) != (1, 1)) { return false; } // test if tile under it is denseRock (if not fail)
+                        if (screen.getTileContent((posToTest.x + currentX, posToTest.y + 1)).type != 0) { return false; } // test if tile over it is air (if not fail)
+                        count++;
+                    }
+                    else if (material == (1, 1)) { validity = (validity.left, true); } // if dense rock, continue and stop testing on the right (no blood so don't count it)
+                    else { return false; } // if other than dense rock or blood, fail
+                }
+                currentX++;
+            }
+            if (count < 3 || count > 15) { return false; } // if blood pool is longer than 15 tiles, fail... bro it's too long lol stop trolling
+            return true; // else blood altar is valid ! yay ! that was suprisingly easy to do. now test if bugs (i hope not i hate bunny (it's a joke i love bunnies yay !))
         }
     }
 }

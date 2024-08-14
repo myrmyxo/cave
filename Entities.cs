@@ -1360,10 +1360,7 @@ namespace Cave
                 {
                     if (elementToPlace.typeOfElement == 0)
                     {
-                        chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = (elementToPlace.type, elementToPlace.subType);
-                        chunkToTest.findTileColor((posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32);
-                        chunkToTest.testLiquidUnstableLiquid(posToDigX, posToDigY);
-                        chunkToTest.modificationCount += 1;
+                        chunkToTest.screen.setTileContent((posToDigX, posToDigY), (elementToPlace.type, elementToPlace.subType));
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (elementToPlace.typeOfElement == 1)
