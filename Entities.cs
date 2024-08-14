@@ -148,9 +148,9 @@ namespace Cave
                 (int type, int subType) material = chunk.fillStates[tileIndex.x, tileIndex.y];
                 if (screen.type.Item1 == 2)
                 {
-                    if (material.type > 0) {  transformEntity(4, 1, true); }
-                    else if (biome == (10, 0) || biome == (10, 1)) { transformEntity(1, 1, true); }
-                    else if (biome == (11, 0)) { transformEntity(1, 2, true); }
+                    if (material.type != 0) {  transformEntity(4, 1, true); }
+                    else if (biome == (10, 0) || biome == (10, 1)) { transformEntity(1, 1 + rand.Next(2), true); }
+                    else if (biome == (10, 2)) { transformEntity(1, 2, true); }
                     else { transformEntity(4, 1, true); }
                 }
                 else
@@ -294,7 +294,7 @@ namespace Cave
             {
                 targetPos = (posX + rand.Next(distance*2+1) - distance, posY + rand.Next(distance*2+1) - distance);
             }
-            public bool findPointOfInterestInPlants(int elementOfInterest)
+            public bool findPointOfInterestInPlants((int type, int subType) elementOfInterest)
             {
                 int plantCount = screen.activePlants.Count;
                 if (plantCount == 0) { return false; }
@@ -873,7 +873,7 @@ namespace Cave
                                         simplifiedPathToTarget = new List<(int x, int y)>();
                                     }
                                 }
-                                else if (rand.Next(3) == 0 && findPointOfInterestInPlants(7))
+                                else if (rand.Next(3) == 0 && findPointOfInterestInPlants((2, 1)))
                                 {
                                     if (pathfindToLocation(targetPos))
                                     {
@@ -1318,13 +1318,13 @@ namespace Cave
             }
             public bool tryPlantDig(int posToDigX, int posToDigY)
             {
-                int value;
+                (int type, int subType) value;
                 foreach (Plant plant in screen.activePlants.Values)
                 {
                     value = plant.testDig(posToDigX, posToDigY);
-                    if (value != 0)
+                    if (value.type != 0)
                     {
-                        addElementToInventory((value, 0, 3));
+                        addElementToInventory((value.type, value.subType, 3));
                         timeAtLastDig = timeElapsed;
                         return true;
                     }

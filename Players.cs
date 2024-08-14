@@ -600,13 +600,13 @@ namespace Cave
                 (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
                 if (currentItem != (1, 0, 4)) { return; }   // if current selected item is not pickaxe, can't dig lol
                 (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
-                int value;
+                (int type, int subType) value;
                 foreach (Plant plant in screen.activePlants.Values)
                 {
                     value = plant.testDig(posToDigX, posToDigY);
-                    if (value != 0)
+                    if (value.type != 0)
                     {
-                        addElementToInventory((value, 0, 3));
+                        addElementToInventory((value.type, value.subType, 3));
                         timeAtLastDig = timeElapsed;
                         return;
                     }

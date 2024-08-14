@@ -72,7 +72,7 @@ namespace Cave
                     makeBiomeDiagram((0, 0), (0, 1), (512, i));
                 }
 
-                int idToPut = 1;
+                int idToPut = 0;
                 int PNGsize = 150;
                 PNGsize = 100;
 
@@ -154,13 +154,13 @@ namespace Cave
                     {
                         if (dimensionSelection && player.timeAtLastMenuChange + 0.2f < timeElapsed)
                         {
-                            if (arrowKeysState[0] || arrowKeysState[2]) { currentTargetDimension--; }
-                            if (arrowKeysState[1] || arrowKeysState[3]) { currentTargetDimension++; }
+                            if (arrowKeysState[0] || arrowKeysState[2]) { currentTargetDimension--; player.timeAtLastMenuChange = timeElapsed; }
+                            if (arrowKeysState[1] || arrowKeysState[3]) { currentTargetDimension++; player.timeAtLastMenuChange = timeElapsed; }
                         }
                         else if (craftSelection && player.timeAtLastMenuChange + 0.2f < timeElapsed)
                         {
-                            if (arrowKeysState[0] || arrowKeysState[2]) { player.moveCraftCursor(-1); }
-                            if (arrowKeysState[1] || arrowKeysState[3]) { player.moveCraftCursor(1); }
+                            if (arrowKeysState[0] || arrowKeysState[2]) { player.moveCraftCursor(-1); player.timeAtLastMenuChange = timeElapsed; }
+                            if (arrowKeysState[1] || arrowKeysState[3]) { player.moveCraftCursor(1); player.timeAtLastMenuChange = timeElapsed; }
                         }
                         movePlayerStuff(screen, player); // move player, load new chunks, test craft, and stuff
                         screen.updateLoadedChunks();

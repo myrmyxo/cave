@@ -445,15 +445,18 @@ namespace Cave
             }
             return arrayo;
         }
-        public static int[,] fillstatesToArray(Dictionary<(int x, int y), int> dicto)
+        public static int[,] fillstatesToArray(Dictionary<(int x, int y), (int type, int subType)> dicto)
         {
-            int[,] arrayo = new int[dicto.Count, 3];
+            int[,] arrayo = new int[dicto.Count, 4];
             (int x, int y)[] keyo = dicto.Keys.ToArray();
+            (int type, int subType) current;
             for (int i = 0; i < keyo.Length; i++)
             {
                 arrayo[i, 0] = keyo[i].x;
                 arrayo[i, 1] = keyo[i].y;
-                arrayo[i, 2] = dicto[keyo[i]];
+                current = dicto[keyo[i]];
+                arrayo[i, 2] = current.type;
+                arrayo[i, 3] = current.subType;
             }
             return arrayo;
         }
@@ -469,12 +472,12 @@ namespace Cave
             }
             return arrayo;
         }
-        public static Dictionary<(int x, int y), int> arrayToFillstates(int[,] arrayo)
+        public static Dictionary<(int x, int y), (int type, int subType)> arrayToFillstates(int[,] arrayo)
         {
-            Dictionary<(int x, int y), int> dicto = new Dictionary<(int x, int y), int>();
+            Dictionary<(int x, int y), (int type, int subType)> dicto = new Dictionary<(int x, int y), (int type, int subType)>();
             for (int i = 0; i < arrayo.GetLength(0); i++)
             {
-                dicto[(arrayo[i, 0], arrayo[i, 1])] = arrayo[i, 2];
+                dicto[(arrayo[i, 0], arrayo[i, 1])] = (arrayo[i, 2], arrayo[i, 3]);
             }
             return dicto;
         }

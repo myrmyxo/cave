@@ -264,7 +264,7 @@ namespace Cave
                                     value2modifier += mult * value2PREmodifier;
                                     mod2divider += mult * 1.5f;
                                 }
-                                else if (tupel.Item1 == (8, 0) || tupel.Item1 == (2, 1) || tupel.Item1 == (10, 2) || tupel.Item1 == (10, 3))
+                                else if (tupel.Item1 == (8, 0) || tupel.Item1 == (2, 1) || tupel.Item1 == (10, 3) || tupel.Item1 == (10, 4))
                                 {
                                     oceano = Max(oceano, mult * 10); // To make separation between OCEAN biomes (like acid and blood). CHANGE THIS to make ocean biomes that can merge with one another (like idk cool water ocean and temperate water ocean idk)
                                 }
@@ -285,8 +285,8 @@ namespace Cave
                             (int type, int subType) elementToFillVoidWith;
                             if (biomeIndex[i, j][0].Item1 == (8, 0)) { elementToFillVoidWith = (-2, 0); } // ocean
                             else if (biomeIndex[i, j][0].Item1 == (2, 1)) { elementToFillVoidWith = (-4, 0); } // lava ocean
-                            else if (biomeIndex[i, j][0].Item1 == (10, 2)) { elementToFillVoidWith = (-6, 0); } // blood ocean
-                            else if (biomeIndex[i, j][0].Item1 == (10, 3)) { elementToFillVoidWith = (-7, 0); } // acid ocean
+                            else if (biomeIndex[i, j][0].Item1 == (10, 3)) { elementToFillVoidWith = (-6, 0); } // blood ocean
+                            else if (biomeIndex[i, j][0].Item1 == (10, 4)) { elementToFillVoidWith = (-7, 0); } // acid ocean
                             else { elementToFillVoidWith = (0, 0); }
 
                             float score1 = Min(value1 - (122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw * 0.1f)), -value1 + (133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw));
@@ -343,7 +343,7 @@ namespace Cave
                 {
                     return (4, 0);
                 }
-                else if (biome == (10, 1) || biome == (10, 2) || biome == (10, 3)) // flesh and bone
+                else if (biome == (10, 1) || biome == (10, 3) || biome == (10, 4)) // flesh and bone (for acid and blood oceans too since they can have the transition)
                 {
                     if (Max(0, (int)(Abs(Abs(values.Item1 - 1024)*0.49f) + values.Item2 % 256)) >= 512 - dicto[biome]*513)
                     {
@@ -351,7 +351,7 @@ namespace Cave
                     }
                     return (4, 0);
                 }
-                else if (biome == (11, 0)) // bone
+                else if (biome == (10, 2)) // bone
                 {
                     return (4, 1);
                 }
@@ -1254,7 +1254,7 @@ namespace Cave
             Dictionary<(int type, int subType), float> dicto = new Dictionary<(int type, int subType), float>();
             foreach (((int type, int subType), int) key in biomeArray)
             {
-                if (key.Item1 == (10, 1) || key.Item1 == (10, 2) || key.Item1 == (10,3 ))
+                if (key.Item1 == (10, 1) || key.Item1 == (10, 3) || key.Item1 == (10, 4))
                 {
                     dicto[key.Item1] = findTransition((10, 1), values);
                 }
@@ -1263,7 +1263,7 @@ namespace Cave
         }
         public static float findTransition((int type, int subType) biome, (int temp, int humi, int acid, int toxi) values)
         {
-            if (biome == (10, 1) || biome == (10, 2) || biome == (10, 3))
+            if (biome == (10, 1) || biome == (10, 3) || biome == (10, 4))
             {
                 return Clamp(0, (660 - values.humi) / 320f, 1);
             }
@@ -1442,10 +1442,10 @@ namespace Cave
             }
             else if (dimensionType == (2, 0)) // type == 2, living dimension
             {
-                percentageFree -= calculateAndAddBiome(listo, (10, 3), percentageFree, acidity, (700, 999999)); // acid ocean
-                percentageFree -= calculateAndAddBiome(listo, (10, 2), percentageFree, temperature, (-999999, 400)); // blood ocean
+                percentageFree -= calculateAndAddBiome(listo, (10, 4), percentageFree, acidity, (700, 999999)); // acid ocean
+                percentageFree -= calculateAndAddBiome(listo, (10, 3), percentageFree, temperature, (-999999, 400)); // blood ocean
                 percentageFree -= calculateAndAddBiome(listo, (10, 0), percentageFree, humidity, (660, 999999)); // flesh
-                percentageFree -= calculateAndAddBiome(listo, (11, 0), percentageFree, humidity, (-999999, 340)); // bone
+                percentageFree -= calculateAndAddBiome(listo, (10, 2), percentageFree, humidity, (-999999, 340)); // bone
                 testAddBiome(listo, (10, 1), percentageFree); // flesh and bone
             }
 

@@ -762,7 +762,7 @@ namespace Cave
                             liquidTypeToFill = -4;
                         }*/
                     }
-                    else if (biome == (11, 0) || biome == (10, 1)) // if bone or flesh and bone : put blood
+                    else if (biome == (10, 2) || biome == (10, 1)) // if bone or flesh and bone : put blood
                     {
                         liquidTypeToFill = (-6, 0);
                     }

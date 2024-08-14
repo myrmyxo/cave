@@ -124,30 +124,30 @@ namespace Cave
                 { (0, 0), ((-3, 0, 0), 1)}, // Fairy          --> Fairy Liquid
                 { (0, 1), ((-3, 0, 0), 1)}, // ObsidianFairy  --> Fairy Liquid
                 { (0, 2), ((-3, 0, 0), 1)}, // FrostFairy     --> Fairy Liquid
-                { (0, 3), ((9, 0, 3), 1)}, // SkeletonFairy   --> Bone
-                { (1, 0), ((8, 0, 3), 1)}, // Frog            --> Flesh
-                { (1, 1), ((8, 0, 3), 1)}, // Carnal          --> Flesh
-                { (1, 2), ((9, 0, 3), 1)}, // Skeletal        --> Bone
-                { (2, 0), ((8, 0, 3), 1)}, // Fish            --> Flesh
-                { (2, 1), ((9, 0, 3), 1)}, // SkeletonFish    --> Bone
-                { (3, 0), ((8, 0, 3), 1)}, // HornetEgg       --> Flesh
-                { (3, 1), ((8, 0, 3), 1)}, // HornetLarva     --> Flesh
-                { (3, 2), ((8, 0, 3), 1)}, // HornetCocoon    --> Flesh
-                { (3, 3), ((8, 0, 3), 1)}, // Hornet          --> Flesh
-                { (4, 0), ((8, 0, 3), 1)}, // Worm            --> Flesh
-                { (4, 1), ((8, 0, 3), 1)}, // Nematode        --> Flesh
-                { (5, 0), ((8, 0, 3), 1)}, // WaterSkipper    --> Flesh
+                { (0, 3), ((8, 1, 3), 1)},  // SkeletonFairy  --> Bone
+                { (1, 0), ((8, 0, 3), 1)},  // Frog           --> Flesh
+                { (1, 1), ((8, 0, 3), 1)},  // Carnal         --> Flesh
+                { (1, 2), ((8, 1, 3), 1)},  // Skeletal       --> Bone
+                { (2, 0), ((8, 0, 3), 1)},  // Fish           --> Flesh
+                { (2, 1), ((8, 1, 3), 1)},  // SkeletonFish   --> Bone
+                { (3, 0), ((8, 0, 3), 1)},  // HornetEgg      --> Flesh
+                { (3, 1), ((8, 0, 3), 1)},  // HornetLarva    --> Flesh
+                { (3, 2), ((8, 0, 3), 1)},  // HornetCocoon   --> Flesh
+                { (3, 3), ((8, 0, 3), 1)},  // Hornet         --> Flesh
+                { (4, 0), ((8, 0, 3), 1)},  // Worm           --> Flesh
+                { (4, 1), ((8, 0, 3), 1)},  // Nematode       --> Flesh
+                { (5, 0), ((8, 0, 3), 1)},  // WaterSkipper   --> Flesh
             };
 
             public static Dictionary<int, int> costDict = new Dictionary<int, int>
             {
-                { 0, 1 }, // air
-                { -1, 3 }, // piss
-                { -2, 3 }, // water
-                { -3, 10 }, // fairy liquid
+                { 0, 1 },       // air
+                { -1, 3 },      // piss
+                { -2, 3 },      // water
+                { -3, 10 },     // fairy liquid
                 { -4, 999999 }, // lava (cannot cross)
-                { -5, 5 }, // honey
-                { -6, 3 }, // blood
+                { -5, 5 },      // honey
+                { -6, 3 },      // blood
                 { -7, 999999 }, // acid (cannot cross)
             };
 
@@ -158,93 +158,92 @@ namespace Cave
 
             public static Dictionary<(int biome, int subBiome), (int, int, int)> biomeDict = new Dictionary<(int biome, int subBiome), (int, int, int)>
             {
-                { (-1, 0), (1200, -100, 1200) }, // undefined
+                { (-1, 0), (1200, -100, 1200) },                                               // undefined
 
-                { (0, 0), (Color.Blue.R,Color.Blue.G,Color.Blue.B) }, // cold biome
-                { (0, 1), (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) }, // frost biome
+                { (0, 0), (Color.Blue.R,Color.Blue.G,Color.Blue.B) },                          // cold biome
+                { (0, 1), (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) },           // frost biome
 
-                { (1, 0), (Color.Fuchsia.R,Color.Fuchsia.G,Color.Fuchsia.B) }, // acid biome
+                { (1, 0), (Color.Fuchsia.R,Color.Fuchsia.G,Color.Fuchsia.B) },                 // acid biome
 
-                { (2, 0), (Color.OrangeRed.R,Color.OrangeRed.G,Color.OrangeRed.B) }, // hot biome
+                { (2, 0), (Color.OrangeRed.R,Color.OrangeRed.G,Color.OrangeRed.B) },           // hot biome
                 { (2, 1), (Color.OrangeRed.R + 90,Color.OrangeRed.G + 30,Color.OrangeRed.B) }, // lava ocean biome
-                { (2, 2), (-100,-100,-100) }, // obsidian biome...
+                { (2, 2), (-100,-100,-100) },                                                  // obsidian biome...
 
-                { (3, 0), (Color.Green.R,Color.Green.G,Color.Green.B)}, // forest biome
-                { (3, 1), (Color.Green.R,Color.Green.G + 40,Color.Green.B + 80)}, // flower forest biome
-
-                { (4, 0), (Color.GreenYellow.R,Color.GreenYellow.G,Color.GreenYellow.B) }, // toxic biome
-
-                { (5, 0), (Color.LightPink.R,Color.LightPink.G,Color.LightPink.B) }, // fairy biome !
-
-                { (8, 0), (Color.LightBlue.R,Color.LightBlue.G+60,Color.LightBlue.B+130) }, // ocean biome !
-
-                { (9, 0), (Color.Gray.R,Color.Gray.G,Color.Gray.B) }, // stoplights and chandeliers biome !?!
-
-                { (10, 0), (Color.Red.R,Color.Red.G,Color.Red.B) }, // flesh biome
-                { (10, 1), (Color.Pink.R,Color.Pink.G,Color.Pink.B) }, // flesh and bone biome
-                { (10, 2), (Color.DarkRed.R,Color.DarkRed.G,Color.DarkRed.B) }, // blood ocean
-                { (10, 3), (Color.YellowGreen.R,Color.YellowGreen.G,Color.YellowGreen.B) }, // acid ocean
+                { (3, 0), (Color.Green.R,Color.Green.G,Color.Green.B)},                        // forest biome
+                { (3, 1), (Color.Green.R,Color.Green.G + 40,Color.Green.B + 80)},              // flower forest biome
+                                                                                               
+                { (4, 0), (Color.GreenYellow.R,Color.GreenYellow.G,Color.GreenYellow.B) },     // toxic biome
+                                                                                               
+                { (5, 0), (Color.LightPink.R,Color.LightPink.G,Color.LightPink.B) },           // fairy biome !
+                                                                                               
+                { (8, 0), (Color.LightBlue.R,Color.LightBlue.G+60,Color.LightBlue.B+130) },    // ocean biome !
+                                                                                               
+                { (9, 0), (Color.Gray.R,Color.Gray.G,Color.Gray.B) },                          // stoplights and chandeliers biome !?!
+                                                                                               
+                { (10, 0), (Color.Red.R,Color.Red.G,Color.Red.B) },                            // flesh biome
+                { (10, 1), (Color.Pink.R,Color.Pink.G,Color.Pink.B) },                         // flesh and bone biome
+                { (10, 2), (Color.White.R,Color.White.G,Color.White.B) },                      // Bone biome...
+                { (10, 3), (Color.DarkRed.R,Color.DarkRed.G,Color.DarkRed.B) },                // blood ocean
+                { (10, 4), (Color.YellowGreen.R,Color.YellowGreen.G,Color.YellowGreen.B) },    // acid ocean
                 
-                { (11, 0), (Color.White.R,Color.White.G,Color.White.B) }, // Bone biome...
             };
 
             // 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
             public static Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int range, int prio)> biomeTypicalValues = new Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int range, int prio)>
             {
-                { (0, 0), (200, 320, 320, 512, 1000, 0) }, // cold biome
+                { (0, 0), (200, 320, 320, 512, 1000, 0) },  // cold biome
                 { (0, 1), (-100, 320, 320, 512, 1000, 2) }, // frost biome
 
-                { (1, 0), (200, 512, 800, 512, 1000, 0) }, // acid biome
+                { (1, 0), (200, 512, 800, 512, 1000, 0) },  // acid biome
 
-                { (2, 0), (840, 512, 512, 512, 1000, 1) }, // hot biome
+                { (2, 0), (840, 512, 512, 512, 1000, 1) },  // hot biome
                 { (2, 1), (1024, 512, 512, 512, 1000, 3) }, // lava ocean biome
-                { (2, 2), (880, 880, 512, 512, 1000, 2) }, // obsidian biome...
+                { (2, 2), (880, 880, 512, 512, 1000, 2) },  // obsidian biome...
 
-                { (3, 0), (512, 720, 768, 340, 1000, 0) }, // forest biome
-                { (3, 1), (512, 720, 256, 220, 1000, 0) }, // flower forest biome
+                { (3, 0), (512, 720, 768, 340, 1000, 0) },  // forest biome
+                { (3, 1), (512, 720, 256, 220, 1000, 0) },  // flower forest biome
 
-                { (4, 0), (512, 280, 512, 680, 1000, 0) }, // toxic biome
+                { (4, 0), (512, 280, 512, 680, 1000, 0) },  // toxic biome
 
-                { (5, 0), (200, 840, 200, 320, 1000, 0) }, // fairy biome !
+                { (5, 0), (200, 840, 200, 320, 1000, 0) },  // fairy biome !
 
-                { (8, 0), (512, 960, 512, 512, 1000, 0) }, // ocean biome !
+                { (8, 0), (512, 960, 512, 512, 1000, 0) },  // ocean biome !
 
-                { (9, 0), (320, 320, 240, 240, 1000, 0) }, // chandeliers biome !
+                { (9, 0), (320, 320, 240, 240, 1000, 0) },  // chandeliers biome !
 
                 { (10, 0), (720, 512, 512, 512, 1000, 0) }, // Flesh biome !
                 { (10, 1), (512, 360, 380, 512, 1000, 0) }, // Flesh and bone biome !
-                { (10, 2), (320, 880, 380, 360, 1000, 0) }, // Blood ocean biome !
-                { (10, 3), (720, 600, 880, 880, 1000, 0) }, // Acid ocean biome !
-
-                { (11, 0), (320, 200, 256, 512, 1000, 0) }, // Bone biome...
+                { (10, 2), (320, 200, 256, 512, 1000, 0) }, // Bone biome...
+                { (10, 3), (320, 880, 380, 360, 1000, 0) }, // Blood ocean biome !
+                { (10, 4), (720, 600, 880, 880, 1000, 0) }, // Acid ocean biome !
 
             };
             public static Dictionary<(int type, int subType), (int r, int g, int b, float mult)> materialColors = new Dictionary<(int type, int subType), (int r, int g, int b, float mult)>
             { // mult is in percent (0-100) : how much biome color is taken into account on the modifiying of the color shite.
                 { (-7, 0), (120, 180, 60, 0.2f)}, // acid
                 
-                { (-6, 0), (100, 15, 25, 0.2f)}, // blood
+                { (-6, 0), (100, 15, 25, 0.2f)},  // blood
 
                 { (-5, 0), (160, 120, 70, 0.2f)}, // honey
                 
-                { (-4, 0), (255, 90, 0, 0.05f)}, // lava
+                { (-4, 0), (255, 90, 0, 0.05f)},  // lava
                 
                 { (-3, 0), (105, 80, 120, 0.2f)}, // fairy liquid
                 
-                { (-2, 0), (80, 80, 120, 0.2f)}, // water
+                { (-2, 0), (80, 80, 120, 0.2f)},  // water
                 
                 { (-1, 0), (120, 120, 80, 0.2f)}, // piss
                 
                 { (0, 0), (140, 140, 140, 0.5f)}, // air lol
 
-                { (1, 0), (30, 30, 30, 0.5f)}, // normal rock
-                { (1, 1), (10, 10, 10, 0.2f)}, // dense rock... no... DANCE ROCK !! Yay ! Dance !! Luka Luka Night Fever !!
+                { (1, 0), (30, 30, 30, 0.5f)},    // normal rock
+                { (1, 1), (10, 10, 10, 0.2f)},    // dense rock... no... DANCE ROCK !! Yay ! Dance !! Luka Luka Night Fever !!
                 
-                { (2, 0), (80, 60, 20, 0.5f)}, // dirt
+                { (2, 0), (80, 60, 20, 0.5f)},    // dirt
                 
-                { (3, 0), (10, 60, 30, 0.35f)}, // plant matter
+                { (3, 0), (10, 60, 30, 0.35f)},   // plant matter
                 
-                { (4, 0), (135, 55, 55, 0.2f)}, // flesh tile
+                { (4, 0), (135, 55, 55, 0.2f)},   // flesh tile
                 { (4, 1), (240, 230, 245, 0.2f)}, // bone tile
             };
             public static List<((int type, int subType, int megaType) material, int count)[]> craftRecipes = new List<((int type, int subType, int megaType) material, int count)[]>
@@ -256,7 +255,7 @@ namespace Cave
                 },
                 new ((int type, int subType, int megaType) material, int count)[] // bone to bone tile
                 {
-                    ((9, 0, 3), -10),
+                    ((8, 1, 3), -10),
                     ((4, 1, 0), 1),
                 },
 
@@ -272,22 +271,19 @@ namespace Cave
                     ((8, 0, 3), 100),
                 },
 
-                new ((int type, int subType, int megaType) material, int count)[] // test 1
+                new ((int type, int subType, int megaType) material, int count)[] // Dense rock and Fairy liquid to MagicRock
                 {
-                    ((1, 0, 3), -1),
-                    ((2, 0, 3), -2),
-                    ((3, 0, 3), 1),
-                    ((4, 0, 3), 10),
+                    ((1, 1, 0), -1),
+                    ((-3, 0, 0), -1),
+                    ((10, 0, 3), 1)
                 },
 
-                new ((int type, int subType, int megaType) material, int count)[] // test 2
+                new ((int type, int subType, int megaType) material, int count)[] // Wood, MagicRock and Fairy liquid to MagicWand
                 {
-                    ((1, 0, 3), -10),
-                    ((2, 0, 3), -1),
-                    ((3, 0, 3), -10),
-                    ((4, 0, 3), 6),
-                    ((5, 0, 3), 2),
-                    ((6, 0, 3), 10),
+                    ((1, 1, 3), -3),
+                    ((10, 0, 3), -1),
+                    ((-3, 0, 0), -2),
+                    ((3, 0, 4), 1)
                 },
             };
             
@@ -381,6 +377,7 @@ namespace Cave
                 turnPngIntoString("Water");
                 turnPngIntoString("Piss");
                 turnPngIntoString("BasicTile");
+                turnPngIntoString("DenseRockTile");
                 turnPngIntoString("FleshTile");
                 turnPngIntoString("BoneTile");
 
@@ -397,19 +394,24 @@ namespace Cave
                 turnPngIntoString("Vines");
                 turnPngIntoString("ObsidianVines");
 
-                turnPngIntoString("Pollen");
                 turnPngIntoString("PlantMatter");
-                turnPngIntoString("FlowerPetal");
                 turnPngIntoString("Wood");
                 turnPngIntoString("Kelp");
+                turnPngIntoString("FlowerPetal");
+                turnPngIntoString("Pollen");
                 turnPngIntoString("MushroomCap");
                 turnPngIntoString("MushroomStem");
                 turnPngIntoString("Flesh");
                 turnPngIntoString("Bone");
+                turnPngIntoString("MagicRock");
+                turnPngIntoString("Metal");
+                turnPngIntoString("LightBulb");
+                turnPngIntoString("Wax");
 
                 turnPngIntoString("Sword");
                 turnPngIntoString("Pickaxe");
                 turnPngIntoString("Scythe");
+                turnPngIntoString("MagicWand");
 
                 turnPngIntoString("Fire");
             }
@@ -442,9 +444,10 @@ namespace Cave
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.
             // However they need to be at war to live, so they periodically decide, when there's not enough skeletals alive, to put like half of the tribe in ACID,
             // Which turns them into skeletals, these skeletals migrate to the bone biome, and then the war can start again lol. Periodic even that can be witnessed by the player maybe ?
+            // Supah powerful wizards can create dimensions. Maybe dimensions that are super weird and shit can be justified this was LOL
 
             //
-            // cool seeds !!!! DO NOT DELETE
+            // cool seeds !!!! DO NOT DELETE      yeah actually since world gen keeps on changing they're fucking useless LMFAO
             // 		
             // 527503228 : spawn inside a giant obsidian biome !
             // 1115706211 : very cool spawn, with all the 7 current biomes types near and visitable and amazing looking caves (hahaha 7 different biomes... i'm old)
