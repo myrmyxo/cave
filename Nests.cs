@@ -238,34 +238,23 @@ namespace Cave
             }
             public void fillTiles()
             {
-
                 Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
+                (int x, int y) chunkPos;
+                Chunk chunkToTest;
+                (int type, int subType) typeToFill = (0, 0);
 
                 foreach ((int x, int y) posToTest in tiles)
                 {
-                    (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
-                    Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                }
-
-                (int type, int subType) typeToFill = (0, 0);
-                foreach ((int x, int y) poso in tiles)
-                {
-                    (int x, int y) chunkPos = (Floor(poso.x, 32) / 32, Floor(poso.y, 32) / 32);
-                    Chunk chunkToTest;
-                    if (nest.screen.loadedChunks.ContainsKey(chunkPos)) { chunkToTest = nest.screen.loadedChunks[chunkPos]; }
-                    else
-                    {
-                        if (!chunkDict.ContainsKey(chunkPos)) { chunkDict.Add(chunkPos, new Chunk(chunkPos, true, nest.screen)); }
-                        chunkToTest = chunkDict[chunkPos];
-                    }
-                    chunkToTest.fillStates[(poso.x % 32 + 32) % 32, (poso.y % 32 + 32) % 32] = typeToFill;
+                    chunkPos = ChunkIdx(posToTest);
+                    chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
+                    chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)] = typeToFill;
                     chunkToTest.modificationCount = 1;
-                    chunkToTest.findTileColor((poso.x % 32 + 32) % 32, (poso.y % 32 + 32) % 32);
+                    chunkToTest.findTileColor(PosMod(posToTest.x), PosMod(posToTest.y));
                 }
 
                 foreach (Chunk chunk in chunkDict.Values)
                 {
-                    Files.saveChunk(chunk);
+                    saveChunk(chunk);
                 }
             }
             public void addToQueue(List<((int x, int y) position, float cost)> queue, ((int x, int y) position, float cost) valueToAdd)
@@ -370,15 +359,18 @@ namespace Cave
                 {
                     currentTile = tilesToTest[0].pos;
                     tilesToTest.RemoveAt(0);
-                    foreach ((int x, int y) mod in bubbleNeighbourArray)
+                    foreach ((int x, int y) mod in neighbourArray)
                     {
-                        posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
-                        (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
-                        Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                        int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
-                        if (fillState <= 0 || fillState > 1 || nest.tiles.ContainsKey(posToTest))
+                        for (int mult = 1; mult <= 2; mult++)
                         {
-                            goto SkipToNextIteration;
+                            posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
+                            (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                            Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
+                            int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
+                            if (fillState <= 0 || fillState > 1 || nest.tiles.ContainsKey(posToTest))
+                            {
+                                goto SkipToNextIteration;
+                            }
                         }
                     }
                     tilesToFill[currentTile] = true;
@@ -821,7 +813,7 @@ namespace Cave
 
                     if (repeatCounter % 2 == 0) // does not do what I want but whatever
                     {
-                        foreach ((int x, int y) mod in diagNeighbourArray)
+                        foreach ((int x, int y) mod in diagArray)
                         {
                             posToAdd = (currentPos.x + 2 * mod.x, currentPos.y + 2 * mod.y);
                             if (!tilesToTest.Contains(posToAdd)) { tilesToTest.Add(posToAdd); }
@@ -959,12 +951,12 @@ namespace Cave
                     foreach ((int x, int y) tile in room.tiles)
                     {
                         tiles[tile] = true;
-                        chunkPresence[screen.findChunkAbsoluteIndex(tile.x, tile.y)] = true;
+                        chunkPresence[ChunkIdx(tile.x, tile.y)] = true;
                     }
                     foreach ((int x, int y) tile in room.borders)
                     {
                         borders[tile] = true;
-                        chunkPresence[screen.findChunkAbsoluteIndex(tile.x, tile.y)] = true;
+                        chunkPresence[ChunkIdx(tile.x, tile.y)] = true;
                     }
                 }
             }

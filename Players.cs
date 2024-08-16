@@ -188,7 +188,7 @@ namespace Cave
                 bool onGround = false;
                 bool inWater = false;
                 {
-                    (int, int) chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
+                    (int, int) chunkPos = ChunkIdx(posX, posY);
                     if (screen.loadedChunks.ContainsKey(chunkPos))
                     {
                         if (screen.loadedChunks[chunkPos].fillStates[(posX % 32 + 32) % 32, (posY % 32 + 32) % 32].type < 0)
@@ -196,7 +196,7 @@ namespace Cave
                             inWater = true;
                         }
                     }
-                    chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
+                    chunkPos = ChunkIdx(posX, posY - 1);
                     if (screen.loadedChunks.ContainsKey(chunkPos))
                     {
                         if (screen.loadedChunks[chunkPos].fillStates[(posX % 32 + 32) % 32, ((posY - 1) % 32 + 32) % 32].type > 0)
@@ -376,7 +376,7 @@ namespace Cave
                     foreach ((int x, int y) pos in posList)
                     {
                         posToTest = pos;
-                        chunkPos = screen.findChunkAbsoluteIndex(posToTest.x, posToTest.y);
+                        chunkPos = ChunkIdx(posToTest.x, posToTest.y);
                         if (screen.loadedChunks.ContainsKey(chunkPos))
                         {
                             chunkToTest = screen.loadedChunks[chunkPos];
@@ -397,7 +397,7 @@ namespace Cave
                                 }
                             }
                         }
-                        tileIndex = GetChunkIndexFromTile(posToTest.x, posToTest.y);
+                        tileIndex = PosMod(posToTest);
                         if (!chunkToTest.fogOfWar[tileIndex.x, tileIndex.y])
                         {
                             chunkToTest.fogOfWar[tileIndex.x, tileIndex.y] = true;
@@ -461,10 +461,10 @@ namespace Cave
                     {
                         currentPos = (currentPos.x + xMult * (valueX + 0.0001f), currentPos.y + yMult * yToX * (valueX + 0.0001f));
                         currentPosInt = ((int)currentPos.x, (int)currentPos.y);
-                        chunkPos = screen.findChunkAbsoluteIndex(currentPosInt.x, currentPosInt.y);
+                        chunkPos = ChunkIdx(currentPosInt.x, currentPosInt.y);
                         chunkToTest = screen.tryToGetChunk(chunkPos);
                         posList.Add(currentPosInt);
-                        if (lives < 3 || chunkToTest.fillStates[GetChunkIndexFromTile1D(currentPosInt.x), GetChunkIndexFromTile1D(currentPosInt.y)].type > 0)
+                        if (lives < 3 || chunkToTest.fillStates[PosMod(currentPosInt.x), PosMod(currentPosInt.y)].type > 0)
                         {
                             lives--;
                             if (lives <= 0) { return posList; }
@@ -474,10 +474,10 @@ namespace Cave
                     {
                         currentPos = (currentPos.x + xMult * xToY * (valueY + 0.0001f), currentPos.y + yMult * (valueY + 0.0001f));
                         currentPosInt = ((int)currentPos.x, (int)currentPos.y);
-                        chunkPos = screen.findChunkAbsoluteIndex(currentPosInt.x, currentPosInt.y);
+                        chunkPos = ChunkIdx(currentPosInt.x, currentPosInt.y);
                         chunkToTest = screen.tryToGetChunk(chunkPos);
                         posList.Add(currentPosInt);
-                        if (lives < 3 || chunkToTest.fillStates[GetChunkIndexFromTile1D(currentPosInt.x), GetChunkIndexFromTile1D(currentPosInt.y)].type > 0)
+                        if (lives < 3 || chunkToTest.fillStates[PosMod(currentPosInt.x), PosMod(currentPosInt.y)].type > 0)
                         {
                             lives--;
                             if (lives <= 0) { return posList; }
@@ -598,7 +598,7 @@ namespace Cave
             }
             public void sendAttack(((int x, int y) pos, (int type, int subType) attack) attack)
             {
-                (int x, int y) chunkIndex = screen.findChunkAbsoluteIndex(attack.pos);
+                (int x, int y) chunkIndex = ChunkIdx(attack.pos);
                 if (!screen.loadedChunks.ContainsKey(chunkIndex)) { return; }
                 Chunk chunkToTest = screen.loadedChunks[chunkIndex];
                 if (attack.attack == (0, 0))
@@ -637,7 +637,7 @@ namespace Cave
             {
                 (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
                 if (currentItem != (1, 0, 4)) { return; }   // if current selected item is not pickaxe, can't dig lol
-                (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
+                (int, int) chunkPos = ChunkIdx(posToDigX, posToDigY);
                 (int type, int subType) value;
                 foreach (Plant plant in screen.activePlants.Values)
                 {
@@ -663,7 +663,7 @@ namespace Cave
             }
             public void Place(int posToDigX, int posToDigY)
             {
-                (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
+                (int, int) chunkPos = ChunkIdx(posToDigX, posToDigY);
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return; }
                 (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
                 (int type, int subType) tileState = chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32];

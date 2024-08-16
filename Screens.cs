@@ -50,7 +50,7 @@ namespace Cave
 
                 Screens.Screen mainScreen;
                 SettingsJson settings;
-                settings = tryLoadSettings(seedToPut);
+                settings = tryLoadSettings(this);
 
                 playerList.Add(new Player(settings));
                 Player player = playerList[0];
@@ -106,8 +106,8 @@ namespace Cave
                 player.movePlayer();
                 screen.checkStructures(player);
 
-                screen.chunkX = Floor(player.camPosX, 32) / 32;
-                screen.chunkY = Floor(player.camPosY, 32) / 32;
+                screen.chunkX = ChunkIdx(player.camPosX);
+                screen.chunkY = ChunkIdx(player.camPosY);
             }
             public void runGame(PictureBox gamePictureBox, PictureBox overlayPictureBox)
             {
@@ -316,7 +316,7 @@ namespace Cave
                     if (unloadDimensionPlayerIsInAsWell || playerList[0].dimension != id)
                     {
                         screen = loadedScreens[id];
-                        screen.saveAllChunks();
+                        saveAllChunks(screen);
                         screensToRemove.Add(id);
                     }
                 }
@@ -380,15 +380,27 @@ namespace Cave
             {
                 game = gameToPut;
                 id = idToPut;
-                seed = game.seed + id;
-                type = (id % 11, 0);
-                isMonoBiome = isMonoToPut;
+                DimensionJson dimensionJson = tryLoadDimension(game, id);
+                if (dimensionJson != null)
+                {
+                    type = dimensionJson.type;
+                    isMonoBiome = dimensionJson.isMono;
+                    seed = dimensionJson.seed;
+                }
+                else
+                {
+                    type = (id % 11, 0);
+                    isMonoBiome = isMonoToPut;
+                    seed = game.seed + id;
+                    saveDimensionData(this);
+                }
                 isPngToBeExported = isPngToExport;
                 chunkResolution = chunkResolutionToPut + UnloadedChunksAmount * 2; // invisible chunks of the sides/top/bottom
                 createDimensionFolders(game, id);
                 LCGCacheInit();
-                chunkX = Floor(game.playerList[0].posX, 32) / 32;
-                chunkY = Floor(game.playerList[0].posY, 32) / 32;
+                Player player = game.playerList[0];
+                chunkX = ChunkIdx(player.posX);
+                chunkY = ChunkIdx(player.posY);
                 loadChunks();
 
                 foreach ((int x, int y) pos in chunksToSpawnEntitiesIn.Keys)
@@ -457,13 +469,6 @@ namespace Cave
                     longo2 = LCGz(longo);
                 }
             }
-            public void saveAllChunks()
-            {
-                foreach (Chunk chunk in loadedChunks.Values)
-                {
-                    saveChunk(chunk);
-                }
-            }
             public void loadChunks()
             {
                 loadedChunks = new Dictionary<(int, int), Chunk>();
@@ -509,7 +514,7 @@ namespace Cave
                 for (int i = 0; i < entityIdArray.Length; i++)
                 {
                     id = entityIdArray[i];
-                    chunkIndex = findChunkAbsoluteIndex(activeEntities[id].posX, activeEntities[id].posY);
+                    chunkIndex = ChunkIdx(activeEntities[id].posX, activeEntities[id].posY);
                     if (loadedChunks.ContainsKey(chunkIndex))
                     {
                         chunk = loadedChunks[chunkIndex];
@@ -526,7 +531,7 @@ namespace Cave
                 for (int i = 0; i < plantIdArray.Length; i++)
                 {
                     id = plantIdArray[i];
-                    chunkIndex = findChunkAbsoluteIndex(activePlants[id].posX, activePlants[id].posY);
+                    chunkIndex = ChunkIdx(activePlants[id].posX, activePlants[id].posY);
                     chunk = loadedChunks[chunkIndex];
                     chunk.plantList.Add(activePlants[id]);
                     activePlants.Remove(id);
@@ -681,7 +686,7 @@ namespace Cave
                 foreach ((int x, int y) pos in loadedChunks.Keys)
                 {
                     if (nestLoadedChunkIndexes.ContainsKey(pos) && distance(pos, cameraChunkIdx) > 0.8f * chunkResolution) { continue; }
-                    currentPos = findMegaChunkAbsoluteIndex(pos);
+                    currentPos = MegaChunkIdx(pos);
                     newMegaChunks[currentPos] = null;
                 }
                 foreach ((int x, int y) pos in newMegaChunks.Keys.ToArray()) // add new megachunks that were not loaded before and have now chunks in
@@ -707,24 +712,6 @@ namespace Cave
                 }
 
                 megaChunks = newMegaChunks;
-            }
-            public (int, int) findMegaChunkAbsoluteIndex((int x, int y) pos)
-            {
-                int chunkPosX = Floor(pos.x, 16) / 16;
-                int chunkPosY = Floor(pos.y, 16) / 16;
-                return (chunkPosX, chunkPosY);
-            }
-            public (int, int) findChunkAbsoluteIndex(int pixelPosX, int pixelPosY)
-            {
-                int chunkPosX = Floor(pixelPosX, 32) / 32;
-                int chunkPosY = Floor(pixelPosY, 32) / 32;
-                return (chunkPosX, chunkPosY);
-            }
-            public (int, int) findChunkAbsoluteIndex((int x, int y) pos)
-            {
-                int chunkPosX = Floor(pos.x, 32) / 32;
-                int chunkPosY = Floor(pos.y, 32) / 32;
-                return (chunkPosX, chunkPosY);
             }
             public void checkStructuresOnSpawn(Player player)
             {
@@ -799,7 +786,7 @@ namespace Cave
                         seedX = LCGyNeg(seedX); // on porpoise x    /\_/\
                         seedY = LCGxNeg(seedY); // and y switched  ( ^o^ )
                         Structure newStructure = new Structure(posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480), seedX, seedY, true, (posX, posY), this);
-                        newStructure.drawLakePapa();
+                        newStructure.drawLakeNew();
                         megaChunk.structures.Add(newStructure.id);
                         activeStructures[newStructure.id] = newStructure;
                         //newStructure.saveInFile();
@@ -978,7 +965,7 @@ namespace Cave
 
                 { // player
                     Color color = Color.Green;
-                    (int, int) chunkPos = findChunkAbsoluteIndex(player.posX, player.posY);
+                    (int, int) chunkPos = ChunkIdx(player.posX, player.posY);
                     Chunk chunkToTest = loadedChunks[chunkPos];
                     if (chunkToTest.fillStates[(player.posX % 32 + 32) % 32, (player.posY % 32 + 32) % 32].type > 0)
                     {
@@ -1207,7 +1194,7 @@ namespace Cave
                     }
                     chunkToTest = extraLoadedChunks[chunkPos];
                 }
-                (int x, int y) chunkIdx = GetChunkIndexFromTile(posToTest);
+                (int x, int y) chunkIdx = PosMod(posToTest);
                 (int type, int subType) previous = chunkToTest.fillStates[chunkIdx.x, chunkIdx.y];
                 chunkToTest.fillStates[chunkIdx.x, chunkIdx.y] = typeToSet;
                 chunkToTest.testLiquidUnstableNonspecific(posToTest.x, posToTest.y);
@@ -1235,20 +1222,11 @@ namespace Cave
                     else
                     {
                         chunkDict.Add(chunkPos, new Chunk(chunkPos, true, this));
+                        extraLoadedChunks.Add(chunkPos, chunkDict[chunkPos]);
                     }
                     chunkToTest = chunkDict[chunkPos];
                 }
                 return chunkToTest;
-            }
-            public void addChunksToExtraLoaded(Dictionary<(int x, int y), Chunk> chunkDict)
-            {
-                foreach ((int x, int y) pos in chunkDict.Keys)
-                {
-                    if (!loadedChunks.ContainsKey(pos) && !extraLoadedChunks.ContainsKey(pos))
-                    {
-                        extraLoadedChunks[pos] = chunkDict[pos];
-                    }
-                }
             }
         }
     }

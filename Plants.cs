@@ -665,9 +665,9 @@ namespace Cave
             }
             public void findType(int group) // 0 = small, 1 = tree
             {
-                (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
+                (int x, int y) tileIndex = PosMod((posX, posY));
 
-                (int x, int y) chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
+                (int x, int y) chunkPos = ChunkIdx(posX, posY);
                 if (!screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     return;
@@ -857,7 +857,7 @@ namespace Cave
             public bool testIfPositionEmpty((int x, int y) mod)
             {
                 (int x, int y) pixelPos = (posX + mod.x, posY + mod.y);
-                (int x, int y) pixelTileIndex = GetChunkIndexFromTile(pixelPos.x, pixelPos.y);
+                (int x, int y) pixelTileIndex = PosMod(pixelPos);
                 (int x, int y) chunkPos = (Floor(pixelPos.x, 32) / 32, Floor(pixelPos.y, 32) / 32);
 
                 if (screen.loadedChunks.ContainsKey(chunkPos))
@@ -957,8 +957,8 @@ namespace Cave
                 int three = posY - posOffset[1];
                 int four = posY + height - posOffset[1] - 1;
 
-                (int, int) tupelo = screen.findChunkAbsoluteIndex(one, three);
-                (int, int) tupela = screen.findChunkAbsoluteIndex(two, four);
+                (int, int) tupelo = ChunkIdx(one, three);
+                (int, int) tupela = ChunkIdx(two, four);
 
                 bounds[0] = tupelo.Item1;
                 bounds[1] = tupelo.Item2;
@@ -1295,13 +1295,13 @@ namespace Cave
                         {
                             if (i == chunk.position.Item1 && j == chunk.position.Item2)
                             {
-                                chunkPos = screen.findChunkAbsoluteIndex(i, j);
+                                chunkPos = ChunkIdx(i, j);
                                 chunkToTest = screen.loadedChunks[chunkPos];
                                 chunkToTest.plantList.Add(this);
                             }
                             else
                             {
-                                chunkPos = screen.findChunkAbsoluteIndex(i, j);
+                                chunkPos = ChunkIdx(i, j);
                                 chunkToTest = screen.loadedChunks[chunkPos];
                                 chunkToTest.exteriorPlantList.Add(this);
                             }
@@ -1329,26 +1329,26 @@ namespace Cave
                     int randY = rand.Next(32);
                     posX += randX;
                     posY += randY;
-                    (int x, int y) chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
+                    (int x, int y) chunkPos = ChunkIdx(posX, posY);
                     if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                     {
-                        (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
+                        (int x, int y) tileIndex = PosMod((posX, posY));
                         if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0)
                         {
-                            chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
+                            chunkPos = ChunkIdx(posX, posY - 1);
                             if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
                             {
-                                tileIndex = GetChunkIndexFromTile(posX, posY - 1);
+                                tileIndex = PosMod((posX, posY - 1));
                                 if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type > 0)
                                 {
                                     attachPoint = 0;
                                     return;
                                 }
                             }
-                            chunkPos = screen.findChunkAbsoluteIndex(posX, posY + 1);
+                            chunkPos = ChunkIdx(posX, posY + 1);
                             if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesto))
                             {
-                                tileIndex = GetChunkIndexFromTile(posX, posY + 1);
+                                tileIndex = PosMod((posX, posY + 1));
                                 if (chunkToTesto.fillStates[tileIndex.x, tileIndex.y].type > 0)
                                 {
                                     attachPoint = 3;
@@ -1365,25 +1365,25 @@ namespace Cave
             }
             public void testPlantPosition()
             {
-                (int x, int y) chunkPos = screen.findChunkAbsoluteIndex(posX, posY);
+                (int x, int y) chunkPos = ChunkIdx(posX, posY);
                 if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                 {
-                    (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
+                    (int x, int y) tileIndex = PosMod((posX, posY));
                     if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0)
                     {
-                        chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
+                        chunkPos = ChunkIdx(posX, posY - 1);
                         if (attachPoint == 0 && screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesto))
                         {
-                            tileIndex = GetChunkIndexFromTile(posX, posY - 1);
+                            tileIndex = PosMod((posX, posY - 1));
                             if (chunkToTesto.fillStates[tileIndex.x, tileIndex.y].type > 0)
                             {
                                 return;
                             }
                         }
-                        chunkPos = screen.findChunkAbsoluteIndex(posX, posY + 1);
+                        chunkPos = ChunkIdx(posX, posY + 1);
                         if (attachPoint == 3 && screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
                         {
-                            tileIndex = GetChunkIndexFromTile(posX, posY + 1);
+                            tileIndex = PosMod((posX, posY + 1));
                             if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type > 0)
                             {
                                 return;

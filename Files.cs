@@ -379,7 +379,7 @@ namespace Cave
                 type = structure.type;
                 id = structure.id;
                 seed = (structure.seedX, structure.seedY);
-                pos = structure.centerPos;
+                pos = (structure.posX, structure.posY);
             }
             public StructureJson()
             {
@@ -697,25 +697,51 @@ namespace Cave
             serializer.Converters.Add(new JavaScriptDateTimeConverter());
             serializer.NullValueHandling = NullValueHandling.Ignore;
 
-            SettingsJson settings = new SettingsJson(game);
+            SettingsJson settingsJson = new SettingsJson(game);
 
             using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{worldSeed}\\settings.json"))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
-                serializer.Serialize(writer, settings);
+                serializer.Serialize(writer, settingsJson);
             }
         }
-        public static SettingsJson tryLoadSettings(long seed)
+        public static SettingsJson tryLoadSettings(Game game)
         {
-            if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{seed}\\settings.json")) { return null; }
+            if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{game.seed}\\settings.json")) { return null; }
 
-            SettingsJson settings;
-            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{seed}\\settings.json"))
+            SettingsJson settingsJson;
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{game.seed}\\settings.json"))
             {
                 string content = f.ReadToEnd();
-                settings = JsonConvert.DeserializeObject<SettingsJson>(content);
+                settingsJson = JsonConvert.DeserializeObject<SettingsJson>(content);
             }
-            return settings;
+            return settingsJson;
+        }
+        public static void saveDimensionData(Screens.Screen screen)
+        {
+            JsonSerializer serializer = new JsonSerializer();
+            serializer.Converters.Add(new JavaScriptDateTimeConverter());
+            serializer.NullValueHandling = NullValueHandling.Ignore;
+
+            DimensionJson dimensionJson = new DimensionJson(screen);
+            
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{screen.game.seed}\\DimensionData\\{screen.id}.json"))
+            using (JsonWriter writer = new JsonTextWriter(sw))
+            {
+                serializer.Serialize(writer, dimensionJson);
+            }
+        }
+        public static DimensionJson tryLoadDimension(Game game, int id)
+        {
+            if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{game.seed}\\DimensionData\\{id}.json")) { return null; }
+
+            DimensionJson dimensionJson;
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{game.seed}\\dimensionData\\{id}.json"))
+            {
+                string content = f.ReadToEnd();
+                dimensionJson = JsonConvert.DeserializeObject<DimensionJson>(content);
+            }
+            return dimensionJson;
         }
         public static void createDimensionFolders(Game game, int id)
         {
@@ -728,7 +754,6 @@ namespace Cave
                 Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{game.seed}\\ChunkData\\{id}");
             }
         }
-
         public static void createFolders(long seed)
         {
             if (!Directory.Exists($"{currentDirectory}\\BiomeDiagrams"))
@@ -739,7 +764,7 @@ namespace Cave
 
             if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\DimensionData"))
             {
-                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\MegaChunkData");
+                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\DimensionData");
             }
             if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\MegaChunkData"))
             {

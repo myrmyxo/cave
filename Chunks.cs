@@ -368,7 +368,7 @@ namespace Cave
             }
             public void testIfMegaChunkGenerated()
             {
-                (int x, int y) megaChunkPos = screen.findMegaChunkAbsoluteIndex(position);
+                (int x, int y) megaChunkPos = MegaChunkIdx(position);
                 if (screen.megaChunks.ContainsKey(megaChunkPos))
                 {
                     return;
@@ -507,10 +507,10 @@ namespace Cave
                     {
                         if (chunkToTest.fillStates[randX, randY].type <= 0)
                         {
-                            chunkPos = screen.findChunkAbsoluteIndex(position.x*32 + randX, position.y*32 + randY - 1);
+                            chunkPos = ChunkIdx(position.x*32 + randX, position.y*32 + randY - 1);
                             if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
                             {
-                                tileIndex = GetChunkIndexFromTile(randX, randY - 1);
+                                tileIndex = PosMod((randX, randY - 1));
                                 if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type > 0)
                                 {
                                     forbiddenPositions[(randX, randY)] = true;
@@ -535,13 +535,13 @@ namespace Cave
                     if (forbiddenPositions.ContainsKey((randX, randY))) { }
                     else if (screen.loadedChunks.TryGetValue(position, out Chunk chunkToTest))
                     {
-                        tileIndex = GetChunkIndexFromTile(randX, randY);
+                        tileIndex = PosMod((randX, randY));
                         if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0)
                         {
-                            chunkPos = screen.findChunkAbsoluteIndex(position.x*32 + randX, position.y*32 + randY + 1);
+                            chunkPos = ChunkIdx(position.x*32 + randX, position.y*32 + randY + 1);
                             if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
                             {
-                                tileIndex = GetChunkIndexFromTile(randX, randY + 1);
+                                tileIndex = PosMod((randX, randY + 1));
                                 if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type > 0)
                                 {
                                     forbiddenPositions[(randX, randY)] = true;
@@ -558,15 +558,15 @@ namespace Cave
             {
                 if (unstableLiquidCount > 0) //here
                 {
-                    (int x, int y) chunkCoords = screen.findChunkAbsoluteIndex(position.Item1 * 32 - 32, position.Item2 * 32);
+                    (int x, int y) chunkCoords = ChunkIdx(position.Item1 * 32 - 32, position.Item2 * 32);
                     Chunk leftChunk = screen.tryToGetChunk(chunkCoords);
-                    chunkCoords = screen.findChunkAbsoluteIndex(position.Item1 * 32 - 32, position.Item2 * 32 - 32);
+                    chunkCoords = ChunkIdx(position.Item1 * 32 - 32, position.Item2 * 32 - 32);
                     Chunk bottomLeftChunk = screen.tryToGetChunk(chunkCoords);
-                    chunkCoords = screen.findChunkAbsoluteIndex(position.Item1 * 32, position.Item2 * 32 - 32);
+                    chunkCoords = ChunkIdx(position.Item1 * 32, position.Item2 * 32 - 32);
                     Chunk bottomChunk = screen.tryToGetChunk(chunkCoords);
-                    chunkCoords = screen.findChunkAbsoluteIndex(position.Item1 * 32 + 32, position.Item2 * 32 - 32);
+                    chunkCoords = ChunkIdx(position.Item1 * 32 + 32, position.Item2 * 32 - 32);
                     Chunk bottomRightChunk = screen.tryToGetChunk(chunkCoords);
-                    chunkCoords = screen.findChunkAbsoluteIndex(position.Item1 * 32 + 32, position.Item2 * 32);
+                    chunkCoords = ChunkIdx(position.Item1 * 32 + 32, position.Item2 * 32);
                     Chunk rightChunk = screen.tryToGetChunk(chunkCoords);
 
                     unstableLiquidCount = 0;
@@ -705,7 +705,7 @@ namespace Cave
                 int absChunkX = position.Item1;
                 int absChunkY = position.Item2;
                 if (jTested < 0) { jTested += 32; absChunkY--; }
-                (int, int) chunkCoords = screen.findChunkAbsoluteIndex(absChunkX * 32, absChunkY * 32);
+                (int, int) chunkCoords = ChunkIdx(absChunkX * 32, absChunkY * 32);
                 Chunk chunkToTest = screen.tryToGetChunk(chunkCoords);
 
                 List<(int x, int y)> posVisited = new List<(int x, int y)> { (absChunkX * 32 + iTested, absChunkY*32 + jTested) };
@@ -718,7 +718,7 @@ namespace Cave
                     if (iTested > 31)
                     {
                         absChunkX++;
-                        chunkCoords = screen.findChunkAbsoluteIndex(absChunkX * 32, absChunkY * 32);
+                        chunkCoords = ChunkIdx(absChunkX * 32, absChunkY * 32);
                         chunkToTest = screen.tryToGetChunk(chunkCoords);
                         iTested -= 32;
                         if (absChunkX >= screen.chunkX + screen.chunkResolution) { break; }
@@ -755,7 +755,7 @@ namespace Cave
                 int absChunkX = position.Item1;
                 int absChunkY = position.Item2;
                 if (jTested < 0) { jTested += 32; absChunkY--; }
-                (int, int) chunkCoords = screen.findChunkAbsoluteIndex(absChunkX * 32, absChunkY * 32);
+                (int, int) chunkCoords = ChunkIdx(absChunkX * 32, absChunkY * 32);
                 Chunk chunkToTest = screen.tryToGetChunk(chunkCoords);
 
                 List<(int x, int y)> posVisited = new List<(int x, int y)> { (absChunkX * 32 + iTested, absChunkY * 32 + jTested) };
@@ -768,7 +768,7 @@ namespace Cave
                     if (iTested < 0)
                     {
                         absChunkX--;
-                        chunkCoords = screen.findChunkAbsoluteIndex(absChunkX * 32, absChunkY * 32);
+                        chunkCoords = ChunkIdx(absChunkX * 32, absChunkY * 32);
                         chunkToTest = screen.tryToGetChunk(chunkCoords);
                         iTested += 32;
                         if (absChunkX < screen.chunkX) { break; }
@@ -804,7 +804,7 @@ namespace Cave
 
                 foreach ((int x, int y) mod in directionPositionArray)
                 {
-                    chunkPos = screen.findChunkAbsoluteIndex(posX + mod.x, posY + mod.y);
+                    chunkPos = ChunkIdx(posX + mod.x, posY + mod.y);
                     if (screen.loadedChunks.ContainsKey(chunkPos))
                     {
                         chunkToTest = screen.loadedChunks[chunkPos];
@@ -820,7 +820,7 @@ namespace Cave
                 (int, int) chunkPos;
                 Chunk chunkToTest;
 
-                chunkPos = screen.findChunkAbsoluteIndex(posX + 1, posY);
+                chunkPos = ChunkIdx(posX + 1, posY);
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
@@ -830,7 +830,7 @@ namespace Cave
                     }
                 }
 
-                chunkPos = screen.findChunkAbsoluteIndex(posX - 1, posY + 1);
+                chunkPos = ChunkIdx(posX - 1, posY + 1);
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
@@ -840,7 +840,7 @@ namespace Cave
                     }
                 }
 
-                chunkPos = screen.findChunkAbsoluteIndex(posX + 1, posY + 1);
+                chunkPos = ChunkIdx(posX + 1, posY + 1);
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
@@ -850,7 +850,7 @@ namespace Cave
                     }
                 }
 
-                chunkPos = screen.findChunkAbsoluteIndex(posX - 1, posY);
+                chunkPos = ChunkIdx(posX - 1, posY);
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     ;
@@ -861,7 +861,7 @@ namespace Cave
                     }
                 }
 
-                chunkPos = screen.findChunkAbsoluteIndex(posX, posY + 1);
+                chunkPos = ChunkIdx(posX, posY + 1);
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
@@ -871,7 +871,7 @@ namespace Cave
                     }
                 }
 
-                chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
+                chunkPos = ChunkIdx(posX, posY - 1);
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
@@ -886,7 +886,7 @@ namespace Cave
                 (int, int) chunkPos;
                 Chunk chunkToTest;
 
-                chunkPos = screen.findChunkAbsoluteIndex(posX + 1, posY);
+                chunkPos = ChunkIdx(posX + 1, posY);
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
@@ -897,7 +897,7 @@ namespace Cave
                     }
                 }
 
-                chunkPos = screen.findChunkAbsoluteIndex(posX - 1, posY - 1);
+                chunkPos = ChunkIdx(posX - 1, posY - 1);
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
@@ -908,7 +908,7 @@ namespace Cave
                     }
                 }
 
-                chunkPos = screen.findChunkAbsoluteIndex(posX + 1, posY - 1);
+                chunkPos = ChunkIdx(posX + 1, posY - 1);
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
@@ -919,7 +919,7 @@ namespace Cave
                     }
                 }
 
-                chunkPos = screen.findChunkAbsoluteIndex(posX - 1, posY);
+                chunkPos = ChunkIdx(posX - 1, posY);
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
@@ -930,7 +930,7 @@ namespace Cave
                     }
                 }
 
-                chunkPos = screen.findChunkAbsoluteIndex(posX, posY + 1);
+                chunkPos = ChunkIdx(posX, posY + 1);
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
@@ -941,7 +941,7 @@ namespace Cave
                     }
                 }
 
-                chunkPos = screen.findChunkAbsoluteIndex(posX, posY - 1);
+                chunkPos = ChunkIdx(posX, posY - 1);
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
@@ -1190,12 +1190,12 @@ namespace Cave
         public static int findSecondaryNoiseValue(int[,] values, int posX, int posY, int layer) // posX/Y is real pos and not %32 !!! same for all findSecondary functions
         {
             int modulo = 16;
-            int modX = GetChunkIndexFromTile1D(posX, modulo);
-            int modY = GetChunkIndexFromTile1D(posY, modulo);
+            int modX = PosMod(posX, modulo);
+            int modY = PosMod(posY, modulo);
 
             int quartile = 0;
-            if (GetChunkIndexFromTile1D(posX) >= 16) { quartile += 1; }
-            if (GetChunkIndexFromTile1D(posY) >= 16) { quartile += 3; }
+            if (PosMod(posX) >= 16) { quartile += 1; }
+            if (PosMod(posY) >= 16) { quartile += 3; }
 
             int fX1 = values[layer, 0 + quartile] * (modulo - modX) + values[layer, 1 + quartile] * modX;
             int fX2 = values[layer, 3 + quartile] * (modulo - modX) + values[layer, 4 + quartile] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
@@ -1205,8 +1205,8 @@ namespace Cave
         public static int findSecondaryBigNoiseValue(int[,] values, int posX, int posY, int layer)
         {
             int modulo = 64;
-            int modX = GetChunkIndexFromTile1D(posX, modulo);
-            int modY = GetChunkIndexFromTile1D(posY, modulo);
+            int modX = PosMod(posX, modulo);
+            int modY = PosMod(posY, modulo);
             int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
             int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
             int fY = fX1 * (modulo - modY) + fX2 * modY;
@@ -1215,8 +1215,8 @@ namespace Cave
         public static int findSecondaryBiomeValue(int[,] values, int posX, int posY, int layer)
         {
             int modulo = 512;
-            int modX = GetChunkIndexFromTile1D(posX, modulo);
-            int modY = GetChunkIndexFromTile1D(posY, modulo);
+            int modX = PosMod(posX, modulo);
+            int modY = PosMod(posY, modulo);
             int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
             int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
             int fY = fX1 * (modulo - modY) + fX2 * modY;
@@ -1225,8 +1225,8 @@ namespace Cave
         public static int findSecondaryBigBiomeValue(int[,] values, int posX, int posY, int layer)
         {
             int modulo = 1024;
-            int modX = GetChunkIndexFromTile1D(posX, modulo);
-            int modY = GetChunkIndexFromTile1D(posY, modulo);
+            int modX = PosMod(posX, modulo);
+            int modY = PosMod(posY, modulo);
             int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
             int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
             int fY = fX1 * (modulo - modY) + fX2 * modY;
@@ -1344,9 +1344,9 @@ namespace Cave
             int acidity = values.acid;
             int toxicity = values.toxi;
 
-            if (false) // distance shit that's slow asf and bad asf
+            if (0 > 0) // distance shit that's slow asf and bad asf
             {
-                int cumScore = 0; // heehee !
+                //int cumScore = 0; // heehee !
                 foreach ((int biome, int subBiome) i in biomeTypicalValues.Keys)
                 {
                     int distTemp = Abs(temperature - biomeTypicalValues[i].temp);
@@ -1456,7 +1456,7 @@ namespace Cave
             }
             else if (dimensionType == (1, 0)) // type == 1, chandelier dimension
             {
-                listo.Add(((9, 0), 1000));
+                testAddBiome(listo, (9, 0), percentageFree);
             }
             else if (dimensionType == (2, 0)) // type == 2, living dimension
             {
@@ -1466,6 +1466,8 @@ namespace Cave
                 percentageFree -= calculateAndAddBiome(listo, (10, 2), percentageFree, humidity, (-999999, 340)); // bone
                 testAddBiome(listo, (10, 1), percentageFree); // flesh and bone
             }
+
+            if (listo.Count == 0) { testAddBiome(listo, (-1, 0), percentageFree); }
 
         AfterTest:;
 

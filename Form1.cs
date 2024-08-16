@@ -86,8 +86,7 @@ namespace Cave
             public static (int, int)[] squareModArray = new (int, int)[4] { (0, 0), (1, 0), (0, 1), (1, 1) };
             public static (int, int)[] bigSquareModArray = new (int, int)[9] { (0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2) };
             public static (int, int)[] neighbourArray = new (int, int)[4] { (-1, 0), (1, 0), (0, 1), (0, -1) };
-            public static (int, int)[] bubbleNeighbourArray = new (int, int)[8] { (-1, 0), (1, 0), (0, 1), (0, -1), (-2, 0), (2, 0), (0, 2), (0, -2) };
-            public static (int, int)[] diagNeighbourArray = new (int, int)[4] { (-1, 1), (1, 1), (1, -1), (-1, -1) };
+            public static (int, int)[] diagArray = new (int, int)[4] { (-1, 1), (1, 1), (1, -1), (-1, -1) };
             public static (int x, int y)[] directionPositionArray = new (int x, int y)[] { (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), };
             public static Dictionary<(int x, int y), int> directionPositionDictionary = new Dictionary<(int x, int y), int>
             {
@@ -191,6 +190,8 @@ namespace Cave
             // 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
             public static Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int range, int prio)> biomeTypicalValues = new Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int range, int prio)>
             {
+                { (-1, 0), (690, 690, 690, 690, 1000, 0)},  // undefined
+
                 { (0, 0), (200, 320, 320, 512, 1000, 0) },  // cold biome
                 { (0, 1), (-100, 320, 320, 512, 1000, 2) }, // frost biome
 
@@ -645,7 +646,7 @@ namespace Cave
             foreach (Screens.Screen screen in game.loadedScreens.Values)
             {
                 screen.putEntitiesAndPlantsInChunks();
-                screen.saveAllChunks();
+                saveAllChunks(screen);
             }
         }
         public static void makeBiomeDiagram((int, int) dimensionType, (int, int) variablesToTest, (int, int) fixedValues)
@@ -840,17 +841,27 @@ namespace Cave
         {
             return value - (((value % modulo) + modulo) % modulo);
         }
-        public static int PosMod(int value, int modulo)
+        public static (int, int) MegaChunkIdx((int x, int y) pos)
         {
-            return ((value % modulo) + modulo) % modulo;
+            int chunkPosX = Floor(pos.x, 16) / 16;
+            int chunkPosY = Floor(pos.y, 16) / 16;
+            return (chunkPosX, chunkPosY);
         }
-        public static float PosMod(float value, float modulo)
+        public static (int, int) ChunkIdx(int pixelPosX, int pixelPosY)
         {
-            return ((value % modulo) + modulo) % modulo;
+            int chunkPosX = Floor(pixelPosX, 32) / 32;
+            int chunkPosY = Floor(pixelPosY, 32) / 32;
+            return (chunkPosX, chunkPosY);
         }
-        public static long PosMod(long value, long modulo)
+        public static (int, int) ChunkIdx((int x, int y) pos)
         {
-            return ((value % modulo) + modulo) % modulo;
+            int chunkPosX = Floor(pos.x, 32) / 32;
+            int chunkPosY = Floor(pos.y, 32) / 32;
+            return (chunkPosX, chunkPosY);
+        }
+        public static int ChunkIdx(int pos)
+        {
+            return Floor(pos, 32) / 32;
         }
         public static int Sign(int a)
         {
@@ -935,31 +946,23 @@ namespace Cave
             n = Obseesaw(n, period);
             return (n * n) / (period * period * 0.25f);
         }
-        public static (int x, int y) GetChunkIndexFromTile((int x, int y) poso)
+        public static (int x, int y) PosMod((int x, int y) poso, int mod = 32)
         {
-            int posX = poso.x % 32;
-            int posY = poso.y % 32;
-            if (posX < 0) { posX += 32; }
-            if (posY < 0) { posY += 32; }
+            int posX = poso.x % mod;
+            int posY = poso.y % mod;
+            if (posX < 0) { posX += mod; }
+            if (posY < 0) { posY += mod; }
             return (posX, posY);
         }
-        public static (int x, int y) GetChunkIndexFromTile(int posoX, int posoY)
-        {
-            int posX = posoX % 32;
-            int posY = posoY % 32;
-            if (posX < 0) { posX += 32; }
-            if (posY < 0) { posY += 32; }
-            return (posX, posY);
-        }
-        public static int GetChunkIndexFromTile1D(int poso)
-        {
-            int pos = poso % 32;
-            if (pos < 0) { pos += 32; }
-            return pos;
-        }
-        public static int GetChunkIndexFromTile1D(int poso, int modulo)
+        public static int PosMod(int poso, int modulo = 32)
         {
             int pos = poso % modulo;
+            if (pos < 0) { pos += modulo; }
+            return pos;
+        }
+        public static float PosMod(float poso, float modulo = 32)
+        {
+            float pos = poso % modulo;
             if (pos < 0) { pos += modulo; }
             return pos;
         }

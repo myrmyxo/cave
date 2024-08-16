@@ -143,7 +143,7 @@ namespace Cave
             }
             public void findType(Chunk chunk)
             {
-                (int x, int y) tileIndex = GetChunkIndexFromTile(posX, posY);
+                (int x, int y) tileIndex = PosMod((posX, posY));
                 (int biome, int subBiome) biome = chunk.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
                 (int type, int subType) material = chunk.fillStates[tileIndex.x, tileIndex.y];
                 if (screen.type.Item1 == 2)
@@ -364,10 +364,10 @@ namespace Cave
                     costOfTiles[location] = 0;
                     return 0;
                 }
-                (int x, int y) chunkPos = screen.findChunkAbsoluteIndex(location.x, location.y);
+                (int x, int y) chunkPos = ChunkIdx(location.x, location.y);
                 if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
                 {
-                    (int x, int y) tileIndex = GetChunkIndexFromTile(location);
+                    (int x, int y) tileIndex = PosMod(location);
                     int tileContent = chunkToTest.fillStates[tileIndex.x, tileIndex.y].type;
                     if (tileContent <= 0)
                     {
@@ -660,7 +660,6 @@ namespace Cave
             }
             public void moveEntity()
             {
-                (int, int) chunkPos;
                 if (type == 0) // fairy
                 {
                     if (state == 0) // idle
@@ -1221,7 +1220,7 @@ namespace Cave
                         realPosY = realPosToTest;
                         break;
                     }
-                    chunkPos = screen.findChunkAbsoluteIndex(posX, posToTest);
+                    chunkPos = ChunkIdx(posX, posToTest);
                     if (!screen.loadedChunks.ContainsKey(chunkPos)) // if chunk to test is outside loaded chunks, save Entity in the non-loaded chunk
                     {
                         realPosY = realPosToTest;
@@ -1254,7 +1253,7 @@ namespace Cave
                         realPosX = realPosToTest;
                         break;
                     }
-                    chunkPos = screen.findChunkAbsoluteIndex(posToTest, posY);
+                    chunkPos = ChunkIdx(posToTest, posY);
                     if (!screen.loadedChunks.ContainsKey(chunkPos)) // if chunk to test is outside loaded chunks, save Entity in the non-loaded chunk
                     {
                         realPosX = realPosToTest;
@@ -1333,9 +1332,9 @@ namespace Cave
             }
             public (int type, int subType) Dig(int posToDigX, int posToDigY)
             {
-                (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
+                (int, int) chunkPos = ChunkIdx(posToDigX, posToDigY);
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return (0, 0); }
-                (int x, int y) tileIndex = GetChunkIndexFromTile(posToDigX, posToDigY);
+                (int x, int y) tileIndex = PosMod((posToDigX, posToDigY));
                 (int type, int subType) tileContent = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
                 if (tileContent.type != 0)
                 {
@@ -1351,10 +1350,10 @@ namespace Cave
             }
             public bool Place(int posToDigX, int posToDigY, (int type, int subType, int typeOfElement) elementToPlace, bool forcePlace)
             {
-                (int, int) chunkPos = screen.findChunkAbsoluteIndex(posToDigX, posToDigY);
+                (int, int) chunkPos = ChunkIdx(posToDigX, posToDigY);
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return false; }
                 if (!forcePlace && !inventoryElements.Contains(elementToPlace)) { return false; } 
-                (int x, int y) tileIndex = GetChunkIndexFromTile(posToDigX, posToDigY);
+                (int x, int y) tileIndex = PosMod((posToDigX, posToDigY));
                 int tileState = chunkToTest.fillStates[tileIndex.x, tileIndex.y].type;
                 if (tileState == 0 || tileState < 0 && elementToPlace.typeOfElement > 0)
                 {
