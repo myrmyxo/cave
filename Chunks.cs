@@ -103,8 +103,8 @@ namespace Cave
                     }
                 }
 
-                chunkX = Floor(position.Item1, 32) / 32;
-                chunkY = Floor(position.Item2, 32) / 32;
+                chunkX = ChunkIdx(position.Item1);
+                chunkY = ChunkIdx(position.Item2);
                 int[,] primaryBigBiomeValues = new int[6, 4];
                 for (int i = layerStart; i < 6; i++)
                 {
@@ -808,7 +808,7 @@ namespace Cave
                     if (screen.loadedChunks.ContainsKey(chunkPos))
                     {
                         chunkToTest = screen.loadedChunks[chunkPos];
-                        if (chunkToTest.fillStates[((posX + mod.x) % 32 + 32) % 32, ((posY + mod.y) % 32 + 32) % 32].type <= 0)
+                        if (chunkToTest.fillStates[PosMod(posX + mod.x), PosMod(posY + mod.y)].type <= 0)
                         {
                             chunkToTest.unstableLiquidCount++;
                         }
@@ -824,7 +824,7 @@ namespace Cave
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[((posX + 1) % 32 + 32) % 32, ((posY) % 32 + 32) % 32].type < 0)
+                    if (chunkToTest.fillStates[PosMod(posX + 1), PosMod(posY)].type < 0)
                     {
                         chunkToTest.unstableLiquidCount++;
                     }
@@ -834,7 +834,7 @@ namespace Cave
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[((posX - 1) % 32 + 32) % 32, ((posY + 1) % 32 + 32) % 32].type < 0)
+                    if (chunkToTest.fillStates[PosMod(posX - 1), PosMod(posY + 1)].type < 0)
                     {
                         chunkToTest.unstableLiquidCount++;
                     }
@@ -844,7 +844,7 @@ namespace Cave
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[((posX + 1) % 32 + 32) % 32, ((posY + 1) % 32 + 32) % 32].type < 0)
+                    if (chunkToTest.fillStates[PosMod(posX + 1), PosMod(posY + 1)].type < 0)
                     {
                         chunkToTest.unstableLiquidCount++;
                     }
@@ -855,7 +855,7 @@ namespace Cave
                 {
                     ;
                     chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[((posX - 1) % 32 + 32) % 32, (posY % 32 + 32) % 32].type < 0)
+                    if (chunkToTest.fillStates[PosMod(posX - 1), PosMod(posY)].type < 0)
                     {
                         chunkToTest.unstableLiquidCount++;
                     }
@@ -865,7 +865,7 @@ namespace Cave
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[((posX) % 32 + 32) % 32, ((posY + 1) % 32 + 32) % 32].type < 0)
+                    if (chunkToTest.fillStates[PosMod(posX), PosMod(posY + 1)].type < 0)
                     {
                         chunkToTest.unstableLiquidCount++;
                     }
@@ -875,7 +875,7 @@ namespace Cave
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[((posX) % 32 + 32) % 32, ((posY - 1) % 32 + 32) % 32].type < 0) // CHANGE THIS TOO FUCKER
+                    if (chunkToTest.fillStates[PosMod(posX), PosMod(posY - 1)].type < 0) // CHANGE THIS TOO FUCKER
                     {
                         chunkToTest.unstableLiquidCount++;
                     }
@@ -890,7 +890,7 @@ namespace Cave
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[((posX + 1) % 32 + 32) % 32, ((posY) % 32 + 32) % 32].type <= 0)
+                    if (chunkToTest.fillStates[PosMod(posX + 1), PosMod(posY)].type <= 0)
                     {
                         chunkToTest.unstableLiquidCount++;
                         unstableLiquidCount++;
@@ -901,7 +901,7 @@ namespace Cave
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[((posX - 1) % 32 + 32) % 32, ((posY - 1) % 32 + 32) % 32].type <= 0)
+                    if (chunkToTest.fillStates[PosMod(posX - 1), PosMod(posY - 1)].type <= 0)
                     {
                         chunkToTest.unstableLiquidCount++;
                         unstableLiquidCount++;
@@ -912,7 +912,7 @@ namespace Cave
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[((posX + 1) % 32 + 32) % 32, ((posY - 1) % 32 + 32) % 32].type <= 0)
+                    if (chunkToTest.fillStates[PosMod(posX + 1), PosMod(posY - 1)].type <= 0)
                     {
                         chunkToTest.unstableLiquidCount++;
                         unstableLiquidCount++;
@@ -923,7 +923,7 @@ namespace Cave
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[((posX - 1) % 32 + 32) % 32, (posY % 32 + 32) % 32].type <= 0)
+                    if (chunkToTest.fillStates[PosMod(posX - 1), PosMod(posY)].type <= 0)
                     {
                         chunkToTest.unstableLiquidCount++;
                         unstableLiquidCount++;
@@ -934,7 +934,7 @@ namespace Cave
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[((posX) % 32 + 32) % 32, ((posY + 1) % 32 + 32) % 32].type <= 0)
+                    if (chunkToTest.fillStates[PosMod(posX), PosMod(posY + 1)].type <= 0)
                     {
                         chunkToTest.unstableLiquidCount++;
                         unstableLiquidCount++;
@@ -945,7 +945,7 @@ namespace Cave
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {
                     chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[((posX) % 32 + 32) % 32, ((posY - 1) % 32 + 32) % 32].type <= 0)
+                    if (chunkToTest.fillStates[PosMod(posX), PosMod(posY - 1)].type <= 0)
                     {
                         chunkToTest.unstableLiquidCount++;
                         unstableLiquidCount++;

@@ -364,9 +364,9 @@ namespace Cave
                         for (int mult = 1; mult <= 2; mult++)
                         {
                             posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
-                            (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                            (int x, int y) chunkPos = ChunkIdx(posToTest);
                             Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                            int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
+                            int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                             if (fillState <= 0 || fillState > 1 || nest.tiles.ContainsKey(posToTest))
                             {
                                 goto SkipToNextIteration;
@@ -418,9 +418,9 @@ namespace Cave
                         goto SkipToNextIteration;
                     }
 
-                    (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                    (int x, int y) chunkPos = ChunkIdx(posToTest);
                     Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                    int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
+                    int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                     if (fillState <= 0)
                     {
                         if (fillState != -4)
@@ -482,9 +482,9 @@ namespace Cave
                         foreach ((int x, int y) mod in neighbourArray)
                         {
                             posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
-                            (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                            (int x, int y) chunkPos = ChunkIdx(posToTest);
                             Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                            int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
+                            int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                             if (((fillState <= 0 || fillState > 1) || nest.tiles.ContainsKey(posToTest)) && repeatCounter >= startPosList.Count) //cumsum yummy yum
                             {
                                 goto SkipToNextIteration;
@@ -532,9 +532,9 @@ namespace Cave
 
                 foreach ((int x, int y) pos in tiles)
                 {
-                    (int x, int y) chunkPos = (Floor(pos.x, 32) / 32, Floor(pos.y, 32) / 32);
+                    (int x, int y) chunkPos = ChunkIdx(pos);
                     Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                    int fillState = chunkToTest.fillStates[(pos.x % 32 + 32) % 32, (pos.y % 32 + 32) % 32].type;
+                    int fillState = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)].type;
                     if (pos.y == maxBordelLevel - 1)
                     {
                         dropPositions.Add(pos);
@@ -589,9 +589,9 @@ namespace Cave
                 {
                     foreach ((int x, int y) posToTest in tiles)
                     {
-                        (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                        (int x, int y) chunkPos = ChunkIdx(posToTest);
                         Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                        int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
+                        int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                         if (posToTest.y < maxBordelLevel)
                         {
                             if (fillState == -5)
@@ -622,9 +622,9 @@ namespace Cave
                     idxToTest = rand.Next(tileList.Count);
                     posToTest = tileList[idxToTest];
                     tileList.RemoveAt(idxToTest);
-                    (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                    (int x, int y) chunkPos = ChunkIdx(posToTest);
                     Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                    int fillState = chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
+                    int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                     if (fillState == typeToFind)
                     {
                         return (posToTest, true);
@@ -650,6 +650,7 @@ namespace Cave
             public float shape = 1.41421356237f; //the only one that has an actual effect LMFAO
 
             public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>(); // the chunks that the nest is present in
+            public Dictionary<(int x, int y), bool> megaChunkPresence = new Dictionary<(int x, int y), bool>(); // the chunks that the nest is present in
             public Dictionary<(int x, int y), bool> tiles = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), bool> borders = new Dictionary<(int x, int y), bool>();
             public Dictionary<int, Room> rooms = new Dictionary<int, Room>();
@@ -667,6 +668,9 @@ namespace Cave
             public List<(int x, int y)> digErrands = new List<(int x, int y)>();
             public List<int> availableHoneyRooms = new List<int>();
             public List<int> availableNurseries = new List<int>();
+
+            // loading and unloading management
+            public bool isPurelyStructureLoaded = true;
 
             public Nest(Screens.Screen screenToPut, NestJson nestJson)
             {
@@ -704,7 +708,6 @@ namespace Cave
                 updateDropPositions();
                 updateDigErrands();
                 decideForBabies();
-
             }
             public Nest((int x, int y) posToPut, long seedToPut, Screens.Screen screenToPut)
             {
@@ -797,9 +800,9 @@ namespace Cave
                 while (repeatCounter < amountToTest)
                 {
                     currentPos = tilesToTest[repeatCounter];
-                    (int x, int y) chunkPos = (Floor(currentPos.x, 32) / 32, Floor(currentPos.y, 32) / 32);
+                    (int x, int y) chunkPos = ChunkIdx(currentPos);
                     Chunk chunkToTest = screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                    int fillState = chunkToTest.fillStates[(currentPos.x % 32 + 32) % 32, (currentPos.y % 32 + 32) % 32].type;
+                    int fillState = chunkToTest.fillStates[PosMod(currentPos.x), PosMod(currentPos.y)].type;
                     if (fillState <= 0 || fillState > 2 || tiles.ContainsKey(currentPos))
                     {
                         return false;
@@ -944,6 +947,7 @@ namespace Cave
             public void updateTiles()
             {
                 chunkPresence = new Dictionary<(int x, int y), bool>();
+                megaChunkPresence = new Dictionary<(int x, int y), bool>();
                 tiles = new Dictionary<(int x, int y), bool>();
                 borders = new Dictionary<(int x, int y), bool>();
                 foreach (Room room in rooms.Values)
@@ -958,6 +962,10 @@ namespace Cave
                         borders[tile] = true;
                         chunkPresence[ChunkIdx(tile.x, tile.y)] = true;
                     }
+                }
+                foreach ((int x, int y) poso in chunkPresence.Keys)
+                {
+                    megaChunkPresence[MegaChunkIdx(poso)] = true;
                 }
             }
             public void setAllRoomsAsFinished()
@@ -976,9 +984,9 @@ namespace Cave
                 digErrands = new List<(int x, int y)>();
                 foreach ((int x, int y) pos in tiles.Keys)
                 {
-                    (int x, int y) chunkPos = (Floor(pos.x, 32) / 32, Floor(pos.y, 32) / 32);
+                    (int x, int y) chunkPos = ChunkIdx(pos);
                     Chunk chunkToTest = screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                    (int type, int subType) fillState = chunkToTest.fillStates[(pos.x % 32 + 32) % 32, (pos.y % 32 + 32) % 32];
+                    (int type, int subType) fillState = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)];
                     Room room = rooms[getRoomId(pos)];
                     if (fillState.type == 0 || (fillState.type == -5 && room.type == 2)) { }
                     else

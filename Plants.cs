@@ -61,7 +61,7 @@ namespace Cave
                 lastDrawPos = branchJson.lstGrPos;
                 type = branchJson.type;
                 seed = branchJson.seed;
-                fillStates = arrayToFillstates(branchJson.fillStates);
+                fillStates = arrayToFillstates(branchJson.fS);
                 foreach (BranchJson baby in branchJson.branches)
                 {
                     childBranches.Add(new Branch(motherPlant, baby));
@@ -243,7 +243,7 @@ namespace Cave
                 lastDrawPos = flowerJson.lstGrPos;
                 type = flowerJson.type;
                 seed = flowerJson.seed;
-                fillStates = arrayToFillstates(flowerJson.fillStates);
+                fillStates = arrayToFillstates(flowerJson.fS);
                 growthLevel = flowerJson.grLvl;
             }
             public Flower(Plant motherPlantToPut, (int x, int y) posToPut, int typeToPut, int seedToPut)
@@ -607,7 +607,7 @@ namespace Cave
                 id = plantJson.id;
                 growthLevel = plantJson.grLvl;
                 timeAtLastGrowth = plantJson.lastGr;
-                fillStates = arrayToFillstates(plantJson.fillStates);
+                fillStates = arrayToFillstates(plantJson.fS);
                 foreach (BranchJson branchJson in plantJson.branches)
                 {
                     childBranches.Add(new Branch(this, branchJson));
@@ -858,7 +858,7 @@ namespace Cave
             {
                 (int x, int y) pixelPos = (posX + mod.x, posY + mod.y);
                 (int x, int y) pixelTileIndex = PosMod(pixelPos);
-                (int x, int y) chunkPos = (Floor(pixelPos.x, 32) / 32, Floor(pixelPos.y, 32) / 32);
+                (int x, int y) chunkPos = ChunkIdx(pixelPos);
 
                 if (screen.loadedChunks.ContainsKey(chunkPos))
                 {

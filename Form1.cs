@@ -293,7 +293,7 @@ namespace Cave
                     ((3, 0, 4), 1)
                 },
             };
-            
+
             public static string[] nameArray = new string[]
             {
                 "ka",
@@ -327,13 +327,13 @@ namespace Cave
                 "en",
                 "un",
             };
-            
-            public static string[] structureNames = new string[]
+
+            public static Dictionary<(int type, int subType, int subSubType), string> structureNames = new Dictionary<(int type, int subType, int subSubType), string>
             {
-                "cube amalgam",
-                "sawblade",
-                "star",
-                "lake"
+                { (0, 0, 0), "lake" },
+                { (1, 0, 0), "cube amalgam" },
+                { (2, 0, 0), "sawblade" },
+                { (2, 1, 0), "star" },
             };
         }
         public Form1()
@@ -435,23 +435,31 @@ namespace Cave
             long seed = 123456;
 
             // cool ideas for later !
-            // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ? And add LITHOPEDIONS
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
             // add stoplight biomes not just candelier biome. and make candles have their own biome ?
             // make it possible to visit entities/players inventories lmfao
             // looping dimensions ???? Could be cool. And serve as TELEPORT HUBS ???
-            // bone trees and shrubs... like ribs. Maybe a BONE dimension ! Or biome inside the living dimension... kinda good yesyes, a dead part of the living dimension.
             // maybe depending on a parameter of the dimension, some living world dimensions would be more dead or not dead at all.
             // Lolitadimension ?? ? ? or CANDYDIMENSION ???? idk ? ? ? sugar cane trees would be poggers. Or a candy dimension with candies... yeah and uh idk a lolita biome and a super rare variant being a gothic lolita biome ??? idk wtf i'm on ngl
             // Whipped cream biome, chocolate biome... idk
             // Add a portal that is inside lava oceans; in a structure (obsidian city ?), that needs to be turned on with maybe liquid obsidian or oil, and teleports to like hell, or an obsidian dimension made ouf of only obsidian shit ?.
+            // Amnesia spell that makes u forget parts of the map lol
+
+            // Entities ideas !
+            // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ? And add LITHOPEDIONS
             // Make it so fairies and other creatures have songs. Like maybe in a fairy village there's a village theme song that's procedurally generated. Idk. ANd they can teach u the song and u can sing it with instrument or voice idk.
+            // Add winged waterSkipper : when the population in a lake is too high, or food is too scarse, some old enough waterSkippers can become winged, and fly around to lakes with none or few waterSkippers/lots of food. Migration patterns ? idk
+
+            // Plants ideas !
+            // Tendril shits in living diomension
+            // bone trees and shrubs... like ribs.
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.
             // However they need to be at war to live, so they periodically decide, when there's not enough skeletals alive, to put like half of the tribe in ACID,
             // Which turns them into skeletals, these skeletals migrate to the bone biome, and then the war can start again lol. Periodic even that can be witnessed by the player maybe ?
             // Supah powerful wizards can create dimensions. Maybe dimensions that are super weird and shit can be justified this was LOL
+            // Star people who have left star structures such as : "star" "big star" "bigbigstar" "bi gbigbigbi g star". Like maybe nests and shite made out of starz.
 
             //
             // cool seeds !!!! DO NOT DELETE      yeah actually since world gen keeps on changing they're fucking useless LMFAO
@@ -841,7 +849,7 @@ namespace Cave
         {
             return value - (((value % modulo) + modulo) % modulo);
         }
-        public static (int, int) MegaChunkIdx((int x, int y) pos)
+        public static (int, int) MegaChunkIdx((int x, int y) pos) // PUT CHUNKPOS inside ! NOT tilePos !
         {
             int chunkPosX = Floor(pos.x, 16) / 16;
             int chunkPosY = Floor(pos.y, 16) / 16;
@@ -862,6 +870,22 @@ namespace Cave
         public static int ChunkIdx(int pos)
         {
             return Floor(pos, 32) / 32;
+        }
+        public static (int, int) StructChunkIdx(int pixelPosX, int pixelPosY)
+        {
+            int chunkPosX = Floor(pixelPosX, 512) / 512;
+            int chunkPosY = Floor(pixelPosY, 512) / 512;
+            return (chunkPosX, chunkPosY);
+        }
+        public static (int, int) StructChunkIdx((int x, int y) pos)
+        {
+            int chunkPosX = Floor(pos.x, 512) / 512;
+            int chunkPosY = Floor(pos.y, 512) / 512;
+            return (chunkPosX, chunkPosY);
+        }
+        public static int StructChunkIdx(int pos)
+        {
+            return Floor(pos, 512) / 512;
         }
         public static int Sign(int a)
         {

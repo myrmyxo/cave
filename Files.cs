@@ -81,6 +81,7 @@ namespace Cave
             public (int, int) pos;
             public List<int> nests = new List<int>();
             public List<int> structures = new List<int>();
+            [NonSerialized] public bool isPurelyStructureLoaded = true;
             public MegaChunk((int x, int y) posToPut)
             {
                 pos = posToPut;
@@ -91,6 +92,7 @@ namespace Cave
             }
             public void loadAllChunksInNests(Screens.Screen screen)
             {
+                Chunk newChunk;
                 Nest nesto;
                 foreach (int nestId in nests)
                 {
@@ -103,39 +105,66 @@ namespace Cave
                     {
                         if (!screen.loadedChunks.ContainsKey(pos))
                         {
-                            screen.loadedChunks.Add(pos, new Chunk(pos, false, screen));
+                            newChunk = new Chunk(pos, false, screen); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
+                            if (!screen.loadedChunks.ContainsKey(pos)) { screen.loadedChunks[pos] = newChunk; }
                         }
                     }
                 }
             }
-            public void loadAllNests(Screens.Screen screen)
+            public void unloadAllNestsAndStructuresAndChunks(Screens.Screen screen, Dictionary<(int x, int y), bool> chunksToRemove)
             {
-                foreach (int nestId in nests)
-                {
-                    if (!screen.activeNests.ContainsKey(nestId))
-                    {
-                        Nest nesto = loadNest(screen, nestId);
-                        foreach ((int, int) chunkPos in nesto.chunkPresence.Keys)
-                        {
-                            if (!screen.loadedChunks.ContainsKey(chunkPos))
-                            {
-                                screen.loadedChunks.Add(chunkPos, new Chunk(chunkPos, false, screen));
-                            }
-                        }
-                        screen.activeNests[nestId] = nesto;
-                    }
-                }
-            }
-            public void unloadAllNestsAndChunks(Screens.Screen screen, Dictionary<(int x, int y), bool> chunksToRemove)
-            {
+                (int x, int y) playerPos = (ChunkIdx(screen.game.playerList[0].posX), ChunkIdx(screen.game.playerList[0].posY));
                 foreach (int nestId in nests)
                 {
                     saveNest(screen.activeNests[nestId]);
                     foreach ((int x, int y) pososo in screen.activeNests[nestId].chunkPresence.Keys) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
                     {
-                        chunksToRemove[pososo] = true;
+                        if (distance(pososo, playerPos) > 0.8f * screen.chunkResolution) { chunksToRemove[pososo] = true; }
                     }
                     screen.activeNests.Remove(nestId);
+                }
+                foreach (int structureId in structures)
+                {
+                    if (screen.activeStructures.ContainsKey(structureId))
+                    {
+                        saveStructure(screen.activeStructures[structureId]);
+                        foreach ((int x, int y) pososo in screen.activeStructures[structureId].chunkPresence.Keys) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
+                        {
+                            if (distance(pososo, playerPos) > 0.8f * screen.chunkResolution) { chunksToRemove[pososo] = true; }
+                        }
+                        screen.activeStructures.Remove(structureId);
+                    }
+                    if (screen.inertStructures.ContainsKey(structureId))
+                    {
+                        screen.inertStructures.Remove(structureId);
+                    }
+                }
+            }
+            public void loadAllNests(Screens.Screen screen)
+            {
+                Chunk newChunk;
+                foreach (int nestId in nests)
+                {
+                    if (!screen.activeNests.ContainsKey(nestId))
+                    {
+                        Nest nesto = loadNest(screen, nestId);
+                        screen.activeNests[nestId] = nesto;
+                        foreach ((int, int) chunkPos in nesto.chunkPresence.Keys)
+                        {
+                            if (!screen.loadedChunks.ContainsKey(chunkPos))
+                            {
+                                newChunk = new Chunk(pos, false, screen); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
+                                if (!screen.loadedChunks.ContainsKey(pos)) { screen.loadedChunks[pos] = newChunk; }
+                            }
+                        }
+                    }
+                }
+            }
+            public void loadAllStructures(Screens.Screen screen)
+            {
+                foreach (int structureId in structures)
+                {
+                    loadStructure(screen, structureId); // loadStructure already adds the structure to the right dicto so no need to do it here
                 }
             }
         }
@@ -249,7 +278,7 @@ namespace Cave
             public int grLvl;
             public float lastGr;
 
-            public int[,] fillStates;
+            public int[,] fS;
 
             public List<BranchJson> branches;
             public List<FlowerJson> flowers;
@@ -262,7 +291,7 @@ namespace Cave
                 lstGrPos = plant.lastDrawPos;
                 grLvl = plant.growthLevel;
                 lastGr = plant.timeAtLastGrowth;
-                fillStates = fillstatesToArray(plant.fillStates);
+                fS = fillstatesToArray(plant.fillStates);
                 branches = new List<BranchJson>();
                 foreach (Branch childBranch in plant.childBranches)
                 {
@@ -287,7 +316,7 @@ namespace Cave
             public int type;
             public int grLvl;
 
-            public int[,] fillStates;
+            public int[,] fS;
 
             public List<BranchJson> branches;
             public List<FlowerJson> flowers;
@@ -298,7 +327,7 @@ namespace Cave
                 pos = branch.pos;
                 lstGrPos = branch.lastDrawPos;
                 grLvl = branch.growthLevel;
-                fillStates = fillstatesToArray(branch.fillStates);
+                fS = fillstatesToArray(branch.fillStates);
                 branches = new List<BranchJson>();
                 foreach (Branch childBranch in branch.childBranches)
                 {
@@ -323,7 +352,7 @@ namespace Cave
             public int type;
             public int grLvl;
 
-            public int[,] fillStates;
+            public int[,] fS;
             public FlowerJson(Flower flower)
             {
                 seed = flower.seed;
@@ -331,7 +360,7 @@ namespace Cave
                 pos = flower.pos;
                 lstGrPos = flower.lastDrawPos;
                 grLvl = flower.growthLevel;
-                fillStates = fillstatesToArray(flower.fillStates);
+                fS = fillstatesToArray(flower.fillStates);
             }
             public FlowerJson()
             {
@@ -368,18 +397,25 @@ namespace Cave
         }
         public class StructureJson
         {
-            public string name;
-            public int type;
             public int id;
+            public (int, int, int) type;
+            public bool isD;
             public (long, long) seed;
             public (int, int) pos;
+            public (int, int) size;
+            public string name;
+
+            public int[,] fS;
             public StructureJson(Structure structure)
             {
-                name = structure.name;
-                type = structure.type;
                 id = structure.id;
+                type = structure.type;
+                isD = structure.isDynamic;
                 seed = (structure.seedX, structure.seedY);
                 pos = (structure.posX, structure.posY);
+                size = structure.size;
+                name = structure.name;
+                fS = fillstatesToArray(structure.structureDict);
             }
             public StructureJson()
             {
@@ -543,8 +579,9 @@ namespace Cave
         {
             if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{screenToPut.id}\\{pos.x}.{pos.y}.json"))
             {
-                MegaChunk oOoOdindondandoyoufeelmylove = new MegaChunk(pos);
-                return oOoOdindondandoyoufeelmylove;
+                MegaChunk oOoOdindondindondandoyoufeelmylove = new MegaChunk(pos);
+                saveMegaChunk(oOoOdindondindondandoyoufeelmylove, pos, screenToPut.id);
+                return oOoOdindondindondandoyoufeelmylove;
             }
             using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{screenToPut.id}\\{pos.x}.{pos.y}.json"))
             {
@@ -663,6 +700,30 @@ namespace Cave
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
                 serializer.Serialize(writer, entityJson);
+            }
+        }
+        public static void saveStructure(Structure structure)
+        {
+            JsonSerializer serializer = new JsonSerializer();
+            serializer.Converters.Add(new JavaScriptDateTimeConverter());
+            serializer.NullValueHandling = NullValueHandling.Ignore;
+
+            StructureJson structureJson = new StructureJson(structure);
+
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{structure.screen.game.seed}\\StructureData\\{structure.id}.json"))
+            using (JsonWriter writer = new JsonTextWriter(sw))
+            {
+                serializer.Serialize(writer, structureJson);
+            }
+        }
+        public static Structure loadStructure(Screens.Screen screen, int id)
+        {
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{screen.game.seed}\\StructureData\\{id}.json"))
+            {
+                string content = f.ReadToEnd();
+                StructureJson structureJson = JsonConvert.DeserializeObject<StructureJson>(content);
+
+                return new Structure(screen, structureJson);
             }
         }
         public static void saveNest(Nest nest)

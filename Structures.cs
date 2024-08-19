@@ -35,39 +35,56 @@ namespace Cave
     {
         public class Structure
         {
-            public string name = "";
-            public (int, int) structChunkPosition;
-            public int type;
             public int id;
-            public Screens.Screen screen;
+            public (int type, int subType, int subSubType) type;
             public long seedX;
             public long seedY;
             public int posX;
             public int posY;
-            public (int x, int y) size;
+            public (int x, int y) size = (0, 0);
+            public string name = "";
+            public bool isDynamic = false;
             public Dictionary<(int x, int y), (int type, int subType)> structureDict = new Dictionary<(int x, int y), (int type, int subType)>();
-
             public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>();
-            public Structure(int posXToPut, int posYToPut, long seedXToPut, long seedYToPut, bool isLake, (int, int) structChunkPositionToPut, Screens.Screen screenToPut)
+            public Dictionary<(int x, int y), bool> megaChunkPresence = new Dictionary<(int x, int y), bool>();
+
+            // loading and unloading management
+            public bool isPurelyStructureLoaded = true;
+
+            public Screens.Screen screen;
+            public Structure(Screens.Screen screenToPut, StructureJson structureJson)
+            {
+                id = structureJson.id;
+                type = structureJson.type;
+                isDynamic = structureJson.isD;
+                seedX = structureJson.seed.Item1;
+                seedY = structureJson.seed.Item2;
+                posX = structureJson.pos.Item1;
+                posY = structureJson.pos.Item2;
+                size = structureJson.size;
+                name = structureJson.name;
+                structureDict = arrayToFillstates(structureJson.fS);
+                screen = screenToPut;
+
+                findChunkPresence();
+                addStructureToTheRightDictInTheScreen();
+            }
+            public Structure(int posXToPut, int posYToPut, long seedXToPut, long seedYToPut, (int type, int subType, int subSubType) forceType, (int, int) structChunkPositionToPut, Screens.Screen screenToPut)
             {
                 seedX = seedXToPut;
                 seedY = seedYToPut;
                 screen = screenToPut;
                 posX = posXToPut;
                 posY = posYToPut;
-                structChunkPosition = structChunkPositionToPut;
 
                 id = currentStructureId;
                 currentStructureId++;
 
-                if (isLake)
+                if (forceType == (0, 0, 0))
                 {
                     // waterLake
                     {
-                        type = 3;
-                        int sizeX = 0;
-                        int sizeY = 0;
-                        size = (sizeX, sizeY);
+                        type = (0, 0, 0);
                     }
                 }
                 else
@@ -75,23 +92,51 @@ namespace Cave
                     long seedo = (seedX / 2 + seedY / 2) % 79461537;
                     if (Abs(seedo) % 200 < 50) // cubeAmalgam
                     {
-                        type = 0;
-                        int sizeX = (int)(seedX % 5) + 1;
-                        int sizeY = (int)(seedY % 5) + 1;
-                        size = (sizeX, sizeY);
+                        type = (1, 0, 0);
                     }
                     else if (Abs(seedo) % 200 < 150)// circularBlade
                     {
-                        type = 1;
-                        int sizeX = (int)(seedX % 5) + 1;
-                        size = (sizeX, sizeX);
+                        type = (2, 0, 0);
                     }
                     else // star 
                     {
-                        type = 2;
-                        int sizeX = (int)(seedX % 5) + 1;
-                        size = (sizeX, sizeX);
+                        type = (2, 1, 0);
                     }
+                }
+                    
+                drawStructure();
+                imprintChunks();
+
+                findChunkPresence();
+                saveStructure(this);
+                addStructureToTheRightDictInTheScreen();
+            }
+            public void addStructureToTheRightDictInTheScreen()
+            {
+                Chunk newChunk;
+                if (isDynamic)
+                {
+                    foreach ((int, int) chunkPos in chunkPresence.Keys)
+                    {
+                        if (!screen.loadedChunks.ContainsKey(chunkPos))
+                        {
+                            newChunk = new Chunk(chunkPos, false, screen); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
+                            if (!screen.loadedChunks.ContainsKey(chunkPos)) { screen.loadedChunks[chunkPos] = newChunk; }
+                        }
+                    }
+                    screen.activeStructures[id] = this;
+                }
+                else { screen.inertStructures[id] = this; }
+            }
+            public void findChunkPresence()
+            {
+                foreach ((int x, int y) posToTest in structureDict.Keys)
+                {
+                    chunkPresence[ChunkIdx(posToTest)] = true;
+                }
+                foreach ((int x, int y) poso in chunkPresence.Keys)
+                {
+                    megaChunkPresence[MegaChunkIdx(poso)] = true;
                 }
             }
             public bool drawLakeNew() // thank you papa still for base code <3
@@ -166,14 +211,7 @@ namespace Cave
 
                 foreach ((int x, int y) poso in tilesToFill.Keys)
                 {
-                    chunkDict[ChunkIdx(poso)].fillStates[PosMod(poso.x), PosMod(poso.y)] = material;
-                    chunkDict[ChunkIdx(poso)].modificationCount = 1;
-                }
-
-                foreach (Chunk chunk in chunkDict.Values)
-                {
-                    Files.saveChunk(chunk);
-                    chunkPresence[chunk.position] = true;
+                    structureDict[poso] = material;
                 }
 
                 name = "";
@@ -212,9 +250,12 @@ namespace Cave
             }
             public void drawStructure()
             {
-                if (type == 0) { cubeAmalgam(); }
-                else if (type == 1) { sawBlade(); }
-                else if (type == 2) { star(); }
+                if (type.type == 0) { drawLakeNew(); }
+                if (type == (1, 0, 0)) { cubeAmalgam(); }
+                else if (type == (2, 0, 0)) { sawBlade(); }
+                else if (type == (2, 1, 0)) { star(); }
+
+                imprintChunks();
 
                 long seedo = (seedX / 2 + seedY / 2) % 79461537;
                 name = "";
@@ -227,6 +268,7 @@ namespace Cave
             }
             public void cubeAmalgam()
             {
+                size = ((int)(seedX % 5) + 1, (int)(seedY % 5) + 1);
                 int squaresToDig = (int)(seedX % (10 + (size.Item1 * size.Item2))) + (int)(size.Item1 * size.Item2 * 0.2f) + 1;
                 long seedoX = seedX;
                 long seedoY = seedY;
@@ -252,6 +294,8 @@ namespace Cave
             }
             public void sawBlade()
             {
+                int sizeX = (int)(seedX % 5) + 1;
+                size = (sizeX, sizeX);
                 long seedoX = seedX;
                 long seedoY = seedY;
 
@@ -292,6 +336,8 @@ namespace Cave
             }
             public void star()
             {
+                int sizeX = (int)(seedX % 5) + 1;
+                size = (sizeX, sizeX);
                 long seedoX = seedX;
                 long seedoY = seedY;
 
@@ -347,7 +393,7 @@ namespace Cave
             public void saveInFile()
             {
                 string savename = "";
-                if (type == 3)
+                if (type.type == 0)
                 {
                     savename = $"lake {name}";
                 }
@@ -355,7 +401,8 @@ namespace Cave
                 {
                     savename = $"{name} {structureNames[type]}";
                 }
-                using (StreamWriter f = new StreamWriter($"{currentDirectory}\\CaveData\\{screen.game.seed}\\StructureData\\{structChunkPosition.Item1}.{structChunkPosition.Item2}.{savename}.txt", false))
+                (int x, int y) structIdx = StructChunkIdx(posX, posY);
+                using (StreamWriter f = new StreamWriter($"{currentDirectory}\\CaveData\\{screen.game.seed}\\StructureData\\{structIdx.x}.{structIdx.y}.{savename}.txt", false))
                 {
                     string stringo = $"Welcome to structure {name}'s file !";
                     stringo += $"{name} is a {structureNames[type]}.";

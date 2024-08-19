@@ -191,7 +191,7 @@ namespace Cave
                     (int, int) chunkPos = ChunkIdx(posX, posY);
                     if (screen.loadedChunks.ContainsKey(chunkPos))
                     {
-                        if (screen.loadedChunks[chunkPos].fillStates[(posX % 32 + 32) % 32, (posY % 32 + 32) % 32].type < 0)
+                        if (screen.loadedChunks[chunkPos].fillStates[PosMod(posX), PosMod(posY)].type < 0)
                         {
                             inWater = true;
                         }
@@ -199,7 +199,7 @@ namespace Cave
                     chunkPos = ChunkIdx(posX, posY - 1);
                     if (screen.loadedChunks.ContainsKey(chunkPos))
                     {
-                        if (screen.loadedChunks[chunkPos].fillStates[(posX % 32 + 32) % 32, ((posY - 1) % 32 + 32) % 32].type > 0)
+                        if (screen.loadedChunks[chunkPos].fillStates[PosMod(posX), PosMod((posY - 1))].type > 0)
                         {
                             onGround = true;
                         }
@@ -628,8 +628,8 @@ namespace Cave
             public bool CheckStructurePosChange()
             {
                 (int, int) oldStructurePos = (structureX, structureY);
-                structureX = Floor(camPosX, 512) / 512;
-                structureY = Floor(camPosY, 512) / 512;
+                structureX = StructChunkIdx(posX);
+                structureY = StructChunkIdx(posY);
                 if (oldStructurePos == (structureX, structureY)) { return false; }
                 return true;
             }
@@ -650,12 +650,12 @@ namespace Cave
                     }
                 }
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return; }
-                (int type, int subType) tileContent = chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32];
+                (int type, int subType) tileContent = chunkToTest.fillStates[PosMod(posToDigX), PosMod(posToDigY)];
                 if (tileContent.type != 0)
                 {
                     addElementToInventory((tileContent.type, tileContent.subType, 0));
-                    chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32] = (0, 0);
-                    chunkToTest.findTileColor((posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32);
+                    chunkToTest.fillStates[PosMod(posToDigX), PosMod(posToDigY)] = (0, 0);
+                    chunkToTest.findTileColor(PosMod(posToDigX), PosMod(posToDigY));
                     chunkToTest.testLiquidUnstableAir(posToDigX, posToDigY);
                     chunkToTest.modificationCount += 1;
                     timeAtLastDig = timeElapsed;
@@ -666,7 +666,7 @@ namespace Cave
                 (int, int) chunkPos = ChunkIdx(posToDigX, posToDigY);
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return; }
                 (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
-                (int type, int subType) tileState = chunkToTest.fillStates[(posToDigX % 32 + 32) % 32, (posToDigY % 32 + 32) % 32];
+                (int type, int subType) tileState = chunkToTest.fillStates[PosMod(posToDigX), PosMod(posToDigY)];
                 if (tileState.type == 0 || tileState.type < 0 && currentItem.typeOfElement > 0)
                 {
                     if (currentItem.typeOfElement == 0)

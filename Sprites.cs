@@ -455,6 +455,9 @@ namespace Cave
                     drawNumber(game.overlayBitmap, quantity, (420, 64), scaleFactor, true);
                 }
             }
+
+            Screens.Screen screen = game.playerList[0].screen;
+            if (debugMode) { drawNumber(game.overlayBitmap, screen.activeStructureLoadedChunkIndexes.Count + screen.nestLoadedChunkIndexes.Count, (420, 120), 1, true); }
         }
         public static void drawCraftRecipe(Game game, ((int type, int subType, int megaType) material, int count)[] Recipe)
         {

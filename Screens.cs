@@ -357,7 +357,8 @@ namespace Cave
             public Dictionary<int, bool> orphanEntities = new Dictionary<int, bool>();
             public Dictionary<int, Plant> activePlants = new Dictionary<int, Plant>();
             public Dictionary<int, Nest> activeNests = new Dictionary<int, Nest>();
-            public Dictionary<int, Structure> activeStructures = new Dictionary<int, Structure>();
+            public Dictionary<int, Structure> inertStructures = new Dictionary<int, Structure>(); // structures that are just terrain and don't need to be tested for shit (lakes, cubes...)
+            public Dictionary<int, Structure> activeStructures = new Dictionary<int, Structure>(); // structures that are active and can do shit to other shit (like portals)
 
             public List<((int x, int y) pos, (int type, int subType) attack)> attacksToDo = new List<((int x, int y) pos, (int type, int subType) attack)>();
             public List<((int x, int y) pos, Color color)> attacksToDraw = new List<((int x, int y), Color color)>();
@@ -374,7 +375,8 @@ namespace Cave
 
             // debug shit
             public Dictionary<(int x, int y), bool> nestLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
-            public Dictionary<(int x, int y), bool> structureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
+            public Dictionary<(int x, int y), bool> inertStructureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
+            public Dictionary<(int x, int y), bool> activeStructureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
 
             public Screen(Game gameToPut, int chunkResolutionToPut, int idToPut, bool isMonoToPut, bool isPngToExport)
             {
@@ -472,13 +474,15 @@ namespace Cave
             public void loadChunks()
             {
                 loadedChunks = new Dictionary<(int, int), Chunk>();
+                Chunk newChunk;;
                 for (int i = 0; i < chunkResolution; i++)
                 {
                     for (int j = 0; j < chunkResolution; j++)
                     {
                         if (!loadedChunks.ContainsKey((chunkX + i, chunkY + j)))
                         {
-                            loadedChunks.Add((chunkX + i, chunkY + j), new Chunk((chunkX + i, chunkY + j), false, this));
+                            newChunk = new Chunk((chunkX + i, chunkY + j), false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
+                            if (!loadedChunks.ContainsKey((chunkX + i, chunkY + j))) { loadedChunks[(chunkX + i, chunkY + j)] = newChunk; }
                         }
                     }
                 }
@@ -564,6 +568,7 @@ namespace Cave
             }
             public void updateLoadedChunks()
             {
+                Chunk newChunk;
                 (int x, int y) posToTest;
                 for (int i = 0; i < chunkResolution; i++)
                 {
@@ -572,7 +577,8 @@ namespace Cave
                         posToTest = (chunkX + i, chunkY + j);
                         if (!loadedChunks.ContainsKey(posToTest))
                         {
-                            loadedChunks.Add(posToTest, new Chunk(posToTest, false, this));
+                            newChunk = new Chunk((chunkX + i, chunkY + j), false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
+                            if (!loadedChunks.ContainsKey((chunkX + i, chunkY + j))) { loadedChunks[(chunkX + i, chunkY + j)] = newChunk; }
                         }
                     }
                 }
@@ -621,29 +627,37 @@ namespace Cave
             }
             public void unloadFarawayChunks() // this function unloads random chunks, that are not in the always loaded square around the player or in nests. HOWEVER, while the farthest away a chunk is, the less chance it has to unload, it still is random. 
             {
-                Dictionary<(int x, int y), bool> extraChunkIndexes = new Dictionary<(int x, int y), bool>();
-                activeStructures = new Dictionary<int, Structure>();            // DONT FORGET TO UNCOMMENT THIS WHEN NOT DEBUGGING !!!! else momori leek
+                inertStructureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
+                foreach (Structure structure in inertStructures.Values)
+                {
+                    foreach ((int x, int y) tile in structure.chunkPresence.Keys)
+                    {
+                        inertStructureLoadedChunkIndexes[tile] = true;
+                    }
+                }
+
+                activeStructureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
                 foreach (Structure structure in activeStructures.Values)
                 {
                     foreach ((int x, int y) tile in structure.chunkPresence.Keys)
                     {
-                        extraChunkIndexes[tile] = true;
+                        activeStructureLoadedChunkIndexes[tile] = true;
                     }
                 }
-                structureLoadedChunkIndexes = extraChunkIndexes;
-                extraChunkIndexes = new Dictionary<(int x, int y), bool>();
+
+                nestLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
                 foreach (Nest nest in activeNests.Values)
                 {
                     foreach ((int x, int y) tile in nest.chunkPresence.Keys)
                     {
-                        extraChunkIndexes[tile] = true;
+                        nestLoadedChunkIndexes[tile] = true;
                     }
                 }
-                nestLoadedChunkIndexes = extraChunkIndexes;
-                int nestChunkAmount = extraChunkIndexes.Count;
-                int minChunkAmount = chunkResolution * chunkResolution + nestChunkAmount;
 
-                (int x, int y) cameraChunkIdx = (Floor(game.playerList[0].camPosX, 32) / 32 + chunkResolution / 2, Floor(game.playerList[0].camPosY, 32) / 32 + chunkResolution / 2);
+                int forceLoadedChunkAmount = nestLoadedChunkIndexes.Count + activeStructureLoadedChunkIndexes.Count;
+                int minChunkAmount = chunkResolution * chunkResolution + forceLoadedChunkAmount;
+
+                (int x, int y) cameraChunkIdx = (ChunkIdx(game.playerList[0].posX), ChunkIdx(game.playerList[0].posY));
 
                 Dictionary<(int x, int y), bool> chunksToRemove = new Dictionary<(int x, int y), bool>();
                 (int x, int y)[] chunkKeys = loadedChunks.Keys.ToArray();
@@ -653,7 +667,7 @@ namespace Cave
                 {
                     currentIdx = chunkKeys[rand.Next(loadedChunks.Count)];
                     distanceToCenter = distance((currentIdx), cameraChunkIdx);
-                    if (!extraChunkIndexes.ContainsKey(currentIdx) && (float)(rand.NextDouble()) * distanceToCenter > 0.8f * chunkResolution)
+                    if (!nestLoadedChunkIndexes.ContainsKey(currentIdx) && !activeStructureLoadedChunkIndexes.ContainsKey(currentIdx) && (float)(rand.NextDouble()) * distanceToCenter > 0.8f * chunkResolution)
                     {
                         chunksToRemove[currentIdx] = true;
                     }
@@ -678,16 +692,34 @@ namespace Cave
             }
             public void manageMegaChunks() // megachunk resolution : 512*512
             {
-                (int x, int y) cameraChunkIdx = (Floor(game.playerList[0].camPosX, 32) / 32 + chunkResolution / 2, Floor(game.playerList[0].camPosY, 32) / 32 + chunkResolution / 2);
-
                 Dictionary<(int x, int y), MegaChunk> newMegaChunks = new Dictionary<(int x, int y), MegaChunk>();
+                (int x, int y) cameraChunkIdx = (ChunkIdx(game.playerList[0].posX), ChunkIdx(game.playerList[0].posY));
+                (int x, int y) megaPos;
 
-                (int x, int y) currentPos;
+                // Find all megachunks who have only chunks that are can't be unloaded by unloadFarawayChunks (those in Nests and Active Structures)
+                // This shit is CURRENTLY NOT WORKING. FFS.
+                /*foreach (MegaChunk megaChunk in megaChunks.Values) { megaChunk.isPurelyStructureLoaded = true; }
+                foreach (Nest nest in activeNests.Values) { nest.isPurelyStructureLoaded = true; }
+                foreach (Structure structure in activeStructures.Values) { structure.isPurelyStructureLoaded = true; }
                 foreach ((int x, int y) pos in loadedChunks.Keys)
                 {
-                    if (nestLoadedChunkIndexes.ContainsKey(pos) && distance(pos, cameraChunkIdx) > 0.8f * chunkResolution) { continue; }
-                    currentPos = MegaChunkIdx(pos);
-                    newMegaChunks[currentPos] = null;
+                    megaPos = MegaChunkIdx(pos);
+                    if (!nestLoadedChunkIndexes.ContainsKey(megaPos) && !activeStructureLoadedChunkIndexes.ContainsKey(megaPos))
+                    {
+                        if (megaChunks.ContainsKey(megaPos)) { megaChunks[megaPos].isPurelyStructureLoaded = false; }
+                    }
+                }
+                foreach (Nest nest in activeNests.Values) { foreach ((int x, int y) posToTest in nest.megaChunkPresence.Keys) { if (megaChunks.ContainsKey(posToTest) && !megaChunks[posToTest].isPurelyStructureLoaded) {  nest.isPurelyStructureLoaded = false; } } }
+                foreach (Structure structure in activeStructures.Values) { foreach ((int x, int y) posToTest in structure.megaChunkPresence.Keys) { if (megaChunks.ContainsKey(posToTest) && !megaChunks[posToTest].isPurelyStructureLoaded) { structure.isPurelyStructureLoaded = false; } } }
+                foreach (Nest nest in activeNests.Values) { if (nest.isPurelyStructureLoaded) { foreach ((int x, int y) posToTest in nest.megaChunkPresence.Keys) { newMegaChunks[posToTest] = null; } } }
+                foreach (Nest nest in activeNests.Values) { if (nest.isPurelyStructureLoaded) { foreach ((int x, int y) posToTest in nest.megaChunkPresence.Keys) { newMegaChunks[posToTest] = null; } } }
+                */
+
+                foreach ((int x, int y) pos in loadedChunks.Keys)
+                {
+                    if ((nestLoadedChunkIndexes.ContainsKey(pos) || activeStructureLoadedChunkIndexes.ContainsKey(pos)) && distance(pos, cameraChunkIdx) > 0.8f * chunkResolution) { continue; }
+                    megaPos = MegaChunkIdx(pos);
+                    newMegaChunks[megaPos] = null;
                 }
                 foreach ((int x, int y) pos in newMegaChunks.Keys.ToArray()) // add new megachunks that were not loaded before and have now chunks in
                 {
@@ -700,13 +732,14 @@ namespace Cave
                     {
                         newMegaChunks[pos] = loadMegaChunk(this, pos);
                         newMegaChunks[pos].loadAllNests(this);
+                        newMegaChunks[pos].loadAllStructures(this);
                         newMegaChunks[pos].loadAllChunksInNests(this);
                     }
                 }
                 Dictionary<(int x, int y), bool> chunksToRemove = new Dictionary<(int x, int y), bool>();
                 foreach ((int x, int y) pos in megaChunks.Keys) // remove megachunks that have no chunks loaded in anymore
                 {
-                    megaChunks[pos].unloadAllNestsAndChunks(this, chunksToRemove);
+                    megaChunks[pos].unloadAllNestsAndStructuresAndChunks(this, chunksToRemove);
                     saveMegaChunk(megaChunks[pos], pos, id);
                     actuallyUnloadTheChunks(chunksToRemove);
                 }
@@ -749,7 +782,8 @@ namespace Cave
             }
             public void createStructures(int posX, int posY)
             {
-                if (loadStructuresYesOrNo && !System.IO.File.Exists($"{currentDirectory}\\CaveData\\{game.seed}\\MegaChunkData\\{id}\\{posX}.{posY}.json"))
+                if (!loadStructuresYesOrNo) { return; }
+                if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{game.seed}\\MegaChunkData\\{id}\\{posX}.{posY}.json"))
                 {
                     MegaChunk megaChunk = new MegaChunk((posX, posY));
                     saveMegaChunk(megaChunk, megaChunk.pos, id);
@@ -773,23 +807,16 @@ namespace Cave
                     {
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
                         seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
-                        Structure newStructure = new Structure(posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480), seedX, seedY, false, (posX, posY), this);
-                        newStructure.drawStructure();
-                        newStructure.imprintChunks();
+                        Structure newStructure = new Structure(posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480), seedX, seedY, (-1, -1, -1), (posX, posY), this);
                         megaChunk.structures.Add(newStructure.id);
-                        activeStructures[newStructure.id] = newStructure;
-                        //newStructure.saveInFile();
                     }
                     long waterLakesAmount = 15 + (seedX + seedY) % 150;
                     for (int i = 0; i < waterLakesAmount; i++)
                     {
                         seedX = LCGyNeg(seedX); // on porpoise x    /\_/\
                         seedY = LCGxNeg(seedY); // and y switched  ( ^o^ )
-                        Structure newStructure = new Structure(posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480), seedX, seedY, true, (posX, posY), this);
-                        newStructure.drawLakeNew();
+                        Structure newStructure = new Structure(posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480), seedX, seedY, (0, 0, 0), (posX, posY), this);
                         megaChunk.structures.Add(newStructure.id);
-                        activeStructures[newStructure.id] = newStructure;
-                        //newStructure.saveInFile();
                     }
                     long nestAmount = (seedX + seedY) % 3;
                     //nestAmount = 0;
@@ -815,10 +842,6 @@ namespace Cave
                     }*/
                     megaChunks[megaChunk.pos] = megaChunk;
                     saveMegaChunk(megaChunk, megaChunk.pos, id);
-                }
-                else
-                {
-                    saveMegaChunk(new MegaChunk((posX, posY)), (posX, posY), id);
                 }
             }
             public void fillBitmap(Bitmap receiver, Color color)
@@ -966,13 +989,19 @@ namespace Cave
                 { // player
                     Color color = Color.Green;
                     (int, int) chunkPos = ChunkIdx(player.posX, player.posY);
+                    if (!loadedChunks.ContainsKey(chunkPos))
+                    {
+                        int seeeEEEXXXXXXXOOOOOOOOOOOODANAAAAAAAAAAAAAAAAAAAAaaaaaaaaaaaaaaa = 69;
+                        goto helpMe;
+                    }
                     Chunk chunkToTest = loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[(player.posX % 32 + 32) % 32, (player.posY % 32 + 32) % 32].type > 0)
+                    if (chunkToTest.fillStates[PosMod(player.posX), PosMod(player.posY)].type > 0)
                     {
                         color = Color.Red;
                     }
                     if (game.isLight) { lightPositions.Add((player.posX, player.posY, 9, player.lightColor)); }
                     drawPixel(gameBitmap, color, (player.posX, player.posY), camPos, PNGmultiplicator);
+                helpMe:;
                 }
 
                 foreach (((int x, int y) pos, Color color) item in attacksToDraw)
@@ -1096,13 +1125,13 @@ namespace Cave
 
                 if (debugMode && !isPngToBeExported) // debug shit for chunks and megachunks
                 {
-                    (int x, int y) cameraChunkIdx = (Floor(game.playerList[0].camPosX, 32) / 32, Floor(game.playerList[0].camPosY, 32) / 32);
+                    (int x, int y) cameraChunkIdx = (ChunkIdx(game.playerList[0].camPosX), ChunkIdx(game.playerList[0].camPosY));
                     foreach ((int x, int y) poso in megaChunks.Keys)
                     {
                         Color colorToDraw = Color.Crimson;
                         drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x * 16 - cameraChunkIdx.x, 300 + poso.y * 16 - cameraChunkIdx.y), 16);
                     }
-                    foreach ((int x, int y) poso in structureLoadedChunkIndexes.Keys)
+                    foreach ((int x, int y) poso in activeStructureLoadedChunkIndexes.Keys)
                     {
                         Color colorToDraw = Color.FromArgb(100, 255, 255, 100);
                         drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
@@ -1115,10 +1144,13 @@ namespace Cave
                     foreach ((int x, int y) poso in loadedChunks.Keys)
                     {
                         Color colorToDraw = Color.FromArgb(150, 0, 128, 0);
-                        if (nestLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.Cyan; }
-                        else if (loadedChunks[poso].unstableLiquidCount > 0) { colorToDraw = Color.DarkBlue; }
+                        if (loadedChunks[poso].unstableLiquidCount > 0) { colorToDraw = Color.DarkBlue; }
+                        else if (nestLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.Cyan; }
+                        else if (activeStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.FromArgb(100, 150, 180); }
+                        else if (inertStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.FromArgb(130, 50, 130); }
                         drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
                     }
+                    drawPixelFixed(gameBitmap, Color.Red, (300 + ChunkIdx(player.posX) - cameraChunkIdx.x, 300 + ChunkIdx(player.posY) - cameraChunkIdx.y), 1);
 
                     for (int i = UnloadedChunksAmount; i < chunkResolution - UnloadedChunksAmount; i++)
                     {
@@ -1168,7 +1200,7 @@ namespace Cave
             }
             public (int type, int subType) getTileContent((int x, int y) posToTest)
             {
-                (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                (int x, int y) chunkPos = ChunkIdx(posToTest);
                 Chunk chunkToTest;
                 if (loadedChunks.ContainsKey(chunkPos)) { chunkToTest = loadedChunks[chunkPos]; }
                 else
@@ -1179,11 +1211,11 @@ namespace Cave
                     }
                     chunkToTest = extraLoadedChunks[chunkPos];
                 }
-                return chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32];
+                return chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
             }
             public (int type, int subType) setTileContent((int x, int y) posToTest, (int type, int subType) typeToSet)
             {
-                (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                (int x, int y) chunkPos = ChunkIdx(posToTest);
                 Chunk chunkToTest;
                 if (loadedChunks.ContainsKey(chunkPos)) { chunkToTest = loadedChunks[chunkPos]; }
                 else
@@ -1204,9 +1236,9 @@ namespace Cave
             }
             public int getTileContent((int x, int y) posToTest, Dictionary<(int x, int y), Chunk> extraDictToCheckFrom)
             {
-                (int x, int y) chunkPos = (Floor(posToTest.x, 32) / 32, Floor(posToTest.y, 32) / 32);
+                (int x, int y) chunkPos = ChunkIdx(posToTest);
                 Chunk chunkToTest = getChunkEvenIfNotLoaded(chunkPos, extraDictToCheckFrom);
-                return chunkToTest.fillStates[(posToTest.x % 32 + 32) % 32, (posToTest.y % 32 + 32) % 32].type;
+                return chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
             }
             public Chunk getChunkEvenIfNotLoaded((int x, int y) chunkPos, Dictionary<(int x, int y), Chunk> chunkDict)
             {
