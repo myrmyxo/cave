@@ -28,8 +28,7 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
-using System.Runtime.InteropServices;
-using System.Diagnostics.Eventing.Reader;
+using static Cave.Particles;
 
 namespace Cave
 {
@@ -53,6 +52,7 @@ namespace Cave
             public (int type, int subType) currentAttack = (-1, -1);
             public int attackState = 0;
             public Dictionary<int, bool> entitiesAlreadyHitByCurrentAttack = new Dictionary<int, bool>();
+            public (int x, int y) storedAttackPos;
             public bool willBeSetAsNotAttacking = false;
 
             public float realCamPosX = 0;
@@ -141,7 +141,9 @@ namespace Cave
                     {(5, 0, 2), -999 },
                     {(5, 1, 2), -999 },
                     {(-1, 0, 0), -999 }, // materials
-                    {(-4, 0, 0), -999 }
+                    {(-4, 0, 0), -999 },
+                    {(4, 0, 0), -999 },
+                    {(-6, 0, 0), -999 },
                 };
                 inventoryElements = new List<(int index, int subType, int typeOfElement)>
                 {
@@ -162,7 +164,9 @@ namespace Cave
                     (5, 0, 2),
                     (5, 1, 2),
                     (-1, 0, 0), // materials
-                    (-4, 0, 0)
+                    (-4, 0, 0),
+                    (4, 0, 0),
+                    (-6, 0, 0),
                 };
             }
             public void applyGravity()
@@ -563,14 +567,16 @@ namespace Cave
                     else if (attackState == 1) { mod = (1, 1); }
                     else
                     {
+                        if (attackState == 2) { storedAttackPos = (posX, posY); }
                         mod = (1, 0);
-                        posToDrawList.Add(((posX + 3 * sign, posY), Color.BlueViolet));
-                        posToAttackList.Add(((posX + 3 * sign, posY), currentAttack));
+                        int posoX = storedAttackPos.x + attackState * sign;
+                        posToDrawList.Add(((posoX, storedAttackPos.y), Color.BlueViolet));
+                        posToAttackList.Add(((posoX, storedAttackPos.y), currentAttack));
                     }
                     posToDrawList.Add(((posX + mod.x * sign, posY + mod.y), Color.FromArgb(140, 140, 50)));
 
 
-                    if (attackState >= 6) { willBeSetAsNotAttacking = true; }
+                    if (attackState >= 10) { willBeSetAsNotAttacking = true; }
                 }
                 else { willBeSetAsNotAttacking = true; }
 
@@ -619,10 +625,7 @@ namespace Cave
                 }
                 else if (attack.attack == (3, 0))
                 {
-                    if (testForBloodAltar(screen, attack.pos))
-                    {
-                        screen.setTileContent(attack.pos, (-7, 0));
-                    }
+                    testForBloodAltar(screen, attack.pos);
                 }
             }
             public bool CheckStructurePosChange()
@@ -654,10 +657,7 @@ namespace Cave
                 if (tileContent.type != 0)
                 {
                     addElementToInventory((tileContent.type, tileContent.subType, 0));
-                    chunkToTest.fillStates[PosMod(posToDigX), PosMod(posToDigY)] = (0, 0);
-                    chunkToTest.findTileColor(PosMod(posToDigX), PosMod(posToDigY));
-                    chunkToTest.testLiquidUnstableAir(posToDigX, posToDigY);
-                    chunkToTest.modificationCount += 1;
+                    chunkToTest.tileModification(posToDigX, posToDigY, (0, 0));
                     timeAtLastDig = timeElapsed;
                 }
             }

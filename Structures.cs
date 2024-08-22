@@ -28,6 +28,7 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using static Cave.Particles;
 
 namespace Cave
 {
@@ -37,16 +38,17 @@ namespace Cave
         {
             public int id;
             public (int type, int subType, int subSubType) type;
-            public long seedX;
-            public long seedY;
-            public int posX;
-            public int posY;
+            public (long x, long y) seed;
+            public (int x, int y) pos;
             public (int x, int y) size = (0, 0);
             public string name = "";
             public bool isDynamic = false;
             public Dictionary<(int x, int y), (int type, int subType)> structureDict = new Dictionary<(int x, int y), (int type, int subType)>();
             public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), bool> megaChunkPresence = new Dictionary<(int x, int y), bool>();
+
+            public Bitmap bitmap = null;
+            public int[] posOffset = null;
 
             // loading and unloading management
             public bool isPurelyStructureLoaded = true;
@@ -57,10 +59,8 @@ namespace Cave
                 id = structureJson.id;
                 type = structureJson.type;
                 isDynamic = structureJson.isD;
-                seedX = structureJson.seed.Item1;
-                seedY = structureJson.seed.Item2;
-                posX = structureJson.pos.Item1;
-                posY = structureJson.pos.Item2;
+                seed = structureJson.seed;
+                pos = structureJson.pos;
                 size = structureJson.size;
                 name = structureJson.name;
                 structureDict = arrayToFillstates(structureJson.fS);
@@ -69,32 +69,24 @@ namespace Cave
                 findChunkPresence();
                 addStructureToTheRightDictInTheScreen();
             }
-            public Structure(int posXToPut, int posYToPut, long seedXToPut, long seedYToPut, (int type, int subType, int subSubType) forceType, (int, int) structChunkPositionToPut, Screens.Screen screenToPut)
+            public Structure(Screens.Screen screenToPut, (int x, int y) posToPut, (long x, long y) seedToPut, (int type, int subType, int subSubType) forceType, Dictionary<(int x, int y), (int type, int subType)> forceStructure = null)
             {
-                seedX = seedXToPut;
-                seedY = seedYToPut;
+                seed = seedToPut;
                 screen = screenToPut;
-                posX = posXToPut;
-                posY = posYToPut;
+                pos = posToPut;
 
                 id = currentStructureId;
                 currentStructureId++;
 
-                if (forceType == (0, 0, 0))
-                {
-                    // waterLake
-                    {
-                        type = (0, 0, 0);
-                    }
-                }
+                if (forceType.type != -1) { type = forceType; }
                 else
                 {
-                    long seedo = (seedX / 2 + seedY / 2) % 79461537;
+                    long seedo = (seed.x / 2 + seed.y / 2) % 79461537;
                     if (Abs(seedo) % 200 < 50) // cubeAmalgam
                     {
                         type = (1, 0, 0);
                     }
-                    else if (Abs(seedo) % 200 < 150)// circularBlade
+                    else if (Abs(seedo) % 200 < 150) // circularBlade
                     {
                         type = (2, 0, 0);
                     }
@@ -103,11 +95,12 @@ namespace Cave
                         type = (2, 1, 0);
                     }
                 }
-                    
-                drawStructure();
-                imprintChunks();
+
+                if (forceStructure != null) { structureDict = forceStructure; }
+                drawStructure(); // contains imprintChunks()
 
                 findChunkPresence();
+                if (forceStructure != null) { return; }
                 saveStructure(this);
                 addStructureToTheRightDictInTheScreen();
             }
@@ -142,7 +135,7 @@ namespace Cave
             public bool drawLakeNew() // thank you papa still for base code <3
             {
                 (int x, int y) posToTest;
-                (int type, int subType) material = screen.getTileContent((posX, posY));
+                (int type, int subType) material = screen.getTileContent(pos);
                 if (material.type != 0) { return false; } // if start tile isn't empty, fail
 
                 (int type, int subType) forceType = (0, 0);
@@ -153,17 +146,17 @@ namespace Cave
                 while (true) // go down (can flow left/right) until finding a solid tile.
                 {
                     if (count > 96) { return false; } // If moved more than 96 tiles, fail
-                    material = screen.getTileContent((posX + modX, posY - modY));
+                    material = screen.getTileContent((pos.x + modX, pos.y - modY));
                     if (material.type < 0) { forceType = material; return false; } // for now if it bumps into already present liquid, do not try to extend the lake... might change in ze futur
                     if (material.type == 0) { modY++; count++; }
-                    else if (screen.getTileContent((posX + modX - 1, posY - modY)).type <= 0 && screen.getTileContent((posX + modX - 1, posY - modY + 1)).type == 0) { modX--; count++; }
-                    else if (screen.getTileContent((posX + modX + 1, posY - modY)).type <= 0 && screen.getTileContent((posX + modX + 1, posY - modY + 1)).type == 0) { modX++; count++; }
+                    else if (screen.getTileContent((pos.x + modX - 1, pos.y - modY)).type <= 0 && screen.getTileContent((pos.x + modX - 1, pos.y - modY + 1)).type == 0) { modX--; count++; }
+                    else if (screen.getTileContent((pos.x + modX + 1, pos.y - modY)).type <= 0 && screen.getTileContent((pos.x + modX + 1, pos.y - modY + 1)).type == 0) { modX++; count++; }
                     else { break; }
                 }
-                posToTest = (posX + modX, posY - modY + 1); // because uh this one was solid lol so need to fill the one ABOVE it
+                posToTest = (pos.x + modX, pos.y - modY + 1); // because uh this one was solid lol so need to fill the one ABOVE it
                 int currentY = posToTest.y;
 
-                long seedo = (seedX / 2 + seedY / 2) % 79461537;
+                long seedo = (seed.x / 2 + seed.y / 2) % 79461537;
                 int megaLake = 0;
                 if (seedo % 100 == 0) { megaLake = 10000; }
                 else if (seedo % 10 == 0) { megaLake = 2500; }
@@ -250,14 +243,7 @@ namespace Cave
             }
             public void drawStructure()
             {
-                if (type.type == 0) { drawLakeNew(); }
-                if (type == (1, 0, 0)) { cubeAmalgam(); }
-                else if (type == (2, 0, 0)) { sawBlade(); }
-                else if (type == (2, 1, 0)) { star(); }
-
-                imprintChunks();
-
-                long seedo = (seedX / 2 + seedY / 2) % 79461537;
+                long seedo = (seed.x / 2 + seed.y / 2) % 79461537;
                 name = "";
                 int syllables = 2 + Min((int)(seedo % 13), (int)(seedo % 3));
                 for (int i = 0; i < syllables; i++)
@@ -265,13 +251,31 @@ namespace Cave
                     name += nameArray[seedo % nameArray.Length];
                     seedo = LCGz(seedo);
                 }
+
+                if (type.type == 0) { drawLakeNew(); }
+                if (type == (1, 0, 0)) { cubeAmalgam(); }
+                else if (type == (2, 0, 0)) { sawBlade(); }
+                else if (type == (2, 1, 0)) { star(); }
+                else { return; } // if not in these don't imprint LeChunks
+
+                imprintChunks();
+            }
+            public void initAfterStructureValidated()
+            {
+                if (type == (3, 0, 0)) { portal(); }
+
+                imprintChunks();
+
+                findChunkPresence();
+                saveStructure(this);
+                addStructureToTheRightDictInTheScreen();
             }
             public void cubeAmalgam()
             {
-                size = ((int)(seedX % 5) + 1, (int)(seedY % 5) + 1);
-                int squaresToDig = (int)(seedX % (10 + (size.Item1 * size.Item2))) + (int)(size.Item1 * size.Item2 * 0.2f) + 1;
-                long seedoX = seedX;
-                long seedoY = seedY;
+                size = ((int)(seed.x % 5) + 1, (int)(seed.y % 5) + 1);
+                int squaresToDig = (int)(seed.x % (10 + (size.Item1 * size.Item2))) + (int)(size.Item1 * size.Item2 * 0.2f) + 1;
+                long seedoX = seed.x;
+                long seedoY = seed.y;
 
                 (int x, int y) posToTest;
                 for (int gu = 0; gu < squaresToDig; gu++)
@@ -279,8 +283,8 @@ namespace Cave
                     seedoX = LCGxNeg(seedoX);
                     seedoY = LCGyNeg(seedoY);
                     int sizo = (int)((LCGxNeg(seedoY)) % 7 + 7) % 7 + 1;
-                    int centerX = (int)(posX + sizo + seedoX % (size.Item1 * 32 - 2 * sizo));
-                    int centerY = (int)(posX + sizo + seedoY % (size.Item2 * 32 - 2 * sizo));
+                    int centerX = (int)(pos.x + sizo + seedoX % (size.Item1 * 32 - 2 * sizo));
+                    int centerY = (int)(pos.x + sizo + seedoY % (size.Item2 * 32 - 2 * sizo));
                     for (int i = -sizo; i <= sizo; i++)
                     {
                         for (int j = -sizo; j <= sizo; j++)
@@ -294,10 +298,10 @@ namespace Cave
             }
             public void sawBlade()
             {
-                int sizeX = (int)(seedX % 5) + 1;
+                int sizeX = (int)(seed.x % 5) + 1;
                 size = (sizeX, sizeX);
-                long seedoX = seedX;
-                long seedoY = seedY;
+                long seedoX = seed.x;
+                long seedoY = seed.y;
 
                 int angleOfShape = (int)LCGz(seedoX + seedoY) % 360;
                 (int x, int y) posToTest;
@@ -314,11 +318,11 @@ namespace Cave
 
                         if (distance < sizo)
                         {
-                            structureDict[(posX + i, posY + j)] = (0, 0);
+                            structureDict[(pos.x + i, pos.y + j)] = (0, 0);
                             //outline
                             foreach ((int x, int y) mod in neighbourArray)
                             {
-                                posToTest = (posX + i + mod.x, posY + j + mod.y);
+                                posToTest = (pos.x + i + mod.x, pos.y + j + mod.y);
                                 if (!structureDict.ContainsKey(posToTest))
                                 {
                                     structureDict[posToTest] = (1, 0);
@@ -328,18 +332,18 @@ namespace Cave
                     }
                 }
                 // lil X thingy in the middle
-                structureDict[(posX, posY)] = (1, 0);
+                structureDict[(pos.x, pos.y)] = (1, 0);
                 foreach ((int x, int y) mod in diagArray)
                 {
-                    structureDict[(posX + mod.x, posY + mod.y)] = (2, 0);
+                    structureDict[(pos.x + mod.x, pos.y + mod.y)] = (2, 0);
                 }
             }
             public void star()
             {
-                int sizeX = (int)(seedX % 5) + 1;
+                int sizeX = (int)(seed.x % 5) + 1;
                 size = (sizeX, sizeX);
-                long seedoX = seedX;
-                long seedoY = seedY;
+                long seedoX = seed.x;
+                long seedoY = seed.y;
 
                 int angleOfShape = (int)LCGz(seedoX + seedoY) % 360;
                 (int x, int y) posToTest;
@@ -356,11 +360,11 @@ namespace Cave
 
                         if (distance < sizo)
                         {
-                            structureDict[(posX + i, posY + j)] = (0, 0);
+                            structureDict[(pos.x + i, pos.y + j)] = (0, 0);
                             //outline
                             foreach ((int x, int y) mod in neighbourArray)
                             {
-                                posToTest = (posX + i + mod.x, posY + j + mod.y);
+                                posToTest = (pos.x + i + mod.x, pos.y + j + mod.y);
                                 if (!structureDict.ContainsKey(posToTest))
                                 {
                                     structureDict[posToTest] = (1, 0);
@@ -369,6 +373,35 @@ namespace Cave
                         }
                     }
                 }
+            }
+            public void portal()
+            {
+                isDynamic = true;
+
+                foreach ((int x, int y) pos in structureDict.Keys.ToArray())
+                {
+                    if (structureDict[pos] == (-6, 0))
+                    {
+                        structureDict[pos] = (-6, 1);
+                    }
+                }
+                makeBitmap();
+                new Particle(screen, pos, pos, (1, 4, 0));
+            }
+            public void moveStructure() // it's not actually moving but whatever lmfao
+            {
+                if (type == (3, 0, 0))
+                {
+                    (int x, int y) pos = structureDict.Keys.ToArray()[rand.Next(structureDict.Count)];
+                    (int type, int subType) material = structureDict[pos];
+                    if (material.type == -6)
+                    {
+                        new Particle(screen, pos, this.pos, (2, material.type, material.subType));
+                    }
+                }
+                // add time at birth for structs, for portal, make it so when it's created tiles around the portal disappear in like 2-3 seconds,
+                // then blood particles start moving from the blood, going to the center position, agregate into a portal. The blood particles come continiously from the portal
+                // even after it's been created, but there's a lot more at the start. After the portal is done it can be used.
             }
             public void imprintChunks()
             {
@@ -390,9 +423,18 @@ namespace Cave
                     saveChunk(chunk);
                 }
             }
-            public void saveInFile()
+            public void EraseFromTheWorld()
             {
-                string savename = "";
+                (int x, int y) megaChunkPos = MegaChunkIdxFromPixelPos(pos.x, pos.y);
+                if (!screen.megaChunks.ContainsKey(megaChunkPos)) { screen.megaChunks[megaChunkPos] = loadMegaChunk(screen, megaChunkPos); }
+                MegaChunk megaChunk = screen.megaChunks[megaChunkPos];
+                megaChunk.structures.Remove(id);
+                if (screen.activeStructures.ContainsKey(id)) { screen.activeStructures.Remove(id); }
+                saveMegaChunk(megaChunk, megaChunkPos, screen.id);
+            }
+            public void saveInFile() // not used anymore BUT will keep the text and shit for like uh idk people who can see them written idk ?
+            {
+                string savename;
                 if (type.type == 0)
                 {
                     savename = $"lake {name}";
@@ -401,7 +443,7 @@ namespace Cave
                 {
                     savename = $"{name} {structureNames[type]}";
                 }
-                (int x, int y) structIdx = StructChunkIdx(posX, posY);
+                (int x, int y) structIdx = MegaChunkIdxFromPixelPos(pos.x, pos.y);
                 using (StreamWriter f = new StreamWriter($"{currentDirectory}\\CaveData\\{screen.game.seed}\\StructureData\\{structIdx.x}.{structIdx.y}.{savename}.txt", false))
                 {
                     string stringo = $"Welcome to structure {name}'s file !";
@@ -409,12 +451,33 @@ namespace Cave
                     f.Write(stringo);
                 }
             }
+            public void makeBitmap()
+            {
+                if (type == (3, 0, 0))
+                {
+                    /*bitmap = new Bitmap(5, 5);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        for (int j = 0; j < 5; j++)
+                        {
+                            if (Abs(i - 2) == 2 && Abs(j - 2) == 2) { continue; }
+                            else if (Abs(i - 2) == 2 || Abs(j - 2) == 2) { setPixelButFaster(bitmap, (i, j), Color.DarkRed); }
+                            else { setPixelButFaster(bitmap, (i, j), Color.Red); }
+                        }
+                    }*/
+                    posOffset = new int[] { -2, -2 };
+                }
+                else { bitmap = null; posOffset = null; }
+            }
         }
         public static bool testForBloodAltar(Screens.Screen screen, (int x, int y) startPos)
         {
+            Dictionary<(int x, int y), (int type, int subType)> dicto = new Dictionary<(int x, int y), (int type, int subType)>();
+
             (int x, int y) posToTest;
             (int type, int subType) material = screen.getTileContent(startPos);
             if (material != (4, 0)) { return false; } // if start tile isn't fleshTIle, fail
+            dicto[startPos] = (0, 0);
 
             (int x, int y) chunkPos;
             Chunk chunkToTest;
@@ -432,16 +495,21 @@ namespace Cave
             int count = 1;
             while (true) // go down until finding a blood tile.
             {
-                if (count > 5) { return false; } // If went down more than 5 tiles, fail
-                posToTest = (startPos.x, startPos.y - count); 
+                if (count > 12) { return false; } // If went down more than 5 tiles, fail
+                posToTest = (startPos.x, startPos.y - count);
                 material = screen.getTileContent(posToTest);
                 if (material != (0, 0))
                 {
-                    if (material == (-6, 0)) { break; } // if bumps on blood tile, proceed
+                    if (material == (-6, 0)) // if bumps on blood tile, proceed
+                    {
+                        dicto[posToTest] = material;
+                        break;
+                    }
                     else { return false; } // if bumps on a tile other than air or blood, fail
                 }
                 count++;
             }
+            if (count < 5) { return false; }
 
             (bool left, bool right) validity = (false, false);
             count = 1; // Length of the blood pool. 1 at first because blood tile it bumped on needs to be counted
@@ -456,10 +524,13 @@ namespace Cave
                     {
                         if (screen.getTileContent((posToTest.x - currentX, posToTest.y - 1)) != (1, 1)) { return false; } // test if tile under it is denseRock (if not fail)
                         if (screen.getTileContent((posToTest.x - currentX, posToTest.y + 1)).type != 0) { return false; } // test if tile over it is air (if not fail)
+                        dicto.Add((posToTest.x - currentX, posToTest.y - 1), (1, 1));
+                        dicto.Add((posToTest.x - currentX, posToTest.y + 1), (0, 0));
                         count++;
                     }
                     else if (material == (1, 1)) { validity = (true, validity.right); } // if dense rock, continue and stop testing on the left (no blood so don't count it)
                     else { return false; } // if other than dense rock or blood, fail
+                    dicto.Add((posToTest.x - currentX, posToTest.y), material);
                 }
                 if (!validity.right)
                 {
@@ -468,15 +539,24 @@ namespace Cave
                     {
                         if (screen.getTileContent((posToTest.x + currentX, posToTest.y - 1)) != (1, 1)) { return false; } // test if tile under it is denseRock (if not fail)
                         if (screen.getTileContent((posToTest.x + currentX, posToTest.y + 1)).type != 0) { return false; } // test if tile over it is air (if not fail)
+                        dicto.Add((posToTest.x + currentX, posToTest.y - 1), (1, 1));
+                        dicto.Add((posToTest.x + currentX, posToTest.y + 1), (0, 0));
                         count++;
                     }
                     else if (material == (1, 1)) { validity = (validity.left, true); } // if dense rock, continue and stop testing on the right (no blood so don't count it)
                     else { return false; } // if other than dense rock or blood, fail
+                    dicto.Add((posToTest.x + currentX, posToTest.y), material);
                 }
                 currentX++;
             }
             if (count < 3 || count > 15) { return false; } // if blood pool is longer than 15 tiles, fail... bro it's too long lol stop trolling
-            return true; // else blood altar is valid ! yay ! that was suprisingly easy to do. now test if bugs (i hope not i hate bunny (it's a joke i love bunnies yay !))
+
+            // AFTER THIS, THE BLOOD ALTAR IS CONSIDERED VALID AND THE STRUCTURE WILL BE GENERATED
+
+            Structure altar = new Structure(screen, startPos, (0, 0), (3, 0, 0), dicto);
+            screen.structuresToAdd[altar.id] = altar;
+
+            return true; // blood altar is valid ! yay ! that was suprisingly easy to do. now test if bugs (i hope not i hate bunny (it's a joke i love bunnies yay !))
         }
     }
 }

@@ -400,9 +400,9 @@ namespace Cave
             {
                 int[] colorArray = { baseColors[i, j].Item1, baseColors[i, j].Item2, baseColors[i, j].Item3 };
                 Color colorToSet;
-                if (materialColors.ContainsKey(fillStates[i, j]))
+                if (tileColors.ContainsKey(fillStates[i, j]))
                 {
-                    (int r, int g, int b, float mult) materialColor = materialColors[fillStates[i, j]];
+                    (int r, int g, int b, float mult) materialColor = tileColors[fillStates[i, j]];
                     for (int k = 0; k < 3; k++)
                     {
                         colorArray[k] = (int)(colorArray[k] * materialColor.mult);
@@ -418,6 +418,30 @@ namespace Cave
                     else { colorToSet = Color.FromArgb(255, 00, 255); }
                 }
                 setPixelButFaster(bitmap, (i, j), colorToSet);
+            }
+            public (int type, int subType) tileModification(int i, int j, (int type, int subType) newMaterial)
+            {
+                i = PosMod(i);
+                j = PosMod(j);
+                (int x, int y) posToModify = (i + position.x * 32, j + position.y * 32);
+                (int type, int subType) previous = fillStates[i, j];
+                fillStates[i, j] = newMaterial;
+                findTileColor(i, j);
+                testLiquidUnstableNonspecific(posToModify.x, posToModify.y);
+                modificationCount += 1;
+                checkForStructureAlteration(posToModify);
+                return previous;
+            }
+            public void checkForStructureAlteration((int x, int y) posToTest)
+            {
+                foreach (Structure structure in screen.activeStructures.Values)
+                {
+                    if (structure.structureDict.ContainsKey(posToTest))
+                    {
+                        screen.structuresToRemove[structure.id] = structure;
+                        continue;
+                    }
+                }
             }
             public void spawnEntities()
             {
@@ -646,28 +670,19 @@ namespace Cave
                     }
                 }
 
-                if (fillStates[i, j].type < 0)
+                (int type, int subType) material = fillStates[i, j];
+                if (material.type < 0)
                 {
                     if (middleTestPositionChunk.fillStates[i, jb].type == 0)
                     {
-                        middleTestPositionChunk.fillStates[i, jb] = fillStates[i, j];
-                        fillStates[i, j] = (0, 0);
-                        findTileColor(i, j);
-                        middleTestPositionChunk.findTileColor(i, jb);
-                        testLiquidUnstableLiquid(middleTestPositionChunk.position.Item1 * 32 + i, middleTestPositionChunk.position.Item2 * 32 + jb);
-                        testLiquidUnstableAir(position.Item1 * 32 + i, position.Item2 * 32 + j);
-                        unstableLiquidCount++;
+                        tileModification(i, j, (0, 0));
+                        middleTestPositionChunk.tileModification(i, jb, material);
                         return true;
                     } // THIS ONE WAS FUCKING BUGGYYYYY BRUH
                     if ((i < 15 || middleTestPositionChunk.position.Item1 < rightTestPositionChunk.position.Item1) && (rightTestPositionChunk.fillStates[ir, j].type == 0 || middleTestPositionChunk.fillStates[i, jb].type < 0) && rightDiagTestPositionChunk.fillStates[ir, jb].type == 0)
                     {
-                        rightDiagTestPositionChunk.fillStates[ir, jb] = fillStates[i, j];
-                        fillStates[i, j] = (0, 0);
-                        findTileColor(i, j);
-                        rightDiagTestPositionChunk.findTileColor(ir, jb);
-                        testLiquidUnstableLiquid(rightDiagTestPositionChunk.position.Item1 * 32 + ir, rightDiagTestPositionChunk.position.Item2 * 32 + jb);
-                        testLiquidUnstableAir(position.Item1 * 32 + i, position.Item2 * 32 + j);
-                        unstableLiquidCount++;
+                        tileModification(i, j, (0, 0));
+                        rightDiagTestPositionChunk.tileModification(ir, jb, material);
                         return true;
                     } //this ONE WAS BUGGY
                     if ((rightTestPositionChunk.fillStates[ir, j].type == 0 || middleTestPositionChunk.fillStates[i, jb].type < 0) && rightDiagTestPositionChunk.fillStates[ir, jb].type < 0)
@@ -679,12 +694,8 @@ namespace Cave
                     }
                     if ((i > 0 || leftTestPositionChunk.position.Item1 < middleTestPositionChunk.position.Item1) && (leftTestPositionChunk.fillStates[il, j].type == 0 || middleTestPositionChunk.fillStates[i, jb].type < 0) && leftDiagTestPositionChunk.fillStates[il, jb].type == 0)
                     {
-                        leftDiagTestPositionChunk.fillStates[il, jb] = fillStates[i, j];
-                        fillStates[i, j] = (0, 0);
-                        findTileColor(i, j);
-                        leftDiagTestPositionChunk.findTileColor(il, jb);
-                        testLiquidUnstableLiquid(leftDiagTestPositionChunk.position.Item1 * 32 + il, leftDiagTestPositionChunk.position.Item2 * 32 + jb);
-                        testLiquidUnstableAir(position.Item1 * 32 + i, position.Item2 * 32 + j);
+                        tileModification(i, j, (0, 0));
+                        leftDiagTestPositionChunk.tileModification(il, jb, material);
                         return true;
                     } // THIS ONE WAS ALSO BUGGY
                     if ((leftTestPositionChunk.fillStates[il, j].type == 0 || middleTestPositionChunk.fillStates[i, jb].type < 0) && leftDiagTestPositionChunk.fillStates[il, jb].type < 0)
@@ -724,15 +735,11 @@ namespace Cave
                         if (absChunkX >= screen.chunkX + screen.chunkResolution) { break; }
                     }
                     posToTest = (absChunkX * 32 + iTested, absChunkY * 32 + jTested);
-                    if (chunkToTest.fillStates[iTested, jTested].type > 0 || screen.liquidsThatCantGoRight.ContainsKey(posToTest)) { goto bumpedOnSolid; }
-                    if (chunkToTest.fillStates[iTested, jTested].type == 0)
+                    (int type, int subType) material = chunkToTest.fillStates[iTested, jTested];
+                    if (material.type > 0 || screen.liquidsThatCantGoRight.ContainsKey(posToTest)) { goto bumpedOnSolid; }
+                    if (material.type == 0)
                     {
-                        chunkToTest.fillStates[iTested, jTested] = fillStates[i, j];
-                        fillStates[i, j] = (0, 0);
-                        findTileColor(i, j);
-                        chunkToTest.findTileColor(iTested, jTested);
-                        chunkToTest.testLiquidUnstableLiquid(chunkToTest.position.Item1 * 32 + iTested, chunkToTest.position.Item2 * 32 + jTested);
-                        testLiquidUnstableAir(position.Item1 * 32 + i, position.Item2 * 32 + j);
+                        chunkToTest.tileModification(iTested, jTested, tileModification(i, j, (0, 0)));
                         return true;
                     }
                     posVisited.Add(posToTest);
@@ -774,15 +781,11 @@ namespace Cave
                         if (absChunkX < screen.chunkX) { break; }
                     }
                     posToTest = (absChunkX * 32 + iTested, absChunkY * 32 + jTested);
-                    if (chunkToTest.fillStates[iTested, jTested].type > 0 || screen.liquidsThatCantGoLeft.ContainsKey(posToTest)) { goto bumpedOnSolid; }
-                    if (chunkToTest.fillStates[iTested, jTested].type == 0)
+                    (int type, int subType) material = chunkToTest.fillStates[iTested, jTested];
+                    if (material.type > 0 || screen.liquidsThatCantGoLeft.ContainsKey(posToTest)) { goto bumpedOnSolid; }
+                    if (material.type == 0)
                     {
-                        chunkToTest.fillStates[iTested, jTested] = fillStates[i, j];
-                        fillStates[i, j] = (0, 0);
-                        findTileColor(i, j);
-                        chunkToTest.findTileColor(iTested, jTested);
-                        chunkToTest.testLiquidUnstableLiquid(chunkToTest.position.Item1 * 32 + iTested, chunkToTest.position.Item2 * 32 + jTested);
-                        testLiquidUnstableAir(position.Item1 * 32 + i, position.Item2 * 32 + j);
+                        chunkToTest.tileModification(iTested, jTested, tileModification(i, j, (0, 0)));
                         return true;
                     }
                     posVisited.Add(posToTest);
@@ -811,6 +814,7 @@ namespace Cave
                         if (chunkToTest.fillStates[PosMod(posX + mod.x), PosMod(posY + mod.y)].type <= 0)
                         {
                             chunkToTest.unstableLiquidCount++;
+                            unstableLiquidCount++;
                         }
                     }
                 }

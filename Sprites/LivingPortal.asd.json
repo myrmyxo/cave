@@ -1,0 +1,22 @@
+{
+    "version": "1.0",
+    "fileName": "LivingPortal.png",
+    "width": 20,
+    "height": 5,
+    "columns": 4,
+    "rows": 1,
+    "frames": [
+        {
+            "duration": 80
+        },
+        {
+            "duration": 80
+        },
+        {
+            "duration": 80
+        },
+        {
+            "duration": 80
+        }
+    ]
+}

@@ -28,6 +28,7 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using static Cave.Particles;
 
 namespace Cave
 {
@@ -108,7 +109,6 @@ namespace Cave
                 timeAtLastPlace = entityJson.lastDP.Item2;
                 state = entityJson.state;
                 transformEntity(entityJson.type, false); // false to not reinitialize hp
-                findLightColor();
             }
             public Entity(Chunk chunk)
             {
@@ -116,9 +116,7 @@ namespace Cave
                 seed = LCGint1(Abs((int)chunk.chunkSeed));
                 id = currentEntityId;
                 placeEntity(chunk);
-                findType(chunk);
-                color = findColor();
-                findLightColor();
+                findType(chunk); // contains transformEntity so contains Color and LightColor finding
                 initializeInventory();
                 timeAtBirth = timeElapsed;
 
@@ -133,10 +131,9 @@ namespace Cave
                 realPosY = posY;
                 targetPos = positionToPut;
                 seed = rand.Next(1000000000); //                              TO CHANGE FALSE RANDOM NOT SEEDED ARGHHEHEEEE
-                transformEntity(typeToPut, true);
                 id = currentEntityId;
+                transformEntity(typeToPut, true);
                 initializeInventory();
-                findLightColor();
                 timeAtBirth = timeElapsed;
 
                 currentEntityId++;
@@ -752,8 +749,6 @@ namespace Cave
                         {
                             transformEntity(3, 1, true);
                             timeAtLastStateChange = timeElapsed;
-                            color = findColor();
-                            findLightColor();
                         }
                     }
                     else if (subType == 1)
@@ -773,8 +768,6 @@ namespace Cave
                         {
                             transformEntity(3, 2, true);
                             timeAtLastStateChange = timeElapsed;
-                            color = findColor();
-                            findLightColor();
                             goto AfterTest;
                         }
                         (int type, int subType) material = screen.getTileContent((posX, posY - 1));
@@ -809,8 +802,6 @@ namespace Cave
                             }
                             transformEntity(3, 2, true);
                             timeAtLastStateChange = timeElapsed;
-                            color = findColor();
-                            findLightColor();
                         }
                     }
                     else if (subType == 3)
@@ -1162,6 +1153,7 @@ namespace Cave
                 if (setHp) { hp = entityStartingHp[(type, subType)]; }
                 findLength();
                 color = findColor();
+                findLightColor();
             }
             public void transformEntity((int type, int subType) newType, bool setHp)
             {
@@ -1170,6 +1162,7 @@ namespace Cave
                 if (setHp) { hp = entityStartingHp[(type, subType)]; }
                 findLength();
                 color = findColor();
+                findLightColor();
             }
             public void dieAndDrop(Player playerToGive)
             {
@@ -1339,10 +1332,7 @@ namespace Cave
                 if (tileContent.type != 0)
                 {
                     addElementToInventory((tileContent.type, tileContent.subType, 0));
-                    chunkToTest.fillStates[tileIndex.x, tileIndex.y] = (0, 0);
-                    chunkToTest.findTileColor(tileIndex.x, tileIndex.y);
-                    chunkToTest.testLiquidUnstableAir(posToDigX, posToDigY);
-                    chunkToTest.modificationCount += 1;
+                    chunkToTest.tileModification(posToDigX, posToDigY, (0, 0));
                     elementsPossessed++;
                     timeAtLastDig = timeElapsed;
                 }

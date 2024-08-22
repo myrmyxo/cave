@@ -40,7 +40,7 @@ namespace Cave
         public const float _1On17 = 0.0588f;
         public class Globals
         {
-            public static bool loadStructuresYesOrNo = true;
+            public static bool loadStructuresYesOrNo = false;
             public static bool spawnPlantsAndEntities = false;
 
             public static int ChunkLength = 4;
@@ -219,10 +219,11 @@ namespace Cave
                 { (10, 4), (720, 600, 880, 880, 1000, 0) }, // Acid ocean biome !
 
             };
-            public static Dictionary<(int type, int subType), (int r, int g, int b, float mult)> materialColors = new Dictionary<(int type, int subType), (int r, int g, int b, float mult)>
+            public static Dictionary<(int type, int subType), (int r, int g, int b, float mult)> tileColors = new Dictionary<(int type, int subType), (int r, int g, int b, float mult)>
             { // mult is in percent (0-100) : how much biome color is taken into account on the modifiying of the color shite.
                 { (-7, 0), (120, 180, 60, 0.2f)}, // acid
                 
+                { (-6, 1), (65, 5, 35, 0.2f)},  // deoxygenated blood
                 { (-6, 0), (100, 15, 25, 0.2f)},  // blood
 
                 { (-5, 0), (160, 120, 70, 0.2f)}, // honey
@@ -334,6 +335,7 @@ namespace Cave
                 { (1, 0, 0), "cube amalgam" },
                 { (2, 0, 0), "sawblade" },
                 { (2, 1, 0), "star" },
+                { (3, 0, 0), "portal" },
             };
         }
         public Form1()
@@ -377,6 +379,7 @@ namespace Cave
                 turnPngIntoString("WaterSkipper");
 
                 turnPngIntoString("Acid");
+                turnPngIntoString("DeoxygenatedBlood");
                 turnPngIntoString("Blood");
                 turnPngIntoString("Honey");
                 turnPngIntoString("Lava");
@@ -421,14 +424,12 @@ namespace Cave
                 turnPngIntoString("MagicWand");
 
                 turnPngIntoString("Fire");
+                turnPngIntoString("LivingPortal");
             }
 
             loadSpriteDictionaries();
 
             Game game;
-
-            loadStructuresYesOrNo = true;
-            spawnPlantsAndEntities = true;
 
             bool randomSeed = true;
 
@@ -871,7 +872,7 @@ namespace Cave
         {
             return Floor(pos, 32) / 32;
         }
-        public static (int, int) StructChunkIdx(int pixelPosX, int pixelPosY)
+        public static (int, int) MegaChunkIdxFromPixelPos(int pixelPosX, int pixelPosY)
         {
             int chunkPosX = Floor(pixelPosX, 512) / 512;
             int chunkPosY = Floor(pixelPosY, 512) / 512;

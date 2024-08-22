@@ -28,6 +28,7 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using static Cave.Particles;
 
 namespace Cave
 {
@@ -78,7 +79,10 @@ namespace Cave
 
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
-                
+
+                loadStructuresYesOrNo = false;
+                spawnPlantsAndEntities = false;
+
                 if (isPngToExport)
                 {
                     debugMode = true;
@@ -146,6 +150,10 @@ namespace Cave
                     screen.liquidsThatCantGoRight = new Dictionary<(int, int), bool>();
                     screen.entitesToRemove = new Dictionary<int, Entity>();
                     screen.entitesToAdd = new List<Entity>();
+                    screen.particlesToRemove = new Dictionary<Particle, bool>();
+                    screen.particlesToAdd = new List<Particle>();
+                    screen.structuresToAdd = new Dictionary<int, Structure>();
+                    screen.structuresToRemove = new Dictionary<int, Structure>();
                     screen.attacksToDo = new List<((int x, int y) pos, (int type, int subType) attack)>();
                     screen.attacksToDraw = new List<((int x, int y) pos, Color color)>();
                     if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { screen.zoom(true); }
@@ -233,6 +241,14 @@ namespace Cave
                     {
                         plant.testPlantGrowth(false);
                     }
+                    foreach (Particle particle in screen.activeParticles)
+                    {
+                        particle.moveParticle();
+                    }
+                    foreach (Structure structure in screen.activeStructures.Values)
+                    {
+                        structure.moveStructure();
+                    }
                     foreach ((int x, int y) pos in screen.loadedChunks.Keys)
                     {
                         if (rand.Next(200) == 0) { screen.loadedChunks[(pos.x, pos.y)].unstableLiquidCount++; }
@@ -252,6 +268,33 @@ namespace Cave
                     }
                     if (player.willBeSetAsNotAttacking) { player.setAsNotAttacking(); }
 
+                    foreach (Structure structure in screen.structuresToAdd.Values)
+                    {
+                        (int x, int y) megaChunkPos = MegaChunkIdxFromPixelPos(structure.pos.x, structure.pos.y);
+                        if (!screen.megaChunks.ContainsKey(megaChunkPos)) { screen.megaChunks[megaChunkPos] = loadMegaChunk(screen, megaChunkPos); }
+                        MegaChunk megaChunk = screen.megaChunks[megaChunkPos];
+                        foreach (int id in megaChunk.structures) // this checks is there is already a structure of the same type overlapping with the chunks of the new one (not to make duplicates for portals n shite)
+                        {
+                            if (!screen.activeStructures.ContainsKey(id)) { continue; }
+                            Structure structo = screen.activeStructures[id];
+                            if (structo.type != structure.type) { continue; }
+                            foreach ((int x, int y) pos in structo.chunkPresence.Keys)
+                            {
+                                if (structure.chunkPresence.ContainsKey(pos)) { goto doNotAddStructure; }
+                            }
+                        }
+                        // after this the structure is VALID and WILL be added to existing structures
+                        screen.activeStructures[structure.id] = structure;
+                        structure.initAfterStructureValidated();
+                        megaChunk.structures.Add(structure.id);
+                        saveMegaChunk(megaChunk, megaChunkPos, screen.id);
+                    doNotAddStructure:;
+                    }
+                    foreach (Structure structure in screen.structuresToRemove.Values)
+                    {
+                        structure.EraseFromTheWorld();
+                    }
+
 
 
                     screen.unloadFarawayChunks();
@@ -266,6 +309,16 @@ namespace Cave
                     {
                         screen.activeEntities[entity.id] = entity;
                     }
+                    foreach (Particle particle in screen.particlesToAdd)
+                    {
+                        screen.activeParticles.Add(particle);
+                    }
+                    foreach (Particle particle in screen.particlesToRemove.Keys)
+                    {
+                        screen.activeParticles.Remove(particle);
+                    }
+                    screen.particlesToRemove = new Dictionary<Particle, bool>();
+                    screen.particlesToAdd = new List<Particle>();
 
                     if (fastForward && framesFastForwarded < 10)
                     {
@@ -356,9 +409,14 @@ namespace Cave
             public List<Entity> entitesToAdd = new List<Entity>();
             public Dictionary<int, bool> orphanEntities = new Dictionary<int, bool>();
             public Dictionary<int, Plant> activePlants = new Dictionary<int, Plant>();
+            public List<Particle> activeParticles = new List<Particle>();
+            public List<Particle> particlesToAdd = new List<Particle>();
+            public Dictionary<Particle, bool> particlesToRemove = new Dictionary<Particle, bool>();
             public Dictionary<int, Nest> activeNests = new Dictionary<int, Nest>();
             public Dictionary<int, Structure> inertStructures = new Dictionary<int, Structure>(); // structures that are just terrain and don't need to be tested for shit (lakes, cubes...)
             public Dictionary<int, Structure> activeStructures = new Dictionary<int, Structure>(); // structures that are active and can do shit to other shit (like portals)
+            public Dictionary<int, Structure> structuresToAdd = new Dictionary<int, Structure>();
+            public Dictionary<int, Structure> structuresToRemove = new Dictionary<int, Structure>();
 
             public List<((int x, int y) pos, (int type, int subType) attack)> attacksToDo = new List<((int x, int y) pos, (int type, int subType) attack)>();
             public List<((int x, int y) pos, Color color)> attacksToDraw = new List<((int x, int y), Color color)>();
@@ -807,7 +865,7 @@ namespace Cave
                     {
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
                         seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
-                        Structure newStructure = new Structure(posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480), seedX, seedY, (-1, -1, -1), (posX, posY), this);
+                        Structure newStructure = new Structure(this, (posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (-1, -1, -1));
                         megaChunk.structures.Add(newStructure.id);
                     }
                     long waterLakesAmount = 15 + (seedX + seedY) % 150;
@@ -815,7 +873,7 @@ namespace Cave
                     {
                         seedX = LCGyNeg(seedX); // on porpoise x    /\_/\
                         seedY = LCGxNeg(seedY); // and y switched  ( ^o^ )
-                        Structure newStructure = new Structure(posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480), seedX, seedY, (0, 0, 0), (posX, posY), this);
+                        Structure newStructure = new Structure(this, (posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (0, 0, 0));
                         megaChunk.structures.Add(newStructure.id);
                     }
                     long nestAmount = (seedX + seedY) % 3;
@@ -942,6 +1000,16 @@ namespace Cave
                     }
                 }
 
+                foreach (Structure structure in activeStructures.Values)
+                {
+                    if (structure.bitmap != null) { pasteImage(gameBitmap, structure.bitmap, (structure.pos.x + structure.posOffset[0], structure.pos.y + structure.posOffset[1]), camPos, PNGmultiplicator); }
+                    if (structure.type == (3, 0, 0))
+                    {
+                        int frame = ((int)(timeElapsed * 20) + (int)(structure.seed.x) % 100) % 4;
+                        pasteImage(gameBitmap, livingPortalAnimation.frames[frame], (structure.pos.x + structure.posOffset[0], structure.pos.y + structure.posOffset[1]), camPos, PNGmultiplicator);
+                    }
+                }
+
                 foreach (Plant plant in activePlants.Values)
                 {
                     pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos, PNGmultiplicator);
@@ -984,6 +1052,13 @@ namespace Cave
                             drawPixel(gameBitmap, color, entity.pastPositions[i], camPos, PNGmultiplicator);
                         }
                     }
+                }
+
+                foreach (Particle particle in activeParticles)
+                {
+                    Color color = particle.color;
+                    //if (game.isLight && entity.type == 0) { lightPositions.Add((entity.posX, entity.posY, 7, entity.lightColor)); }
+                    drawPixel(gameBitmap, color, (particle.posX, particle.posY), camPos, PNGmultiplicator);
                 }
 
                 { // player
@@ -1226,12 +1301,7 @@ namespace Cave
                     }
                     chunkToTest = extraLoadedChunks[chunkPos];
                 }
-                (int x, int y) chunkIdx = PosMod(posToTest);
-                (int type, int subType) previous = chunkToTest.fillStates[chunkIdx.x, chunkIdx.y];
-                chunkToTest.fillStates[chunkIdx.x, chunkIdx.y] = typeToSet;
-                chunkToTest.testLiquidUnstableNonspecific(posToTest.x, posToTest.y);
-                chunkToTest.findTileColor(chunkIdx.x, chunkIdx.y);
-                chunkToTest.modificationCount += 1;
+                (int type, int subType) previous = chunkToTest.tileModification(posToTest.x, posToTest.y, typeToSet);
                 return previous;
             }
             public int getTileContent((int x, int y) posToTest, Dictionary<(int x, int y), Chunk> extraDictToCheckFrom)

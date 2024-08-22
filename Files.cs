@@ -411,8 +411,8 @@ namespace Cave
                 id = structure.id;
                 type = structure.type;
                 isD = structure.isDynamic;
-                seed = (structure.seedX, structure.seedY);
-                pos = (structure.posX, structure.posY);
+                seed = structure.seed;
+                pos = structure.pos;
                 size = structure.size;
                 name = structure.name;
                 fS = fillstatesToArray(structure.structureDict);

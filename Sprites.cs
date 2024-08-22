@@ -54,11 +54,13 @@ namespace Cave
         public static OneSprite overlayBackground;
 
         public static OneAnimation fireAnimation;
+        public static OneAnimation livingPortalAnimation;
         public static void loadSpriteDictionaries()
         {
             tileSprites = new Dictionary<(int, int), OneSprite>
             {
                 { (-7, 0), new OneSprite("Acid", true)},                     // TO CHANGE
+                { (-6, 1), new OneSprite("DeoxygenatedBlood", true)},        // TO CHANGE
                 { (-6, 0), new OneSprite("Blood", true)},                    // TO CHANGE
                 { (-5, 0), new OneSprite("Honey", false)},                   
                 { (-4, 0), new OneSprite("Lava", false)},                    
@@ -139,6 +141,9 @@ namespace Cave
             arrowsSprite = new OneSprite("Arrows", true);                    // TO CHANGE
             operationSignsSprite = new OneSprite("OperationSigns", true);    // TO CHANGE
 
+            fireAnimation = new OneAnimation("Fire", false, 6);
+            livingPortalAnimation = new OneAnimation("LivingPortal", true, 4);       // TO CHANGE
+
             Bitmap[] numberBitmapArray = slice(numbersSprite.bitmap, 11, 1);
             numberSprites = new Dictionary<int, OneSprite>();
             for (int i = 0; i < numberBitmapArray.Count(); i++)
@@ -173,8 +178,6 @@ namespace Cave
             {
                 operationSignSprites.Add(i, new OneSprite(operationSignBitmapArray[i]));
             }
-
-            fireAnimation = new OneAnimation("Fire", false, 6);
         }
 
 
