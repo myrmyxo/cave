@@ -41,7 +41,8 @@ namespace Cave
         public class Globals
         {
             public static bool loadStructuresYesOrNo = false;
-            public static bool spawnPlantsAndEntities = false;
+            public static bool spawnEntities = false;
+            public static bool spawnPlants = false;
 
             public static int ChunkLength = 4;
             public static int UnloadedChunksAmount = 8;
@@ -53,7 +54,7 @@ namespace Cave
 
             public static Random rand = new Random();
 
-            public static bool[] arrowKeysState = { false, false, false, false }; //
+            public static bool[] arrowKeysState = { false, false, false, false };
             public static bool digPress = false;
             public static bool[] placePress = { false, false };
             public static bool[] zoomPress = { false, false };
@@ -79,7 +80,7 @@ namespace Cave
             public static int currentEntityId = 0;
             public static int currentPlantId = 0;
             public static int currentNestId = 0;
-            public static int currentScreenId = 0;
+            public static int currentDimensionId = 0;
 
             public static long worldSeed = 0;
 
@@ -174,6 +175,8 @@ namespace Cave
                 { (4, 0), (Color.GreenYellow.R,Color.GreenYellow.G,Color.GreenYellow.B) },     // toxic biome
                                                                                                
                 { (5, 0), (Color.LightPink.R,Color.LightPink.G,Color.LightPink.B) },           // fairy biome !
+
+                { (6, 0), (Color.DarkBlue.R,Color.DarkBlue.G + 20,Color.DarkBlue.B + 40) },    // mold biome. .. . . . 
                                                                                                
                 { (8, 0), (Color.LightBlue.R,Color.LightBlue.G+60,Color.LightBlue.B+130) },    // ocean biome !
                                                                                                
@@ -195,7 +198,7 @@ namespace Cave
                 { (0, 0), (200, 320, 320, 512, 1000, 0) },  // cold biome
                 { (0, 1), (-100, 320, 320, 512, 1000, 2) }, // frost biome
 
-                { (1, 0), (200, 512, 800, 512, 1000, 0) },  // acid biome
+                { (1, 0), (200, 300, 800, 512, 1000, 0) },  // acid biome
 
                 { (2, 0), (840, 512, 512, 512, 1000, 1) },  // hot biome
                 { (2, 1), (1024, 512, 512, 512, 1000, 3) }, // lava ocean biome
@@ -207,6 +210,8 @@ namespace Cave
                 { (4, 0), (512, 280, 512, 680, 1000, 0) },  // toxic biome
 
                 { (5, 0), (200, 840, 200, 320, 1000, 0) },  // fairy biome !
+                
+                { (6, 0), (200, 800, 800, 512, 1000, 0) },  // mold biome
 
                 { (8, 0), (512, 960, 512, 512, 1000, 0) },  // ocean biome !
 
@@ -223,7 +228,7 @@ namespace Cave
             { // mult is in percent (0-100) : how much biome color is taken into account on the modifiying of the color shite.
                 { (-7, 0), (120, 180, 60, 0.2f)}, // acid
                 
-                { (-6, 1), (65, 5, 35, 0.2f)},  // deoxygenated blood
+                { (-6, 1), (65, 5, 35, 0.2f)},    // deoxygenated blood
                 { (-6, 0), (100, 15, 25, 0.2f)},  // blood
 
                 { (-5, 0), (160, 120, 70, 0.2f)}, // honey
@@ -247,6 +252,8 @@ namespace Cave
                 
                 { (4, 0), (135, 55, 55, 0.2f)},   // flesh tile
                 { (4, 1), (240, 230, 245, 0.2f)}, // bone tile
+
+                { (5, 0), (50, 50, 100, 0.1f)},   // mold tile
             };
             public static List<((int type, int subType, int megaType) material, int count)[]> craftRecipes = new List<((int type, int subType, int megaType) material, int count)[]>
             {
@@ -390,6 +397,7 @@ namespace Cave
                 turnPngIntoString("DenseRockTile");
                 turnPngIntoString("FleshTile");
                 turnPngIntoString("BoneTile");
+                turnPngIntoString("MoldTile");
 
                 turnPngIntoString("BasePlant");
                 turnPngIntoString("Candle");
@@ -411,6 +419,7 @@ namespace Cave
                 turnPngIntoString("Pollen");
                 turnPngIntoString("MushroomCap");
                 turnPngIntoString("MushroomStem");
+                turnPngIntoString("Mold");
                 turnPngIntoString("Flesh");
                 turnPngIntoString("Bone");
                 turnPngIntoString("MagicRock");
@@ -429,12 +438,6 @@ namespace Cave
 
             loadSpriteDictionaries();
 
-            Game game;
-
-            bool randomSeed = true;
-
-            long seed = 123456;
-
             // cool ideas for later !
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
             // add stoplight biomes not just candelier biome. and make candles have their own biome ?
@@ -450,6 +453,7 @@ namespace Cave
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ? And add LITHOPEDIONS
             // Make it so fairies and other creatures have songs. Like maybe in a fairy village there's a village theme song that's procedurally generated. Idk. ANd they can teach u the song and u can sing it with instrument or voice idk.
             // Add winged waterSkipper : when the population in a lake is too high, or food is too scarse, some old enough waterSkippers can become winged, and fly around to lakes with none or few waterSkippers/lots of food. Migration patterns ? idk
+            // add tribes of snowmen ! lmao
 
             // Plants ideas !
             // Tendril shits in living diomension
@@ -478,23 +482,8 @@ namespace Cave
             // 2807443684 : the most FUCKING enormous OCEAN biome it is so fucking big... wtf
             // 3548078961 : giant fish in oceaon omggggg also banger terrain like wtf
             // 3452270044 : chill start frost inside ocean
-            //
-
-            if (randomSeed)
-            {
-                seed = rand.Next(1000000);
-                int counto = rand.Next(1000);
-                while (counto > 0)
-                {
-                    seed = LCGxPos(seed);
-                    counto -= 1;
-                }
-            }
-            worldSeed = seed;
-
-            Files.createFolders(seed);
-
-            game = new Game(worldSeed);
+            
+            Game game = new Game();
             timer1.Tag = game;
             timeAtLauch = DateTime.Now;
         }
@@ -736,11 +725,11 @@ namespace Cave
         }
         public static int LCGint1(int seed)
         {
-            return Abs((121525 * seed + 6763) % 999983); // VERY SMALL HAVE TO REDO IT
+            return Abs((91 * seed + 6763) % 999983); // VERY SMALL HAVE TO REDO IT
         }
         public static int LCGint2(int seed)
         {
-            return Abs((12616645 * seed + 8837) % 998947); // For some reason it DOES NOT WORK ??? The RANDOM is NOT wroking
+            return Abs((126161 * seed + 8837) % 998947); // For some reason it DOES NOT WORK ??? The RANDOM is NOT wroking
         }
 
         public static void Sort(List<(int, int)> listo, bool sortByFirstInt)
@@ -814,6 +803,12 @@ namespace Cave
         {
             if (a < b) { return a; }
             return b;
+        }
+        public static int Min(params int[] values)
+        {
+            int mini = values[0];
+            foreach (int value in values) { if (value < mini) { mini = value; } }
+            return mini;
         }
         public static byte Min(byte a, byte b)
         {

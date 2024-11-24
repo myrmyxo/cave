@@ -625,7 +625,7 @@ namespace Cave
                 }
                 else if (attack.attack == (3, 0))
                 {
-                    testForBloodAltar(screen, attack.pos);
+                    if (screen.type.type != 2) testForBloodAltar(screen, attack.pos);
                 }
             }
             public bool CheckStructurePosChange()

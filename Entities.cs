@@ -72,6 +72,7 @@ namespace Cave
             public float timeAtLastDig = -9999;
             public float timeAtLastPlace = -9999;
             public float timeAtLastGottenHit = -9999;
+            public float timeAtLastTeleportation = -9999;
 
             public bool isDeadAndShouldDisappear = false;
 
@@ -103,10 +104,11 @@ namespace Cave
                 inventoryQuantities = returnTuple.Item1;
                 inventoryElements = returnTuple.Item2;
                 hp = entityJson.hp;
-                timeAtBirth = entityJson.brth;
-                timeAtLastStateChange = entityJson.sttCh;
                 timeAtLastDig = entityJson.lastDP.Item1;
                 timeAtLastPlace = entityJson.lastDP.Item2;
+                timeAtBirth = entityJson.brth;
+                timeAtLastStateChange = entityJson.sttCh;
+                timeAtLastTeleportation = entityJson.tp;
                 state = entityJson.state;
                 transformEntity(entityJson.type, false); // false to not reinitialize hp
             }
@@ -1270,6 +1272,20 @@ namespace Cave
                     }
                 }
             }
+            public void teleport((int x, int y) newPos, int newScreenId)
+            {
+                screen.game.loadDimension(newScreenId);
+                Screens.Screen newScreen = screen.game.loadedScreens[newScreenId];
+                newScreen.entitesToAdd[id] = this;
+                screen.entitesToRemove[id] = this;
+                realPosX = newPos.x;
+                posX = newPos.x;
+                realPosY = newPos.y;
+                posY = newPos.y;
+                speedX = 0;
+                speedY = 0;
+                timeAtLastTeleportation = timeElapsed;
+            }
             public void initializeInventory()
             {
                 inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
@@ -1355,7 +1371,7 @@ namespace Cave
                     else if (elementToPlace.typeOfElement == 1)
                     {
                         Entity newEntity = new Entity(screen, (posToDigX, posToDigY), (elementToPlace.type, elementToPlace.subType));
-                        screen.entitesToAdd.Add(newEntity);
+                        screen.entitesToAdd[newEntity.id] = newEntity;
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (elementToPlace.typeOfElement == 2)

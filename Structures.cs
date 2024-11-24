@@ -43,12 +43,16 @@ namespace Cave
             public (int x, int y) size = (0, 0);
             public string name = "";
             public bool isDynamic = false;
+            public int state = 0;
+            public int sisterStructure = -1;
             public Dictionary<(int x, int y), (int type, int subType)> structureDict = new Dictionary<(int x, int y), (int type, int subType)>();
             public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), bool> megaChunkPresence = new Dictionary<(int x, int y), bool>();
 
             public Bitmap bitmap = null;
             public int[] posOffset = null;
+
+            public float timeAtBirth = -999;
 
             // loading and unloading management
             public bool isPurelyStructureLoaded = true;
@@ -63,6 +67,8 @@ namespace Cave
                 pos = structureJson.pos;
                 size = structureJson.size;
                 name = structureJson.name;
+                timeAtBirth = structureJson.brth;
+                state = structureJson.state;
                 structureDict = arrayToFillstates(structureJson.fS);
                 screen = screenToPut;
 
@@ -241,7 +247,7 @@ namespace Cave
                 }
                 return true; // return true even if fill not worked, just stop if tile is liquid or if filled too much
             }
-            public void drawStructure()
+            public bool drawStructure()
             {
                 long seedo = (seed.x / 2 + seed.y / 2) % 79461537;
                 name = "";
@@ -252,17 +258,20 @@ namespace Cave
                     seedo = LCGz(seedo);
                 }
 
-                if (type.type == 0) { drawLakeNew(); }
-                if (type == (1, 0, 0)) { cubeAmalgam(); }
-                else if (type == (2, 0, 0)) { sawBlade(); }
-                else if (type == (2, 1, 0)) { star(); }
-                else { return; } // if not in these don't imprint LeChunks
+                bool success;
+                if (type.type == 0) { success = drawLakeNew(); }
+                else if (type == (1, 0, 0)) { success = cubeAmalgam(); }
+                else if (type == (2, 0, 0)) { success = sawBlade(); }
+                else if (type == (2, 1, 0)) { success = star(); }
+                else { return false; } // if not in these don't imprint LeChunks
 
-                imprintChunks();
+                if (success) { imprintChunks(); }
+                return success;
             }
             public void initAfterStructureValidated()
             {
                 if (type == (3, 0, 0)) { portal(); }
+                timeAtBirth = timeElapsed;
 
                 imprintChunks();
 
@@ -270,7 +279,7 @@ namespace Cave
                 saveStructure(this);
                 addStructureToTheRightDictInTheScreen();
             }
-            public void cubeAmalgam()
+            public bool cubeAmalgam()
             {
                 size = ((int)(seed.x % 5) + 1, (int)(seed.y % 5) + 1);
                 int squaresToDig = (int)(seed.x % (10 + (size.Item1 * size.Item2))) + (int)(size.Item1 * size.Item2 * 0.2f) + 1;
@@ -295,8 +304,9 @@ namespace Cave
                         }
                     }
                 }
+                return true;
             }
-            public void sawBlade()
+            public bool sawBlade()
             {
                 int sizeX = (int)(seed.x % 5) + 1;
                 size = (sizeX, sizeX);
@@ -337,8 +347,9 @@ namespace Cave
                 {
                     structureDict[(pos.x + mod.x, pos.y + mod.y)] = (2, 0);
                 }
+                return true;
             }
-            public void star()
+            public bool star()
             {
                 int sizeX = (int)(seed.x % 5) + 1;
                 size = (sizeX, sizeX);
@@ -373,35 +384,80 @@ namespace Cave
                         }
                     }
                 }
+                return true;
             }
             public void portal()
             {
                 isDynamic = true;
-
-                foreach ((int x, int y) pos in structureDict.Keys.ToArray())
+                for (int i = -2; i <= 2; i++)
                 {
-                    if (structureDict[pos] == (-6, 0))
+                    for (int j = -2; j <= 2; j++)
                     {
-                        structureDict[pos] = (-6, 1);
+                        if (Abs(i) == Abs(j) && Abs(i) == 2) { continue; }
+                        structureDict[(pos.x + i, pos.y + j)] = (0, 0);
                     }
                 }
                 makeBitmap();
                 new Particle(screen, pos, pos, (1, 4, 0));
+
+                if (screen.game.livingDimensionId == -1) { screen.game.loadDimension(currentDimensionId, false, false, 2, 0); }
             }
             public void moveStructure() // it's not actually moving but whatever lmfao
             {
                 if (type == (3, 0, 0))
                 {
-                    (int x, int y) pos = structureDict.Keys.ToArray()[rand.Next(structureDict.Count)];
-                    (int type, int subType) material = structureDict[pos];
-                    if (material.type == -6)
+                    if (state == 0)
                     {
-                        new Particle(screen, pos, this.pos, (2, material.type, material.subType));
+                        if (rand.Next(3) == 0 || timeElapsed > 3 + timeAtBirth)
+                        {
+                            ((int x, int y) pos, bool success) result = tryRandomConversion((-6, 0), (-6, 1));
+                            if (result.success) { new Particle(screen, result.pos, this.pos, (2, -6, 0)); }
+                        }
+                        if (!structureDict.Values.Contains((-6, 0))) { state = 1; }
                     }
+                    else
+                    {
+                        (int x, int y) pos = structureDict.Keys.ToArray()[rand.Next(structureDict.Count)];
+                        (int type, int subType) material = structureDict[pos];
+                        if (material.type == -6)
+                        {
+                            new Particle(screen, pos, this.pos, (2, material.type, material.subType));
+                        }
+                    }
+                    tryTeleportation();
                 }
                 // add time at birth for structs, for portal, make it so when it's created tiles around the portal disappear in like 2-3 seconds,
                 // then blood particles start moving from the blood, going to the center position, agregate into a portal. The blood particles come continiously from the portal
                 // even after it's been created, but there's a lot more at the start. After the portal is done it can be used.
+            }
+            public void tryTeleportation()
+            {
+                foreach (Entity entity in screen.activeEntities.Values)
+                {
+                    int diffX = Abs(entity.posX - pos.x);
+                    int diffY = Abs(entity.posY - pos.y);
+                    if (diffX <= 2 && diffY <= 2 && structureDict.ContainsKey((entity.posX, entity.posY))) // if inside the portal.
+                    {
+                        if (entity.timeAtLastTeleportation + 1 > timeElapsed) // do not TP if last TP was less than 1 second ago
+                        {
+                            if (entity.timeAtLastTeleportation + 0.5f > timeElapsed) { entity.timeAtLastTeleportation = timeElapsed; } // if last TP was less than 1/2 second ago, reinitialize timer (so entity needs to stay out of the portal for 0.5s to be able to teleport again, to not get stuck in a loop)
+                            continue;
+                        }
+                        entity.teleport((entity.posX, entity.posY + 10), entity.screen.id);
+                    }
+                }
+            }
+            public ((int x, int y) pos, bool success) tryRandomConversion((int type, int subType) typeToConvert, (int type, int subType) newType)
+            {
+                (int x, int y) pos = structureDict.Keys.ToArray()[rand.Next(structureDict.Count)];
+                (int type, int subType) material = structureDict[pos];
+                if (material == typeToConvert)
+                {
+                    structureDict[pos] = newType;
+                    screen.setTileContent(pos, newType);
+                    return ((pos.x, pos.y), true);
+                }
+                return ((0, 0), false);
             }
             public void imprintChunks()
             {
@@ -455,16 +511,6 @@ namespace Cave
             {
                 if (type == (3, 0, 0))
                 {
-                    /*bitmap = new Bitmap(5, 5);
-                    for (int i = 0; i < 5; i++)
-                    {
-                        for (int j = 0; j < 5; j++)
-                        {
-                            if (Abs(i - 2) == 2 && Abs(j - 2) == 2) { continue; }
-                            else if (Abs(i - 2) == 2 || Abs(j - 2) == 2) { setPixelButFaster(bitmap, (i, j), Color.DarkRed); }
-                            else { setPixelButFaster(bitmap, (i, j), Color.Red); }
-                        }
-                    }*/
                     posOffset = new int[] { -2, -2 };
                 }
                 else { bitmap = null; posOffset = null; }
@@ -476,7 +522,7 @@ namespace Cave
 
             (int x, int y) posToTest;
             (int type, int subType) material = screen.getTileContent(startPos);
-            if (material != (4, 0)) { return false; } // if start tile isn't fleshTIle, fail
+            if (material != (4, 0)) { return false; } // if start tile isn't fleshTile, fail
             dicto[startPos] = (0, 0);
 
             (int x, int y) chunkPos;

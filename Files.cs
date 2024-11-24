@@ -39,16 +39,16 @@ namespace Cave
             public int entityId;
             public int plantId;
             public int structureId;
-            public int screenId;
+            public int dimensionId;
             public float time;
             public PlayerJson player;
-            public int playerDimension; // dimension where the player is located
+            public int livingDimensionId;
             public SettingsJson(Game game)
             {
                 time = timeElapsed;
                 nestId = currentNestId;
                 plantId = currentPlantId;
-                screenId = currentScreenId;
+                dimensionId = currentDimensionId;
                 entityId = currentEntityId;
                 structureId = currentStructureId;
                 player = new PlayerJson(game.playerList[0]);
@@ -215,12 +215,14 @@ namespace Cave
         }
         public class PlayerJson
         {
+            public int currentDimension;
             public (float x, float y) pos;
             public (float x, float y) speed;
             public int[,] inv;
             public (float x, float y) lastDP;
             public PlayerJson(Player player)
             {
+                currentDimension = player.screen.id;
                 pos = (player.realPosX, player.realPosY);
                 speed = (player.speedX, player.speedY);
                 inv = inventoryToArray(player.inventoryQuantities, player.inventoryElements);
@@ -246,6 +248,7 @@ namespace Cave
             public int hp;
             public float brth;
             public float sttCh;
+            public float tp;
             public EntityJson(Entity entity)
             {
                 seed = entity.seed;
@@ -262,6 +265,7 @@ namespace Cave
                 hp = entity.hp;
                 brth = entity.timeAtBirth;
                 sttCh = entity.timeAtLastStateChange;
+                tp = entity.timeAtLastTeleportation;
             }
             public EntityJson()
             {
@@ -404,6 +408,8 @@ namespace Cave
             public (int, int) pos;
             public (int, int) size;
             public string name;
+            public float brth;
+            public int state;
 
             public int[,] fS;
             public StructureJson(Structure structure)
@@ -415,6 +421,8 @@ namespace Cave
                 pos = structure.pos;
                 size = structure.size;
                 name = structure.name;
+                brth = structure.timeAtBirth;
+                state = structure.state;
                 fS = fillstatesToArray(structure.structureDict);
             }
             public StructureJson()

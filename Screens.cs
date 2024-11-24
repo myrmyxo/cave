@@ -29,6 +29,7 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
+using System.Linq.Expressions;
 
 namespace Cave
 {
@@ -40,18 +41,45 @@ namespace Cave
             public List<Player> playerList = new List<Player>();
             public Bitmap overlayBitmap;
             public long seed;
+            public int livingDimensionId = -1;
 
             public bool isLight = true;
-            public Game(long seedToPut)
+            public Game()
             {
-                seed = seedToPut;
-                playerList = new List<Player>();
+                bool randomSeed = true;
+                seed = 123456;
 
+                int idToPut = 0;
+                (int type, int subType) forceBiome = (0, 0);
+                int PNGsize = 150;
+                PNGsize = 100;
+
+                bool isMonoeBiomeToPut = false;
+                bool isPngToExport = false;
+
+                loadStructuresYesOrNo = true;
+                spawnEntities = true;
+                spawnPlants = true;
+
+                if (randomSeed)
+                {
+                    seed = rand.Next(1000000);
+                    int counto = rand.Next(1000);
+                    while (counto > 0)
+                    {
+                        seed = LCGxPos(seed);
+                        counto -= 1;
+                    }
+                }
+                worldSeed = seed;
+                Files.createFolders(seed);
+
+                playerList = new List<Player>();
                 overlayBitmap = new Bitmap(512, 128);
 
-                Screens.Screen mainScreen;
                 SettingsJson settings;
                 settings = tryLoadSettings(this);
+                applySettings(settings);
 
                 playerList.Add(new Player(settings));
                 Player player = playerList[0];
@@ -73,33 +101,27 @@ namespace Cave
                     makeBiomeDiagram((0, 0), (0, 1), (512, i));
                 }
 
-                int idToPut = 0;
-                int PNGsize = 150;
-                PNGsize = 100;
-
-                bool isMonoeBiomeToPut = false;
-                bool isPngToExport = false;
-
-                loadStructuresYesOrNo = false;
-                spawnPlantsAndEntities = false;
+                if (settings != null)
+                {
+                    idToPut = settings.player.currentDimension;
+                }
 
                 if (isPngToExport)
                 {
                     debugMode = true;
                     int oldChunkLength = ChunkLength;
                     ChunkLength = PNGsize;
-                    mainScreen = new Screen(this, ChunkLength, idToPut, isMonoeBiomeToPut, true);
+                    loadDimension(idToPut, true, isMonoeBiomeToPut, forceBiome.type, forceBiome.subType);
                     timeAtLauch = DateTime.Now;
 
                     runGame(null, null);
 
-                    mainScreen.updateScreen().Save($"{currentDirectory}\\caveMap.png");
+                    loadedScreens[idToPut].updateScreen().Save($"{currentDirectory}\\caveMap.png");
+                    loadedScreens.Remove(idToPut);
                     ChunkLength = oldChunkLength;
                 }
 
-                mainScreen = new Screen(this, ChunkLength, idToPut, isMonoeBiomeToPut, false);
-                if (currentScreenId == 0) { currentScreenId++; };
-                loadedScreens[idToPut] = mainScreen;
+                loadDimension(idToPut, false, isMonoeBiomeToPut, forceBiome.type, forceBiome.subType);
                 setPlayerDimension(player, idToPut);
             }
             public void movePlayerStuff(Screen screen, Player player)
@@ -112,6 +134,17 @@ namespace Cave
 
                 screen.chunkX = ChunkIdx(player.camPosX);
                 screen.chunkY = ChunkIdx(player.camPosY);
+            }
+            public void applySettings(SettingsJson settings)
+            {
+                if (settings == null) { return; }
+                timeElapsed = settings.time;
+                currentStructureId = settings.structureId;
+                currentEntityId = settings.entityId;
+                currentPlantId = settings.plantId;
+                currentNestId = settings.nestId;
+                currentDimensionId = settings.dimensionId;
+                livingDimensionId = settings.livingDimensionId;
             }
             public void runGame(PictureBox gamePictureBox, PictureBox overlayPictureBox)
             {
@@ -140,7 +173,7 @@ namespace Cave
                     craftPress = false;
                 }
 
-                foreach (Screen screen in loadedScreens.Values)
+                foreach (Screen screen in loadedScreens.Values.ToArray())
                 {
                     int framesFastForwarded = 0;
                 LoopStart:;
@@ -149,7 +182,7 @@ namespace Cave
                     screen.liquidsThatCantGoLeft = new Dictionary<(int, int), bool>();
                     screen.liquidsThatCantGoRight = new Dictionary<(int, int), bool>();
                     screen.entitesToRemove = new Dictionary<int, Entity>();
-                    screen.entitesToAdd = new List<Entity>();
+                    screen.entitesToAdd = new Dictionary<int, Entity>();
                     screen.particlesToRemove = new Dictionary<Particle, bool>();
                     screen.particlesToAdd = new List<Particle>();
                     screen.structuresToAdd = new Dictionary<int, Structure>();
@@ -178,7 +211,7 @@ namespace Cave
                     {
                         screen.activeEntities.Remove(entity.id);
                     }
-                    foreach (Entity entity in screen.entitesToAdd)
+                    foreach (Entity entity in screen.entitesToAdd.Values)
                     {
                         screen.activeEntities[entity.id] = entity;
                     }
@@ -224,7 +257,7 @@ namespace Cave
 
 
                     screen.entitesToRemove = new Dictionary<int, Entity>();
-                    screen.entitesToAdd = new List<Entity>();
+                    screen.entitesToAdd = new Dictionary<int, Entity>();
                     foreach (Entity entity in screen.activeEntities.Values)
                     {
                         entity.moveEntity();
@@ -233,7 +266,7 @@ namespace Cave
                     {
                         screen.activeEntities.Remove(entity.id);
                     }
-                    foreach (Entity entity in screen.entitesToAdd)
+                    foreach (Entity entity in screen.entitesToAdd.Values)
                     {
                         screen.activeEntities[entity.id] = entity;
                     }
@@ -257,7 +290,7 @@ namespace Cave
 
 
                     screen.entitesToRemove = new Dictionary<int, Entity>();
-                    screen.entitesToAdd = new List<Entity>();
+                    screen.entitesToAdd = new Dictionary<int, Entity>();
                     screen.putEntitiesAndPlantsInChunks();
 
 
@@ -305,7 +338,7 @@ namespace Cave
                     {
                         screen.activeEntities.Remove(entity.id);
                     }
-                    foreach (Entity entity in screen.entitesToAdd)
+                    foreach (Entity entity in screen.entitesToAdd.Values)
                     {
                         screen.activeEntities[entity.id] = entity;
                     }
@@ -349,16 +382,25 @@ namespace Cave
             }
             public void setPlayerDimension(Player player, int targetDimension)
             {
+                if (targetDimension > currentDimensionId) { targetDimension = currentDimensionId; Globals.currentTargetDimension = currentDimensionId; }
                 if (!loadedScreens.ContainsKey(targetDimension))
                 {
-                    Screen newScreen = new Screen(this, ChunkLength, targetDimension, true, false);
-                    loadedScreens[targetDimension] = newScreen;
-                    currentScreenId++;
+                    loadDimension(targetDimension);
                 }
                 player.screen = loadedScreens[targetDimension];
                 player.dimension = targetDimension;
                 player.screen.checkStructuresOnSpawn(player);
                 unloadAllDimensions(false);
+            }
+            public Screen loadDimension(int idToLoad, bool isPngToExport = false, bool isMonoToPut = false, int typeToPut = -999, int subTypeToPut = -999)
+            {
+                if (!loadedScreens.ContainsKey(idToLoad))
+                {
+                    Screen newScreen = new Screen(this, ChunkLength, idToLoad, isPngToExport, isMonoToPut, typeToPut, subTypeToPut);
+                    loadedScreens[idToLoad] = newScreen;
+                    return newScreen;
+                }
+                return loadedScreens[idToLoad];
             }
             public void unloadAllDimensions(bool unloadDimensionPlayerIsInAsWell)
             {
@@ -369,6 +411,7 @@ namespace Cave
                     if (unloadDimensionPlayerIsInAsWell || playerList[0].dimension != id)
                     {
                         screen = loadedScreens[id];
+                        screen.putEntitiesAndPlantsInChunks();
                         saveAllChunks(screen);
                         screensToRemove.Add(id);
                     }
@@ -395,7 +438,7 @@ namespace Cave
 
             public long seed;
             public int id;
-            public (int, int) type;
+            public (int type, int subType) type;
             public bool isMonoBiome; // if yes, then the whole-ass dimension is only made ouf of ONE biome, that is of the type of... well type. If not, type is the type of dimension and not the biome (like idk normal, frozen, lampadaire, shitpiss world...)
 
             public Bitmap gameBitmap;
@@ -406,7 +449,7 @@ namespace Cave
 
             public Dictionary<int, Entity> activeEntities = new Dictionary<int, Entity>();
             public Dictionary<int, Entity> entitesToRemove = new Dictionary<int, Entity>();
-            public List<Entity> entitesToAdd = new List<Entity>();
+            public Dictionary<int, Entity> entitesToAdd = new Dictionary<int, Entity>();
             public Dictionary<int, bool> orphanEntities = new Dictionary<int, bool>();
             public Dictionary<int, Plant> activePlants = new Dictionary<int, Plant>();
             public List<Particle> activeParticles = new List<Particle>();
@@ -436,7 +479,7 @@ namespace Cave
             public Dictionary<(int x, int y), bool> inertStructureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), bool> activeStructureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
 
-            public Screen(Game gameToPut, int chunkResolutionToPut, int idToPut, bool isMonoToPut, bool isPngToExport)
+            public Screen(Game gameToPut, int chunkResolutionToPut, int idToPut, bool isPngToExport, bool isMonoToPut = false, int forceType = -999, int forceSubType = -999)
             {
                 game = gameToPut;
                 id = idToPut;
@@ -449,19 +492,39 @@ namespace Cave
                 }
                 else
                 {
-                    type = (id % 11, 0);
-                    isMonoBiome = isMonoToPut;
+                    if (forceType != -999)
+                    {
+                        type = (forceType, forceSubType);
+                        isMonoBiome = isMonoToPut;
+                    }
+                    else
+                    {
+                        if (rand.Next(2) == 0)
+                        {
+                            type = biomeDict.Keys.ToArray()[rand.Next(biomeDict.Count)];
+                            isMonoBiome = true;
+                        }
+                        else
+                        {
+                            type = (rand.Next(3), 0);
+                            isMonoBiome = false;
+                        }
+                    }
                     seed = game.seed + id;
-                    saveDimensionData(this);
+                    currentDimensionId++;
+                    if (game.livingDimensionId == -1 && isMonoBiome == false && type == (2, 0)) { game.livingDimensionId = id; }
                 }
+                saveDimensionData(this);
                 isPngToBeExported = isPngToExport;
                 chunkResolution = chunkResolutionToPut + UnloadedChunksAmount * 2; // invisible chunks of the sides/top/bottom
                 createDimensionFolders(game, id);
                 LCGCacheInit();
                 Player player = game.playerList[0];
+                if (isPngToBeExported) { gameBitmap = new Bitmap(32 * (chunkResolution - 1), 32 * (chunkResolution - 1)); }
+                else { gameBitmap = new Bitmap(128 * (ChunkLength - 1), 128 * (ChunkLength - 1)); }
                 chunkX = ChunkIdx(player.posX);
                 chunkY = ChunkIdx(player.posY);
-                loadChunks();
+                if (player.dimension == id) { updateLoadedChunks(); }
 
                 foreach ((int x, int y) pos in chunksToSpawnEntitiesIn.Keys)
                 {
@@ -528,24 +591,6 @@ namespace Cave
                     longo = LCGz(longo);
                     longo2 = LCGz(longo);
                 }
-            }
-            public void loadChunks()
-            {
-                loadedChunks = new Dictionary<(int, int), Chunk>();
-                Chunk newChunk;;
-                for (int i = 0; i < chunkResolution; i++)
-                {
-                    for (int j = 0; j < chunkResolution; j++)
-                    {
-                        if (!loadedChunks.ContainsKey((chunkX + i, chunkY + j)))
-                        {
-                            newChunk = new Chunk((chunkX + i, chunkY + j), false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
-                            if (!loadedChunks.ContainsKey((chunkX + i, chunkY + j))) { loadedChunks[(chunkX + i, chunkY + j)] = newChunk; }
-                        }
-                    }
-                }
-                if (isPngToBeExported) { gameBitmap = new Bitmap(32 * (chunkResolution - 1), 32 * (chunkResolution - 1)); }
-                else { gameBitmap = new Bitmap(128 * (ChunkLength - 1), 128 * (ChunkLength - 1)); }
             }
             public void addPlantsToChunk(Chunk chunk)
             {
@@ -635,8 +680,8 @@ namespace Cave
                         posToTest = (chunkX + i, chunkY + j);
                         if (!loadedChunks.ContainsKey(posToTest))
                         {
-                            newChunk = new Chunk((chunkX + i, chunkY + j), false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
-                            if (!loadedChunks.ContainsKey((chunkX + i, chunkY + j))) { loadedChunks[(chunkX + i, chunkY + j)] = newChunk; }
+                            newChunk = new Chunk(posToTest, false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
+                            if (!loadedChunks.ContainsKey(posToTest)) { loadedChunks[posToTest] = newChunk; }
                         }
                     }
                 }
@@ -1005,7 +1050,7 @@ namespace Cave
                     if (structure.bitmap != null) { pasteImage(gameBitmap, structure.bitmap, (structure.pos.x + structure.posOffset[0], structure.pos.y + structure.posOffset[1]), camPos, PNGmultiplicator); }
                     if (structure.type == (3, 0, 0))
                     {
-                        int frame = ((int)(timeElapsed * 20) + (int)(structure.seed.x) % 100) % 4;
+                        int frame = ((int)(timeElapsed * 10) + (int)(structure.seed.x) % 100) % 4;
                         pasteImage(gameBitmap, livingPortalAnimation.frames[frame], (structure.pos.x + structure.posOffset[0], structure.pos.y + structure.posOffset[1]), camPos, PNGmultiplicator);
                     }
                 }

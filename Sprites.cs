@@ -73,7 +73,7 @@ namespace Cave
                 { (3, 0), new OneSprite("PlantMatter", false)},              
                 { (4, 0), new OneSprite("FleshTile", true)},                 // TO CHANGE
                 { (4, 1), new OneSprite("BoneTile", true)},                  // TO CHANGE
-                { (5, 0), new OneSprite("BasicTile", false)},                
+                { (5, 0), new OneSprite("MoldTile", true)},                  // TO CHANGE          
                 { (6, 0), new OneSprite("BasicTile", false)}                 
             };                                                               
             entitySprites = new Dictionary<(int, int), OneSprite>            
@@ -119,6 +119,7 @@ namespace Cave
                 { (2, 1), new OneSprite("Pollen", false)},
                 { (3, 0), new OneSprite("MushroomStem", false)},
                 { (3, 1), new OneSprite("MushroomCap", false)},
+                { (3, 2), new OneSprite("Mold", true)},                      // TO CHANGE
                 { (8, 0), new OneSprite("Flesh", true)},                     // TO CHANGE
                 { (8, 1), new OneSprite("Bone", true )},                     // TO CHANGE
                 { (10, 0), new OneSprite("MagicRock", true)},                // TO CHANGE

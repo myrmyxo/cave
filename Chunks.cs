@@ -136,7 +136,9 @@ namespace Cave
                             secondaryBiomeValues[i, j, k] = findSecondaryBiomeValue(primaryBiomeValues, chunkRealPos.x + i, chunkRealPos.y + j, k);
                             secondaryBigBiomeValues[i, j, k] = findSecondaryBigBiomeValue(primaryBigBiomeValues, chunkRealPos.x + i, chunkRealPos.y + j, k);
                         }
-                        (int temp, int humi, int acid, int toxi) tileValues = makeTileBiomeValueArray(secondaryBigBiomeValues, secondaryBiomeValues, i, j);
+                        (int temp, int humi, int acid, int toxi) tileValues;
+                        if (screen.isMonoBiome) { tileValues = makeTileBiomeValueArrayMonoBiome(screen.type); }
+                        else { tileValues = makeTileBiomeValueArray(secondaryBigBiomeValues, secondaryBiomeValues, i, j); }
                         tileValuesArray[i, j] = tileValues;
                         if (screen.isMonoBiome) { biomeIndex[i, j] = new ((int biome, int subBiome), int)[] { (screen.type, 1000) }; }
                         else { biomeIndex[i, j] = findBiome(this.screen.type, tileValues); }
@@ -345,7 +347,7 @@ namespace Cave
                 }
                 else if (biome == (10, 1) || biome == (10, 3) || biome == (10, 4)) // flesh and bone (for acid and blood oceans too since they can have the transition)
                 {
-                    if (Max(0, (int)(Abs(Abs(values.Item1 - 1024)*0.49f) + values.Item2 % 256)) >= 512 - dicto[biome]*513)
+                    if (Max(0, (int)(Abs(Abs(values.Item1 - 1024) * 0.49f) + values.Item2 % 256)) >= 512 - dicto[biome] * 513)
                     {
                         return (4, 1);
                     }
@@ -359,6 +361,11 @@ namespace Cave
                 if (value % 256 - (512 - (int)(value * 0.25f)) > 0 && Abs(values.Item1 - values.Item2) < 512 - (512 - (int)(value * 0.25f)))
                 {
                     return (1, 1);
+                }
+
+                if (biome == (6, 0)) // mold
+                {
+                    if (Max(0, (int)(Abs(Abs(values.Item1 - 1024) * 0.49f))) >= 1024 - dicto[biome] * 1024) { return (5, 0); }
                 }
 
 
@@ -407,9 +414,11 @@ namespace Cave
                     {
                         colorArray[k] = (int)(colorArray[k] * materialColor.mult);
                     };
-                    colorArray[0] += (int)(materialColor.r * (1 - materialColor.mult));
-                    colorArray[1] += (int)(materialColor.g * (1 - materialColor.mult));
-                    colorArray[2] += (int)(materialColor.b * (1 - materialColor.mult));
+                    int rando = 0;
+                    if (fillStates[i, j] == (5, 0)) { rando = Abs((int)(LCGyNeg(LCGxPos(position.x * 32 + i)%153 + LCGyPos(position.y * 32 + j)%247) % 279)) % 40 - 20; }
+                    colorArray[0] += (int)(materialColor.r * (1 - materialColor.mult)) + rando;
+                    colorArray[1] += (int)(materialColor.g * (1 - materialColor.mult)) + rando;
+                    colorArray[2] += (int)(materialColor.b * (1 - materialColor.mult)) + rando;
                     colorToSet = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
                 }
                 else
@@ -429,14 +438,14 @@ namespace Cave
                 findTileColor(i, j);
                 testLiquidUnstableNonspecific(posToModify.x, posToModify.y);
                 modificationCount += 1;
-                checkForStructureAlteration(posToModify);
+                checkForStructureAlteration(posToModify, newMaterial);
                 return previous;
             }
-            public void checkForStructureAlteration((int x, int y) posToTest)
+            public void checkForStructureAlteration((int x, int y) posToTest, (int type, int subType) newType)
             {
                 foreach (Structure structure in screen.activeStructures.Values)
                 {
-                    if (structure.structureDict.ContainsKey(posToTest))
+                    if (structure.structureDict.ContainsKey(posToTest) && structure.structureDict[posToTest] != newType)
                     {
                         screen.structuresToRemove[structure.id] = structure;
                         continue;
@@ -446,14 +455,16 @@ namespace Cave
             public void spawnEntities()
             {
                 Dictionary<(int x, int y), bool> forbiddenPositions = new Dictionary<(int x, int y), bool>();
-                if (spawnPlantsAndEntities)
+                if (Globals.spawnEntities)
                 {
                     Entity newEntity = new Entity(this);
                     if (!newEntity.isDeadAndShouldDisappear)
                     {
                         screen.activeEntities[newEntity.id] = newEntity;
                     }
-
+                }
+                if (spawnPlants)
+                {
                     int smallPlantsToSpawn = 4;
                     int vinesToSpawn = 1;
                     int treesToSpawn = 0;
@@ -1280,6 +1291,10 @@ namespace Cave
                 {
                     dicto[key.Item1] = findTransition((10, 1), values);
                 }
+                else if (key.Item1 == (6, 0))
+                {
+                    dicto[key.Item1] = findTransition((6, 0), values);
+                }
             }
             return dicto;
         }
@@ -1289,8 +1304,20 @@ namespace Cave
             {
                 return Clamp(0, (660 - values.humi) / 320f, 1);
             }
+            else if (biome == (6, 0))
+            {
+                return Clamp(0, Min(500 - values.temp, values.humi - 500, values.acid - 500) / 320f, 1);
+            }
 
             return 0;
+        }
+        public static (int temp, int humi, int acid, int toxi) makeTileBiomeValueArrayMonoBiome((int type, int subType) biome)
+        {
+            int temperature = biomeTypicalValues[biome].temp;
+            int humidity = biomeTypicalValues[biome].humi;
+            int acidity = biomeTypicalValues[biome].acid;
+            int toxicity = biomeTypicalValues[biome].toxi;
+            return (temperature, humidity, acidity, toxicity);
         }
         public static (int temp, int humi, int acid, int toxi) makeTileBiomeValueArray(int[,,] bigValues, int[,,] values, int posX, int posY)
         {
@@ -1316,13 +1343,13 @@ namespace Cave
             }
             return biomeness;
         }
-        public static int calculateBiome(int percentageFree, int valueToTest, (int min, int max) bounds)
+        public static int calculateBiome(int percentageFree, int valueToTest, (int min, int max) bounds, int transitionSpeed = 25) // transitionSpeed : the higher, the faster the transition
         {
-            return (int)(Clamp(0, Min(valueToTest - bounds.min, bounds.max - valueToTest) * 25, 1000) * percentageFree * 0.001f);
+            return (int)(Clamp(0, Min(valueToTest - bounds.min, bounds.max - valueToTest) * transitionSpeed, 1000) * percentageFree * 0.001f);
         }
-        public static int calculateAndAddBiome(List<((int biome, int subBiome), int)> biomeList, (int biome, int subBiome) biomeToTest, int percentageFree, int valueToTest, (int min, int max) bounds)
+        public static int calculateAndAddBiome(List<((int biome, int subBiome), int)> biomeList, (int biome, int subBiome) biomeToTest, int percentageFree, int valueToTest, (int min, int max) bounds, int transitionSpeed = 25) // transitionSpeed : the higher, the faster the transition
         {
-            int biomeness = (int)(Clamp(0, Min(valueToTest - bounds.min, bounds.max - valueToTest) * 25, 1000) * percentageFree * 0.001f);
+            int biomeness = (int)(Clamp(0, Min(valueToTest - bounds.min, bounds.max - valueToTest) * transitionSpeed, 1000) * percentageFree * 0.001f);
             if (biomeness > 0)
             {
                 biomeList.Add((biomeToTest, biomeness));
@@ -1397,6 +1424,9 @@ namespace Cave
             else if (dimensionType == (0, 0)) // type == 1, normal dimension
             {
                 listo = new List<((int biome, int subBiome), int)>();
+
+                percentageFree -= calculateAndAddBiome(listo, (6, 0), percentageFree, Min(500 - temperature, humidity - 500, acidity - 500), (0, 999999), 5);  // add mold
+
                 if (humidity - Abs((int)(0.4f*(temperature - 512))) > 720)
                 {
                     percentageFree -= calculateAndAddBiome(listo, (8, 0), percentageFree, humidity - Abs((int)(0.4f*(temperature - 512))), (720, 999999)); // ocean
@@ -1421,7 +1451,8 @@ namespace Cave
                     }
                     percentageFree -= testAddBiome(listo, (2, 0), hotness);
                 }
-                else if (temperature < 440)
+
+                if (temperature < 440 && percentageFree > 0)
                 {
                     int coldness = calculateBiome(percentageFree, temperature, (-999999, 440));
                     if (temperature < 0)
