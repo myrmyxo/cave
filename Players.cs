@@ -138,6 +138,7 @@ namespace Cave
                     {(0, 1, 2), -999 },
                     {(1, 0, 2), -999 },
                     {(1, 1, 2), -999 },
+                    {(4, 1, 2), -999 },
                     {(5, 0, 2), -999 },
                     {(5, 1, 2), -999 },
                     {(-1, 0, 0), -999 }, // materials
@@ -161,6 +162,7 @@ namespace Cave
                     (0, 1, 2),
                     (1, 0, 2),
                     (1, 1, 2),
+                    (4, 1, 2),
                     (5, 0, 2),
                     (5, 1, 2),
                     (-1, 0, 0), // materials
@@ -682,7 +684,7 @@ namespace Cave
                     }
                     else if (currentItem.typeOfElement == 2)
                     {
-                        Plant newPlant = new Plant(screen, (posToDigX, posToDigY), currentItem.type, currentItem.subType);
+                        Plant newPlant = new Plant(screen, (posToDigX, posToDigY), (currentItem.type, currentItem.subType));
                         if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
                         timeAtLastPlace = timeElapsed;
                     }

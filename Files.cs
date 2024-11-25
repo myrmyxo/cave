@@ -290,7 +290,7 @@ namespace Cave
             {
                 seed = plant.seed;
                 id = plant.id;
-                type = (plant.type, plant.subType);
+                type = plant.type;
                 pos = (plant.posX, plant.posY);
                 lstGrPos = plant.lastDrawPos;
                 grLvl = plant.growthLevel;

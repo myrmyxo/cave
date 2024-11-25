@@ -57,7 +57,7 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                loadStructuresYesOrNo = true;
+                loadStructuresYesOrNo = false;
                 spawnEntities = true;
                 spawnPlants = true;
 
@@ -1058,7 +1058,7 @@ namespace Cave
                 foreach (Plant plant in activePlants.Values)
                 {
                     pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos, PNGmultiplicator);
-                    if (plant.type == 0 && plant.subType == 1 && plant.childFlowers.Count > 0)
+                    if (plant.type.type == 0 && plant.type.subType == 1 && plant.childFlowers.Count > 0)
                     {
                         Flower fireFlower = plant.childFlowers[0];
                         int frame = ((int)(timeElapsed*20) + plant.seed % 100) % 6;
@@ -1067,8 +1067,8 @@ namespace Cave
                     if (game.isLight)
                     {
                         int radius = 3;
-                        if (plant.type == 0 && plant.subType == 1) { radius = 5; }
-                        else if (plant.type == 1 && plant.subType == 1) { radius = 11; }
+                        if (plant.type.type == 0 && plant.type.subType == 1) { radius = 5; }
+                        else if (plant.type.type == 1 && plant.type.subType == 1) { radius = 11; }
 
                         foreach ((int x, int y) pos in plant.lightPositions)
                         {

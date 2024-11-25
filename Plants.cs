@@ -127,9 +127,9 @@ namespace Cave
                     goto Success;
                 }
 
-                if (motherPlant.type == 1) // woody tree
+                if (motherPlant.type.type == 1) // woody tree
                 {
-                    if (motherPlant.subType == 0)
+                    if (motherPlant.type.subType == 0)
                     {
                         maxGrowthLevel = Min(motherPlant.maxGrowthLevel - pos.y, seed % motherPlant.maxGrowthLevel);
                         if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
@@ -162,7 +162,7 @@ namespace Cave
                         }
                         goto Fail;
                     }
-                    else if (motherPlant.subType == 1)
+                    else if (motherPlant.type.subType == 1)
                     {
                         drawPos = lastDrawPos;
 
@@ -272,10 +272,10 @@ namespace Cave
                     goto Success;
                 }
 
-                if (motherPlant.type == 0)
+                if (motherPlant.type.type == 0)
                 {
                     fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
-                    if (motherPlant.subType == 2)  // Tulip
+                    if (motherPlant.type.subType == 2)  // Tulip
                     {
                         maxGrowthLevel = 4;
 
@@ -314,7 +314,7 @@ namespace Cave
                         }
                         goto Success;
                     }
-                    if (motherPlant.subType == 3)                                   // Allium
+                    if (motherPlant.type.subType == 3)                                   // Allium
                     {
                         maxGrowthLevel = 3;
 
@@ -370,9 +370,9 @@ namespace Cave
                     maxGrowthLevel = 1;
                     goto Fail;
                 }
-                if (motherPlant.type == 1) // tree
+                if (motherPlant.type.type == 1) // tree
                 {
-                    if (motherPlant.subType == 1) // chandelierTree
+                    if (motherPlant.type.subType == 1) // chandelierTree
                     {
                         fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
                         if (growthLevelToTest == 1)
@@ -472,7 +472,7 @@ namespace Cave
                         goto Success;
                     }
                 }
-                else if (motherPlant.type == 4) // mushy
+                else if (motherPlant.type.type == 4) // mushy
                 {
                     maxGrowthLevel = motherPlant.maxGrowthLevel;
                     if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
@@ -495,7 +495,7 @@ namespace Cave
                     }
                     goto Success;
                 }
-                else if (motherPlant.type == 5) // vine
+                else if (motherPlant.type.type == 5) // vine
                 {
                     maxGrowthLevel = 3;
                     fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
@@ -568,8 +568,7 @@ namespace Cave
 
             public int seed;
             public int id;
-            public int type;
-            public int subType;
+            public (int type, int subType) type;
             public int state;
             public int growthLevel;
             public int maxGrowthLevel;
@@ -601,8 +600,7 @@ namespace Cave
                 posX = plantJson.pos.Item1;
                 posY = plantJson.pos.Item2;
                 lastDrawPos = plantJson.lstGrPos;
-                type = plantJson.type.Item1;
-                subType = plantJson.type.Item2;
+                type = plantJson.type;
                 seed = plantJson.seed;
                 id = plantJson.id;
                 growthLevel = plantJson.grLvl;
@@ -632,20 +630,19 @@ namespace Cave
                 findType(groupOfPlant);
                 if (isDeadAndShouldDisappear) { return; }
                 findColors();
-                growToMaximum();
+                tryGrowToMaximum();
                 makeBitmap();
                 timeAtLastGrowth = timeElapsed;
 
                 currentPlantId++;
             }
-            public Plant(Screens.Screen screenToPut, (int, int) positionToPut, int typeToPut, int subTypeToPut)
+            public Plant(Screens.Screen screenToPut, (int, int) positionToPut, (int type, int subType) typeToPut)
             {
                 screen = screenToPut;
                 posX = positionToPut.Item1;
                 posY = positionToPut.Item2;
                 type = typeToPut;
-                subType = subTypeToPut;
-                if (upsideDownPlants.ContainsKey((typeToPut, subTypeToPut))) { attachPoint = 3; }
+                if (upsideDownPlants.ContainsKey(typeToPut)) { attachPoint = 3; }
                 seed = rand.Next(1000000000); //                               FALSE RANDOM NOT SEEDED ARGHHEHEEEE
                 id = currentPlantId;
                 growthLevel = -1;
@@ -675,75 +672,45 @@ namespace Cave
                 Chunk chunkToTest = screen.loadedChunks[chunkPos];
 
                 (int biome, int subBiome) biome = chunkToTest.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
-                if (attachPoint == 0)
+                if (biome == (6, 0)) // Mold
+                {
+                    type = (4, 1);
+                }
+
+                else if (attachPoint == 0)
                 {
                     if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type < 0)
                     {
-                        type = 2;
-                        subType = 0;
+                        type = (2, 0);
                     }
                     else if (biome.biome == 3) // forest and flower forest
                     {
-                        if (group == 1)
-                        {
-                            type = 1;
-                            subType = 0;
-                        }
+                        if (group == 1) { type = (1, 0); }
                         else
                         {
                             int rando = rand.Next(101);
-                            if (rando < 40)
-                            {
-                                type = 0;
-                                subType = 0;
-                            }
-                            else if (rando > 80)
-                            {
-                                type = 0;
-                                subType = 3;
-                            }
-                            else
-                            {
-                                type = 0;
-                                subType = 2;
-                            }
+                            if (rando < 40) { type = (0, 0); }
+                            else if (rando > 80) { type = (0, 3); }
+                            else { type = (0, 2); }
                         }
                     }
                     else if (biome == (5, 0)) // fairy
                     {
-                        type = 4;
-                        subType = 0;
+                        type = (4, 0);
                     }
                     else if (biome == (2, 2)) // obsidian
                     {
-                        if (rand.Next(100) == 0)
-                        {
-                            type = 1;
-                            subType = 0;
-                        }
-                        else
-                        {
-                            type = 3;
-                            subType = 0;
-                        }
+                        if (rand.Next(100) == 0) { type = (1, 0); }
+                        else { type = (3, 0); }
                     }
                     else if (biome == (9, 0)) // chandelier
                     {
-                        if (group == 0)
-                        {
-                            type = 0;
-                            subType = 1;
-                        }
-                        else if (group == 1)
-                        {
-                            type = 1;
-                            subType = 1;
-                        }
+                        if (group == 0) { type = (0, 1); }
+                        else if (group == 1) { type = (1, 1); } 
                     }
                     else
                     {
-                        type = 0;
-                        subType = 0;
+                        type = (0, 0);
                     }
                 }
 
@@ -751,15 +718,13 @@ namespace Cave
                 {
                     if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type < 0)
                     {
-                        type = 2;
-                        subType = 1;
+                        type = (2, 1);
                     }
                     else if (biome == (2, 2)) // obsidian
                     {
-                        type = 5;
-                        subType = 1;
+                        type = (5, 1);
                     }
-                    else if (biome == (9, 0))
+                    else if (biome == (9, 0)) // ???
                     {
                         isDeadAndShouldDisappear = true;
                     }
@@ -767,13 +732,11 @@ namespace Cave
                     {
                         if (seed % 7 == 0 && false) // the fuck is this for ? I don't even recall ????      probably upside down trees
                         {
-                            type = 6;
-                            subType = 0;
+                            type = (6, 0);
                         }
                         else
                         {
-                            type = 5;
-                            subType = 0;
+                            type = (5, 0);
                         }
                     }
                 }
@@ -785,20 +748,20 @@ namespace Cave
                 int hueVar = (int)(seedo % 101) - 50;
                 seedo = LCGint1(seed);
                 int shadeVar = (int)(seedo % 61) - 30;
-                if (type == 0) // normal
+                if (type.type == 0) // normal
                 {
-                    if (subType == 1)
+                    if (type.subType == 1)
                     {
                         shadeVar = (int)(shadeVar * 0.3f);
                         colorDict.Add((12, 0), Color.FromArgb(210 - shadeVar, 210 - shadeVar, 200 - shadeVar)); // wax
                         colorDict.Add((11, 1), Color.FromArgb(200 - shadeVar, 120 - shadeVar, 40 - shadeVar)); // lightBulb (used for the color of the light only)
                     }
-                    else if (subType == 2)
+                    else if (type.subType == 2)
                     {
                         colorDict.Add((1, 0), Color.FromArgb(50 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
                         colorDict.Add((2, 0), Color.FromArgb(220 - shadeVar, 110 - hueVar - shadeVar, 130 + hueVar - shadeVar));
                     }
-                    else if (subType == 3)
+                    else if (type.subType == 3)
                     {
                         colorDict.Add((1, 0), Color.FromArgb(50 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
                         colorDict.Add((2, 0), Color.FromArgb(140 - shadeVar, 80 - hueVar - shadeVar, 220 - shadeVar));
@@ -809,9 +772,9 @@ namespace Cave
                     }
                     return;
                 }
-                else if (type == 1) // woody
+                else if (type.type == 1) // woody
                 {
-                    if (subType == 1) // chandelier
+                    if (type.subType == 1) // chandelier
                     {
                         shadeVar = (int)(shadeVar*0.3f);
                         colorDict.Add((11, 0), Color.FromArgb(40 - shadeVar, 40 - shadeVar, 60 - shadeVar));
@@ -825,38 +788,54 @@ namespace Cave
                         colorDict.Add((2, 1), Color.FromArgb(170 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
                     }
                 }
-                else if (type == 2) // kelp
+                else if (type.type == 2) // kelp
                 {
                     colorDict.Add((1, 2), Color.FromArgb(30 - shadeVar, 90 - shadeVar + hueVar, 140 - shadeVar - hueVar));
                 }
-                else if (type == 3) // obsidian
+                else if (type.type == 3) // obsidian
                 {
                     colorDict.Add((1, 0), Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar));
                 }
-                else if (type == 4) // mushroom
+                else if (type.type == 4) // mushroom
                 {
-                    colorDict.Add((3, 0), Color.FromArgb(180 + shadeVar, 160 + shadeVar, 165 + shadeVar));
-                    colorDict.Add((3, 1), Color.FromArgb(140 - shadeVar, 120 + hueVar, 170 - hueVar));
+                    if (type.subType == 0)
+                    {
+                        colorDict.Add((3, 0), Color.FromArgb(180 + shadeVar, 160 + shadeVar, 165 + shadeVar));
+                        colorDict.Add((3, 1), Color.FromArgb(140 - shadeVar, 120 + hueVar, 170 - hueVar));
+                    }
+                    else if (type.subType == 1)
+                    {
+                        hueVar = (int)(hueVar * 0.3f);
+                        colorDict.Add((3, 2), Color.FromArgb(50 - shadeVar, 50 - shadeVar, 100 - shadeVar));
+                    }
                 }
-                else if (type == 5) // vine
+                else if (type.type == 5) // vine
                 {
-                    if (subType == 0)
+                    if (type.subType == 0)
                     {
                         colorDict.Add((1, 0), Color.FromArgb(50 - shadeVar, 120 - hueVar - shadeVar, 50 - shadeVar));
                         colorDict.Add((2, 0), Color.FromArgb(170 - shadeVar, 120 - hueVar - shadeVar, 150 - shadeVar));
                         colorDict.Add((2, 1), Color.FromArgb(170 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
                     }
-                    else if (subType == 1)
+                    else if (type.subType == 1)
                     {
                         colorDict.Add((1, 0), Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar));
                         colorDict.Add((2, 0), Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar));
                         colorDict.Add((2, 1), Color.FromArgb(220 + shadeVar, 220 + shadeVar, 220 + shadeVar));
                     }
                 }
+                else if (type.type == 2) // kelp
+                {
+                    colorDict.Add((1, 2), Color.FromArgb(30 - shadeVar, 90 - shadeVar + hueVar, 140 - shadeVar - hueVar));
+                }
+            }
+            public (int x, int y) getRealPos((int x, int y) pos)
+            {
+                return (posX + pos.x, posY + pos.y);
             }
             public bool testIfPositionEmpty((int x, int y) mod)
             {
-                (int x, int y) pixelPos = (posX + mod.x, posY + mod.y);
+                (int x, int y) pixelPos = getRealPos(mod);
                 (int x, int y) pixelTileIndex = PosMod(pixelPos);
                 (int x, int y) chunkPos = ChunkIdx(pixelPos);
 
@@ -972,7 +951,7 @@ namespace Cave
             {
                 lightPositions = new List<(int x, int y)>();
 
-                if (type == 0 && subType == 1)
+                if (type == (0, 1))
                 {
                     lightMaterial = (11, 1);
                     if (childFlowers.Count > 0)
@@ -981,7 +960,7 @@ namespace Cave
                         lightPositions.Add((fireFlower.pos.x + posX, fireFlower.pos.y + posY + 2)); // !!!!!!!!!! the +1 !!!
                     }
                 }
-                else if (type == 1 && subType == 1) { lightMaterial = (11, 1); }
+                else if (type == (1, 1)) { lightMaterial = (11, 1); }
                 else { lightMaterial = (0, 0); }
 
                 foreach((int x, int y) pos in fillStates.Keys)
@@ -1019,12 +998,16 @@ namespace Cave
                 }
                 else { lightColor = Color.Black; }
             }
-            public void growToMaximum()
+            public void tryGrowToMaximum()
             {
                 isStable = false;
-                while (!isStable)
+                int maxIterations = -1;
+                if (type == (4, 1)) { maxIterations = 2 + rand.Next(100); }
+                int i = 0;
+                while (!isStable && (maxIterations == -1 || i < maxIterations))
                 {
                     isStable = !testPlantGrowth(true);
+                    i++;
                 }
             }
             public Dictionary<(int type, int subType), (int min, int range)> maxGrowthDict = new Dictionary<(int type, int subType), (int min, int range)>
@@ -1043,7 +1026,11 @@ namespace Cave
 
                 if (growthLevelToTest == 0)
                 {
-                    if (type == 5 || (type == 3 && subType == 1))
+                    if (type == (4, 1))
+                    {
+
+                    }
+                    else if (type.type == 5 || type == (3, 1))
                     {
                         drawPos = (0, 1);
                     }
@@ -1054,19 +1041,19 @@ namespace Cave
                     goto Success;
                 }
 
-                if (type == 0) // normal plant
+                if (type.type == 0) // normal plant
                 {
-                    if (!maxGrowthDict.ContainsKey((type, subType))) { goto Fail; }
-                    (int min, int range) maxGrowthTuple = maxGrowthDict[(type, subType)];
+                    if (!maxGrowthDict.ContainsKey(type)) { goto Fail; }
+                    (int min, int range) maxGrowthTuple = maxGrowthDict[type];
                     if (growthLevelToTest > maxGrowthTuple.min + seed % maxGrowthTuple.range) { goto Fail; }
 
                     drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
-                    if (subType == 1 || subType == 2 || subType == 3) // straight growing flowers
+                    if (type.subType == 1 || type.subType == 2 || type.subType == 3) // straight growing flowers
                     {
                         if (testIfPositionEmpty((drawPos.x, drawPos.y+2)))
                         {
                             (int type, int subType) typeToFill = (1, 0);
-                            if (subType == 1) { typeToFill = (12, 0); }
+                            if (type.subType == 1) { typeToFill = (12, 0); }
 
                             if (tryFill(drawPos, typeToFill))
                             {
@@ -1102,7 +1089,7 @@ namespace Cave
                         }
                     }
                 }
-                else if (type == 1) // tree
+                else if (type.type == 1) // tree
                 {
                     maxGrowthLevel = 10 + seed % 40;
                     if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
@@ -1113,7 +1100,7 @@ namespace Cave
 
                     int spacing = 3 + seed % 3;
                     seedo = LCGint1(seed + growthLevelToTest * (seed % 7 + 1));
-                    if (subType != 1)
+                    if (type.subType != 1)
                     {
                         int resulto = seedo % 3;
                         if (resulto == 0 && growthLevel == 2)
@@ -1152,9 +1139,9 @@ namespace Cave
                         goto Success;
                     }
                 }
-                else if (type == 2) // kelp
+                else if (type.type == 2) // kelp
                 {
-                    if (subType == 0)
+                    if (type.subType == 0)
                     {
                         maxGrowthLevel = 1 + seed % 10;
                         if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
@@ -1167,7 +1154,7 @@ namespace Cave
                             goto Success;
                         }
                     }
-                    else if (subType == 1)
+                    else if (type.subType == 1)
                     {
                         maxGrowthLevel = 1 + seed % 10;
                         if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
@@ -1181,7 +1168,7 @@ namespace Cave
                         }
                     }
                 }
-                else if (type == 3) // obsidian plant
+                else if (type.type == 3) // obsidian plant
                 {
                     maxGrowthLevel = 1 + seed % 3;
                     if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
@@ -1193,31 +1180,55 @@ namespace Cave
                         goto Success;
                     }
                 }
-                else if (type == 4) // mushroom
+                else if (type.type == 4) // Fungi
                 {
-                    maxGrowthLevel = 1 + seed % 7;
-                    if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
-
-                    drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
-
-                    if (tryFill(drawPos, (3, 0)))
+                    if (type.subType == 0) // Mushroom
                     {
-                        if (growthLevel == 1)
+                        maxGrowthLevel = 1 + seed % 7;
+                        if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
+
+                        drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
+
+                        if (tryFill(drawPos, (3, 0)))
                         {
-                            Flower baby = new Flower(this, drawPos, 0, LCGint1(seed + 3 * growthLevelToTest));
-                            childFlowers.Add(baby);
-                        }
-                        else
-                        {
-                            foreach (Flower flower in childFlowers)
+                            if (growthLevel == 1)
                             {
-                                flower.pos = drawPos;
+                                Flower baby = new Flower(this, drawPos, 0, LCGint1(seed + 3 * growthLevelToTest));
+                                childFlowers.Add(baby);
                             }
+                            else
+                            {
+                                foreach (Flower flower in childFlowers)
+                                {
+                                    flower.pos = drawPos;
+                                }
+                            }
+                            goto Success;
                         }
-                        goto Success;
+                    }
+                    else if (type.subType == 1) // Mold
+                    {
+                        bool success = false;
+                        int maxRep = 1 + (int)(fillStates.Count * 0.2f);
+                        int count = 0;
+                        while (count < maxRep)
+                        {
+                            if (fillStates.Count == 0) { drawPos = lastDrawPos; }
+                            else
+                            {
+                                drawPos = fillStates.Keys.ToArray()[rand.Next(fillStates.Count)];
+                                int rando = rand.Next(5);
+                                if (rando < 4) { drawPos = (drawPos.x + neighbourArray[rando].Item1, drawPos.y + neighbourArray[rando].Item2); }
+                            }
+                            if (tryMoldConversion(drawPos)) { success = true; }
+                            if (!fillStates.ContainsKey(drawPos) && tryFill(drawPos, (3, 2))) { success = true; }
+                            count++;
+                        }
+                        if (success) { goto Success; }
+                        goto FailButContinue;
                     }
                 }
-                else if (type == 5) // vine
+                else if (type.type == 5) // vine
                 {
                     maxGrowthLevel = 4 + seed % 60;
                     if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
@@ -1248,7 +1259,28 @@ namespace Cave
             Success:;
                 growthLevel = growthLevelToTest;
                 lastDrawPos = drawPos;
+            FailButContinue:;
                 return true;
+            }
+            public bool tryMoldConversion((int x, int y) pos)
+            {
+                if (!fillStates.ContainsKey(pos)) { return false; }
+                int moldyTiles = 0;
+                int fullTiles = 0;
+                (int x, int y) posToTest;
+                foreach ((int x, int y) mod in neighbourArray)
+                {
+                    posToTest = (pos.x + mod.x, pos.y + mod.y);
+                    if (screen.getTileContent(getRealPos(posToTest)).type != 0) { fullTiles += 1; }
+                    if (fillStates.ContainsKey(posToTest)) { moldyTiles += 1; }
+                }
+                if (moldyTiles + fullTiles >= 4)
+                {
+                    screen.setTileContent(getRealPos(pos), (5, 0));
+                    fillStates.Remove(pos);
+                    return true;
+                }
+                return false;
             }
             public bool testPlantGrowth(bool forceGrowth)
             {

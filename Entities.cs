@@ -1376,7 +1376,7 @@ namespace Cave
                     }
                     else if (elementToPlace.typeOfElement == 2)
                     {
-                        Plant newPlant = new Plant(screen, (posToDigX, posToDigY), elementToPlace.type, elementToPlace.subType);
+                        Plant newPlant = new Plant(screen, (posToDigX, posToDigY), (elementToPlace.type, elementToPlace.subType));
                         if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
                         timeAtLastPlace = timeElapsed;
                     }
