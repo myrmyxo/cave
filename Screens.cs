@@ -46,6 +46,7 @@ namespace Cave
             public bool isLight = true;
             public Game()
             {
+                devMode = true;
                 bool randomSeed = true;
                 seed = 123456;
 

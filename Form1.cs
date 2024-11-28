@@ -40,6 +40,7 @@ namespace Cave
         public const float _1On17 = 0.0588f;
         public class Globals
         {
+            public static bool devMode = true;
             public static bool loadStructuresYesOrNo = false;
             public static bool spawnEntities = false;
             public static bool spawnPlants = false;

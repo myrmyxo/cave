@@ -31,6 +31,7 @@ namespace Cave
             public int seed;
             public (int type, int subType, int subSubType) type;
             public int state = 0;
+            public int refId = -1;
             public float realPosX;
             public float realPosY;
             public int posX;
@@ -45,9 +46,10 @@ namespace Cave
 
             public float timeAtBirth;
             public float lifeExpectancy;
-            public Particle(Screen screenToPut, (int x, int y) positionToPut, (int x, int y) targetPosToPut, (int type, int subType, int subSubType) typeToPut)
+            public Particle(Screen screenToPut, (int x, int y) positionToPut, (int x, int y) targetPosToPut, (int type, int subType, int subSubType) typeToPut, int idToPut = -1)
             {
                 screen = screenToPut;
+                refId = idToPut;
                 posX = positionToPut.Item1;
                 realPosX = posX;
                 posY = positionToPut.Item2;
@@ -94,6 +96,19 @@ namespace Cave
                     int shadeMod = rand.Next(35);
                     return Color.FromArgb(100, 255 - shadeMod, 255 - shadeMod, 255 - shadeMod);
                 }
+                if (type.type == 4) // circular motion
+                {
+                    int shadeMod = rand.Next(35);
+                    return Color.FromArgb(100, 255 - shadeMod, 255 - shadeMod, 255 - shadeMod);
+                }
+                if (type.type == 5) // plant particle
+                {
+                    if (screen.activePlants.ContainsKey(refId))
+                    {
+                        Plant motherPlant = screen.activePlants[refId];
+                        return motherPlant.colorDict[(type.subType, type.subSubType)];
+                    }
+                }
                 return Color.FromArgb(100, rand.Next(256), rand.Next(256), rand.Next(256));
             }
             public void findLightColor()
@@ -107,7 +122,11 @@ namespace Cave
             }
             public void findAngulosity()
             {
-                if (type.type == 3) { isAngular = true; }
+                if (type.type == 3 || type.type == 5)
+                {
+                    isAngular = true;
+                    angle = (float)rand.NextDouble() * 6.28f;
+                }
                 else { isAngular = false; }
             }
             public bool testDeath()
@@ -185,6 +204,11 @@ namespace Cave
                 {
                     speedX = speedX * 0.9f + (float)(rand.NextDouble()) * 0.2f;
                     angle = (float)Math.Atan2(targetPos.y - posY, targetPos.x - posX) + (float)Math.PI*(0.37f + 0.16f*(float)(rand.NextDouble()));
+                }
+                else if (type.type == 5)
+                {
+                    speedX = speedX * 0.9f + (float)(rand.NextDouble()) * 0.1f;
+                    angle += -(((float)rand.NextDouble()-0.5f) * 1f);
                 }
 
                 if (isAngular)

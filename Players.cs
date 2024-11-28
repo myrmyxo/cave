@@ -122,54 +122,72 @@ namespace Cave
             }
             public void initializeInventory()
             {
-                inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
+                if (!devMode)
                 {
-                    {(0, 0, 4), -999 }, // tools
-                    {(1, 0, 4), -999 },
-                    {(2, 0, 4), -999 },
-                    {(3, 0, 4), -999 },
-                    {(0, 0, 1), -999 }, // entitities
-                    {(1, 0, 1), -999 },
-                    {(2, 0, 1), -999 },
-                    {(4, 0, 1), -999 },
-                    {(4, 1, 1), -999 },
-                    {(5, 0, 1), -999 },
-                    {(0, 0, 2), -999 }, // plants
-                    {(0, 1, 2), -999 },
-                    {(1, 0, 2), -999 },
-                    {(1, 1, 2), -999 },
-                    {(4, 1, 2), -999 },
-                    {(5, 0, 2), -999 },
-                    {(5, 1, 2), -999 },
-                    {(-1, 0, 0), -999 }, // materials
-                    {(-4, 0, 0), -999 },
-                    {(4, 0, 0), -999 },
-                    {(-6, 0, 0), -999 },
-                };
-                inventoryElements = new List<(int index, int subType, int typeOfElement)>
+                    inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
+                    {
+                        {(0, 0, 4), -999 }, // tools
+                        {(1, 0, 4), -999 },
+                        {(2, 0, 4), -999 },
+                    };
+                    inventoryElements = new List<(int index, int subType, int typeOfElement)>
+                    {
+                        (0, 0, 4), // tools
+                        (1, 0, 4),
+                        (2, 0, 4),
+                    };
+                }
+                else
                 {
-                    (0, 0, 4), // tools
-                    (1, 0, 4),
-                    (2, 0, 4),
-                    (3, 0, 4),
-                    (0, 0, 1), // entitititities
-                    (1, 0, 1),
-                    (2, 0, 1),
-                    (4, 0, 1),
-                    (4, 1, 1),
-                    (5, 0, 1),
-                    (0, 0, 2), // plants
-                    (0, 1, 2),
-                    (1, 0, 2),
-                    (1, 1, 2),
-                    (4, 1, 2),
-                    (5, 0, 2),
-                    (5, 1, 2),
-                    (-1, 0, 0), // materials
-                    (-4, 0, 0),
-                    (4, 0, 0),
-                    (-6, 0, 0),
-                };
+                    inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
+                    {
+                        {(0, 0, 4), -999 }, // tools
+                        {(1, 0, 4), -999 },
+                        {(2, 0, 4), -999 },
+                        {(3, 0, 4), -999 },
+                        {(0, 0, 1), -999 }, // entitities
+                        {(1, 0, 1), -999 },
+                        {(2, 0, 1), -999 },
+                        {(4, 0, 1), -999 },
+                        {(4, 1, 1), -999 },
+                        {(5, 0, 1), -999 },
+                        {(0, 0, 2), -999 }, // plants
+                        {(0, 1, 2), -999 },
+                        {(1, 0, 2), -999 },
+                        {(1, 1, 2), -999 },
+                        {(4, 1, 2), -999 },
+                        {(5, 0, 2), -999 },
+                        {(5, 1, 2), -999 },
+                        {(-1, 0, 0), -999 }, // materials
+                        {(-4, 0, 0), -999 },
+                        {(4, 0, 0), -999 },
+                        {(-6, 0, 0), -999 },
+                    };
+                    inventoryElements = new List<(int index, int subType, int typeOfElement)>
+                    {
+                        (0, 0, 4), // tools
+                        (1, 0, 4),
+                        (2, 0, 4),
+                        (3, 0, 4),
+                        (0, 0, 1), // entitititities
+                        (1, 0, 1),
+                        (2, 0, 1),
+                        (4, 0, 1),
+                        (4, 1, 1),
+                        (5, 0, 1),
+                        (0, 0, 2), // plants
+                        (0, 1, 2),
+                        (1, 0, 2),
+                        (1, 1, 2),
+                        (4, 1, 2),
+                        (5, 0, 2),
+                        (5, 1, 2),
+                        (-1, 0, 0), // materials
+                        (-4, 0, 0),
+                        (4, 0, 0),
+                        (-6, 0, 0),
+                    };
+                }
             }
             public void applyGravity()
             {

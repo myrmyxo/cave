@@ -23,6 +23,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Nests;
 using static Cave.Entities;
+using static Cave.Particles;
 using static Cave.Files;
 using static Cave.Plants;
 using static Cave.Screens;
@@ -1282,8 +1283,22 @@ namespace Cave
                 }
                 return false;
             }
+            public bool tryToMakeParticle()
+            {
+                if (type == (4, 1) && fillStates.Count > 0)
+                {
+                    if (rand.Next(10) == 0)
+                    {
+                        (int x, int y) pos = getRealPos(fillStates.Keys.ToArray()[rand.Next(fillStates.Count)]);
+                        new Particle(screen, pos, pos, (5, 3, 2), id);  // mold particle
+                        return true;
+                    }
+                }
+                return false;
+            }
             public bool testPlantGrowth(bool forceGrowth)
             {
+                tryToMakeParticle();
                 if (forceGrowth || (!isStable && timeElapsed >= 0.2f + timeAtLastGrowth))
                 {
                     isStable = true;
