@@ -60,6 +60,8 @@ namespace Cave
             public Screens.Screen screen;
             public Structure(Screens.Screen screenToPut, StructureJson structureJson)
             {
+                screen = screenToPut;
+
                 id = structureJson.id;
                 type = structureJson.type;
                 isDynamic = structureJson.isD;
@@ -69,17 +71,19 @@ namespace Cave
                 name = structureJson.name;
                 timeAtBirth = structureJson.brth;
                 state = structureJson.state;
+                sisterStructure = structureJson.sis;
                 structureDict = arrayToFillstates(structureJson.fS);
-                screen = screenToPut;
 
+                makeBitmap();
                 findChunkPresence();
                 addStructureToTheRightDictInTheScreen();
             }
-            public Structure(Screens.Screen screenToPut, (int x, int y) posToPut, (long x, long y) seedToPut, (int type, int subType, int subSubType) forceType, Dictionary<(int x, int y), (int type, int subType)> forceStructure = null)
+            public Structure(Screens.Screen screenToPut, (int x, int y) posToPut, (long x, long y) seedToPut, (int type, int subType, int subSubType) forceType, Dictionary<(int x, int y), (int type, int subType)> forceStructure = null, int sisterToPut = -1)
             {
                 seed = seedToPut;
                 screen = screenToPut;
                 pos = posToPut;
+                sisterStructure = sisterToPut;
 
                 id = currentStructureId;
                 currentStructureId++;
@@ -102,11 +106,11 @@ namespace Cave
                     }
                 }
 
-                if (forceStructure != null) { structureDict = forceStructure; }
+                if (forceType.type != -1 && forceStructure != null) { structureDict = forceStructure; }
                 drawStructure(); // contains imprintChunks()
 
                 findChunkPresence();
-                if (forceStructure != null) { return; }
+                if (forceType.type != -1) { return; } // if structure is player generated, don't save it and add to dicts YET
                 saveStructure(this);
                 addStructureToTheRightDictInTheScreen();
             }
@@ -270,7 +274,7 @@ namespace Cave
             }
             public void initAfterStructureValidated()
             {
-                if (type == (3, 0, 0)) { portal(); }
+                if (type.type == 3) { portal(); }
                 timeAtBirth = timeElapsed;
 
                 imprintChunks();
@@ -389,22 +393,53 @@ namespace Cave
             public void portal()
             {
                 isDynamic = true;
-                for (int i = -2; i <= 2; i++)
+                if (type.subSubType == 0)
                 {
-                    for (int j = -2; j <= 2; j++)
+                    for (int i = -2; i <= 2; i++)
                     {
-                        if (Abs(i) == Abs(j) && Abs(i) == 2) { continue; }
-                        structureDict[(pos.x + i, pos.y + j)] = (0, 0);
+                        for (int j = -2; j <= 2; j++)
+                        {
+                            if (Abs(i) == Abs(j) && Abs(i) == 2) { continue; }
+                            structureDict[(pos.x + i, pos.y + j)] = (0, 0);
+                        }
+                    }
+                    new Particle(screen, pos, pos, (1, 4, 0));
+                    Screens.Screen livingDimensionScreen;
+                    if (screen.game.livingDimensionId == -1) { livingDimensionScreen = screen.game.loadDimension(currentDimensionId, false, false, 2, 0); }
+                    else { livingDimensionScreen = screen.game.loadDimension(screen.game.livingDimensionId); }
+                    Structure sister = new Structure(livingDimensionScreen, pos, seed, (3, 0, 1), null, sisterStructure);
+                    screen.game.structuresToAdd[sister.id] = sister;
+                    sisterStructure = sister.id;
+                    sister.sisterStructure = id;
+                }
+                else
+                {
+                    for (int i = -4; i <= 4; i++)
+                    {
+                        for (int j = -5; j <= 3; j++)
+                        {
+                            float dist = distance((i, j), (0, -1));
+                            if (dist > 4.5f) { continue; }
+                            if (dist > 3.5f) { structureDict[(pos.x + i, pos.y + j)] = (4, 0); }
+                            else { structureDict[(pos.x + i, pos.y + j)] = (0, 0); }
+                        }
+                    }
+                    imprintChunks();
+                    structureDict = new Dictionary<(int x, int y), (int type, int subType)>();
+                    for (int i = -2; i <= 2; i++)
+                    {
+                        for (int j = -2; j <= 2; j++)
+                        {
+                            if (Abs(i) == Abs(j) && Abs(i) == 2) { continue; }
+                            structureDict[(pos.x + i, pos.y + j)] = (0, 0);
+                        }
                     }
                 }
                 makeBitmap();
-                new Particle(screen, pos, pos, (1, 4, 0));
-
-                if (screen.game.livingDimensionId == -1) { screen.game.loadDimension(currentDimensionId, false, false, 2, 0); }
             }
             public void moveStructure() // it's not actually moving but whatever lmfao
             {
-                if (type == (3, 0, 0))
+                if (type.type == 3)
                 {
                     if (state == 0)
                     {
@@ -432,6 +467,10 @@ namespace Cave
             }
             public void tryTeleportation()
             {
+                int idToTeleportTo;
+                if (type.subSubType == 0) { idToTeleportTo = screen.game.livingDimensionId; }
+                else if (type.subSubType == 1) { idToTeleportTo = 0; }
+                else { return; }
                 foreach (Entity entity in screen.activeEntities.Values)
                 {
                     int diffX = Abs(entity.posX - pos.x);
@@ -443,8 +482,31 @@ namespace Cave
                             if (entity.timeAtLastTeleportation + 0.5f > timeElapsed) { entity.timeAtLastTeleportation = timeElapsed; } // if last TP was less than 1/2 second ago, reinitialize timer (so entity needs to stay out of the portal for 0.5s to be able to teleport again, to not get stuck in a loop)
                             continue;
                         }
-                        entity.teleport((entity.posX, entity.posY + 10), entity.screen.id);
+                        entity.teleport((entity.posX, entity.posY), idToTeleportTo);
                     }
+                }
+                foreach (Player player in screen.game.playerList)
+                {
+                    int diffX = Abs(player.posX - pos.x);
+                    int diffY = Abs(player.posY - pos.y);
+                    if (diffX <= 2 && diffY <= 2 && structureDict.ContainsKey((player.posX, player.posY))) // if inside the portal.
+                    {
+                        if (player.timeAtLastTeleportation + 1 > timeElapsed) // do not TP if last TP was less than 1 second ago
+                        {
+                            if (player.timeAtLastTeleportation + 0.5f > timeElapsed) { player.timeAtLastTeleportation = timeElapsed; } // if last TP was less than 1/2 second ago, reinitialize timer (so entity needs to stay out of the portal for 0.5s to be able to teleport again, to not get stuck in a loop)
+                            continue;
+                        }
+                        player.teleport((player.posX, player.posY), idToTeleportTo);
+                    }
+                }
+
+                foreach (Entity entity in screen.entitesToRemove.Values)
+                {
+                    screen.activeEntities.Remove(entity.id);
+                }
+                foreach (Entity entity in screen.entitesToAdd.Values)
+                {
+                    screen.activeEntities[entity.id] = entity;
                 }
             }
             public ((int x, int y) pos, bool success) tryRandomConversion((int type, int subType) typeToConvert, (int type, int subType) newType)
@@ -509,7 +571,7 @@ namespace Cave
             }
             public void makeBitmap()
             {
-                if (type == (3, 0, 0))
+                if (type.type == 3)
                 {
                     posOffset = new int[] { -2, -2 };
                 }
@@ -600,7 +662,7 @@ namespace Cave
             // AFTER THIS, THE BLOOD ALTAR IS CONSIDERED VALID AND THE STRUCTURE WILL BE GENERATED
 
             Structure altar = new Structure(screen, startPos, (0, 0), (3, 0, 0), dicto);
-            screen.structuresToAdd[altar.id] = altar;
+            screen.game.structuresToAdd[altar.id] = altar;
 
             return true; // blood altar is valid ! yay ! that was suprisingly easy to do. now test if bugs (i hope not i hate bunny (it's a joke i love bunnies yay !))
         }

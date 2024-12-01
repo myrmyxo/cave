@@ -65,6 +65,7 @@ namespace Cave
             public float timeAtLastDig = -9999;
             public float timeAtLastPlace = -9999;
             public float timeAtLastMenuChange = -9999;
+            public float timeAtLastTeleportation = -9999;
 
             public Color lightColor = Color.FromArgb(255, (Color.Green.R + 255) / 2, (Color.Green.G + 255) / 2, (Color.Green.B + 255) / 2);
 
@@ -371,6 +372,16 @@ namespace Cave
                 updateFogOfWar();
                 updateAttack();
                 if (craftSelection && digPress && tryCraft()) { digPress = false; }
+            }
+            public void teleport((int x, int y) newPos, int dimensionToTeleportTo)
+            {
+                screen.game.setPlayerDimension(this, dimensionToTeleportTo);
+                posX = newPos.x;
+                realPosY = newPos.y;
+                posY = newPos.y;
+                speedX = 0;
+                speedY = 0;
+                timeAtLastTeleportation = timeElapsed;
             }
             public void updateFogOfWar()
             {

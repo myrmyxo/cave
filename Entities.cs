@@ -1272,12 +1272,12 @@ namespace Cave
                     }
                 }
             }
-            public void teleport((int x, int y) newPos, int newScreenId)
+            public void teleport((int x, int y) newPos, int screenIdToTeleport)
             {
-                screen.game.loadDimension(newScreenId);
-                Screens.Screen newScreen = screen.game.loadedScreens[newScreenId];
-                newScreen.entitesToAdd[id] = this;
+                Screens.Screen screenToTeleportTo = screen.game.getScreen(screenIdToTeleport);
                 screen.entitesToRemove[id] = this;
+                screenToTeleportTo.activeEntities[id] = this;
+                screen = screenToTeleportTo;
                 realPosX = newPos.x;
                 posX = newPos.x;
                 realPosY = newPos.y;

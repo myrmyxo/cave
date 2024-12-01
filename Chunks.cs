@@ -447,7 +447,7 @@ namespace Cave
                 {
                     if (structure.structureDict.ContainsKey(posToTest) && structure.structureDict[posToTest] != newType)
                     {
-                        screen.structuresToRemove[structure.id] = structure;
+                        screen.game.structuresToRemove[structure.id] = structure;
                         continue;
                     }
                 }

@@ -39,6 +39,10 @@ namespace Cave
         {
             public Dictionary<int, Screen> loadedScreens = new Dictionary<int, Screen>();
             public List<Player> playerList = new List<Player>();
+
+            public new Dictionary<int, Structure> structuresToAdd = new Dictionary<int, Structure>();
+            public new Dictionary<int, Structure> structuresToRemove = new Dictionary<int, Structure>();
+
             public Bitmap overlayBitmap;
             public long seed;
             public int livingDimensionId = -1;
@@ -186,8 +190,6 @@ namespace Cave
                     screen.entitesToAdd = new Dictionary<int, Entity>();
                     screen.particlesToRemove = new Dictionary<Particle, bool>();
                     screen.particlesToAdd = new List<Particle>();
-                    screen.structuresToAdd = new Dictionary<int, Structure>();
-                    screen.structuresToRemove = new Dictionary<int, Structure>();
                     screen.attacksToDo = new List<((int x, int y) pos, (int type, int subType) attack)>();
                     screen.attacksToDraw = new List<((int x, int y) pos, Color color)>();
                     if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { screen.zoom(true); }
@@ -271,6 +273,8 @@ namespace Cave
                     {
                         screen.activeEntities[entity.id] = entity;
                     }
+                    screen.entitesToRemove = new Dictionary<int, Entity>();
+                    screen.entitesToAdd = new Dictionary<int, Entity>();
                     foreach (Plant plant in screen.activePlants.Values)
                     {
                         plant.testPlantGrowth(false);
@@ -282,6 +286,10 @@ namespace Cave
                     foreach (Structure structure in screen.activeStructures.Values)
                     {
                         structure.moveStructure();
+                    }
+                    foreach (Entity entity in screen.entitesToRemove.Values)
+                    {
+                        screen.activeEntities.Remove(entity.id);
                     }
                     foreach ((int x, int y) pos in screen.loadedChunks.Keys)
                     {
@@ -301,30 +309,33 @@ namespace Cave
                         player.sendAttack(attack);
                     }
                     if (player.willBeSetAsNotAttacking) { player.setAsNotAttacking(); }
-
-                    foreach (Structure structure in screen.structuresToAdd.Values)
+                    while (structuresToAdd.Count > 0)
                     {
-                        (int x, int y) megaChunkPos = MegaChunkIdxFromPixelPos(structure.pos.x, structure.pos.y);
-                        if (!screen.megaChunks.ContainsKey(megaChunkPos)) { screen.megaChunks[megaChunkPos] = loadMegaChunk(screen, megaChunkPos); }
-                        MegaChunk megaChunk = screen.megaChunks[megaChunkPos];
-                        foreach (int id in megaChunk.structures) // this checks is there is already a structure of the same type overlapping with the chunks of the new one (not to make duplicates for portals n shite)
+                        Dictionary<int, Structure> structuresToAddNow = new Dictionary<int, Structure>(structuresToAdd);
+                        structuresToAdd = new Dictionary<int, Structure>();
+                        foreach (Structure structure in structuresToAddNow.Values)
                         {
-                            if (!screen.activeStructures.ContainsKey(id)) { continue; }
-                            Structure structo = screen.activeStructures[id];
-                            if (structo.type != structure.type) { continue; }
-                            foreach ((int x, int y) pos in structo.chunkPresence.Keys)
+                            (int x, int y) megaChunkPos = MegaChunkIdxFromPixelPos(structure.pos.x, structure.pos.y);
+                            if (!structure.screen.megaChunks.ContainsKey(megaChunkPos)) { structure.screen.megaChunks[megaChunkPos] = loadMegaChunk(structure.screen, megaChunkPos); }
+                            MegaChunk megaChunk = structure.screen.megaChunks[megaChunkPos];
+                            foreach (int id in megaChunk.structures) // this checks is there is already a structure of the same type overlapping with the chunks of the new one (not to make duplicates for portals n shite)
                             {
-                                if (structure.chunkPresence.ContainsKey(pos)) { goto doNotAddStructure; }
+                                if (!structure.screen.activeStructures.ContainsKey(id)) { continue; }
+                                Structure structo = structure.screen.activeStructures[id];
+                                if (structo.type != structure.type) { continue; }
+                                foreach ((int x, int y) pos in structo.chunkPresence.Keys)
+                                {
+                                    if (structure.chunkPresence.ContainsKey(pos)) { goto doNotAddStructure; }
+                                }
                             }
+                            // after this the structure is VALID and WILL be added to existing structures
+                            structure.initAfterStructureValidated();
+                            megaChunk.structures.Add(structure.id);
+                            saveMegaChunk(megaChunk, megaChunkPos, structure.screen.id);
+                        doNotAddStructure:;
                         }
-                        // after this the structure is VALID and WILL be added to existing structures
-                        screen.activeStructures[structure.id] = structure;
-                        structure.initAfterStructureValidated();
-                        megaChunk.structures.Add(structure.id);
-                        saveMegaChunk(megaChunk, megaChunkPos, screen.id);
-                    doNotAddStructure:;
                     }
-                    foreach (Structure structure in screen.structuresToRemove.Values)
+                    foreach (Structure structure in screen.game.structuresToRemove.Values)
                     {
                         structure.EraseFromTheWorld();
                     }
@@ -391,7 +402,7 @@ namespace Cave
                 player.screen = loadedScreens[targetDimension];
                 player.dimension = targetDimension;
                 player.screen.checkStructuresOnSpawn(player);
-                unloadAllDimensions(false);
+                // unloadAllDimensions(false);
             }
             public Screen loadDimension(int idToLoad, bool isPngToExport = false, bool isMonoToPut = false, int typeToPut = -999, int subTypeToPut = -999)
             {
@@ -421,6 +432,11 @@ namespace Cave
                 {
                     loadedScreens.Remove(id);
                 }
+            }
+            public Screen getScreen(int id)
+            {
+                if (!loadedScreens.ContainsKey(id)) { loadDimension(id); }
+                return loadedScreens[id];
             }
         }
         public class Screen
@@ -459,8 +475,6 @@ namespace Cave
             public Dictionary<int, Nest> activeNests = new Dictionary<int, Nest>();
             public Dictionary<int, Structure> inertStructures = new Dictionary<int, Structure>(); // structures that are just terrain and don't need to be tested for shit (lakes, cubes...)
             public Dictionary<int, Structure> activeStructures = new Dictionary<int, Structure>(); // structures that are active and can do shit to other shit (like portals)
-            public Dictionary<int, Structure> structuresToAdd = new Dictionary<int, Structure>();
-            public Dictionary<int, Structure> structuresToRemove = new Dictionary<int, Structure>();
 
             public List<((int x, int y) pos, (int type, int subType) attack)> attacksToDo = new List<((int x, int y) pos, (int type, int subType) attack)>();
             public List<((int x, int y) pos, Color color)> attacksToDraw = new List<((int x, int y), Color color)>();
@@ -1049,7 +1063,7 @@ namespace Cave
                 foreach (Structure structure in activeStructures.Values)
                 {
                     if (structure.bitmap != null) { pasteImage(gameBitmap, structure.bitmap, (structure.pos.x + structure.posOffset[0], structure.pos.y + structure.posOffset[1]), camPos, PNGmultiplicator); }
-                    if (structure.type == (3, 0, 0))
+                    if (structure.type.type == 3)
                     {
                         int frame = ((int)(timeElapsed * 10) + (int)(structure.seed.x) % 100) % 4;
                         pasteImage(gameBitmap, livingPortalAnimation.frames[frame], (structure.pos.x + structure.posOffset[0], structure.pos.y + structure.posOffset[1]), camPos, PNGmultiplicator);

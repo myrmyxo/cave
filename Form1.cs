@@ -344,6 +344,7 @@ namespace Cave
                 { (2, 0, 0), "sawblade" },
                 { (2, 1, 0), "star" },
                 { (3, 0, 0), "portal" },
+                { (3, 0, 1), "portal" },
             };
         }
         public Form1()

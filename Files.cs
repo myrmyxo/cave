@@ -410,6 +410,7 @@ namespace Cave
             public string name;
             public float brth;
             public int state;
+            public int sis;
 
             public int[,] fS;
             public StructureJson(Structure structure)
@@ -423,6 +424,7 @@ namespace Cave
                 name = structure.name;
                 brth = structure.timeAtBirth;
                 state = structure.state;
+                sis = structure.sisterStructure;
                 fS = fillstatesToArray(structure.structureDict);
             }
             public StructureJson()
