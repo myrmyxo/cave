@@ -29,7 +29,6 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
-using System.Linq.Expressions;
 
 namespace Cave
 {
@@ -136,9 +135,6 @@ namespace Cave
 
                 player.movePlayer();
                 screen.checkStructures(player);
-
-                screen.chunkX = ChunkIdx(player.camPosX);
-                screen.chunkY = ChunkIdx(player.camPosY);
             }
             public void applySettings(SettingsJson settings)
             {
@@ -194,6 +190,7 @@ namespace Cave
                     screen.attacksToDraw = new List<((int x, int y) pos, Color color)>();
                     if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { screen.zoom(true); }
                     if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { screen.zoom(false); }
+                    int magnitude = -999;
                     if (player.dimension == screen.id)
                     {
                         if (dimensionSelection && player.timeAtLastMenuChange + 0.2f < timeElapsed)
@@ -207,8 +204,15 @@ namespace Cave
                             if (arrowKeysState[1] || arrowKeysState[3]) { player.moveCraftCursor(1); player.timeAtLastMenuChange = timeElapsed; }
                         }
                         movePlayerStuff(screen, player); // move player, load new chunks, test craft, and stuff
-                        screen.updateLoadedChunks();
+                        screen.chunkX = ChunkIdx(player.posX);
+                        screen.chunkY = ChunkIdx(player.posY);
                     }
+                    else
+                    {
+                        magnitude = screen.testUnloadOfDimensionAndChunkDistance();
+                    }
+                    screen.updateLoadedChunks(magnitude);
+                    screen.loadCloseChunks(magnitude);
 
                     foreach (Entity entity in screen.entitesToRemove.Values)
                     {
@@ -342,7 +346,7 @@ namespace Cave
 
 
 
-                    screen.unloadFarawayChunks();
+                    screen.unloadFarawayChunks(magnitude);
                     screen.manageMegaChunks();
 
                     screen.removeEntitiesAndPlantsFromChunks(true);
@@ -539,7 +543,10 @@ namespace Cave
                 else { gameBitmap = new Bitmap(128 * (ChunkLength - 1), 128 * (ChunkLength - 1)); }
                 chunkX = ChunkIdx(player.posX);
                 chunkY = ChunkIdx(player.posY);
-                if (player.dimension == id) { updateLoadedChunks(); }
+                if (player.dimension == id)
+                {
+                    updateLoadedChunks();
+                }
 
                 foreach ((int x, int y) pos in chunksToSpawnEntitiesIn.Keys)
                 {
@@ -684,13 +691,27 @@ namespace Cave
                     chunko.plantList = new List<Plant>();
                 }
             }
-            public void updateLoadedChunks()
+            public int testUnloadOfDimensionAndChunkDistance()
             {
+                foreach (Structure structure in activeStructures.Values)
+                {
+                    if (structure.type.type == 3)
+                    {
+                        chunkX = ChunkIdx(structure.pos.x);
+                        chunkY = ChunkIdx(structure.pos.y);
+                        return 1 + chunkResolution -  (int)(distance((chunkX, chunkY), ChunkIdx(game.playerList[0].posX, game.playerList[0].posY)));
+                    }
+                }
+                return -1;
+            }
+            public void updateLoadedChunks(int magnitude = -999)
+            {
+                if (magnitude == -999) { magnitude = chunkResolution; }
                 Chunk newChunk;
                 (int x, int y) posToTest;
-                for (int i = 0; i < chunkResolution; i++)
+                for (int i = -(int)(magnitude * 0.5f); i < (int)(magnitude * 0.5f); i++)
                 {
-                    for (int j = 0; j < chunkResolution; j++)
+                    for (int j = -(int)(magnitude * 0.5f); j < (int)(magnitude * 0.5f); j++)
                     {
                         posToTest = (chunkX + i, chunkY + j);
                         if (!loadedChunks.ContainsKey(posToTest))
@@ -701,6 +722,28 @@ namespace Cave
                     }
                 }
             }
+            public void loadCloseChunks(int magnitude = -999)
+            {
+                if (magnitude == -999) { magnitude = chunkResolution; }
+                int count = 0;
+                Chunk newChunk;
+                (int x, int y) posToTest;
+                for (int i = -1 - (int)(magnitude * 0.5f); i <= (int)(magnitude * 0.5f); i++)
+                {
+                    for (int j = -1 - (int)(magnitude * 0.5f); j <= (int)(magnitude * 0.5f); j++)
+                    {
+                        posToTest = (chunkX + i, chunkY + j);
+                        if (!loadedChunks.ContainsKey(posToTest))
+                        {
+                            newChunk = new Chunk(posToTest, false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
+                            if (!loadedChunks.ContainsKey(posToTest)) { loadedChunks[posToTest] = newChunk; }
+                            count++;
+                            if (count > 1 + 0.5*(Abs(game.playerList[0].speedX) + Abs(game.playerList[0].speedY))) { return; }
+                        }
+                    }
+                }
+            }
+
             public void updateLoadedChunksOld(int screenSlideXtoPut, int screenSlideYtoPut)
             {
                 int screenSlideX = screenSlideXtoPut;
@@ -743,8 +786,13 @@ namespace Cave
                     //addPlantsToChunk(loadedChunks[chunkPos]);
                 }
             }
-            public void unloadFarawayChunks() // this function unloads random chunks, that are not in the always loaded square around the player or in nests. HOWEVER, while the farthest away a chunk is, the less chance it has to unload, it still is random. 
+            public void unloadFarawayChunks(int magnitude = -999) // this function unloads random chunks, that are not in the always loaded square around the player or in nests. HOWEVER, while the farthest away a chunk is, the less chance it has to unload, it still is random. 
             {
+                if (magnitude == -999) { magnitude = chunkResolution; }
+                else
+                {
+                    int a = 2;
+                }
                 inertStructureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
                 foreach (Structure structure in inertStructures.Values)
                 {
@@ -773,9 +821,9 @@ namespace Cave
                 }
 
                 int forceLoadedChunkAmount = nestLoadedChunkIndexes.Count + activeStructureLoadedChunkIndexes.Count;
-                int minChunkAmount = chunkResolution * chunkResolution + forceLoadedChunkAmount;
+                int minChunkAmount = magnitude * magnitude + forceLoadedChunkAmount;
 
-                (int x, int y) cameraChunkIdx = (ChunkIdx(game.playerList[0].posX), ChunkIdx(game.playerList[0].posY));
+                (int x, int y) cameraChunkIdx = (chunkX, chunkY);
 
                 Dictionary<(int x, int y), bool> chunksToRemove = new Dictionary<(int x, int y), bool>();
                 (int x, int y)[] chunkKeys = loadedChunks.Keys.ToArray();
@@ -785,7 +833,7 @@ namespace Cave
                 {
                     currentIdx = chunkKeys[rand.Next(loadedChunks.Count)];
                     distanceToCenter = distance((currentIdx), cameraChunkIdx);
-                    if (!nestLoadedChunkIndexes.ContainsKey(currentIdx) && !activeStructureLoadedChunkIndexes.ContainsKey(currentIdx) && (float)(rand.NextDouble()) * distanceToCenter > 0.8f * chunkResolution)
+                    if (!nestLoadedChunkIndexes.ContainsKey(currentIdx) && !activeStructureLoadedChunkIndexes.ContainsKey(currentIdx) && (float)(rand.NextDouble()) * distanceToCenter > 0.8f * magnitude)
                     {
                         chunksToRemove[currentIdx] = true;
                     }
@@ -1050,9 +1098,9 @@ namespace Cave
                 Player player = game.playerList[0];
                 (int x, int y) camPos = (player.camPosX, player.camPosY);
 
-                for (int i = UnloadedChunksAmount; i < chunkResolution - UnloadedChunksAmount; i++)
+                for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i < (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
                 {
-                    for (int j = UnloadedChunksAmount; j < chunkResolution - UnloadedChunksAmount; j++)
+                    for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j < (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
                     {
                         chunko = loadedChunks[(chunkX + i, chunkY + j)];
                         pasteImage(gameBitmap, chunko.bitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator);
@@ -1154,9 +1202,9 @@ namespace Cave
                 if (game.isLight && !debugMode) // light shit
                 {
                     lightBitmap = new Bitmap(gameBitmap.Size.Width / 4, gameBitmap.Size.Height / 4);
-                    for (int i = UnloadedChunksAmount; i < chunkResolution - UnloadedChunksAmount; i++)
+                    for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i < (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
                     {
-                        for (int j = UnloadedChunksAmount; j < chunkResolution - UnloadedChunksAmount; j++)
+                        for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j < (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
                         {
                             chunko = loadedChunks[(chunkX + i, chunkY + j)];
                             pasteImage(lightBitmap, chunko.lightBitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, 1);
@@ -1192,9 +1240,9 @@ namespace Cave
 
                 if (!debugMode) // fog of war
                 {
-                    for (int i = UnloadedChunksAmount; i < chunkResolution - UnloadedChunksAmount; i++)
+                    for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i < (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
                     {
-                        for (int j = UnloadedChunksAmount; j < chunkResolution - UnloadedChunksAmount; j++)
+                        for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j < (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
                         {
                             chunko = loadedChunks[(chunkX + i, chunkY + j)];
                             if (chunko.explorationLevel == 0)
@@ -1260,40 +1308,37 @@ namespace Cave
 
                 if (debugMode && !isPngToBeExported) // debug shit for chunks and megachunks
                 {
-                    (int x, int y) cameraChunkIdx = (ChunkIdx(game.playerList[0].camPosX), ChunkIdx(game.playerList[0].camPosY));
-                    foreach ((int x, int y) poso in megaChunks.Keys)
+                    Screen screenToDebug = game.loadedScreens.Values.ToList()[rand.Next(game.loadedScreens.Count)];
+                    (int x, int y) cameraChunkIdx = (ChunkIdx(game.playerList[0].posX), ChunkIdx(game.playerList[0].posY));
+                    foreach ((int x, int y) poso in screenToDebug.megaChunks.Keys)
                     {
                         Color colorToDraw = Color.Crimson;
                         drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x * 16 - cameraChunkIdx.x, 300 + poso.y * 16 - cameraChunkIdx.y), 16);
                     }
-                    foreach ((int x, int y) poso in activeStructureLoadedChunkIndexes.Keys)
+                    foreach ((int x, int y) poso in screenToDebug.activeStructureLoadedChunkIndexes.Keys)
                     {
                         Color colorToDraw = Color.FromArgb(100, 255, 255, 100);
                         drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
                     }
-                    foreach ((int x, int y) poso in extraLoadedChunks.Keys)
+                    foreach ((int x, int y) poso in screenToDebug.extraLoadedChunks.Keys)
                     {
                         Color colorToDraw = Color.Purple;
                         drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
                     }
-                    foreach ((int x, int y) poso in loadedChunks.Keys)
+                    foreach ((int x, int y) poso in screenToDebug.loadedChunks.Keys)
                     {
                         Color colorToDraw = Color.FromArgb(150, 0, 128, 0);
-                        if (loadedChunks[poso].unstableLiquidCount > 0) { colorToDraw = Color.DarkBlue; }
-                        else if (nestLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.Cyan; }
-                        else if (activeStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.FromArgb(100, 150, 180); }
-                        else if (inertStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.FromArgb(130, 50, 130); }
+                        if (screenToDebug.loadedChunks[poso].unstableLiquidCount > 0) { colorToDraw = Color.DarkBlue; }
+                        else if (screenToDebug.nestLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.Cyan; }
+                        else if (screenToDebug.activeStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.FromArgb(100, 150, 180); }
+                        else if (screenToDebug.inertStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.FromArgb(130, 50, 130); }
                         drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x, 300 + poso.y - cameraChunkIdx.y), 1);
                     }
                     drawPixelFixed(gameBitmap, Color.Red, (300 + ChunkIdx(player.posX) - cameraChunkIdx.x, 300 + ChunkIdx(player.posY) - cameraChunkIdx.y), 1);
 
-                    for (int i = UnloadedChunksAmount; i < chunkResolution - UnloadedChunksAmount; i++)
+                    foreach (Chunk chunkoko in screenToDebug.loadedChunks.Values)
                     {
-                        for (int j = UnloadedChunksAmount; j < chunkResolution - UnloadedChunksAmount; j++)
-                        {
-                            chunko = loadedChunks[(chunkX + i, chunkY + j)];
-                            if (chunko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator); }
-                        }
+                        if (chunkoko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunkoko.position.x * 32, chunkoko.position.y * 32), camPos, PNGmultiplicator); }
                     }
                 }
 
