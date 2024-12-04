@@ -58,11 +58,12 @@ namespace Cave
             public bool isPurelyStructureLoaded = true;
 
             public Screens.Screen screen;
-            public Structure(Screens.Screen screenToPut, StructureJson structureJson)
+            public Structure(Game game, StructureJson structureJson)
             {
-                screen = screenToPut;
-
+                screen = game.getScreen(structureJson.dim);
                 id = structureJson.id;
+                if (screen.activeStructures.ContainsKey(id) || screen.inertStructures.ContainsKey(id)) { return; }
+
                 type = structureJson.type;
                 isDynamic = structureJson.isD;
                 seed = structureJson.seed;
@@ -77,6 +78,7 @@ namespace Cave
                 makeBitmap();
                 findChunkPresence();
                 addStructureToTheRightDictInTheScreen();
+                if (sisterStructure != -1) { loadStructure(screen.game, sisterStructure); } // important to load here else infinite loop :(
             }
             public Structure(Screens.Screen screenToPut, (int x, int y) posToPut, (long x, long y) seedToPut, (int type, int subType, int subSubType) forceType, Dictionary<(int x, int y), (int type, int subType)> forceStructure = null, int sisterToPut = -1)
             {

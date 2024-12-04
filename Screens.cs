@@ -29,6 +29,7 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
+using System.Deployment.Internal;
 
 namespace Cave
 {
@@ -174,6 +175,7 @@ namespace Cave
                     craftPress = false;
                 }
 
+                List<int> dimensionsToUnload = new List<int>();
                 foreach (Screen screen in loadedScreens.Values.ToArray())
                 {
                     int framesFastForwarded = 0;
@@ -386,6 +388,18 @@ namespace Cave
                         drawInventory(player.screen.game, player.inventoryQuantities, player.inventoryElements, player.inventoryCursor);
                         overlayPictureBox.Refresh();
                     }
+
+                    if (player.dimension != screen.id)
+                    {
+                        if (screen.loadedChunks.Count == 0)
+                        {
+                            dimensionsToUnload.Add(screen.id);
+                        }
+                    }
+                }
+                foreach (int id in dimensionsToUnload)
+                {
+                    unloadDimension(id);
                 }
                 saveSettings(this);
 
@@ -418,23 +432,21 @@ namespace Cave
                 }
                 return loadedScreens[idToLoad];
             }
+            public void unloadDimension(int id)
+            {
+                Screen screen = loadedScreens[id];
+                screen.putEntitiesAndPlantsInChunks();
+                saveAllChunks(screen);
+                loadedScreens.Remove(id);
+            }
             public void unloadAllDimensions(bool unloadDimensionPlayerIsInAsWell)
             {
-                Screen screen;
-                List<int> screensToRemove = new List<int>();
-                foreach (int id in loadedScreens.Keys)
+                foreach (int id in loadedScreens.Keys.ToList())
                 {
                     if (unloadDimensionPlayerIsInAsWell || playerList[0].dimension != id)
                     {
-                        screen = loadedScreens[id];
-                        screen.putEntitiesAndPlantsInChunks();
-                        saveAllChunks(screen);
-                        screensToRemove.Add(id);
+                        unloadDimension(id);
                     }
-                }
-                foreach (int id in screensToRemove)
-                {
-                    loadedScreens.Remove(id);
                 }
             }
             public Screen getScreen(int id)
@@ -898,7 +910,7 @@ namespace Cave
                     {
                         newMegaChunks[pos] = loadMegaChunk(this, pos);
                         newMegaChunks[pos].loadAllNests(this);
-                        newMegaChunks[pos].loadAllStructures(this);
+                        newMegaChunks[pos].loadAllStructures(game);
                         newMegaChunks[pos].loadAllChunksInNests(this);
                     }
                 }
@@ -1098,9 +1110,9 @@ namespace Cave
                 Player player = game.playerList[0];
                 (int x, int y) camPos = (player.camPosX, player.camPosY);
 
-                for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i < (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
+                for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
                 {
-                    for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j < (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
+                    for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
                     {
                         chunko = loadedChunks[(chunkX + i, chunkY + j)];
                         pasteImage(gameBitmap, chunko.bitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator);
@@ -1202,9 +1214,9 @@ namespace Cave
                 if (game.isLight && !debugMode) // light shit
                 {
                     lightBitmap = new Bitmap(gameBitmap.Size.Width / 4, gameBitmap.Size.Height / 4);
-                    for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i < (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
+                    for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
                     {
-                        for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j < (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
+                        for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
                         {
                             chunko = loadedChunks[(chunkX + i, chunkY + j)];
                             pasteImage(lightBitmap, chunko.lightBitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, 1);
@@ -1240,9 +1252,9 @@ namespace Cave
 
                 if (!debugMode) // fog of war
                 {
-                    for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i < (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
+                    for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
                     {
-                        for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j < (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
+                        for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
                         {
                             chunko = loadedChunks[(chunkX + i, chunkY + j)];
                             if (chunko.explorationLevel == 0)

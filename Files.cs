@@ -160,11 +160,11 @@ namespace Cave
                     }
                 }
             }
-            public void loadAllStructures(Screens.Screen screen)
+            public void loadAllStructures(Game game)
             {
                 foreach (int structureId in structures)
                 {
-                    loadStructure(screen, structureId); // loadStructure already adds the structure to the right dicto so no need to do it here
+                    loadStructure(game, structureId); // loadStructure already adds the structure to the right dicto so no need to do it here
                 }
             }
         }
@@ -402,6 +402,7 @@ namespace Cave
         public class StructureJson
         {
             public int id;
+            public int dim;
             public (int, int, int) type;
             public bool isD;
             public (long, long) seed;
@@ -416,6 +417,7 @@ namespace Cave
             public StructureJson(Structure structure)
             {
                 id = structure.id;
+                dim = structure.screen.id;
                 type = structure.type;
                 isD = structure.isDynamic;
                 seed = structure.seed;
@@ -726,14 +728,14 @@ namespace Cave
                 serializer.Serialize(writer, structureJson);
             }
         }
-        public static Structure loadStructure(Screens.Screen screen, int id)
+        public static Structure loadStructure(Game game, int id)
         {
-            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{screen.game.seed}\\StructureData\\{id}.json"))
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{game.seed}\\StructureData\\{id}.json"))
             {
                 string content = f.ReadToEnd();
                 StructureJson structureJson = JsonConvert.DeserializeObject<StructureJson>(content);
 
-                return new Structure(screen, structureJson);
+                return new Structure(game, structureJson);
             }
         }
         public static void saveNest(Nest nest)
