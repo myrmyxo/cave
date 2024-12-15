@@ -40,6 +40,7 @@ namespace Cave
             public long chunkSeed;
 
             public (int x, int y) position;
+            public bool isImmuneToUnloading = false;
 
             public ((int biome, int subBiome), int)[,][] biomeIndex;
 

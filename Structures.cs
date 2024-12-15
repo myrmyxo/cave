@@ -44,7 +44,7 @@ namespace Cave
             public string name = "";
             public bool isDynamic = false;
             public int state = 0;
-            public int sisterStructure = -1;
+            public Structure sisterStructure = null;
             public Dictionary<(int x, int y), (int type, int subType)> structureDict = new Dictionary<(int x, int y), (int type, int subType)>();
             public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), bool> megaChunkPresence = new Dictionary<(int x, int y), bool>();
@@ -56,6 +56,7 @@ namespace Cave
 
             // loading and unloading management
             public bool isPurelyStructureLoaded = true;
+            public bool isImmuneToUnloading = false;
 
             public Screens.Screen screen;
             public Structure(Game game, StructureJson structureJson)
@@ -72,20 +73,21 @@ namespace Cave
                 name = structureJson.name;
                 timeAtBirth = structureJson.brth;
                 state = structureJson.state;
-                sisterStructure = structureJson.sis;
                 structureDict = arrayToFillstates(structureJson.fS);
 
                 makeBitmap();
                 findChunkPresence();
                 addStructureToTheRightDictInTheScreen();
-                if (sisterStructure != -1) { loadStructure(screen.game, sisterStructure); } // important to load here else infinite loop :(
+                if (structureJson.sis != -1)  // important to load here else infinite loop :(
+                {
+                    sisterStructure = game.getStructure(structureJson.sis);
+                }
             }
-            public Structure(Screens.Screen screenToPut, (int x, int y) posToPut, (long x, long y) seedToPut, (int type, int subType, int subSubType) forceType, Dictionary<(int x, int y), (int type, int subType)> forceStructure = null, int sisterToPut = -1)
+            public Structure(Screens.Screen screenToPut, (int x, int y) posToPut, (long x, long y) seedToPut, (int type, int subType, int subSubType) forceType, Dictionary<(int x, int y), (int type, int subType)> forceStructure = null)
             {
                 seed = seedToPut;
                 screen = screenToPut;
                 pos = posToPut;
-                sisterStructure = sisterToPut;
 
                 id = currentStructureId;
                 currentStructureId++;
@@ -130,6 +132,14 @@ namespace Cave
                         }
                     }
                     screen.activeStructures[id] = this;
+                    isImmuneToUnloading = true;
+                    foreach ((int x, int y) pos in megaChunkPresence.Keys)
+                    {
+                        if (!screen.megaChunks.ContainsKey(pos))
+                        {
+                            screen.megaChunksToForceLoad[pos] = true;
+                        }
+                    }
                 }
                 else { screen.inertStructures[id] = this; }
             }
@@ -409,10 +419,10 @@ namespace Cave
                     Screens.Screen livingDimensionScreen;
                     if (screen.game.livingDimensionId == -1) { livingDimensionScreen = screen.game.loadDimension(currentDimensionId, false, false, 2, 0); }
                     else { livingDimensionScreen = screen.game.loadDimension(screen.game.livingDimensionId); }
-                    Structure sister = new Structure(livingDimensionScreen, pos, seed, (3, 0, 1), null, sisterStructure);
+                    Structure sister = new Structure(livingDimensionScreen, pos, seed, (3, 0, 1));
                     screen.game.structuresToAdd[sister.id] = sister;
-                    sisterStructure = sister.id;
-                    sister.sisterStructure = id;
+                    sisterStructure = sister;
+                    sister.sisterStructure = this;
                 }
                 else
                 {

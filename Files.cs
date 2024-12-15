@@ -81,7 +81,7 @@ namespace Cave
             public (int, int) pos;
             public List<int> nests = new List<int>();
             public List<int> structures = new List<int>();
-            [NonSerialized] public bool isPurelyStructureLoaded = true;
+            [NonSerialized] public bool onlyContainsActiveStructureLoadedChunks = false;
             public MegaChunk((int x, int y) posToPut)
             {
                 pos = posToPut;
@@ -426,7 +426,8 @@ namespace Cave
                 name = structure.name;
                 brth = structure.timeAtBirth;
                 state = structure.state;
-                sis = structure.sisterStructure;
+                if (structure.sisterStructure != null) { sis = structure.sisterStructure.id; }
+                else { sis = -1; }
                 fS = fillstatesToArray(structure.structureDict);
             }
             public StructureJson()
