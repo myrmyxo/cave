@@ -1019,7 +1019,7 @@ namespace Cave
         {
             return Abs(pos1.x - pos2.x) + Abs(pos1.y - pos2.y);
         }
-        public static float distance((int x, int y) pos1, (int x, int y) pos2)
+        public static float Distance((int x, int y) pos1, (int x, int y) pos2)
         {
             int distX = (pos1.x - pos2.x);
             int distY = (pos1.y - pos2.y);

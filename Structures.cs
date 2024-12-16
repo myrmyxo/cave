@@ -430,7 +430,7 @@ namespace Cave
                     {
                         for (int j = -5; j <= 3; j++)
                         {
-                            float dist = distance((i, j), (0, -1));
+                            float dist = Distance((i, j), (0, -1));
                             if (dist > 4.5f) { continue; }
                             if (dist > 3.5f) { structureDict[(pos.x + i, pos.y + j)] = (4, 0); }
                             else { structureDict[(pos.x + i, pos.y + j)] = (0, 0); }

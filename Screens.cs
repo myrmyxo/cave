@@ -29,7 +29,6 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
-using System.Deployment.Internal;
 
 namespace Cave
 {
@@ -148,8 +147,63 @@ namespace Cave
                 currentDimensionId = settings.dimensionId;
                 livingDimensionId = settings.livingDimensionId;
             }
+            public void makeLoadingMagnitudeDicts(Dictionary<int, bool> testedStructures, int currentMagnitude, Structure structureToTest = null)
+            {
+                int newMagnitude;
+                Screen currentScreen;
+                if (structureToTest == null) // first recursion : testing from PLAYER
+                {
+                    Player player = playerList[0];
+                    currentScreen = player.screen;
+                    currentScreen.chunkLoadingPoints[ChunkIdx(player.posX, player.posY)] = currentMagnitude;
+                    foreach (Structure structure in currentScreen.activeStructures.Values)
+                    {
+                        if (testedStructures.ContainsKey(structure.id)) { continue; }
+                        (int x, int y) chunkPos = ChunkIdx(structure.pos);
+                        newMagnitude = currentMagnitude - (int)(Distance(chunkPos, ChunkIdx(player.posX, player.posY)));
+                        if (newMagnitude <= 0) { continue; }
+                        makeLoadingMagnitudeDicts(testedStructures, newMagnitude, structure);
+                    }
+                }
+                else if (structureToTest.type.type == 3 && structureToTest.sisterStructure != null) // next recursions : testing from a STRUCTURE
+                {
+                    structureToTest = structureToTest.sisterStructure; // select sister structure of portal to test for that dimension
+                    testedStructures[structureToTest.id] = true;
+                    currentScreen = structureToTest.screen;
+
+                    currentScreen.chunkLoadingPoints[ChunkIdx(structureToTest.pos)] = currentMagnitude;
+                    testedStructures[structureToTest.id] = true;
+
+                    foreach (Structure structure in currentScreen.activeStructures.Values)
+                    {
+                        if (testedStructures.ContainsKey(structure.id)) { continue; }
+                        (int x, int y) chunkPos = ChunkIdx(structure.pos);
+                        newMagnitude = currentMagnitude + 1 - (int)(Distance(chunkPos, ChunkIdx(structureToTest.pos))); // + 1 to counteract float point value int rounding loss, and ensure portals don't have chunks that need to be rendered not loaded when entering
+                        if (newMagnitude <= 0) { continue; }
+                        makeLoadingMagnitudeDicts(testedStructures, newMagnitude, structure);
+                    }
+                }
+            }
             public void runGame(PictureBox gamePictureBox, PictureBox overlayPictureBox)
             {
+                int framesFastForwarded = 0;
+            LoopStart:;
+
+                timeElapsed += 0.02f;
+
+                foreach (Screen screen in loadedScreens.Values.ToArray())
+                {
+                    screen.extraLoadedChunks = new Dictionary<(int x, int y), Chunk>(); // this will make many bugs
+                    screen.liquidsThatCantGoLeft = new Dictionary<(int, int), bool>();
+                    screen.liquidsThatCantGoRight = new Dictionary<(int, int), bool>();
+                    screen.entitesToRemove = new Dictionary<int, Entity>();
+                    screen.entitesToAdd = new Dictionary<int, Entity>();
+                    screen.particlesToRemove = new Dictionary<Particle, bool>();
+                    screen.particlesToAdd = new List<Particle>();
+                    screen.attacksToDo = new List<((int x, int y) pos, (int type, int subType) attack)>();
+                    screen.attacksToDraw = new List<((int x, int y) pos, Color color)>();
+                }
+
                 liquidSlideCount = 0;
 
                 Player player = playerList[0];
@@ -177,47 +231,36 @@ namespace Cave
                 if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { zoom(true); }
                 if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { zoom(false); }
 
+
+
+                Screen playerScreen = getScreen(player.dimension);
+                if (dimensionSelection && player.timeAtLastMenuChange + 0.2f < timeElapsed)
+                {
+                    if (arrowKeysState[0] || arrowKeysState[2]) { currentTargetDimension--; player.timeAtLastMenuChange = timeElapsed; }
+                    if (arrowKeysState[1] || arrowKeysState[3]) { currentTargetDimension++; player.timeAtLastMenuChange = timeElapsed; }
+                }
+                else if (craftSelection && player.timeAtLastMenuChange + 0.2f < timeElapsed)
+                {
+                    if (arrowKeysState[0] || arrowKeysState[2]) { player.moveCraftCursor(-1); player.timeAtLastMenuChange = timeElapsed; }
+                    if (arrowKeysState[1] || arrowKeysState[3]) { player.moveCraftCursor(1); player.timeAtLastMenuChange = timeElapsed; }
+                }
+                movePlayerStuff(playerScreen, player); // move player, load new chunks, test craft, and stuff
+                playerScreen.chunkX = ChunkIdx(player.posX);
+                playerScreen.chunkY = ChunkIdx(player.posY);
+
+
+
+
+                foreach (Screen screen in loadedScreens.Values) { screen.chunkLoadingPoints = new Dictionary<(int x, int y), int>(); }
+                makeLoadingMagnitudeDicts(new Dictionary<int, bool>(), playerScreen.chunkResolution);
+
                 List<int> dimensionsToUnload = new List<int>();
                 foreach (Screen screen in loadedScreens.Values.ToArray())
                 {
-                    int framesFastForwarded = 0;
-                LoopStart:;
-                    timeElapsed += 0.02f;
-                    screen.extraLoadedChunks.Clear(); // this will make many bugs
-                    screen.liquidsThatCantGoLeft = new Dictionary<(int, int), bool>();
-                    screen.liquidsThatCantGoRight = new Dictionary<(int, int), bool>();
-                    screen.entitesToRemove = new Dictionary<int, Entity>();
-                    screen.entitesToAdd = new Dictionary<int, Entity>();
-                    screen.particlesToRemove = new Dictionary<Particle, bool>();
-                    screen.particlesToAdd = new List<Particle>();
-                    screen.attacksToDo = new List<((int x, int y) pos, (int type, int subType) attack)>();
-                    screen.attacksToDraw = new List<((int x, int y) pos, Color color)>();
-                    int magnitude = -999;
-                    if (player.dimension == screen.id)
-                    {
-                        if (dimensionSelection && player.timeAtLastMenuChange + 0.2f < timeElapsed)
-                        {
-                            if (arrowKeysState[0] || arrowKeysState[2]) { currentTargetDimension--; player.timeAtLastMenuChange = timeElapsed; }
-                            if (arrowKeysState[1] || arrowKeysState[3]) { currentTargetDimension++; player.timeAtLastMenuChange = timeElapsed; }
-                        }
-                        else if (craftSelection && player.timeAtLastMenuChange + 0.2f < timeElapsed)
-                        {
-                            if (arrowKeysState[0] || arrowKeysState[2]) { player.moveCraftCursor(-1); player.timeAtLastMenuChange = timeElapsed; }
-                            if (arrowKeysState[1] || arrowKeysState[3]) { player.moveCraftCursor(1); player.timeAtLastMenuChange = timeElapsed; }
-                        }
-                        movePlayerStuff(screen, player); // move player, load new chunks, test craft, and stuff
-                        screen.chunkX = ChunkIdx(player.posX);
-                        screen.chunkY = ChunkIdx(player.posY);
-                    }
-                    else
-                    {
-                        magnitude = screen.testUnloadOfDimensionAndChunkDistance();
-                    }
-                    screen.updateLoadedChunks(magnitude);
-                    screen.loadCloseChunks(magnitude);
+                    screen.updateLoadedChunks();
+                    screen.loadCloseChunks();
 
-                    foreach (Entity entity in screen.entitesToRemove.Values) { screen.activeEntities.Remove(entity.id); }
-                    foreach (Entity entity in screen.entitesToAdd.Values) { screen.activeEntities[entity.id] = entity; }
+                    screen.addRemoveEntities();
 
                     if (timeElapsed > 3 && screen.activeNests.Count > 0)
                     {
@@ -231,10 +274,7 @@ namespace Cave
 
                     foreach ((int x, int y) pos in screen.chunksToSpawnEntitiesIn.Keys)
                     {
-                        if (screen.loadedChunks.ContainsKey(pos))
-                        {
-                            screen.loadedChunks[pos].spawnEntities();
-                        }
+                        if (screen.loadedChunks.ContainsKey(pos)) { screen.loadedChunks[pos].spawnEntities(); }
                     }
                     screen.chunksToSpawnEntitiesIn = new Dictionary<(int x, int y), bool>();
 
@@ -253,49 +293,23 @@ namespace Cave
                             orphansToRemove.Add(entityId);
                         }
                     }
-                    foreach (int entityId in orphansToRemove)
-                    {
-                        screen.orphanEntities.Remove(entityId);
-                    }
+                    foreach (int entityId in orphansToRemove) { screen.orphanEntities.Remove(entityId); }
 
 
-                    screen.entitesToRemove = new Dictionary<int, Entity>();
-                    screen.entitesToAdd = new Dictionary<int, Entity>();
-                    foreach (Entity entity in screen.activeEntities.Values)
-                    {
-                        entity.moveEntity();
-                    }
-                    foreach (Entity entity in screen.entitesToRemove.Values) { screen.activeEntities.Remove(entity.id); }
-                    foreach (Entity entity in screen.entitesToAdd.Values) { screen.activeEntities[entity.id] = entity; }
-                    screen.entitesToRemove = new Dictionary<int, Entity>();
-                    screen.entitesToAdd = new Dictionary<int, Entity>();
-                    foreach (Plant plant in screen.activePlants.Values)
-                    {
-                        plant.testPlantGrowth(false);
-                    }
-                    foreach (Particle particle in screen.activeParticles)
-                    {
-                        particle.moveParticle();
-                    }
-                    foreach (Structure structure in screen.activeStructures.Values)
-                    {
-                        structure.moveStructure();
-                    }
-                    foreach (Entity entity in screen.entitesToRemove.Values)
-                    {
-                        screen.activeEntities.Remove(entity.id);
-                    }
+                    foreach (Entity entity in screen.activeEntities.Values)  { entity.moveEntity(); }
+                    screen.addRemoveEntities();
+
+                    foreach (Plant plant in screen.activePlants.Values)             { plant.testPlantGrowth(false); }
+                    foreach (Particle particle in screen.activeParticles)           { particle.moveParticle(); }
+                    foreach (Structure structure in screen.activeStructures.Values) { structure.moveStructure(); }
+                    screen.addRemoveEntities();
                     foreach ((int x, int y) pos in screen.loadedChunks.Keys)
                     {
                         if (rand.Next(200) == 0) { screen.loadedChunks[(pos.x, pos.y)].unstableLiquidCount++; }
                         screen.loadedChunks[(pos.x, pos.y)].moveLiquids();
                     }
 
-
-                    screen.entitesToRemove = new Dictionary<int, Entity>();
-                    screen.entitesToAdd = new Dictionary<int, Entity>();
                     screen.putEntitiesAndPlantsInChunks();
-
 
                     // attack shit
                     foreach (((int x, int y) pos, (int type, int subType) attack) attack in screen.attacksToDo)
@@ -334,44 +348,17 @@ namespace Cave
                         structure.EraseFromTheWorld();
                     }
 
-
-
-                    screen.unloadFarawayChunks(magnitude);
+                    screen.unloadFarawayChunks();
                     screen.manageMegaChunks();
 
                     screen.removeEntitiesAndPlantsFromChunks(true);
-                    foreach (Entity entity in screen.entitesToRemove.Values)
-                    {
-                        screen.activeEntities.Remove(entity.id);
-                    }
-                    foreach (Entity entity in screen.entitesToAdd.Values)
-                    {
-                        screen.activeEntities[entity.id] = entity;
-                    }
-                    foreach (Particle particle in screen.particlesToAdd)
-                    {
-                        screen.activeParticles.Add(particle);
-                    }
-                    foreach (Particle particle in screen.particlesToRemove.Keys)
-                    {
-                        screen.activeParticles.Remove(particle);
-                    }
+                    screen.addRemoveEntities();
+                    foreach (Particle particle in screen.particlesToAdd)         { screen.activeParticles.Add(particle); }
+                    foreach (Particle particle in screen.particlesToRemove.Keys) { screen.activeParticles.Remove(particle); }
                     screen.particlesToRemove = new Dictionary<Particle, bool>();
                     screen.particlesToAdd = new List<Particle>();
 
-                    if (fastForward && framesFastForwarded < 10)
-                    {
-                        framesFastForwarded++;
-                        goto LoopStart;
-                    }
-
-                    if (player.dimension != screen.id)
-                    {
-                        if (screen.loadedChunks.Count == 0)
-                        {
-                            dimensionsToUnload.Add(screen.id);
-                        }
-                    }
+                    if (screen != playerScreen && screen.loadedChunks.Count == 0) { dimensionsToUnload.Add(screen.id); }
                 }
                 foreach (int id in dimensionsToUnload)
                 {
@@ -379,7 +366,15 @@ namespace Cave
                 }
                 saveSettings(this);
 
-                Screen playerScreen = getScreen(player.dimension);
+                // go back 10 times if fastForward
+                if (fastForward && framesFastForwarded < 10)
+                {
+                    framesFastForwarded++;
+                    goto LoopStart;
+                }
+
+                // render screen and update game image box thing
+                playerScreen = getScreen(player.dimension);
                 gamePictureBox.Image = playerScreen.updateScreen();
                 gamePictureBox.Refresh();
                 overlayPictureBox.Image = overlayBitmap;
@@ -496,6 +491,8 @@ namespace Cave
             public Bitmap lightBitmap;
 
             public (float x, float y) playerStartPos = (0, 0);
+
+            public Dictionary<(int x, int y), int> chunkLoadingPoints = new Dictionary<(int x, int y), int>();
 
             public Dictionary<int, Entity> activeEntities = new Dictionary<int, Entity>();
             public Dictionary<int, Entity> entitesToRemove = new Dictionary<int, Entity>();
@@ -664,6 +661,13 @@ namespace Cave
                     outOfBoundsPlants[(chunk.position.Item1, chunk.position.Item2)].Add(plant);
                 }
             }
+            public void addRemoveEntities()
+            {
+                foreach (Entity entity in entitesToRemove.Values) { activeEntities.Remove(entity.id); }
+                foreach (Entity entity in entitesToAdd.Values) { activeEntities[entity.id] = entity; }
+                entitesToRemove = new Dictionary<int, Entity>();
+                entitesToAdd = new Dictionary<int, Entity>();
+            }
             public void putEntitiesAndPlantsInChunks()
             {
                 (int, int) chunkIndex;
@@ -722,33 +726,49 @@ namespace Cave
                     chunko.plantList = new List<Plant>();
                 }
             }
-            public int testUnloadOfDimensionAndChunkDistance()
+            public void updateLoadedChunks()
             {
-                foreach (Structure structure in activeStructures.Values)
-                {
-                    if (structure.type.type == 3)
-                    {
-                        chunkX = ChunkIdx(structure.pos.x);
-                        chunkY = ChunkIdx(structure.pos.y);
-                        return 1 + chunkResolution -  (int)(distance((chunkX, chunkY), ChunkIdx(game.playerList[0].posX, game.playerList[0].posY)));
-                    }
-                }
-                return -1;
-            }
-            public void updateLoadedChunks(int magnitude = -999)
-            {
-                if (magnitude == -999) { magnitude = chunkResolution; }
                 Chunk newChunk;
                 (int x, int y) posToTest;
-                for (int i = -(int)(magnitude * 0.5f); i < (int)(magnitude * 0.5f); i++)
+                int magnitude;
+                foreach ((int x, int y) chunkLoadingPos in chunkLoadingPoints.Keys)
                 {
-                    for (int j = -(int)(magnitude * 0.5f); j < (int)(magnitude * 0.5f); j++)
+                    magnitude = chunkLoadingPoints[chunkLoadingPos];
+                    for (int i = -(int)(magnitude * 0.5f); i < (int)(magnitude * 0.5f); i++)
                     {
-                        posToTest = (chunkX + i, chunkY + j);
-                        if (!loadedChunks.ContainsKey(posToTest))
+                        for (int j = -(int)(magnitude * 0.5f); j < (int)(magnitude * 0.5f); j++)
                         {
-                            newChunk = new Chunk(posToTest, false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
-                            if (!loadedChunks.ContainsKey(posToTest)) { loadedChunks[posToTest] = newChunk; }
+                            posToTest = (chunkLoadingPos.x + i, chunkLoadingPos.y + j);
+                            if (!loadedChunks.ContainsKey(posToTest))
+                            {
+                                newChunk = new Chunk(posToTest, false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
+                                if (!loadedChunks.ContainsKey(posToTest)) { loadedChunks[posToTest] = newChunk; }
+                            }
+                        }
+                    }
+                }
+            }
+            public void loadCloseChunks()
+            {
+                Chunk newChunk;
+                (int x, int y) posToTest;
+                int magnitude;
+                int count = 0;
+                foreach ((int x, int y) chunkLoadingPos in chunkLoadingPoints.Keys)
+                {
+                    magnitude = chunkLoadingPoints[chunkLoadingPos];
+                    for (int i = -1 -(int)(magnitude * 0.5f); i <= (int)(magnitude * 0.5f); i++)
+                    {
+                        for (int j = -1 -(int)(magnitude * 0.5f); j <= (int)(magnitude * 0.5f); j++)
+                        {
+                            posToTest = (chunkLoadingPos.x + i, chunkLoadingPos.y + j);
+                            if (!loadedChunks.ContainsKey(posToTest))
+                            {
+                                newChunk = new Chunk(posToTest, false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
+                                if (!loadedChunks.ContainsKey(posToTest)) { loadedChunks[posToTest] = newChunk; }
+                                count++;
+                                if (count > 1 + 0.5 * (Abs(game.playerList[0].speedX) + Abs(game.playerList[0].speedY))) { return; }
+                            }
                         }
                     }
                 }
@@ -769,59 +789,14 @@ namespace Cave
                             newChunk = new Chunk(posToTest, false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
                             if (!loadedChunks.ContainsKey(posToTest)) { loadedChunks[posToTest] = newChunk; }
                             count++;
-                            if (count > 1 + 0.5*(Abs(game.playerList[0].speedX) + Abs(game.playerList[0].speedY))) { return; }
+                            if (count > 1 + 0.5 * (Abs(game.playerList[0].speedX) + Abs(game.playerList[0].speedY))) { return; }
                         }
                     }
                 }
             }
-
-            public void updateLoadedChunksOld(int screenSlideXtoPut, int screenSlideYtoPut)
-            {
-                int screenSlideX = screenSlideXtoPut;
-                int screenSlideY = screenSlideYtoPut;
-
-                // Okay I've changed shit to dictionary instead of array please don't bug bug please please please... . . Gone ! Forever now ! it's. fucking. BACKKKKKK     !! ! !! GONE AGAIN fuck it's backkkk WOOOOOOOOOHOOOOOOOOOOOO BUG IS GONE !!! It's 4am !!!! FUCK !!!! PROBLEM !!!!! The update loaded chuncks is lagging 8 (7?) chunkcs behind the actual normal loading... but only in the updated dimension
-
-                Dictionary<(int, int), bool> chunksToAdd = new Dictionary<(int, int), bool>();
-
-                int addo = -1;
-                if (screenSlideX < 0) { addo = chunkResolution; }
-                while (Abs(screenSlideX) > 0)
-                {
-                    for (int j = chunkY; j < chunkY + chunkResolution; j++)
-                    {
-                        chunksToAdd[(chunkX + addo + Sign(screenSlideX) * chunkResolution + screenSlideX, j + screenSlideYtoPut)] = true;
-                    }
-                    screenSlideX = Sign(screenSlideX) * (Abs(screenSlideX) - 1);
-                }
-                addo = -1;
-                if (screenSlideY < 0) { addo = chunkResolution; }
-                while (Abs(screenSlideY) > 0)
-                {
-                    for (int i = chunkX; i < chunkX + chunkResolution; i++)
-                    {
-                        chunksToAdd[(i + screenSlideXtoPut, chunkY + addo + Sign(screenSlideY) * chunkResolution + screenSlideY)] = true;
-                    }
-                    screenSlideY = Sign(screenSlideY) * (Abs(screenSlideY) - 1);
-                }
-                chunkX += screenSlideXtoPut;
-                chunkY += screenSlideYtoPut;
-
-
-                foreach ((int, int) chunkPos in chunksToAdd.Keys)
-                {
-                    if (!loadedChunks.ContainsKey(chunkPos))
-                    {
-                        loadedChunks.Add(chunkPos, new Chunk(chunkPos, false, this));
-                    }
-                    //addPlantsToChunk(loadedChunks[chunkPos]);
-                }
-            }
-            public void unloadFarawayChunks(int magnitude = -999) // this function unloads random chunks, that are not in the always loaded square around the player or in nests. HOWEVER, while the farthest away a chunk is, the less chance it has to unload, it still is random. 
+            public void unloadFarawayChunks() // this function unloads random chunks, that are not in the always loaded square around the player or in nests. HOWEVER, while the farthest away a chunk is, the less chance it has to unload, it still is random. 
             {
                 foreach (Chunk chunk in loadedChunks.Values) { chunk.isImmuneToUnloading = false; }
-
-                if (magnitude == -999) { magnitude = chunkResolution; }
 
                 inertStructureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
                 foreach (Structure structure in inertStructures.Values)
@@ -855,9 +830,9 @@ namespace Cave
                 }
 
                 int forceLoadedChunkAmount = nestLoadedChunkIndexes.Count + activeStructureLoadedChunkIndexes.Count;
+                int magnitude = 0;
+                foreach ((int x, int y) pos in chunkLoadingPoints.Keys) { magnitude = Max(magnitude, chunkLoadingPoints[pos]); }
                 int minChunkAmount = Max(magnitude, 0) * magnitude + forceLoadedChunkAmount; // if magnitude < 0 set magnitude squared to 0
-
-                (int x, int y) cameraChunkIdx = (chunkX, chunkY);
 
                 Dictionary<(int x, int y), bool> chunksToRemove = new Dictionary<(int x, int y), bool>();
                 (int x, int y)[] chunkKeys = loadedChunks.Keys.ToArray();
@@ -866,10 +841,15 @@ namespace Cave
                 for (int i = loadedChunks.Count; i > minChunkAmount; i--)
                 {
                     currentIdx = chunkKeys[rand.Next(loadedChunks.Count)];
-                    distanceToCenter = distance((currentIdx), cameraChunkIdx);
-                    if (!nestLoadedChunkIndexes.ContainsKey(currentIdx) && !activeStructureLoadedChunkIndexes.ContainsKey(currentIdx) && (float)(rand.NextDouble()) * distanceToCenter > 0.8f * magnitude)
+                    if (!nestLoadedChunkIndexes.ContainsKey(currentIdx) && !activeStructureLoadedChunkIndexes.ContainsKey(currentIdx))
                     {
+                        foreach ((int x, int y) pos in chunkLoadingPoints.Keys)
+                        {
+                            distanceToCenter = Distance(currentIdx, pos);
+                            if ((float)(rand.NextDouble()) * distanceToCenter < 0.8f * chunkLoadingPoints[pos]) { goto Fail; } // if it's too close to ANY point of loading, do not unload
+                        }
                         chunksToRemove[currentIdx] = true;
+                    Fail:;
                     }
                 }
 
@@ -920,7 +900,7 @@ namespace Cave
                 foreach (MegaChunk megaChunk in megaChunks.Values) { megaChunk.onlyContainsActiveStructureLoadedChunks = true; }
                 foreach ((int x, int y) pos in loadedChunks.Keys)
                 {
-                    if ((nestLoadedChunkIndexes.ContainsKey(pos) || activeStructureLoadedChunkIndexes.ContainsKey(pos)) && distance(pos, cameraChunkIdx) > 0.8f * chunkResolution)
+                    if ((nestLoadedChunkIndexes.ContainsKey(pos) || activeStructureLoadedChunkIndexes.ContainsKey(pos)) && Distance(pos, cameraChunkIdx) > 0.8f * chunkResolution)
                     {
                         continue;
                     }
