@@ -479,10 +479,7 @@ namespace Cave
             }
             public void tryTeleportation()
             {
-                int idToTeleportTo;
-                if (type.subSubType == 0) { idToTeleportTo = screen.game.livingDimensionId; }
-                else if (type.subSubType == 1) { idToTeleportTo = 0; }
-                else { return; }
+                int idToTeleportTo = sisterStructure.screen.id;
                 foreach (Entity entity in screen.activeEntities.Values)
                 {
                     int diffX = Abs(entity.posX - pos.x);
@@ -499,6 +496,7 @@ namespace Cave
                 }
                 foreach (Player player in screen.game.playerList)
                 {
+                    if (player.screen != screen) { continue; }
                     int diffX = Abs(player.posX - pos.x);
                     int diffY = Abs(player.posY - pos.y);
                     if (diffX <= 2 && diffY <= 2 && structureDict.ContainsKey((player.posX, player.posY))) // if inside the portal.
@@ -512,14 +510,7 @@ namespace Cave
                     }
                 }
 
-                foreach (Entity entity in screen.entitesToRemove.Values)
-                {
-                    screen.activeEntities.Remove(entity.id);
-                }
-                foreach (Entity entity in screen.entitesToAdd.Values)
-                {
-                    screen.activeEntities[entity.id] = entity;
-                }
+                screen.addRemoveEntities();
             }
             public ((int x, int y) pos, bool success) tryRandomConversion((int type, int subType) typeToConvert, (int type, int subType) newType)
             {

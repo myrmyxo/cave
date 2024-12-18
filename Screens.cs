@@ -1141,12 +1141,19 @@ namespace Cave
                 if (isPngToBeExported) { PNGmultiplicator = 1; }
                 Player player = game.playerList[0];
                 (int x, int y) camPos = (player.camPosX, player.camPosY);
+                (int x, int y) chunkPos;
 
                 for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
                 {
                     for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
                     {
-                        chunko = loadedChunks[(chunkX + i, chunkY + j)];
+                        chunkPos = (chunkX + i, chunkY + j);
+                        if (!loadedChunks.ContainsKey(chunkPos))
+                        {
+                            int a = 2;
+                            continue;
+                        }
+                        chunko = loadedChunks[chunkPos];
                         pasteImage(gameBitmap, chunko.bitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator);
                         //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32), PNGmultiplicator); } // if want to show chunk origin
                     }
@@ -1215,7 +1222,7 @@ namespace Cave
 
                 { // player
                     Color color = Color.Green;
-                    (int, int) chunkPos = ChunkIdx(player.posX, player.posY);
+                    chunkPos = ChunkIdx(player.posX, player.posY);
                     if (!loadedChunks.ContainsKey(chunkPos))
                     {
                         int seeeEEEXXXXXXXOOOOOOOOOOOODANAAAAAAAAAAAAAAAAAAAAaaaaaaaaaaaaaaa = 69;
@@ -1352,28 +1359,30 @@ namespace Cave
 
                 if (debugMode && !isPngToBeExported) // debug shit for chunks and megachunks
                 {
-                    int xOffset = 0;
+                    int xOffset = (game.loadedScreens.Count - 1)*50;
                     foreach (Screen screenToDebug in game.loadedScreens.Values)
                     {
+                        Color colorToDraw;
                         (int x, int y) cameraChunkIdx = (ChunkIdx(game.playerList[0].posX), ChunkIdx(game.playerList[0].posY));
                         foreach ((int x, int y) poso in screenToDebug.megaChunks.Keys)
                         {
-                            Color colorToDraw = Color.Crimson;
+                            if (player.screen == screenToDebug) { colorToDraw = Color.IndianRed; }
+                            else { colorToDraw = Color.Crimson; }
                             drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x * 16 - cameraChunkIdx.x - xOffset, 300 + poso.y * 16 - cameraChunkIdx.y), 16);
                         }
                         foreach ((int x, int y) poso in screenToDebug.activeStructureLoadedChunkIndexes.Keys)
                         {
-                            Color colorToDraw = Color.FromArgb(100, 255, 255, 100);
+                            colorToDraw = Color.FromArgb(100, 255, 255, 100);
                             drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x - xOffset, 300 + poso.y - cameraChunkIdx.y), 1);
                         }
                         foreach ((int x, int y) poso in screenToDebug.extraLoadedChunks.Keys)
                         {
-                            Color colorToDraw = Color.Purple;
+                            colorToDraw = Color.Purple;
                             drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x - xOffset, 300 + poso.y - cameraChunkIdx.y), 1);
                         }
                         foreach ((int x, int y) poso in screenToDebug.loadedChunks.Keys)
                         {
-                            Color colorToDraw = Color.FromArgb(150, 0, 128, 0);
+                            colorToDraw = Color.FromArgb(150, 0, 128, 0);
                             if (screenToDebug.loadedChunks[poso].unstableLiquidCount > 0) { colorToDraw = Color.DarkBlue; }
                             else if (screenToDebug.nestLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.Cyan; }
                             else if (screenToDebug.activeStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.FromArgb(100, 150, 180); }
