@@ -78,19 +78,34 @@ namespace Cave
         }
         public class MegaChunk
         {
-            public (int, int) pos;
+            public (int x, int y) pos;
             public List<int> nests = new List<int>();
             public List<int> structures = new List<int>();
-            [NonSerialized] public bool onlyContainsActiveStructureLoadedChunks = false;
-            public MegaChunk((int x, int y) posToPut)
+            [NonSerialized] public bool isImmuneToUnloading = false;
+            [NonSerialized] public Screens.Screen screen;
+            public MegaChunk(Screens.Screen screenToPut, (int x, int y) posToPut)
             {
                 pos = posToPut;
+                screen = screenToPut;
+                createStructures();
+            }
+            public MegaChunk(Chunk chunk)
+            {
+                pos = MegaChunkIdxFromChunkPos(chunk.position);
+                screen = chunk.screen;
+                createStructures();
             }
             public MegaChunk()
             {
 
             }
-            public void loadAllChunksInNests(Screens.Screen screen)
+            public void loadAllStuffInIt()
+            {
+                loadAllNests();
+                loadAllStructures();
+                loadAllChunksInNests();
+            }
+            public void loadAllChunksInNests()
             {
                 Chunk newChunk;
                 Nest nesto;
@@ -111,22 +126,28 @@ namespace Cave
                     }
                 }
             }
-            public void unloadAllNestsAndStructuresAndChunks(Screens.Screen screen, Dictionary<(int x, int y), bool> chunksToRemove)
+            public void unloadAllNestsAndStructuresAndChunks(Dictionary<(int x, int y), bool> chunksToRemove)
             {
+                Nest nest;
                 (int x, int y) playerPos = (ChunkIdx(screen.game.playerList[0].posX), ChunkIdx(screen.game.playerList[0].posY));
                 foreach (int nestId in nests)
                 {
-                    saveNest(screen.activeNests[nestId]);
-                    foreach ((int x, int y) pososo in screen.activeNests[nestId].chunkPresence.Keys) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
+                    nest = screen.activeNests[nestId];
+                    nest.isImmuneToUnloading = false;
+                    saveNest(nest);
+                    foreach ((int x, int y) pososo in nest.chunkPresence.Keys) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
                     {
                         if (Distance(pososo, playerPos) > 0.8f * screen.chunkResolution) { chunksToRemove[pososo] = true; }
                     }
                     screen.activeNests.Remove(nestId);
                 }
+                Structure structure;
                 foreach (int structureId in structures)
                 {
                     if (screen.activeStructures.ContainsKey(structureId))
                     {
+                        structure = screen.activeStructures[structureId];
+                        structure.isImmuneToUnloading = false;
                         saveStructure(screen.activeStructures[structureId]);
                         foreach ((int x, int y) pososo in screen.activeStructures[structureId].chunkPresence.Keys) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
                         {
@@ -140,7 +161,7 @@ namespace Cave
                     }
                 }
             }
-            public void loadAllNests(Screens.Screen screen)
+            public void loadAllNests()
             {
                 Chunk newChunk;
                 foreach (int nestId in nests)
@@ -160,12 +181,73 @@ namespace Cave
                     }
                 }
             }
-            public void loadAllStructures(Game game)
+            public void loadAllStructures()
             {
                 foreach (int structureId in structures)
                 {
-                    loadStructure(game, structureId); // loadStructure already adds the structure to the right dicto so no need to do it here
+                    loadStructure(screen.game, structureId); // loadStructure already adds the structure to the right dicto so no need to do it here
                 }
+            }
+            public void createStructures()
+            {
+                if (System.IO.File.Exists($"{currentDirectory}\\CaveData\\{screen.game.seed}\\MegaChunkData\\{screen.id}\\{pos.x}.{pos.y}.json")) { return; }
+                saveMegaChunk(this);
+                if (loadStructuresYesOrNo)
+                {
+                    int x = pos.x % 10 + 15;
+                    long seedX = screen.seed + pos.x;
+                    int y = pos.x % 10 + 15;
+                    long seedY = screen.seed + pos.y;
+                    while (x > 0)
+                    {
+                        seedX = LCGxPos(seedX);
+                        x--;
+                    }
+                    while (y > 0)
+                    {
+                        seedY = LCGyPos(seedY);
+                        y--;
+                    }
+                    long structuresAmount = (seedX + seedY) % 3 + 1;
+                    for (int i = 0; i < structuresAmount; i++)
+                    {
+                        seedX = LCGyPos(seedX); // on porpoise x    /\_/\
+                        seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
+                        Structure newStructure = new Structure(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (false, false), (0, 0, 0));
+                        structures.Add(newStructure.id);
+                    }
+                    long waterLakesAmount = 15 + (seedX + seedY) % 150;
+                    for (int i = 0; i < waterLakesAmount; i++)
+                    {
+                        seedX = LCGyNeg(seedX); // on porpoise x    /\_/\
+                        seedY = LCGxNeg(seedY); // and y switched  ( ^o^ )
+                        Structure newStructure = new Structure(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (true, false), (0, 0, 0));
+                        structures.Add(newStructure.id);
+                    }
+                    long nestAmount = (seedX + seedY) % 3;
+                    //nestAmount = 0;
+                    for (int i = 0; i < nestAmount; i++)
+                    {
+                        seedX = LCGyPos(seedX); // on porpoise x    /\_/\
+                        seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
+                        Nest nest = new Nest(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (long)(seedX * 0.5f + seedY * 0.5f));
+                        if (!nest.isNotToBeAdded)
+                        {
+                            nests.Add(nest.id);
+                            screen.activeNests[nest.id] = nest;
+                        }
+                    }
+                    /*if (posX == 0 && posY == 0) // to have a nest spawn at (0, 0) for testing shit
+                    {
+                        Nest nesto = new Nest((0, 0), (long)(seedX * 0.5f + seedY * 0.5f), this);
+                        if (!nesto.isNotToBeAdded)
+                        {
+                            megaChunk.nests.Add(nesto.id);
+                            activeNests[nesto.id] = nesto;
+                        }
+                    }*/
+                }
+                saveMegaChunk(this);
             }
         }
         public class ChunkJson
@@ -576,13 +658,13 @@ namespace Cave
             }
             return (dicto, listo);
         }
-        public static void saveMegaChunk(MegaChunk megaChunk, (int x, int y) pos, int id)
+        public static void saveMegaChunk(MegaChunk megaChunk)
         {
             JsonSerializer serializer = new JsonSerializer();
             serializer.Converters.Add(new JavaScriptDateTimeConverter());
             serializer.NullValueHandling = NullValueHandling.Ignore;
 
-            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{id}\\{pos.x}.{pos.y}.json"))
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{megaChunk.screen.id}\\{megaChunk.pos.x}.{megaChunk.pos.y}.json"))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
                 serializer.Serialize(writer, megaChunk);
@@ -590,19 +672,50 @@ namespace Cave
         }
         public static MegaChunk loadMegaChunk(Screens.Screen screenToPut, (int x, int y) pos)
         {
+            MegaChunk newMegaChunk;
             if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{screenToPut.id}\\{pos.x}.{pos.y}.json"))
             {
-                MegaChunk oOoOdindondindondandoyoufeelmylove = new MegaChunk(pos);
-                saveMegaChunk(oOoOdindondindondandoyoufeelmylove, pos, screenToPut.id);
-                return oOoOdindondindondandoyoufeelmylove;
+                newMegaChunk = new MegaChunk(screenToPut, pos);
+                screenToPut.megaChunks[pos] = newMegaChunk;
+                saveMegaChunk(newMegaChunk);
             }
-            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{screenToPut.id}\\{pos.x}.{pos.y}.json"))
+            else
             {
-                string content = f.ReadToEnd();
-                MegaChunk imatwinklelittlemermaidgirl = JsonConvert.DeserializeObject<MegaChunk>(content);
-
-                return imatwinklelittlemermaidgirl;
+                using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{screenToPut.id}\\{pos.x}.{pos.y}.json"))
+                {
+                    string content = f.ReadToEnd();
+                    newMegaChunk = JsonConvert.DeserializeObject<MegaChunk>(content);
+                    newMegaChunk.screen = screenToPut;
+                    newMegaChunk.pos = pos;
+                    screenToPut.megaChunks[pos] = newMegaChunk;
+                }
             }
+            newMegaChunk.loadAllStuffInIt();    // When CREATING a new megachunk, it loads all structure, to unload all of them, to reload them... a bit useless... Need me a function to upgrade extraloaded to loaded, for Nest chunk shite
+            return newMegaChunk;
+        }
+        public static MegaChunk loadMegaChunk(Chunk chunk)
+        {
+            MegaChunk newMegaChunk;
+            (int x, int y) megaChunkPos = MegaChunkIdxFromChunkPos(chunk.position);
+            if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{chunk.screen.id}\\{megaChunkPos.x}.{megaChunkPos.y}.json"))
+            {
+                newMegaChunk = new MegaChunk(chunk);
+                chunk.screen.megaChunks[megaChunkPos] = newMegaChunk;
+                saveMegaChunk(newMegaChunk);
+            }
+            else
+            {
+                using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{chunk.screen.id}\\{megaChunkPos.x}.{megaChunkPos.y}.json"))
+                {
+                    string content = f.ReadToEnd();
+                    newMegaChunk = JsonConvert.DeserializeObject<MegaChunk>(content);
+                    newMegaChunk.screen = chunk.screen;
+                    newMegaChunk.pos = megaChunkPos;
+                    chunk.screen.megaChunks[megaChunkPos] = newMegaChunk;
+                }
+            }
+            newMegaChunk.loadAllStuffInIt();    // When CREATING a new megachunk, it loads all structure, to unload all of them, to reload them... a bit useless... Need me a function to upgrade extraloaded to loaded, for Nest chunk shite
+            return newMegaChunk;
         }
         public static void saveChunk(Chunk chunk)
         {

@@ -28,6 +28,7 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
 
 namespace Cave
 {
@@ -40,7 +41,7 @@ namespace Cave
             public long chunkSeed;
 
             public (int x, int y) position;
-            public bool isImmuneToUnloading = false;
+            public bool isImmuneToUnloading = true; // Immune to unloading on startup. Should fix shit I hope.
 
             public ((int biome, int subBiome), int)[,][] biomeIndex;
 
@@ -68,8 +69,6 @@ namespace Cave
             {
                 screen = screenToPut;
                 position = posToPut;
-
-                if (!structureGenerated) { testIfMegaChunkGenerated(); }
 
                 bool filePresent = testLoadChunk(structureGenerated);
                 long chunkX = position.x * 2;
@@ -296,7 +295,7 @@ namespace Cave
                             //if (fillTest1 && fillTest2) { fillStates[i, j] = 4; }
                             //else if (fillTest1) { fillStates[i, j] = 3; }
                             //else if (fillTest2) { fillStates[i, j] = 2; }
-                            if (((fillTest1 || fillTest2 ) && true) || ( false && plateauScore >= 0)) { fillStates[i, j] = elementToFillVoidWith; }
+                            if (((fillTest1 || fillTest2) && true) || (false && plateauScore >= 0)) { fillStates[i, j] = elementToFillVoidWith; }
                             else
                             {
                                 secondaryFillValues[2, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 2);
@@ -334,6 +333,8 @@ namespace Cave
                 {
                     screen.chunksToSpawnEntitiesIn[position] = true;
                 }
+
+                if (!structureGenerated) { getMegaChunk(); }
             }
             public (int type, int subType) findMaterialToFillWith((int, int) values, (int type, int subType) biome, Dictionary<(int type, int subType), float> dicto)
             {
@@ -369,19 +370,6 @@ namespace Cave
 
 
                 return (1, 0);
-            }
-            public void testIfMegaChunkGenerated()
-            {
-                (int x, int y) megaChunkPos = MegaChunkIdx(position);
-                if (screen.megaChunks.ContainsKey(megaChunkPos))
-                {
-                    return;
-                }
-                if (System.IO.File.Exists($"{currentDirectory}\\CaveData\\{screen.game.seed}\\ChunkData\\{screen.id}\\{megaChunkPos.Item1}.{megaChunkPos.Item2}.json"))
-                {
-                    return;
-                }
-                screen.createStructures(megaChunkPos.x, megaChunkPos.y);
             }
             public bool testLoadChunk(bool structureGenerated)
             {
@@ -963,6 +951,12 @@ namespace Cave
                         unstableLiquidCount++;
                     }
                 }
+            }
+            public MegaChunk getMegaChunk()
+            {
+                (int x, int y) pos = MegaChunkIdxFromChunkPos(position);
+                if (!screen.megaChunks.ContainsKey(pos)) { return loadMegaChunk(this); }
+                return screen.megaChunks[pos];
             }
         }
         public static void makeTheFilledChunk()

@@ -846,12 +846,6 @@ namespace Cave
         {
             return value - (((value % modulo) + modulo) % modulo);
         }
-        public static (int, int) MegaChunkIdx((int x, int y) pos) // PUT CHUNKPOS inside ! NOT tilePos !
-        {
-            int chunkPosX = Floor(pos.x, 16) / 16;
-            int chunkPosY = Floor(pos.y, 16) / 16;
-            return (chunkPosX, chunkPosY);
-        }
         public static (int, int) ChunkIdx(int pixelPosX, int pixelPosY)
         {
             int chunkPosX = Floor(pixelPosX, 32) / 32;
@@ -868,13 +862,13 @@ namespace Cave
         {
             return Floor(pos, 32) / 32;
         }
-        public static (int, int) MegaChunkIdxFromPixelPos(int pixelPosX, int pixelPosY)
+        public static (int, int) MegaChunkIdxFromChunkPos((int x, int y) pos)
         {
-            int chunkPosX = Floor(pixelPosX, 512) / 512;
-            int chunkPosY = Floor(pixelPosY, 512) / 512;
+            int chunkPosX = Floor(pos.x, 16) / 16;
+            int chunkPosY = Floor(pos.y, 16) / 16;
             return (chunkPosX, chunkPosY);
         }
-        public static (int, int) StructChunkIdx((int x, int y) pos)
+        public static (int, int) MegaChunkIdxFromPixelPos((int x, int y) pos)
         {
             int chunkPosX = Floor(pos.x, 512) / 512;
             int chunkPosY = Floor(pos.y, 512) / 512;

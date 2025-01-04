@@ -39,8 +39,8 @@ namespace Cave
             public Dictionary<int, Screen> loadedScreens = new Dictionary<int, Screen>();
             public List<Player> playerList = new List<Player>();
 
-            public new Dictionary<int, Structure> structuresToAdd = new Dictionary<int, Structure>();
-            public new Dictionary<int, Structure> structuresToRemove = new Dictionary<int, Structure>();
+            public Dictionary<int, Structure> structuresToAdd = new Dictionary<int, Structure>();
+            public Dictionary<int, Structure> structuresToRemove = new Dictionary<int, Structure>();
 
             public Bitmap overlayBitmap;
             public long seed;
@@ -134,7 +134,6 @@ namespace Cave
                 if (inventoryChangePress[1]) { inventoryChangePress[1] = false; player.moveInventoryCursor(1); }
 
                 player.movePlayer();
-                screen.checkStructures(player);
             }
             public void applySettings(SettingsJson settings)
             {
@@ -296,11 +295,11 @@ namespace Cave
                     foreach (int entityId in orphansToRemove) { screen.orphanEntities.Remove(entityId); }
 
 
-                    foreach (Entity entity in screen.activeEntities.Values)  { entity.moveEntity(); }
+                    foreach (Entity entity in screen.activeEntities.Values) { entity.moveEntity(); }
                     screen.addRemoveEntities();
 
-                    foreach (Plant plant in screen.activePlants.Values)             { plant.testPlantGrowth(false); }
-                    foreach (Particle particle in screen.activeParticles)           { particle.moveParticle(); }
+                    foreach (Plant plant in screen.activePlants.Values) { plant.testPlantGrowth(false); }
+                    foreach (Particle particle in screen.activeParticles) { particle.moveParticle(); }
                     foreach (Structure structure in screen.activeStructures.Values) { structure.moveStructure(); }
                     screen.addRemoveEntities();
                     foreach ((int x, int y) pos in screen.loadedChunks.Keys)
@@ -323,9 +322,7 @@ namespace Cave
                         structuresToAdd = new Dictionary<int, Structure>();
                         foreach (Structure structure in structuresToAddNow.Values)
                         {
-                            (int x, int y) megaChunkPos = MegaChunkIdxFromPixelPos(structure.pos.x, structure.pos.y);
-                            if (!structure.screen.megaChunks.ContainsKey(megaChunkPos)) { structure.screen.megaChunks[megaChunkPos] = loadMegaChunk(structure.screen, megaChunkPos); }
-                            MegaChunk megaChunk = structure.screen.megaChunks[megaChunkPos];
+                            MegaChunk megaChunk = screen.getMegaChunkFromPixelPos(structure.pos);
                             foreach (int id in megaChunk.structures) // this checks is there is already a structure of the same type overlapping with the chunks of the new one (not to make duplicates for portals n shite)
                             {
                                 if (!structure.screen.activeStructures.ContainsKey(id)) { continue; }
@@ -338,8 +335,6 @@ namespace Cave
                             }
                             // after this the structure is VALID and WILL be added to existing structures
                             structure.initAfterStructureValidated();
-                            megaChunk.structures.Add(structure.id);
-                            saveMegaChunk(megaChunk, megaChunkPos, structure.screen.id);
                         doNotAddStructure:;
                         }
                     }
@@ -347,9 +342,12 @@ namespace Cave
                     {
                         structure.EraseFromTheWorld();
                     }
-
-                    screen.unloadFarawayChunks();
-                    screen.manageMegaChunks();
+                }
+                foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.unloadFarawayChunks(); }
+                setUnloadingImmunity(); // Prevent MegaChunks/Chunks/Structures to be unloaded when they should not be
+                foreach (Screen screen in loadedScreens.Values.ToArray())
+                {
+                    screen.unloadMegaChunks();
 
                     screen.removeEntitiesAndPlantsFromChunks(true);
                     screen.addRemoveEntities();
@@ -387,6 +385,111 @@ namespace Cave
                 int gouga = liquidSlideCount;
                 gouga = gouga + 1 - 1;
             }
+            public void setUnloadingImmunity()
+            {
+                // Shit to go through chunks, megachunks, nests/structures broad search and mark them immune to unloading as it progresses.
+                foreach (Screen screen in loadedScreens.Values)
+                {
+                    foreach (Structure structure in screen.inertStructures.Values) { structure.isImmuneToUnloading = false; }
+                    foreach (Structure structure in screen.activeStructures.Values) { structure.isImmuneToUnloading = false; }
+                    foreach (Nest nest in screen.activeNests.Values) { nest.isImmuneToUnloading = false; }
+                    foreach (MegaChunk megaChunk in screen.megaChunks.Values) { megaChunk.isImmuneToUnloading = false; }
+                }
+
+                Dictionary<Chunk, bool> newImmuneChunks = new Dictionary<Chunk, bool>();
+                Dictionary<MegaChunk, bool> newImmuneMegaChunks = new Dictionary<MegaChunk, bool>();
+                Dictionary<Nest, bool> newImmuneNests = new Dictionary<Nest, bool>();
+                Dictionary<Structure, bool> newImmuneStructures = new Dictionary<Structure, bool>();
+
+                foreach (Screen screen in loadedScreens.Values)
+                {
+                    // 1. non nest/structure chunks set MegaChunks as Immune
+                    MegaChunk megaChunk;
+                    foreach (Chunk chunk in screen.loadedChunks.Values.ToArray())
+                    {
+                        if (!(screen.activeStructureLoadedChunkIndexes.ContainsKey(chunk.position) || screen.nestLoadedChunkIndexes.ContainsKey(chunk.position)))
+                        {
+                            chunk.isImmuneToUnloading = true;
+                            megaChunk = chunk.getMegaChunk();
+                            megaChunk.isImmuneToUnloading = true;
+                            newImmuneMegaChunks[megaChunk] = true;
+                        }
+                        else { chunk.isImmuneToUnloading = false; }
+                    }
+                }
+                while (newImmuneMegaChunks.Count > 0)
+                {
+                    Chunk chunkToTest;
+                    Screen screen;
+
+                    // 2. new Immune megaChunks set structures/nests as Immune
+                    foreach (MegaChunk megaChunk in newImmuneMegaChunks.Keys)
+                    {
+                        screen = megaChunk.screen;
+                        Structure structure;
+                        foreach (int structureId in megaChunk.structures)
+                        {
+                            if (!screen.activeStructures.ContainsKey(structureId)) { continue; }
+                            structure = screen.activeStructures[structureId];
+                            if (structure.isImmuneToUnloading) { continue; } // To not do the same one twice -> infinite loop
+                            structure.isImmuneToUnloading = true;
+                            newImmuneStructures[structure] = true;
+                            if (structure.sisterStructure != null)  // REPLACE THIS PART WITH THE LIST OF SISTER STUCTURES WHERE STRUCTURES WILL HAVE MULTIPLE SISTER STRUCTURES (so in 7 years)
+                            {
+                                structure.sisterStructure.isImmuneToUnloading = true;
+                                newImmuneStructures[structure.sisterStructure] = true;
+                            }
+                        }
+                        Nest nest;
+                        foreach (int nestId in megaChunk.nests)
+                        {
+                            if (!screen.activeNests.ContainsKey(nestId)) { continue; }
+                            nest = screen.activeNests[nestId];
+                            if (nest.isImmuneToUnloading) { continue; } // To not do the same one twice -> infinite loop
+                            nest.isImmuneToUnloading = true;
+                            newImmuneNests[nest] = true;
+                        }
+                    }
+                    newImmuneMegaChunks = new Dictionary<MegaChunk, bool>();
+
+                    // 3. new Immune structures/nests set chunks as Immune
+                    foreach (Structure structure in newImmuneStructures.Keys)
+                    {
+                        screen = structure.screen;
+                        foreach ((int x, int y) chunkPos in structure.chunkPresence.Keys)
+                        {
+                            chunkToTest = screen.tryToGetChunk(chunkPos);
+                            if (chunkToTest.isImmuneToUnloading || chunkToTest == theFilledChunk) { continue; } // To not do the same one twice -> infinite loop, or if chunk wasn't loaded (impossible but better safe than salsifi
+                            chunkToTest.isImmuneToUnloading = true;
+                            newImmuneChunks[chunkToTest] = true;
+                        }
+                    }
+                    newImmuneStructures = new Dictionary<Structure, bool>();
+                    foreach (Nest nest in newImmuneNests.Keys)
+                    {
+                        screen = nest.screen;
+                        foreach ((int x, int y) chunkPos in nest.chunkPresence.Keys)
+                        {
+                            chunkToTest = screen.tryToGetChunk(chunkPos);
+                            if (chunkToTest.isImmuneToUnloading || chunkToTest == theFilledChunk) { continue; } // To not do the same one twice -> infinite loop, or if chunk wasn't loaded (impossible but better safe than salsifi
+                            chunkToTest.isImmuneToUnloading = true;
+                            newImmuneChunks[chunkToTest] = true;
+                        }
+                    }
+                    newImmuneNests = new Dictionary<Nest, bool>();
+
+                    // 4. new Immune chunks set MegaChunks as Immune
+                    MegaChunk megaChunkToTest;
+                    foreach (Chunk chunk in newImmuneChunks.Keys)
+                    {
+                        megaChunkToTest = chunk.getMegaChunk();
+                        if (megaChunkToTest.isImmuneToUnloading) { continue; } // To not do the same one twice -> infinite loop
+                        megaChunkToTest.isImmuneToUnloading = true;
+                        newImmuneMegaChunks[megaChunkToTest] = true;
+                    }
+                    newImmuneChunks = new Dictionary<Chunk, bool>();
+                }
+            }
             public void zoom(bool isZooming)
             {
                 if (isZooming)
@@ -422,7 +525,6 @@ namespace Cave
                 }
                 player.screen = loadedScreens[targetDimension];
                 player.dimension = targetDimension;
-                player.screen.checkStructuresOnSpawn(player);
                 // unloadAllDimensions(false);
             }
             public Screen loadDimension(int idToLoad, bool isPngToExport = false, bool isMonoToPut = false, int typeToPut = -999, int subTypeToPut = -999)
@@ -796,38 +898,16 @@ namespace Cave
             }
             public void unloadFarawayChunks() // this function unloads random chunks, that are not in the always loaded square around the player or in nests. HOWEVER, while the farthest away a chunk is, the less chance it has to unload, it still is random. 
             {
-                foreach (Chunk chunk in loadedChunks.Values) { chunk.isImmuneToUnloading = false; }
+                // for debug
 
                 inertStructureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
-                foreach (Structure structure in inertStructures.Values)
-                {
-                    foreach ((int x, int y) tile in structure.chunkPresence.Keys)
-                    {
-                        inertStructureLoadedChunkIndexes[tile] = true;
-                    }
-                }
+                foreach (Structure structure in inertStructures.Values) { foreach ((int x, int y) tile in structure.chunkPresence.Keys) { inertStructureLoadedChunkIndexes[tile] = true; } }
 
                 activeStructureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
-                foreach (Structure structure in activeStructures.Values)
-                {
-                    foreach ((int x, int y) tile in structure.chunkPresence.Keys)
-                    {
-                        activeStructureLoadedChunkIndexes[tile] = true;
-                        if (structure.isImmuneToUnloading)
-                        {
-                            loadedChunks[tile].isImmuneToUnloading = true;
-                        }
-                    }
-                }
+                foreach (Structure structure in activeStructures.Values) { foreach ((int x, int y) tile in structure.chunkPresence.Keys) { activeStructureLoadedChunkIndexes[tile] = true; } }
 
                 nestLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
-                foreach (Nest nest in activeNests.Values)
-                {
-                    foreach ((int x, int y) tile in nest.chunkPresence.Keys)
-                    {
-                        nestLoadedChunkIndexes[tile] = true;
-                    }
-                }
+                foreach (Nest nest in activeNests.Values) { foreach ((int x, int y) tile in nest.chunkPresence.Keys) { nestLoadedChunkIndexes[tile] = true; } }
 
                 int forceLoadedChunkAmount = nestLoadedChunkIndexes.Count + activeStructureLoadedChunkIndexes.Count;
                 int magnitude = 0;
@@ -870,190 +950,50 @@ namespace Cave
                     }
                 }
             }
-            public void manageMegaChunks() // megachunk resolution : 512*512
+            public void unloadMegaChunks() // megachunk resolution : 512*512
             {
                 Dictionary<(int x, int y), MegaChunk> newMegaChunks = new Dictionary<(int x, int y), MegaChunk>();
-                foreach ((int x, int y) pos in megaChunksToForceLoad.Keys) { newMegaChunks[pos] = null; }
-                megaChunksToForceLoad = new Dictionary<(int x, int y), bool>();
-                (int x, int y) cameraChunkIdx = (ChunkIdx(game.playerList[0].posX), ChunkIdx(game.playerList[0].posY));
-                (int x, int y) megaPos;
-
-                // Find all megachunks who have only chunks that are can't be unloaded by unloadFarawayChunks (those in Nests and Active Structures)
-                // This shit is CURRENTLY NOT WORKING. FFS.
-                /*foreach (MegaChunk megaChunk in megaChunks.Values) { megaChunk.isPurelyStructureLoaded = true; }
-                foreach (Nest nest in activeNests.Values) { nest.isPurelyStructureLoaded = true; }
-                foreach (Structure structure in activeStructures.Values) { structure.isPurelyStructureLoaded = true; }
-                foreach ((int x, int y) pos in loadedChunks.Keys)
+                (int x, int y) megaChunkPos;
+                foreach ((int x, int y) chunkPos in loadedChunks.Keys)
                 {
-                    megaPos = MegaChunkIdx(pos);
-                    if (!nestLoadedChunkIndexes.ContainsKey(megaPos) && !activeStructureLoadedChunkIndexes.ContainsKey(megaPos))
+                    megaChunkPos = MegaChunkIdxFromChunkPos(chunkPos);
+                    if (newMegaChunks.ContainsKey(megaChunkPos)) { continue; }
+                    if ((nestLoadedChunkIndexes.ContainsKey(chunkPos) || activeStructureLoadedChunkIndexes.ContainsKey(chunkPos))) { continue; }
+                    if (!megaChunks.ContainsKey(megaChunkPos)) // Shouldn't happen but still
                     {
-                        if (megaChunks.ContainsKey(megaPos)) { megaChunks[megaPos].isPurelyStructureLoaded = false; }
+                        loadMegaChunk(this, megaChunkPos);
                     }
-                }
-                foreach (Nest nest in activeNests.Values) { foreach ((int x, int y) posToTest in nest.megaChunkPresence.Keys) { if (megaChunks.ContainsKey(posToTest) && !megaChunks[posToTest].isPurelyStructureLoaded) {  nest.isPurelyStructureLoaded = false; } } }
-                foreach (Structure structure in activeStructures.Values) { foreach ((int x, int y) posToTest in structure.megaChunkPresence.Keys) { if (megaChunks.ContainsKey(posToTest) && !megaChunks[posToTest].isPurelyStructureLoaded) { structure.isPurelyStructureLoaded = false; } } }
-                foreach (Nest nest in activeNests.Values) { if (nest.isPurelyStructureLoaded) { foreach ((int x, int y) posToTest in nest.megaChunkPresence.Keys) { newMegaChunks[posToTest] = null; } } }
-                foreach (Nest nest in activeNests.Values) { if (nest.isPurelyStructureLoaded) { foreach ((int x, int y) posToTest in nest.megaChunkPresence.Keys) { newMegaChunks[posToTest] = null; } } }
-                */
-
-                foreach (MegaChunk megaChunk in megaChunks.Values) { megaChunk.onlyContainsActiveStructureLoadedChunks = true; }
-                foreach ((int x, int y) pos in loadedChunks.Keys)
-                {
-                    if ((nestLoadedChunkIndexes.ContainsKey(pos) || activeStructureLoadedChunkIndexes.ContainsKey(pos)) && Distance(pos, cameraChunkIdx) > 0.8f * chunkResolution)
-                    {
-                        continue;
-                    }
-                    megaPos = MegaChunkIdx(pos);
-                    newMegaChunks[megaPos] = null;
-                }
-                foreach (Structure structure in activeStructures.Values)
-                {
-                    foreach ((int x, int y) pos in structure.megaChunkPresence.Keys)
-                    {
-                        if (newMegaChunks.ContainsKey(pos)) { structure.isImmuneToUnloading = true; }
-                    }
-                }
-                foreach ((int x, int y) pos in newMegaChunks.Keys.ToArray()) // add new megachunks that were not loaded before and have now chunks in
-                {
-                    if (megaChunks.ContainsKey(pos))
-                    {
-                        newMegaChunks[pos] = megaChunks[pos];
-                        megaChunks.Remove(pos); // needed for the last foreach don't remove !!!!
-                    }
-                    else
-                    {
-                        newMegaChunks[pos] = loadMegaChunk(this, pos);
-                        newMegaChunks[pos].loadAllNests(this);
-                        newMegaChunks[pos].loadAllStructures(game);
-                        newMegaChunks[pos].loadAllChunksInNests(this);
-                    }
+                    newMegaChunks[megaChunkPos] = megaChunks[megaChunkPos];
+                    megaChunks.Remove(megaChunkPos);
                 }
                 Dictionary<(int x, int y), bool> chunksToRemove = new Dictionary<(int x, int y), bool>();
-                foreach (MegaChunk megaChunk in megaChunks.Values) // remove megachunks that have no chunks loaded in anymore
+                foreach (MegaChunk megaChunk in megaChunks.Values)
                 {
+                    if (megaChunk.isImmuneToUnloading) // Don't unload the megaChunk if it is immune to unloading
+                    {
+                        newMegaChunks[megaChunk.pos] = megaChunks[megaChunk.pos];
+                        continue;
+                    }
                     bool saveFromUnloading = false;
                     Structure structure;
                     foreach (int structureId in megaChunk.structures)
                     {
                         if (!activeStructures.ContainsKey(structureId)) { continue; }
                         structure = activeStructures[structureId];
-                        if (structure.isImmuneToUnloading || (structure.type.type == 3 && structure.sisterStructure.isImmuneToUnloading))
-                        {
-                            saveFromUnloading = true;
-                            structure.isImmuneToUnloading = false;
-                        }
+                        if (structure.isImmuneToUnloading)
                     }
                     if (saveFromUnloading) // Don't unload the megaChunk if it has immune structures in it
                     {
                         newMegaChunks[megaChunk.pos] = megaChunks[megaChunk.pos];
                         continue;
                     }
-                    megaChunk.unloadAllNestsAndStructuresAndChunks(this, chunksToRemove);
-                    saveMegaChunk(megaChunk, megaChunk.pos, id);
+                    megaChunk.unloadAllNestsAndStructuresAndChunks(chunksToRemove);
+                    saveMegaChunk(megaChunk);
                     actuallyUnloadTheChunks(chunksToRemove);
                 }
-
                 megaChunks = newMegaChunks;
             }
-            public void checkStructuresOnSpawn(Player player)
-            {
-                player.CheckStructurePosChange();
-                for (int i = -1; i <= 2; i++)
-                {
-                    for (int j = -1; j <= 2; j++)
-                    {
-                        createStructures(i + player.structureX, j + player.structureY);
-                    }
-                }
-            }
-            public void checkStructures(Player player)
-            {
-                (int x, int y) oldStructurePos = (player.structureX, player.structureY);
-                if (player.CheckStructurePosChange())
-                {
-                    int changeX = player.structureX - oldStructurePos.x;
-                    int changeY = player.structureY - oldStructurePos.y;
-                    if (Abs(changeX) > 0)
-                    {
-                        createStructures(player.structureX + changeX + 1, player.structureY + 2);
-                        createStructures(player.structureX + changeX + 1, player.structureY + 1);
-                        createStructures(player.structureX + changeX + 1, player.structureY);
-                        createStructures(player.structureX + changeX + 1, player.structureY - 1);
-                    }
-                    if (Abs(changeY) > 0)
-                    {
-                        createStructures(player.structureX + 2, player.structureY + changeY + 1);
-                        createStructures(player.structureX + 1, player.structureY + changeY + 1);
-                        createStructures(player.structureX, player.structureY + changeY + 1);
-                        createStructures(player.structureX - 1, player.structureY + changeY + 1);
-                    }
-                }
-            }
-            public void createStructures(int posX, int posY)
-            {
-                if (!loadStructuresYesOrNo) { return; }
-                if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{game.seed}\\MegaChunkData\\{id}\\{posX}.{posY}.json"))
-                {
-                    MegaChunk megaChunk = new MegaChunk((posX, posY));
-                    saveMegaChunk(megaChunk, megaChunk.pos, id);
 
-                    int x = posY % 10 + 15;
-                    long seedX = seed + posX;
-                    int y = posX % 10 + 15;
-                    long seedY = seed + posY;
-                    while (x > 0)
-                    {
-                        seedX = LCGxPos(seedX);
-                        x--;
-                    }
-                    while (y > 0)
-                    {
-                        seedY = LCGyPos(seedY);
-                        y--;
-                    }
-                    long structuresAmount = (seedX + seedY) % 3 + 1;
-                    for (int i = 0; i < structuresAmount; i++)
-                    {
-                        seedX = LCGyPos(seedX); // on porpoise x    /\_/\
-                        seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
-                        Structure newStructure = new Structure(this, (posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (-1, -1, -1));
-                        megaChunk.structures.Add(newStructure.id);
-                    }
-                    long waterLakesAmount = 15 + (seedX + seedY) % 150;
-                    for (int i = 0; i < waterLakesAmount; i++)
-                    {
-                        seedX = LCGyNeg(seedX); // on porpoise x    /\_/\
-                        seedY = LCGxNeg(seedY); // and y switched  ( ^o^ )
-                        Structure newStructure = new Structure(this, (posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (0, 0, 0));
-                        megaChunk.structures.Add(newStructure.id);
-                    }
-                    long nestAmount = (seedX + seedY) % 3;
-                    //nestAmount = 0;
-                    for (int i = 0; i < nestAmount; i++)
-                    {
-                        seedX = LCGyPos(seedX); // on porpoise x    /\_/\
-                        seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
-                        Nest nest = new Nest((posX * 512 + 32 + (int)(seedX % 480), posY * 512 + 32 + (int)(seedY % 480)), (long)(seedX * 0.5f + seedY * 0.5f), this);
-                        if (!nest.isNotToBeAdded)
-                        {
-                            megaChunk.nests.Add(nest.id);
-                            activeNests[nest.id] = nest;
-                        }
-                    }
-                    /*if (posX == 0 && posY == 0) // to have a nest spawn at (0, 0) for testing shit
-                    {
-                        Nest nesto = new Nest((0, 0), (long)(seedX * 0.5f + seedY * 0.5f), this);
-                        if (!nesto.isNotToBeAdded)
-                        {
-                            megaChunk.nests.Add(nesto.id);
-                            activeNests[nesto.id] = nesto;
-                        }
-                    }*/
-                    megaChunks[megaChunk.pos] = megaChunk;
-                    saveMegaChunk(megaChunk, megaChunk.pos, id);
-                }
-            }
             public void fillBitmap(Bitmap receiver, Color color)
             {
                 drawRectangle(receiver, color, (0, 0), (receiver.Size.Width, receiver.Size.Height));
@@ -1257,8 +1197,14 @@ namespace Cave
                     {
                         for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
                         {
-                            chunko = loadedChunks[(chunkX + i, chunkY + j)];
-                            pasteImage(lightBitmap, chunko.lightBitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, 1);
+                            chunkPos = (chunkX + i, chunkY + j);
+                            if (!loadedChunks.ContainsKey(chunkPos))
+                            {
+                                int a = 2;
+                                continue;
+                            }
+                            chunko = loadedChunks[chunkPos];
+                            pasteImage(lightBitmap, chunko.lightBitmap, (chunkPos.x * 32, chunkPos.y * 32), camPos, 1);
                             //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32), PNGmultiplicator); } // if want to show chunk origin
                         }
                     }
@@ -1462,12 +1408,26 @@ namespace Cave
                     }
                     else
                     {
-                        chunkDict.Add(chunkPos, new Chunk(chunkPos, true, this));
-                        extraLoadedChunks.Add(chunkPos, chunkDict[chunkPos]);
+                        Chunk newChunk = new Chunk(chunkPos, true, this);
+                        if (extraLoadedChunks.ContainsKey(chunkPos)) { newChunk = extraLoadedChunks[chunkPos]; }    // THIS WAS MADE TO HIS THE BUG OF CHUNK LOADING LOADING NEW CHUNKS N SHITE !   NEED TO ACTUALLY FIND A WAY TO FIX THAT BUG as it's present EVERYWHERE !   Remove the "newchunktoload" list, and try to get loadedChunks by a LIST of the current ones maybe ? idk
+                        else { extraLoadedChunks.Add(chunkPos, newChunk); }
+                        chunkDict.Add(chunkPos, newChunk);
                     }
                     chunkToTest = chunkDict[chunkPos];
                 }
                 return chunkToTest;
+            }
+            public MegaChunk getMegaChunkFromPixelPos((int x, int y) pos)
+            {
+                pos = MegaChunkIdxFromPixelPos(pos);
+                if (!megaChunks.ContainsKey(pos)) { return loadMegaChunk(this, pos); }
+                return megaChunks[pos];
+            }
+            public MegaChunk getMegaChunkFromChunkPos((int x, int y) pos)
+            {
+                pos = MegaChunkIdxFromChunkPos(pos);
+                if (!megaChunks.ContainsKey(pos)) { return loadMegaChunk(this, pos); }
+                return megaChunks[pos];
             }
         }
     }

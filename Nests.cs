@@ -671,6 +671,7 @@ namespace Cave
 
             // loading and unloading management
             public bool isPurelyStructureLoaded = true;
+            public bool isImmuneToUnloading = false;
 
             public Nest(Screens.Screen screenToPut, NestJson nestJson)
             {
@@ -709,7 +710,7 @@ namespace Cave
                 updateDigErrands();
                 decideForBabies();
             }
-            public Nest((int x, int y) posToPut, long seedToPut, Screens.Screen screenToPut)
+            public Nest(Screens.Screen screenToPut, (int x, int y) posToPut, long seedToPut)
             {
                 screen = screenToPut;
                 seed = seedToPut;
@@ -965,7 +966,7 @@ namespace Cave
                 }
                 foreach ((int x, int y) poso in chunkPresence.Keys)
                 {
-                    megaChunkPresence[MegaChunkIdx(poso)] = true;
+                    megaChunkPresence[MegaChunkIdxFromChunkPos(poso)] = true;
                 }
             }
             public void setAllRoomsAsFinished()

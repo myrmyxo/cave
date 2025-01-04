@@ -83,7 +83,7 @@ namespace Cave
                     sisterStructure = game.getStructure(structureJson.sis);
                 }
             }
-            public Structure(Screens.Screen screenToPut, (int x, int y) posToPut, (long x, long y) seedToPut, (int type, int subType, int subSubType) forceType, Dictionary<(int x, int y), (int type, int subType)> forceStructure = null)
+            public Structure(Screens.Screen screenToPut, (int x, int y) posToPut, (long x, long y) seedToPut, (bool forceType, bool isPlayerGenerated) bools, (int type, int subType, int subSubType) forceType, Dictionary<(int x, int y), (int type, int subType)> forceStructure = null)
             {
                 seed = seedToPut;
                 screen = screenToPut;
@@ -92,7 +92,7 @@ namespace Cave
                 id = currentStructureId;
                 currentStructureId++;
 
-                if (forceType.type != -1) { type = forceType; }
+                if (bools.forceType) { type = forceType; }
                 else
                 {
                     long seedo = (seed.x / 2 + seed.y / 2) % 79461537;
@@ -110,11 +110,11 @@ namespace Cave
                     }
                 }
 
-                if (forceType.type != -1 && forceStructure != null) { structureDict = forceStructure; }
+                if (bools.isPlayerGenerated && forceStructure != null) { structureDict = forceStructure; }
                 drawStructure(); // contains imprintChunks()
 
                 findChunkPresence();
-                if (forceType.type != -1) { return; } // if structure is player generated, don't save it and add to dicts YET
+                if (bools.isPlayerGenerated) { return; } // if structure is player generated, don't save it and add to dicts YET
                 saveStructure(this);
                 addStructureToTheRightDictInTheScreen();
             }
@@ -132,14 +132,7 @@ namespace Cave
                         }
                     }
                     screen.activeStructures[id] = this;
-                    isImmuneToUnloading = true;
-                    foreach ((int x, int y) pos in megaChunkPresence.Keys)
-                    {
-                        if (!screen.megaChunks.ContainsKey(pos))
-                        {
-                            screen.megaChunksToForceLoad[pos] = true;
-                        }
-                    }
+                    isImmuneToUnloading = false;
                 }
                 else { screen.inertStructures[id] = this; }
             }
@@ -151,7 +144,7 @@ namespace Cave
                 }
                 foreach ((int x, int y) poso in chunkPresence.Keys)
                 {
-                    megaChunkPresence[MegaChunkIdx(poso)] = true;
+                    megaChunkPresence[MegaChunkIdxFromChunkPos(poso)] = true;
                 }
             }
             public bool drawLakeNew() // thank you papa still for base code <3
@@ -293,7 +286,17 @@ namespace Cave
 
                 findChunkPresence();
                 saveStructure(this);
+                addToMegaChunk();
                 addStructureToTheRightDictInTheScreen();
+            }
+            public void addToMegaChunk()
+            {
+                MegaChunk megaChunk = screen.getMegaChunkFromPixelPos(pos);
+                if (!megaChunk.structures.Contains(id)) // should always be the case but whatever
+                {
+                    megaChunk.structures.Add(id);
+                    saveMegaChunk(megaChunk);
+                }
             }
             public bool cubeAmalgam()
             {
@@ -419,7 +422,7 @@ namespace Cave
                     Screens.Screen livingDimensionScreen;
                     if (screen.game.livingDimensionId == -1) { livingDimensionScreen = screen.game.loadDimension(currentDimensionId, false, false, 2, 0); }
                     else { livingDimensionScreen = screen.game.loadDimension(screen.game.livingDimensionId); }
-                    Structure sister = new Structure(livingDimensionScreen, pos, seed, (3, 0, 1));
+                    Structure sister = new Structure(livingDimensionScreen, pos, seed, (true, true), (3, 0, 1));
                     screen.game.structuresToAdd[sister.id] = sister;
                     sisterStructure = sister;
                     sister.sisterStructure = this;
@@ -546,12 +549,12 @@ namespace Cave
             }
             public void EraseFromTheWorld()
             {
-                (int x, int y) megaChunkPos = MegaChunkIdxFromPixelPos(pos.x, pos.y);
+                (int x, int y) megaChunkPos = MegaChunkIdxFromPixelPos(pos);
                 if (!screen.megaChunks.ContainsKey(megaChunkPos)) { screen.megaChunks[megaChunkPos] = loadMegaChunk(screen, megaChunkPos); }
                 MegaChunk megaChunk = screen.megaChunks[megaChunkPos];
                 megaChunk.structures.Remove(id);
                 if (screen.activeStructures.ContainsKey(id)) { screen.activeStructures.Remove(id); }
-                saveMegaChunk(megaChunk, megaChunkPos, screen.id);
+                saveMegaChunk(megaChunk);
             }
             public void saveInFile() // not used anymore BUT will keep the text and shit for like uh idk people who can see them written idk ?
             {
@@ -564,7 +567,7 @@ namespace Cave
                 {
                     savename = $"{name} {structureNames[type]}";
                 }
-                (int x, int y) structIdx = MegaChunkIdxFromPixelPos(pos.x, pos.y);
+                (int x, int y) structIdx = MegaChunkIdxFromPixelPos(pos);
                 using (StreamWriter f = new StreamWriter($"{currentDirectory}\\CaveData\\{screen.game.seed}\\StructureData\\{structIdx.x}.{structIdx.y}.{savename}.txt", false))
                 {
                     string stringo = $"Welcome to structure {name}'s file !";
@@ -664,7 +667,7 @@ namespace Cave
 
             // AFTER THIS, THE BLOOD ALTAR IS CONSIDERED VALID AND THE STRUCTURE WILL BE GENERATED
 
-            Structure altar = new Structure(screen, startPos, (0, 0), (3, 0, 0), dicto);
+            Structure altar = new Structure(screen, startPos, (0, 0), (true, true), (3, 0, 0), dicto);
             screen.game.structuresToAdd[altar.id] = altar;
 
             return true; // blood altar is valid ! yay ! that was suprisingly easy to do. now test if bugs (i hope not i hate bunny (it's a joke i love bunnies yay !))
