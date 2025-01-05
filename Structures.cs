@@ -55,8 +55,8 @@ namespace Cave
             public float timeAtBirth = -999;
 
             // loading and unloading management
-            public bool isPurelyStructureLoaded = true;
             public bool isImmuneToUnloading = false;
+            public bool isErasedFromTheWorld = false;
 
             public Screens.Screen screen;
             public Structure(Game game, StructureJson structureJson)
@@ -549,12 +549,13 @@ namespace Cave
             }
             public void EraseFromTheWorld()
             {
-                (int x, int y) megaChunkPos = MegaChunkIdxFromPixelPos(pos);
-                if (!screen.megaChunks.ContainsKey(megaChunkPos)) { screen.megaChunks[megaChunkPos] = loadMegaChunk(screen, megaChunkPos); }
-                MegaChunk megaChunk = screen.megaChunks[megaChunkPos];
+                if (isErasedFromTheWorld) { return; }
+                MegaChunk megaChunk = screen.getMegaChunkFromPixelPos(pos);
                 megaChunk.structures.Remove(id);
                 if (screen.activeStructures.ContainsKey(id)) { screen.activeStructures.Remove(id); }
                 saveMegaChunk(megaChunk);
+                isErasedFromTheWorld = true;
+                if (sisterStructure != null) { sisterStructure.EraseFromTheWorld(); }
             }
             public void saveInFile() // not used anymore BUT will keep the text and shit for like uh idk people who can see them written idk ?
             {

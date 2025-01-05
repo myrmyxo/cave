@@ -146,7 +146,7 @@ namespace Cave
                 currentDimensionId = settings.dimensionId;
                 livingDimensionId = settings.livingDimensionId;
             }
-            public void makeLoadingMagnitudeDicts(Dictionary<int, bool> testedStructures, int currentMagnitude, Structure structureToTest = null)
+            public void makeChunkLoadingPoints(Dictionary<int, bool> testedStructures, int currentMagnitude, Structure structureToTest = null)
             {
                 int newMagnitude;
                 Screen currentScreen;
@@ -161,13 +161,13 @@ namespace Cave
                         (int x, int y) chunkPos = ChunkIdx(structure.pos);
                         newMagnitude = currentMagnitude - (int)(Distance(chunkPos, ChunkIdx(player.posX, player.posY)));
                         if (newMagnitude <= 0) { continue; }
-                        makeLoadingMagnitudeDicts(testedStructures, newMagnitude, structure);
+                        makeChunkLoadingPoints(testedStructures, newMagnitude, structure);
                     }
                 }
                 else if (structureToTest.type.type == 3 && structureToTest.sisterStructure != null) // next recursions : testing from a STRUCTURE
                 {
-                    structureToTest = structureToTest.sisterStructure; // select sister structure of portal to test for that dimension
                     testedStructures[structureToTest.id] = true;
+                    structureToTest = structureToTest.sisterStructure; // select sister structure of portal to test for that dimension
                     currentScreen = structureToTest.screen;
 
                     currentScreen.chunkLoadingPoints[ChunkIdx(structureToTest.pos)] = currentMagnitude;
@@ -179,7 +179,7 @@ namespace Cave
                         (int x, int y) chunkPos = ChunkIdx(structure.pos);
                         newMagnitude = currentMagnitude + 1 - (int)(Distance(chunkPos, ChunkIdx(structureToTest.pos))); // + 1 to counteract float point value int rounding loss, and ensure portals don't have chunks that need to be rendered not loaded when entering
                         if (newMagnitude <= 0) { continue; }
-                        makeLoadingMagnitudeDicts(testedStructures, newMagnitude, structure);
+                        makeChunkLoadingPoints(testedStructures, newMagnitude, structure);
                     }
                 }
             }
@@ -251,12 +251,12 @@ namespace Cave
 
 
                 foreach (Screen screen in loadedScreens.Values) { screen.chunkLoadingPoints = new Dictionary<(int x, int y), int>(); }
-                makeLoadingMagnitudeDicts(new Dictionary<int, bool>(), playerScreen.chunkResolution);
+                makeChunkLoadingPoints(new Dictionary<int, bool>(), playerScreen.chunkResolution);
+                playerScreen.forceLoadChunksForOnePoint(ChunkIdx(player.posX, player.posY), playerScreen.chunkResolution);
 
                 List<int> dimensionsToUnload = new List<int>();
                 foreach (Screen screen in loadedScreens.Values.ToArray())
                 {
-                    screen.updateLoadedChunks();
                     screen.loadCloseChunks();
 
                     screen.addRemoveEntities();
@@ -675,7 +675,7 @@ namespace Cave
                 chunkY = ChunkIdx(player.posY);
                 if (player.dimension == id)
                 {
-                    updateLoadedChunks();
+                    forceLoadChunksForAllPoints();
                 }
 
                 foreach ((int x, int y) pos in chunksToSpawnEntitiesIn.Keys)
@@ -828,7 +828,24 @@ namespace Cave
                     chunko.plantList = new List<Plant>();
                 }
             }
-            public void updateLoadedChunks()
+            public void forceLoadChunksForOnePoint((int x, int y) chunkLoadingPos, int magnitude)
+            {
+                Chunk newChunk;
+                (int x, int y) posToTest;
+                for (int i = -(int)(magnitude * 0.5f); i < (int)(magnitude * 0.5f); i++)
+                {
+                    for (int j = -(int)(magnitude * 0.5f); j < (int)(magnitude * 0.5f); j++)
+                    {
+                        posToTest = (chunkLoadingPos.x + i, chunkLoadingPos.y + j);
+                        if (!loadedChunks.ContainsKey(posToTest))
+                        {
+                            newChunk = new Chunk(posToTest, false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
+                            if (!loadedChunks.ContainsKey(posToTest)) { loadedChunks[posToTest] = newChunk; }
+                        }
+                    }
+                }
+            }
+            public void forceLoadChunksForAllPoints()
             {
                 Chunk newChunk;
                 (int x, int y) posToTest;
@@ -871,27 +888,6 @@ namespace Cave
                                 count++;
                                 if (count > 1 + 0.5 * (Abs(game.playerList[0].speedX) + Abs(game.playerList[0].speedY))) { return; }
                             }
-                        }
-                    }
-                }
-            }
-            public void loadCloseChunks(int magnitude = -999)
-            {
-                if (magnitude == -999) { magnitude = chunkResolution; }
-                int count = 0;
-                Chunk newChunk;
-                (int x, int y) posToTest;
-                for (int i = -1 - (int)(magnitude * 0.5f); i <= (int)(magnitude * 0.5f); i++)
-                {
-                    for (int j = -1 - (int)(magnitude * 0.5f); j <= (int)(magnitude * 0.5f); j++)
-                    {
-                        posToTest = (chunkX + i, chunkY + j);
-                        if (!loadedChunks.ContainsKey(posToTest))
-                        {
-                            newChunk = new Chunk(posToTest, false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
-                            if (!loadedChunks.ContainsKey(posToTest)) { loadedChunks[posToTest] = newChunk; }
-                            count++;
-                            if (count > 1 + 0.5 * (Abs(game.playerList[0].speedX) + Abs(game.playerList[0].speedY))) { return; }
                         }
                     }
                 }
@@ -974,18 +970,16 @@ namespace Cave
                         newMegaChunks[megaChunk.pos] = megaChunks[megaChunk.pos];
                         continue;
                     }
-                    bool saveFromUnloading = false;
                     Structure structure;
                     foreach (int structureId in megaChunk.structures)
                     {
                         if (!activeStructures.ContainsKey(structureId)) { continue; }
                         structure = activeStructures[structureId];
-                        if (structure.isImmuneToUnloading)
-                    }
-                    if (saveFromUnloading) // Don't unload the megaChunk if it has immune structures in it
-                    {
-                        newMegaChunks[megaChunk.pos] = megaChunks[megaChunk.pos];
-                        continue;
+                        if (structure.isImmuneToUnloading)  // Don't unload the megaChunk if it has immune structures in it
+                        {
+                            newMegaChunks[megaChunk.pos] = megaChunks[megaChunk.pos];
+                            continue;
+                        }
                     }
                     megaChunk.unloadAllNestsAndStructuresAndChunks(chunksToRemove);
                     saveMegaChunk(megaChunk);
