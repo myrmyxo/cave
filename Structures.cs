@@ -59,6 +59,7 @@ namespace Cave
             public bool isErasedFromTheWorld = false;
 
             public Screens.Screen screen;
+            protected Structure() { }   // for inheritance (for Nests)
             public Structure(Game game, StructureJson structureJson)
             {
                 screen = game.getScreen(structureJson.dim);
@@ -116,6 +117,7 @@ namespace Cave
                 findChunkPresence();
                 if (bools.isPlayerGenerated) { return; } // if structure is player generated, don't save it and add to dicts YET
                 saveStructure(this);
+                addToMegaChunks();
                 addStructureToTheRightDictInTheScreen();
             }
             public void addStructureToTheRightDictInTheScreen()
@@ -286,16 +288,20 @@ namespace Cave
 
                 findChunkPresence();
                 saveStructure(this);
-                addToMegaChunk();
+                addToMegaChunks();
                 addStructureToTheRightDictInTheScreen();
             }
-            public void addToMegaChunk()
+            public void addToMegaChunks()
             {
-                MegaChunk megaChunk = screen.getMegaChunkFromPixelPos(pos);
-                if (!megaChunk.structures.Contains(id)) // should always be the case but whatever
+                MegaChunk megaChunk;
+                foreach ((int x, int y) pos in megaChunkPresence.Keys)
                 {
-                    megaChunk.structures.Add(id);
-                    saveMegaChunk(megaChunk);
+                    megaChunk = screen.getMegaChunkFromMegaPos(pos);
+                    if (!megaChunk.structures.Contains(id)) // should always be the case but whatever
+                    {
+                        megaChunk.structures.Add(id);
+                        screen.megaChunksToSave[pos] = true;
+                    }
                 }
             }
             public bool cubeAmalgam()

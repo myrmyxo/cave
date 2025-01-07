@@ -61,9 +61,11 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                loadStructuresYesOrNo = false;
-                spawnEntities = false;
-                spawnPlants = false;
+                loadStructuresYesOrNo = true;
+                spawnEntities = true;
+                spawnPlants = true;
+                bool spawnNOTHING = true;
+                if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntities = false; spawnPlants = false; }
 
                 if (randomSeed)
                 {
@@ -128,7 +130,7 @@ namespace Cave
                 loadDimension(idToPut, false, isMonoeBiomeToPut, forceBiome.type, forceBiome.subType);
                 setPlayerDimension(player, idToPut);
             }
-            public void movePlayerStuff(Screen screen, Player player)
+            public void movePlayerStuff(Player player)
             {
                 if (inventoryChangePress[0]) { inventoryChangePress[0] = false; player.moveInventoryCursor(-1); }
                 if (inventoryChangePress[1]) { inventoryChangePress[1] = false; player.moveInventoryCursor(1); }
@@ -243,7 +245,7 @@ namespace Cave
                     if (arrowKeysState[0] || arrowKeysState[2]) { player.moveCraftCursor(-1); player.timeAtLastMenuChange = timeElapsed; }
                     if (arrowKeysState[1] || arrowKeysState[3]) { player.moveCraftCursor(1); player.timeAtLastMenuChange = timeElapsed; }
                 }
-                movePlayerStuff(playerScreen, player); // move player, load new chunks, test craft, and stuff
+                movePlayerStuff(player); // move player, load new chunks, test craft, and stuff
                 playerScreen.chunkX = ChunkIdx(player.posX);
                 playerScreen.chunkY = ChunkIdx(player.posY);
 
@@ -608,7 +610,7 @@ namespace Cave
             public Dictionary<int, Structure> inertStructures = new Dictionary<int, Structure>(); // structures that are just terrain and don't need to be tested for shit (lakes, cubes...)
             public Dictionary<int, Structure> activeStructures = new Dictionary<int, Structure>(); // structures that are active and can do shit to other shit (like portals)
 
-            public Dictionary<(int x, int y), bool> megaChunksToForceLoad = new Dictionary<(int x, int y), bool>();
+            public Dictionary<(int x, int y), bool> megaChunksToSave = new Dictionary<(int x, int y), bool>();
 
             public List<((int x, int y) pos, (int type, int subType) attack)> attacksToDo = new List<((int x, int y) pos, (int type, int subType) attack)>();
             public List<((int x, int y) pos, Color color)> attacksToDraw = new List<((int x, int y), Color color)>();
@@ -986,6 +988,11 @@ namespace Cave
                     actuallyUnloadTheChunks(chunksToRemove);
                 }
                 megaChunks = newMegaChunks;
+                foreach ((int x, int y) pos in megaChunksToSave.Keys)
+                {
+                    if (megaChunks.ContainsKey(pos)) { saveMegaChunk(megaChunks[pos]); } // Else it has been unloaded and has been saved when being unloaded, so no need to save it.
+                }
+                megaChunksToSave = new Dictionary<(int x, int y), bool>();
             }
 
             public void fillBitmap(Bitmap receiver, Color color)
@@ -1420,6 +1427,11 @@ namespace Cave
             public MegaChunk getMegaChunkFromChunkPos((int x, int y) pos)
             {
                 pos = MegaChunkIdxFromChunkPos(pos);
+                if (!megaChunks.ContainsKey(pos)) { return loadMegaChunk(this, pos); }
+                return megaChunks[pos];
+            }
+            public MegaChunk getMegaChunkFromMegaPos((int x, int y) pos)
+            {
                 if (!megaChunks.ContainsKey(pos)) { return loadMegaChunk(this, pos); }
                 return megaChunks[pos];
             }

@@ -214,7 +214,6 @@ namespace Cave
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
                         seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
                         Structure newStructure = new Structure(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (false, false), (0, 0, 0));
-                        structures.Add(newStructure.id);
                     }
                     long waterLakesAmount = 15 + (seedX + seedY) % 150;
                     for (int i = 0; i < waterLakesAmount; i++)
@@ -222,7 +221,6 @@ namespace Cave
                         seedX = LCGyNeg(seedX); // on porpoise x    /\_/\
                         seedY = LCGxNeg(seedY); // and y switched  ( ^o^ )
                         Structure newStructure = new Structure(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (true, false), (0, 0, 0));
-                        structures.Add(newStructure.id);
                     }
                     long nestAmount = (seedX + seedY) % 3;
                     //nestAmount = 0;
@@ -520,7 +518,7 @@ namespace Cave
         public class NestJson
         {
             public int id;
-            public int type;
+            public (int type, int subtype, int subSubType) type;
             public long seed;
 
             public (int x, int y) pos;
@@ -532,9 +530,9 @@ namespace Cave
             public NestJson(Nest nest)
             {
                 id = nest.id;
-                seed = nest.seed;
+                seed = nest.seed.x;
                 type = nest.type;
-                pos = nest.position;
+                pos = nest.pos;
                 Room[] allRooms = nest.rooms.Values.ToArray();
                 rooms = new RoomJson[allRooms.Length];
                 for (int i = 0; i < allRooms.Length; i++)

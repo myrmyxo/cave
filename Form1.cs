@@ -459,6 +459,7 @@ namespace Cave
             // Make it so fairies and other creatures have songs. Like maybe in a fairy village there's a village theme song that's procedurally generated. Idk. ANd they can teach u the song and u can sing it with instrument or voice idk.
             // Add winged waterSkipper : when the population in a lake is too high, or food is too scarse, some old enough waterSkippers can become winged, and fly around to lakes with none or few waterSkippers/lots of food. Migration patterns ? idk
             // add tribes of snowmen ! lmao
+            // ADD SPIDERS !! That can put strings and you can get stuck into them ? Webs ? And you get eARTER ? ? 
 
             // Plants ideas !
             // Tendril shits in living diomension

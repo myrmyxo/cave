@@ -189,7 +189,7 @@ namespace Cave
             }
             public long findSeed()
             {
-                seed = nest.seed * (LCGxNeg(position.x) + LCGyNeg(position.y)) + LCGxPos(position.x) * LCGyPos(position.y);
+                seed = nest.seed.x * (LCGxNeg(position.x) + LCGyNeg(position.y)) + LCGxPos(position.x) * LCGyPos(position.y);
                 return seed;
             }
             public void findBorders()
@@ -633,24 +633,14 @@ namespace Cave
                 return ((0, 0), false);
             }
         }
-        public class Nest
+        public class Nest : Structure
         {
-            public Screens.Screen screen;
-
-            public int id;
-            public int type;
-            public long seed;
-
-            public (int x, int y) position;
-
             // stats to build nest and what it looks like iggg
             public int roomSize = 0; // bigger leads to bigger rooms NOT USED
             public int connectivity = 0; // bigger leads to less connexions (corridors) NOT USED
             public int extensivity = 0; // bigger leads to new rooms and corridors being dug out farther away from the center ig NOT USED
             public float shape = 1.41421356237f; //the only one that has an actual effect LMFAO
 
-            public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>(); // the chunks that the nest is present in
-            public Dictionary<(int x, int y), bool> megaChunkPresence = new Dictionary<(int x, int y), bool>(); // the chunks that the nest is present in
             public Dictionary<(int x, int y), bool> tiles = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), bool> borders = new Dictionary<(int x, int y), bool>();
             public Dictionary<int, Room> rooms = new Dictionary<int, Room>();
@@ -669,17 +659,13 @@ namespace Cave
             public List<int> availableHoneyRooms = new List<int>();
             public List<int> availableNurseries = new List<int>();
 
-            // loading and unloading management
-            public bool isPurelyStructureLoaded = true;
-            public bool isImmuneToUnloading = false;
-
             public Nest(Screens.Screen screenToPut, NestJson nestJson)
             {
                 screen = screenToPut;
                 id = nestJson.id;
-                seed = nestJson.seed;
+                seed = (nestJson.seed, nestJson.seed);
                 type = nestJson.type;
-                position = nestJson.pos;
+                pos = nestJson.pos;
                 foreach (RoomJson roomJson in nestJson.rooms)
                 {
                     rooms[roomJson.id] = new Room(this, roomJson);
@@ -713,9 +699,9 @@ namespace Cave
             public Nest(Screens.Screen screenToPut, (int x, int y) posToPut, long seedToPut)
             {
                 screen = screenToPut;
-                seed = seedToPut;
-                type = 0;
-                position = posToPut;
+                seed = (seedToPut, seedToPut);
+                type = (0, 0, 0);
+                pos = posToPut;
 
                 Room mainRoom = new Room(posToPut, 0, currentRoomId, this);
                 if (!mainRoom.isToBeDestroyed)
@@ -835,7 +821,7 @@ namespace Cave
                 {
                     distance = repeatCounter * 5;
                     float angle = (float)(rand.NextDouble() * 6.28318530718);
-                    (int x, int y) targetPos = (position.x + (int)(Math.Cos(angle) * distance), position.y + (int)(Math.Sin(angle) * distance));
+                    (int x, int y) targetPos = (pos.x + (int)(Math.Cos(angle) * distance), pos.y + (int)(Math.Sin(angle) * distance));
 
                     if (testRoomAvailability(targetPos, 45))
                     {

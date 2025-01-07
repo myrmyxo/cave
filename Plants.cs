@@ -265,6 +265,13 @@ namespace Cave
                 if (motherPlant.testIfPositionEmpty(absolutePos(testPos))) { fillStates[testPos] = typeToFill; return true; }
                 return false;
             }
+            public bool setMaxGrowthAndTestIfOverAndReinitFillStates(int growthLevelToTest, int maxGrowthToSet)
+            {
+                maxGrowthLevel = maxGrowthToSet;
+                if (growthLevelToTest > maxGrowthLevel) { return true; }
+                fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
+                return false;
+            }
             public bool tryGrowth() // 0 = nothing, 1 = plantMatter, 2 = wood, 3 = aquaticPlantMatter, 4 = mushroomStem, 5 = mushroomCap, 6 = petal, 7 = flowerPollen
             {
                 int growthLevelToTest = growthLevel + 1;
@@ -275,11 +282,9 @@ namespace Cave
 
                 if (motherPlant.type.type == 0)
                 {
-                    fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
                     if (motherPlant.type.subType == 2)  // Tulip
                     {
-                        maxGrowthLevel = 4;
-
+                        if (setMaxGrowthAndTestIfOverAndReinitFillStates(growthLevelToTest, 5)) { goto Fail; }
                         if (growthLevelToTest == 1)
                         {
                             tryFill((0, 0), (2, 0));
@@ -317,8 +322,7 @@ namespace Cave
                     }
                     if (motherPlant.type.subType == 3)                                   // Allium
                     {
-                        maxGrowthLevel = 3;
-
+                        if (setMaxGrowthAndTestIfOverAndReinitFillStates(growthLevelToTest, 4)) { goto Fail; }
                         if (growthLevelToTest == 1)
                         {
                             tryFill((0, 0), (2, 0));
@@ -375,7 +379,7 @@ namespace Cave
                 {
                     if (motherPlant.type.subType == 1) // chandelierTree
                     {
-                        fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
+                        if (setMaxGrowthAndTestIfOverAndReinitFillStates(growthLevelToTest, 5)) { goto Fail; }
                         if (growthLevelToTest == 1)
                         {
                             tryFill((0, 0), (11, 1)); // ...here... duh
@@ -400,7 +404,7 @@ namespace Cave
                             tryFill((1, 1), (11, 0));
                             tryFill((0, 2), (11, 0));
                         }
-                        else if (growthLevelToTest >= 5)
+                        else
                         {
                             tryFill((-1, -1), (11, 0));
                             tryFill((0, -1), (11, 0));
@@ -418,7 +422,7 @@ namespace Cave
                     }
                     else
                     {
-                        fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
+                        if (setMaxGrowthAndTestIfOverAndReinitFillStates(growthLevelToTest, 4)) { goto Fail; }
 
                         (int x, int y) drawPos = (0, 0);
 
@@ -454,7 +458,7 @@ namespace Cave
                                 }
                             }
                         }
-                        else if (growthLevelToTest >= 4)
+                        else
                         {
                             for (int i = -2; i < 3; i++)
                             {
@@ -475,10 +479,7 @@ namespace Cave
                 }
                 else if (motherPlant.type.type == 4) // mushy
                 {
-                    maxGrowthLevel = motherPlant.maxGrowthLevel;
-                    if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
-
-                    fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
+                    if (setMaxGrowthAndTestIfOverAndReinitFillStates(growthLevelToTest, motherPlant.maxGrowthLevel)) { goto Fail; }
 
                     tryFill((-1, 0), (3, 1));
                     tryFill((0, 0), (3, 1));
@@ -498,8 +499,7 @@ namespace Cave
                 }
                 else if (motherPlant.type.type == 5) // vine
                 {
-                    maxGrowthLevel = 3;
-                    fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
+                    setMaxGrowthAndTestIfOverAndReinitFillStates(growthLevelToTest, 3);
                     if (type == 0)
                     {
                         if (growthLevelToTest == 1)
@@ -514,7 +514,7 @@ namespace Cave
                             tryFill((0, 1), (2, 0));
                             tryFill((0, -1), (2, 0));
                         }
-                        else if (growthLevelToTest >= 3)
+                        else
                         {
                             tryFill((0, 0), (2, 1));
                             tryFill((1, 0), (2, 0));
@@ -539,7 +539,7 @@ namespace Cave
                             tryFill((1, -1), (2, 0));
                             tryFill((-1, -1), (2, 0));
                         }
-                        else if (growthLevelToTest >= 3)
+                        else
                         {
                             tryFill((0, 0), (2, 1));
                             tryFill((1, 1), (2, 0));
