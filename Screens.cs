@@ -36,6 +36,9 @@ namespace Cave
     {
         public class Game
         {
+            public List<string> structureGenerationLogs = new List<string>();
+            public Dictionary<(int dim, int x, int y), int> structureGenerationLogsStructureUpdateCount = new Dictionary<(int dim, int x, int y), int>();
+
             public Dictionary<int, Screen> loadedScreens = new Dictionary<int, Screen>();
             public List<Player> playerList = new List<Player>();
 
@@ -64,7 +67,7 @@ namespace Cave
                 loadStructuresYesOrNo = true;
                 spawnEntities = true;
                 spawnPlants = true;
-                bool spawnNOTHING = true;
+                bool spawnNOTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntities = false; spawnPlants = false; }
 
                 if (randomSeed)
@@ -144,7 +147,6 @@ namespace Cave
                 currentStructureId = settings.structureId;
                 currentEntityId = settings.entityId;
                 currentPlantId = settings.plantId;
-                currentNestId = settings.nestId;
                 currentDimensionId = settings.dimensionId;
                 livingDimensionId = settings.livingDimensionId;
             }
@@ -384,6 +386,8 @@ namespace Cave
                 drawInventory(player.screen.game, player.inventoryQuantities, player.inventoryElements, player.inventoryCursor);
                 overlayPictureBox.Refresh();
 
+                updateStructureLogFile(this);
+
                 int gouga = liquidSlideCount;
                 gouga = gouga + 1 - 1;
             }
@@ -403,7 +407,7 @@ namespace Cave
                 Dictionary<Nest, bool> newImmuneNests = new Dictionary<Nest, bool>();
                 Dictionary<Structure, bool> newImmuneStructures = new Dictionary<Structure, bool>();
 
-                foreach (Screen screen in loadedScreens.Values)
+                foreach (Screen screen in loadedScreens.Values.ToArray())
                 {
                     // 1. non nest/structure chunks set MegaChunks as Immune
                     MegaChunk megaChunk;
@@ -579,6 +583,7 @@ namespace Cave
             public Dictionary<(int x, int y), Chunk> loadedChunks = new Dictionary<(int x, int y), Chunk>();
             public Dictionary<(int x, int y), Chunk> extraLoadedChunks = new Dictionary<(int x, int y), Chunk>();
             public Dictionary<(int x, int y), MegaChunk> megaChunks = new Dictionary<(int x, int y), MegaChunk>();
+            public Dictionary<(int x, int y), MegaChunk> extraLoadedMegaChunks = new Dictionary<(int x, int y), MegaChunk>();
 
             public List<long>[,] LCGCacheListMatrix;
 
@@ -956,12 +961,8 @@ namespace Cave
                 {
                     megaChunkPos = MegaChunkIdxFromChunkPos(chunkPos);
                     if (newMegaChunks.ContainsKey(megaChunkPos)) { continue; }
-                    if ((nestLoadedChunkIndexes.ContainsKey(chunkPos) || activeStructureLoadedChunkIndexes.ContainsKey(chunkPos))) { continue; }
-                    if (!megaChunks.ContainsKey(megaChunkPos)) // Shouldn't happen but still
-                    {
-                        loadMegaChunk(this, megaChunkPos);
-                    }
-                    newMegaChunks[megaChunkPos] = megaChunks[megaChunkPos];
+                    if (nestLoadedChunkIndexes.ContainsKey(chunkPos) || activeStructureLoadedChunkIndexes.ContainsKey(chunkPos)) { continue; }
+                    newMegaChunks[megaChunkPos] = getMegaChunkFromMegaPos(megaChunkPos);
                     megaChunks.Remove(megaChunkPos);
                 }
                 Dictionary<(int x, int y), bool> chunksToRemove = new Dictionary<(int x, int y), bool>();
@@ -1418,22 +1419,27 @@ namespace Cave
                 }
                 return chunkToTest;
             }
-            public MegaChunk getMegaChunkFromPixelPos((int x, int y) pos)
+            public MegaChunk getMegaChunkFromPixelPos((int x, int y) pos, bool isExtraGetting = false)
             {
-                pos = MegaChunkIdxFromPixelPos(pos);
-                if (!megaChunks.ContainsKey(pos)) { return loadMegaChunk(this, pos); }
-                return megaChunks[pos];
+                return getMegaChunkFromMegaPos(MegaChunkIdxFromPixelPos(pos), isExtraGetting);
             }
-            public MegaChunk getMegaChunkFromChunkPos((int x, int y) pos)
+            public MegaChunk getMegaChunkFromChunkPos((int x, int y) pos, bool isExtraGetting = false)
             {
-                pos = MegaChunkIdxFromChunkPos(pos);
-                if (!megaChunks.ContainsKey(pos)) { return loadMegaChunk(this, pos); }
-                return megaChunks[pos];
+                return getMegaChunkFromMegaPos(MegaChunkIdxFromChunkPos(pos), isExtraGetting);
             }
-            public MegaChunk getMegaChunkFromMegaPos((int x, int y) pos)
+            public MegaChunk getMegaChunkFromMegaPos((int x, int y) pos, bool isExtraGetting = false)
             {
-                if (!megaChunks.ContainsKey(pos)) { return loadMegaChunk(this, pos); }
-                return megaChunks[pos];
+                if (megaChunks.ContainsKey(pos)) { return megaChunks[pos]; }
+                if (extraLoadedMegaChunks.ContainsKey(pos))
+                {
+                    if (isExtraGetting) { return extraLoadedMegaChunks[pos]; }
+                    MegaChunk megaChunkToGet = extraLoadedMegaChunks[pos];
+                    megaChunkToGet.loadAllStuffInIt();  // Upgrade the extraLoaded MegaChunk to a full MegaChunk, by loading all its contents and putting it in the other dict
+                    megaChunks[pos] = megaChunkToGet;
+                    extraLoadedMegaChunks.Remove(pos);
+                    return megaChunkToGet;
+                }
+                return loadMegaChunk(this, pos, isExtraGetting);
             }
         }
     }

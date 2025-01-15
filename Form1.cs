@@ -79,7 +79,6 @@ namespace Cave
             public static int currentStructureId = 0;
             public static int currentEntityId = 0;
             public static int currentPlantId = 0;
-            public static int currentNestId = 0;
             public static int currentDimensionId = 0;
 
             public static long worldSeed = 0;
@@ -452,7 +451,7 @@ namespace Cave
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
-            // 
+            // Ocean biome -> in some patches, have the normal cave system thing get added on top, so that there are kinds of small caves and shit in the ocean biome too (but only in some parts)
 
             // Entities ideas !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ? And add LITHOPEDIONS

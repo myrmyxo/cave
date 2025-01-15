@@ -736,8 +736,8 @@ namespace Cave
                 updateDigErrands();
                 decideForBabies();
 
-                id = currentNestId;
-                currentNestId++;
+                id = currentStructureId;
+                currentStructureId++;
                 saveNest(this);
             }
             public void addRoom(Room room, bool fillTiles)

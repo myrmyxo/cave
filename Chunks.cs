@@ -334,7 +334,7 @@ namespace Cave
                     screen.chunksToSpawnEntitiesIn[position] = true;
                 }
 
-                if (!structureGenerated) { getMegaChunk(); }
+                if (!structureGenerated) { getMegaChunk(true); }
             }
             public (int type, int subType) findMaterialToFillWith((int, int) values, (int type, int subType) biome, Dictionary<(int type, int subType), float> dicto)
             {
@@ -952,11 +952,20 @@ namespace Cave
                     }
                 }
             }
-            public MegaChunk getMegaChunk()
+            public MegaChunk getMegaChunk(bool isExtraGetting = false)
             {
                 (int x, int y) pos = MegaChunkIdxFromChunkPos(position);
-                if (!screen.megaChunks.ContainsKey(pos)) { return loadMegaChunk(this); }
-                return screen.megaChunks[pos];
+                if (screen.megaChunks.ContainsKey(pos)) { return screen.megaChunks[pos]; }
+                if (screen.extraLoadedMegaChunks.ContainsKey(pos))
+                {
+                    if (isExtraGetting) { return screen.extraLoadedMegaChunks[pos]; }
+                    MegaChunk megaChunkToGet = screen.extraLoadedMegaChunks[pos];
+                    megaChunkToGet.loadAllStuffInIt();  // Upgrade the extraLoaded MegaChunk to a full MegaChunk, by loading all its contents and putting it in the other dict
+                    screen.megaChunks[pos] = megaChunkToGet;
+                    screen.extraLoadedMegaChunks.Remove(pos);
+                    return megaChunkToGet;
+                }
+                return loadMegaChunk(screen, pos, isExtraGetting);
             }
         }
         public static void makeTheFilledChunk()

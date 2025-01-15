@@ -56,7 +56,7 @@ namespace Cave
 
             // loading and unloading management
             public bool isImmuneToUnloading = false;
-            public bool isErasedFromTheWorld = false;
+            public bool isErasedFromTheWorld = false;   // serves both for deletion and when creating the structure if it's not valid and doesn't get added to the world
 
             public Screens.Screen screen;
             protected Structure() { }   // for inheritance (for Nests)
@@ -89,9 +89,7 @@ namespace Cave
                 seed = seedToPut;
                 screen = screenToPut;
                 pos = posToPut;
-
-                id = currentStructureId;
-                currentStructureId++;
+                id = currentStructureId;    // Don't increase it yet, so that if the structure fails it doesn't take an id (not that useful but it's prettier lol)
 
                 if (bools.forceType) { type = forceType; }
                 else
@@ -113,6 +111,9 @@ namespace Cave
 
                 if (bools.isPlayerGenerated && forceStructure != null) { structureDict = forceStructure; }
                 drawStructure(); // contains imprintChunks()
+
+                if (isErasedFromTheWorld) { return; }   // if the structure FAILED, don't do anything. Don't add it or anything else
+                currentStructureId++;       // Structures has been validated -> increase currentStructureId here
 
                 findChunkPresence();
                 if (bools.isPlayerGenerated) { return; } // if structure is player generated, don't save it and add to dicts YET
@@ -195,7 +196,7 @@ namespace Cave
                     newTilesToFill = babyNewTilesToFill;
                     currentY++;
                 }
-                if (tilesToFill.Count < 0) { return false; } // No laketches ?
+                if (tilesToFill.Count == 0) { return false; } // No laketches ?
 
 
                 material = (-2, 0); // material is now type to fill with
@@ -258,7 +259,7 @@ namespace Cave
                 }
                 return true; // return true even if fill not worked, just stop if tile is liquid or if filled too much
             }
-            public bool drawStructure()
+            public void drawStructure()
             {
                 long seedo = (seed.x / 2 + seed.y / 2) % 79461537;
                 name = "";
@@ -274,10 +275,10 @@ namespace Cave
                 else if (type == (1, 0, 0)) { success = cubeAmalgam(); }
                 else if (type == (2, 0, 0)) { success = sawBlade(); }
                 else if (type == (2, 1, 0)) { success = star(); }
-                else { return false; } // if not in these don't imprint LeChunks
+                else { success = false; }   // if not in these structure is not validated
 
                 if (success) { imprintChunks(); }
-                return success;
+                else { isErasedFromTheWorld = true; }
             }
             public void initAfterStructureValidated()
             {
@@ -296,11 +297,14 @@ namespace Cave
                 MegaChunk megaChunk;
                 foreach ((int x, int y) pos in megaChunkPresence.Keys)
                 {
-                    megaChunk = screen.getMegaChunkFromMegaPos(pos);
+                    megaChunk = screen.getMegaChunkFromMegaPos(pos, true);
                     if (!megaChunk.structures.Contains(id)) // should always be the case but whatever
                     {
                         megaChunk.structures.Add(id);
                         screen.megaChunksToSave[pos] = true;
+                        (int dim, int x, int y) location = (megaChunk.screen.id, pos.x, pos.y);
+                        if (!screen.game.structureGenerationLogsStructureUpdateCount.ContainsKey(location)) { screen.game.structureGenerationLogsStructureUpdateCount[location] = 0; }
+                        screen.game.structureGenerationLogsStructureUpdateCount[location] += 1;
                     }
                 }
             }
@@ -556,31 +560,12 @@ namespace Cave
             public void EraseFromTheWorld()
             {
                 if (isErasedFromTheWorld) { return; }
-                MegaChunk megaChunk = screen.getMegaChunkFromPixelPos(pos);
+                MegaChunk megaChunk = screen.getMegaChunkFromPixelPos(pos, true);
                 megaChunk.structures.Remove(id);
                 if (screen.activeStructures.ContainsKey(id)) { screen.activeStructures.Remove(id); }
                 saveMegaChunk(megaChunk);
                 isErasedFromTheWorld = true;
                 if (sisterStructure != null) { sisterStructure.EraseFromTheWorld(); }
-            }
-            public void saveInFile() // not used anymore BUT will keep the text and shit for like uh idk people who can see them written idk ?
-            {
-                string savename;
-                if (type.type == 0)
-                {
-                    savename = $"lake {name}";
-                }
-                else
-                {
-                    savename = $"{name} {structureNames[type]}";
-                }
-                (int x, int y) structIdx = MegaChunkIdxFromPixelPos(pos);
-                using (StreamWriter f = new StreamWriter($"{currentDirectory}\\CaveData\\{screen.game.seed}\\StructureData\\{structIdx.x}.{structIdx.y}.{savename}.txt", false))
-                {
-                    string stringo = $"Welcome to structure {name}'s file !";
-                    stringo += $"{name} is a {structureNames[type]}.";
-                    f.Write(stringo);
-                }
             }
             public void makeBitmap()
             {
