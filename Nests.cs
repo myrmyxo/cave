@@ -68,15 +68,11 @@ namespace Cave
                 findBorders();
                 findDropPositions();
                 findCapacity();
-                foreach (int id in roomJson.ent) // could be improved for efficiency i guess
+                foreach (int entityId in roomJson.ent)
                 {
-                    foreach (Entity entity in nest.screen.activeEntities.Values)
+                    if (nest.screen.activeEntities.ContainsKey(entityId))
                     {
-                        if (entity.id == id)
-                        {
-                            assignedEntities.Add(entity);
-                            break;
-                        }
+                        assignedEntities.Add(nest.screen.activeEntities[entityId]);
                     }
                 }
                 testFullness();
@@ -646,7 +642,6 @@ namespace Cave
             public Dictionary<int, Room> rooms = new Dictionary<int, Room>();
             public int currentRoomId = 0;
             public bool isStable = false;
-            public bool isNotToBeAdded = false;
 
             // entity management
             public int eggsToLay = 0;
@@ -659,42 +654,29 @@ namespace Cave
             public List<int> availableHoneyRooms = new List<int>();
             public List<int> availableNurseries = new List<int>();
 
-            public Nest(Screens.Screen screenToPut, NestJson nestJson)
+            public Nest(Game game, NestJson nestJson)
             {
-                screen = screenToPut;
-                id = nestJson.id;
-                seed = (nestJson.seed, nestJson.seed);
-                type = nestJson.type;
-                pos = nestJson.pos;
+                setAllStructureJsonVariables(game, nestJson);
+
                 foreach (RoomJson roomJson in nestJson.rooms)
                 {
                     rooms[roomJson.id] = new Room(this, roomJson);
                 }
 
-                foreach (int id in nestJson.ent) // could be improved for efficiency i guess
+                foreach (int entityId in nestJson.ent)
                 {
-                    foreach (Entity entity in screen.activeEntities.Values)
+                    if (screen.activeEntities.ContainsKey(entityId))
                     {
-                        if (entity.id == id)
-                        {
-                            if (entity.type == 3)
-                            {
-                                adults.Add(entity);
-                            }
-                            else
-                            {
-                                larvae.Add(entity);
-                            }
-                            goto entityFound;
-                        }
+                        addEntityToStructure(screen.activeEntities[entityId]);
                     }
-                    outsideEntities.Add(id);
-                entityFound:;
+                    else { outsideEntities.Add(id); }
                 }
                 updateTiles();
                 updateDropPositions();
                 updateDigErrands();
                 decideForBabies();
+
+                addStructureToTheRightDictInTheScreen();
             }
             public Nest(Screens.Screen screenToPut, (int x, int y) posToPut, long seedToPut)
             {
@@ -702,6 +684,7 @@ namespace Cave
                 seed = (seedToPut, seedToPut);
                 type = (0, 0, 0);
                 pos = posToPut;
+                isDynamic = true;
 
                 Room mainRoom = new Room(posToPut, 0, currentRoomId, this);
                 if (!mainRoom.isToBeDestroyed)
@@ -714,22 +697,21 @@ namespace Cave
                     }
                     else
                     {
-                        isNotToBeAdded = true;
+                        isErasedFromTheWorld = true;
                         return;
                     }
                 }
                 else
                 {
-                    isNotToBeAdded = true;
+                    isErasedFromTheWorld = true;
                     return;
                 }
 
                 for (int i = 0; i < 5; i++)
                 {
                     Entity hornet = new Entity(screen, posToPut, (3, 3));
-                    screen.activeEntities[hornet.id] = hornet;
-                    adults.Add(hornet);
-                    hornet.nest = this;
+                    screen.entitesToAdd[hornet.id] = hornet;
+                    addEntityToStructure(hornet);
                 }
                 updateTiles();
                 updateDropPositions();
@@ -738,7 +720,43 @@ namespace Cave
 
                 id = currentStructureId;
                 currentStructureId++;
-                saveNest(this);
+                saveStructure();
+                addToMegaChunks();
+                addStructureToTheRightDictInTheScreen();
+            }
+            public override void saveStructure()
+            {
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Converters.Add(new JavaScriptDateTimeConverter());
+                serializer.NullValueHandling = NullValueHandling.Ignore;
+
+                NestJson nestJson = new NestJson(this);
+
+                using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{screen.game.seed}\\StructureData\\{id}.json"))
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    serializer.Serialize(writer, nestJson);
+                }
+            }
+            public override int setClassTypeInJson() { return 1; }
+            public override void addEntityToStructure(Entity entity)
+            {
+                if (entity.type == 3)
+                {
+                    adults.Add(entity);
+                }
+                else
+                {
+                    larvae.Add(entity);
+                }
+                if (outsideEntities.Contains(entity.id)) { outsideEntities.Remove(entity.id); }
+                setNestAsEntitysNest(entity);
+            }
+            public override Nest getItselfAsNest() { return this; } // not perfect but ehhhhh... for debug
+            public void setNestAsEntitysNest(Entity entity)
+            {
+                entity.nest = this;
+                entity.nestId = id;
             }
             public void addRoom(Room room, bool fillTiles)
             {
@@ -873,6 +891,14 @@ namespace Cave
                 }
                 removeRoom(newRoom);
                 return false;
+            }
+            public override void moveStructure()
+            {
+                if (rand.Next(100) == 0) { isStable = false; }
+                if (!isStable && digErrands.Count == 0)
+                {
+                    randomlyExtendNest();
+                }
             }
             public void randomlyExtendNest()
             {

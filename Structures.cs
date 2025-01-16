@@ -36,6 +36,7 @@ namespace Cave
     {
         public class Structure
         {
+            public int c;   // The "mega" type. If a normal structure, a nest...
             public int id;
             public (int type, int subType, int subSubType) type;
             public (long x, long y) seed;
@@ -62,6 +63,12 @@ namespace Cave
             protected Structure() { }   // for inheritance (for Nests)
             public Structure(Game game, StructureJson structureJson)
             {
+                setAllStructureJsonVariables(game, structureJson);
+                findChunkPresence();
+                addStructureToTheRightDictInTheScreen();
+            }
+            public void setAllStructureJsonVariables(Game game, StructureJson structureJson)
+            {
                 screen = game.getScreen(structureJson.dim);
                 id = structureJson.id;
                 if (screen.activeStructures.ContainsKey(id) || screen.inertStructures.ContainsKey(id)) { return; }
@@ -77,8 +84,6 @@ namespace Cave
                 structureDict = arrayToFillstates(structureJson.fS);
 
                 makeBitmap();
-                findChunkPresence();
-                addStructureToTheRightDictInTheScreen();
                 if (structureJson.sis != -1)  // important to load here else infinite loop :(
                 {
                     sisterStructure = game.getStructure(structureJson.sis);
@@ -89,7 +94,7 @@ namespace Cave
                 seed = seedToPut;
                 screen = screenToPut;
                 pos = posToPut;
-                id = currentStructureId;    // Don't increase it yet, so that if the structure fails it doesn't take an id (not that useful but it's prettier lol)
+                id = currentStructureId;
 
                 if (bools.forceType) { type = forceType; }
                 else
@@ -110,17 +115,32 @@ namespace Cave
                 }
 
                 if (bools.isPlayerGenerated && forceStructure != null) { structureDict = forceStructure; }
-                drawStructure(); // contains imprintChunks()
+                if (!bools.isPlayerGenerated) { drawStructure(); } // contains imprintChunks()
 
                 if (isErasedFromTheWorld) { return; }   // if the structure FAILED, don't do anything. Don't add it or anything else
-                currentStructureId++;       // Structures has been validated -> increase currentStructureId here
+                currentStructureId++;
 
                 findChunkPresence();
                 if (bools.isPlayerGenerated) { return; } // if structure is player generated, don't save it and add to dicts YET
-                saveStructure(this);
+                saveStructure();
                 addToMegaChunks();
                 addStructureToTheRightDictInTheScreen();
             }
+            public virtual void saveStructure()
+            {
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Converters.Add(new JavaScriptDateTimeConverter());
+                serializer.NullValueHandling = NullValueHandling.Ignore;
+
+                StructureJson structureJson = new StructureJson(this);
+
+                using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{screen.game.seed}\\StructureData\\{id}.json"))
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    serializer.Serialize(writer, structureJson);
+                }
+            }
+            public virtual int setClassTypeInJson() { return 0; }
             public void addStructureToTheRightDictInTheScreen()
             {
                 Chunk newChunk;
@@ -288,7 +308,7 @@ namespace Cave
                 imprintChunks();
 
                 findChunkPresence();
-                saveStructure(this);
+                saveStructure();
                 addToMegaChunks();
                 addStructureToTheRightDictInTheScreen();
             }
@@ -462,7 +482,7 @@ namespace Cave
                 }
                 makeBitmap();
             }
-            public void moveStructure() // it's not actually moving but whatever lmfao
+            public virtual void moveStructure() // it's not actually moving but whatever lmfao
             {
                 if (type.type == 3)
                 {
@@ -490,6 +510,11 @@ namespace Cave
                 // then blood particles start moving from the blood, going to the center position, agregate into a portal. The blood particles come continiously from the portal
                 // even after it's been created, but there's a lot more at the start. After the portal is done it can be used.
             }
+            public virtual void addEntityToStructure(Entity entity)
+            {
+                return; // lol
+            }
+            public virtual Nest getItselfAsNest() { return null; } // not perfect but ehhhhh... for debug
             public void tryTeleportation()
             {
                 int idToTeleportTo = sisterStructure.screen.id;

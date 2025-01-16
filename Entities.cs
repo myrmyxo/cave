@@ -88,18 +88,8 @@ namespace Cave
                 targetPos = entityJson.tPos;
                 seed = entityJson.seed;;
                 id = entityJson.id;
-                if (entityJson.nstId >= 0)
-                {
-                    // weird shit thingy...
-                    if (screen.activeNests.ContainsKey(entityJson.nstId))
-                    {
-                        nest = screen.activeNests[entityJson.nstId];
-                    }
-                    else
-                    {
-                        screen.orphanEntities[id] = true;
-                    }
-                }
+                nestId = entityJson.nstId;
+                testOrphanage();
                 (Dictionary<(int index, int subType, int typeOfElement), int>, List<(int index, int subType, int typeOfElement)>) returnTuple = arrayToInventory(entityJson.inv);
                 inventoryQuantities = returnTuple.Item1;
                 inventoryElements = returnTuple.Item2;
@@ -139,6 +129,14 @@ namespace Cave
                 timeAtBirth = timeElapsed;
 
                 currentEntityId++;
+            }
+            public void testOrphanage()
+            {
+                if (nestId == -1 || nest != null) { return; }
+                if (screen.activeStructures.ContainsKey(nestId))
+                {
+                    screen.activeStructures[nestId].addEntityToStructure(this);
+                }
             }
             public void findType(Chunk chunk)
             {
@@ -744,6 +742,7 @@ namespace Cave
                 }
                 if (type == 3) // hornet
                 {
+                    testOrphanage();
                     if (subType == 0)
                     {
                         applyGravity();
@@ -1390,7 +1389,7 @@ namespace Cave
             {
                 foreach ((int index, int subType, int typeOfElement) tupel in inventoryElements)
                 {
-                    if (tupel == (7, 0, 3)) // if it got pollen, try to make honey
+                    if (tupel == (2, 1, 3)) // if it got pollen, try to make honey
                     {
                         if (inventoryQuantities[tupel] > 3)
                         {

@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 using static Cave.Form1;
 using static Cave.Form1.Globals;
@@ -79,7 +80,6 @@ namespace Cave
         {
             public (int x, int y) pos;
             public bool generatedStructures = false;
-            public List<int> nests = new List<int>();
             public List<int> structures = new List<int>();
             [NonSerialized] public bool isImmuneToUnloading = false;
             [NonSerialized] public Screens.Screen screen;
@@ -95,46 +95,12 @@ namespace Cave
             public void loadAllStuffInIt()
             {
                 if (!generatedStructures) { createStructures(); }
-                loadAllNests();
                 loadAllStructures();
-                loadAllChunksInNests();
-            }
-            public void loadAllChunksInNests()
-            {
-                Chunk newChunk;
-                Nest nesto;
-                foreach (int nestId in nests)
-                {
-                    if (!screen.activeNests.ContainsKey(nestId))
-                    {
-                        continue;
-                    }
-                    nesto = screen.activeNests[nestId];
-                    foreach ((int x, int y) pos in nesto.chunkPresence.Keys)
-                    {
-                        if (!screen.loadedChunks.ContainsKey(pos))
-                        {
-                            newChunk = new Chunk(pos, false, screen); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
-                            if (!screen.loadedChunks.ContainsKey(pos)) { screen.loadedChunks[pos] = newChunk; }
-                        }
-                    }
-                }
             }
             public void unloadAllNestsAndStructuresAndChunks(Dictionary<(int x, int y), bool> chunksToRemove)
             {
                 Nest nest;
                 (int x, int y) playerPos = (ChunkIdx(screen.game.playerList[0].posX), ChunkIdx(screen.game.playerList[0].posY));
-                foreach (int nestId in nests)
-                {
-                    nest = screen.activeNests[nestId];
-                    nest.isImmuneToUnloading = false;
-                    saveNest(nest);
-                    foreach ((int x, int y) pososo in nest.chunkPresence.Keys) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
-                    {
-                        if (Distance(pososo, playerPos) > 0.8f * screen.chunkResolution) { chunksToRemove[pososo] = true; }
-                    }
-                    screen.activeNests.Remove(nestId);
-                }
                 Structure structure;
                 foreach (int structureId in structures)
                 {
@@ -142,7 +108,7 @@ namespace Cave
                     {
                         structure = screen.activeStructures[structureId];
                         structure.isImmuneToUnloading = false;
-                        saveStructure(screen.activeStructures[structureId]);
+                        structure.saveStructure();
                         foreach ((int x, int y) pososo in screen.activeStructures[structureId].chunkPresence.Keys) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
                         {
                             if (Distance(pososo, playerPos) > 0.8f * screen.chunkResolution) { chunksToRemove[pososo] = true; }
@@ -155,44 +121,22 @@ namespace Cave
                     }
                 }
             }
-            public void loadAllNests()
-            {
-                Chunk newChunk;
-                foreach (int nestId in nests)
-                {
-                    if (!screen.activeNests.ContainsKey(nestId))
-                    {
-                        Nest nesto = loadNest(screen, nestId);
-                        screen.activeNests[nestId] = nesto;
-                        foreach ((int, int) chunkPos in nesto.chunkPresence.Keys)
-                        {
-                            if (!screen.loadedChunks.ContainsKey(chunkPos))
-                            {
-                                newChunk = new Chunk(pos, false, screen); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
-                                if (!screen.loadedChunks.ContainsKey(pos)) { screen.loadedChunks[pos] = newChunk; }
-                            }
-                        }
-                    }
-                }
-            }
             public void loadAllStructures()
             {
                 foreach (int structureId in structures)
                 {
+                    if (screen.inertStructures.ContainsKey(structureId) || screen.activeStructures.ContainsKey(structureId)) { continue; }  // don't load if already in the dicts
                     loadStructure(screen.game, structureId); // loadStructure already adds the structure to the right dicto so no need to do it here
                 }
             }
             public void createStructures()
             {
-                if (System.IO.File.Exists($"{currentDirectory}\\CaveData\\{screen.game.seed}\\MegaChunkData\\{screen.id}\\{pos.x}.{pos.y}.json"))
-                { 
-                   int a = 1; // This should NEVER happen !!! If it does there's a bug in MegaChunk structure management and shite
-                }
                 saveMegaChunk(this);
-                int validatedStructureCount = 0;
-                int totalStructureTestedCount = 0;
                 if (loadStructuresYesOrNo)
                 {
+                    int validatedStructureCount = 0;
+                    int totalStructureTestedCount = 0;
+
                     int x = pos.x % 10 + 15;
                     long seedX = screen.seed + pos.x;
                     int y = pos.x % 10 + 15;
@@ -225,20 +169,13 @@ namespace Cave
                         seedY = LCGxNeg(seedY); // and y switched  ( ^o^ )
                         if (!new Structure(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (true, false), (0, 0, 0)).isErasedFromTheWorld) { validatedStructureCount++; };
                     }
-
                     int nestAmount = (int)((seedX + seedY) % 3);
                     totalStructureTestedCount += nestAmount;
                     for (int i = 0; i < nestAmount; i++)
                     {
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
                         seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
-                        Nest nest = new Nest(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (long)(seedX * 0.5f + seedY * 0.5f));
-                        if (!nest.isNotToBeAdded)
-                        {
-                            nests.Add(nest.id);
-                            screen.activeNests[nest.id] = nest;
-                            validatedStructureCount++;
-                        }
+                        if (!new Nest(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (long)(seedX * 0.5f + seedY * 0.5f)).isErasedFromTheWorld) { validatedStructureCount++; }
                     }
                     /*if (posX == 0 && posY == 0) // to have a nest spawn at (0, 0) for testing shit
                     {
@@ -251,10 +188,10 @@ namespace Cave
                         }
                         totalStructureTestedCount++;
                     }*/
+                    screen.game.structureGenerationLogs.Add($"-- Created {validatedStructureCount}/{totalStructureTestedCount} structures at Dimension {screen.id}, MegaChunk ({pos.x}, {pos.y}) --\n");
                 }
                 generatedStructures = true;
                 saveMegaChunk(this);
-                screen.game.structureGenerationLogs.Add($"-- Created {validatedStructureCount}/{totalStructureTestedCount} structures at Dimension {screen.id}, MegaChunk ({pos.x}, {pos.y}) --\n");
             }
         }
         public class ChunkJson
@@ -490,6 +427,7 @@ namespace Cave
         }
         public class StructureJson
         {
+            public int c;   // for class, if it's a normal Structure, or a Nest etc...
             public int id;
             public int dim;
             public (int, int, int) type;
@@ -505,6 +443,11 @@ namespace Cave
             public int[,] fS;
             public StructureJson(Structure structure)
             {
+                setAllStructureJsonVariables(structure);
+            }
+            public void setAllStructureJsonVariables(Structure structure)
+            {
+                c = structure.setClassTypeInJson();
                 id = structure.id;
                 dim = structure.screen.id;
                 type = structure.type;
@@ -524,13 +467,8 @@ namespace Cave
 
             }
         }
-        public class NestJson
+        public class NestJson : StructureJson
         {
-            public int id;
-            public (int type, int subtype, int subSubType) type;
-            public long seed;
-
-            public (int x, int y) pos;
             public RoomJson[] rooms;
             public int roomId = 0;
             public bool stable = false;
@@ -538,10 +476,8 @@ namespace Cave
             public int[] ent;
             public NestJson(Nest nest)
             {
-                id = nest.id;
-                seed = nest.seed.x;
-                type = nest.type;
-                pos = nest.pos;
+                setAllStructureJsonVariables(nest);
+
                 Room[] allRooms = nest.rooms.Values.ToArray();
                 rooms = new RoomJson[allRooms.Length];
                 for (int i = 0; i < allRooms.Length; i++)
@@ -815,52 +751,23 @@ namespace Cave
                 serializer.Serialize(writer, entityJson);
             }
         }
-        public static void saveStructure(Structure structure)
-        {
-            JsonSerializer serializer = new JsonSerializer();
-            serializer.Converters.Add(new JavaScriptDateTimeConverter());
-            serializer.NullValueHandling = NullValueHandling.Ignore;
-
-            StructureJson structureJson = new StructureJson(structure);
-
-            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{structure.screen.game.seed}\\StructureData\\{structure.id}.json"))
-            using (JsonWriter writer = new JsonTextWriter(sw))
-            {
-                serializer.Serialize(writer, structureJson);
-            }
-        }
         public static Structure loadStructure(Game game, int id)
         {
             using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{game.seed}\\StructureData\\{id}.json"))
             {
                 string content = f.ReadToEnd();
-                StructureJson structureJson = JsonConvert.DeserializeObject<StructureJson>(content);
-
-                return new Structure(game, structureJson);
-            }
-        }
-        public static void saveNest(Nest nest)
-        {
-            JsonSerializer serializer = new JsonSerializer();
-            serializer.Converters.Add(new JavaScriptDateTimeConverter());
-            serializer.NullValueHandling = NullValueHandling.Ignore;
-
-            NestJson nestJson = new NestJson(nest);
-
-            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{nest.screen.game.seed}\\NestData\\{nest.id}.json"))
-            using (JsonWriter writer = new JsonTextWriter(sw))
-            {
-                serializer.Serialize(writer, nestJson);
-            }
-        }
-        public static Nest loadNest(Screens.Screen screen, int id)
-        {
-            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{screen.game.seed}\\NestData\\{id}.json"))
-            {
-                string content = f.ReadToEnd();
-                NestJson nestJson = JsonConvert.DeserializeObject<NestJson>(content);
-
-                return new Nest(screen, nestJson);
+                string classType = getSingleValueFromJsonString(content, "c");
+                if (classType == "0")
+                {
+                    StructureJson structureJson = JsonConvert.DeserializeObject<StructureJson>(content);
+                    return new Structure(game, structureJson);
+                }
+                else if (classType == "1")
+                {
+                    NestJson structureJson = JsonConvert.DeserializeObject<NestJson>(content);
+                    return new Nest(game, structureJson);
+                }
+                return null;
             }
         }
         public static void saveSettings(Game game)
@@ -959,10 +866,6 @@ namespace Cave
             if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\EntityData"))
             {
                 Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\EntityData");
-            }
-            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\NestData"))
-            {
-                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\NestData");
             }
             if (!Directory.Exists($"{currentDirectory}\\CaveData\\bitmapos"))
             {
