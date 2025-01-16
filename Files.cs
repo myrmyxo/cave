@@ -95,7 +95,7 @@ namespace Cave
             public void loadAllStuffInIt()
             {
                 if (!generatedStructures) { createStructures(); }
-                loadAllStructures();
+                if (loadAllStructures()) { saveMegaChunk(this); }
             }
             public void unloadAllNestsAndStructuresAndChunks(Dictionary<(int x, int y), bool> chunksToRemove)
             {
@@ -121,13 +121,23 @@ namespace Cave
                     }
                 }
             }
-            public void loadAllStructures()
+            public bool loadAllStructures()
             {
+                bool triedLoadingErasesStructures = false;
+                List<int> structuresToRemove = new List<int>();
+                Structure structure;
                 foreach (int structureId in structures)
                 {
                     if (screen.inertStructures.ContainsKey(structureId) || screen.activeStructures.ContainsKey(structureId)) { continue; }  // don't load if already in the dicts
-                    loadStructure(screen.game, structureId); // loadStructure already adds the structure to the right dicto so no need to do it here
+                    structure = loadStructure(screen.game, structureId); // loadStructure already adds the structure to the right dicto so no need to do it here
+                    if (structure.isErasedFromTheWorld)
+                    {
+                        triedLoadingErasesStructures = true;    // This happens if structures were incorrectly deleted from MegaChunks. Not a big deal as this takes care of it, but still indicative of a problem somewhere
+                        structuresToRemove.Add(structureId);
+                    }
                 }
+                foreach(int structureId in structuresToRemove) { structures.Remove(structureId); }
+                return triedLoadingErasesStructures;
             }
             public void createStructures()
             {
@@ -432,6 +442,7 @@ namespace Cave
             public int dim;
             public (int, int, int) type;
             public bool isD;
+            public bool isE;
             public (long, long) seed;
             public (int, int) pos;
             public (int, int) size;
@@ -452,6 +463,7 @@ namespace Cave
                 dim = structure.screen.id;
                 type = structure.type;
                 isD = structure.isDynamic;
+                isE = structure.isErasedFromTheWorld;
                 seed = structure.seed;
                 pos = structure.pos;
                 size = structure.size;

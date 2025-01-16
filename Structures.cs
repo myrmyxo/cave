@@ -64,8 +64,14 @@ namespace Cave
             public Structure(Game game, StructureJson structureJson)
             {
                 setAllStructureJsonVariables(game, structureJson);
+                if (isErasedFromTheWorld) { return; }
                 findChunkPresence();
                 addStructureToTheRightDictInTheScreen();
+
+                if (structureJson.sis != -1)  // important to load here else infinite loop :(
+                {
+                    sisterStructure = game.getStructure(structureJson.sis);
+                }
             }
             public void setAllStructureJsonVariables(Game game, StructureJson structureJson)
             {
@@ -75,6 +81,7 @@ namespace Cave
 
                 type = structureJson.type;
                 isDynamic = structureJson.isD;
+                isErasedFromTheWorld = structureJson.isE;
                 seed = structureJson.seed;
                 pos = structureJson.pos;
                 size = structureJson.size;
@@ -84,10 +91,6 @@ namespace Cave
                 structureDict = arrayToFillstates(structureJson.fS);
 
                 makeBitmap();
-                if (structureJson.sis != -1)  // important to load here else infinite loop :(
-                {
-                    sisterStructure = game.getStructure(structureJson.sis);
-                }
             }
             public Structure(Screens.Screen screenToPut, (int x, int y) posToPut, (long x, long y) seedToPut, (bool forceType, bool isPlayerGenerated) bools, (int type, int subType, int subSubType) forceType, Dictionary<(int x, int y), (int type, int subType)> forceStructure = null)
             {
@@ -585,11 +588,15 @@ namespace Cave
             public void EraseFromTheWorld()
             {
                 if (isErasedFromTheWorld) { return; }
-                MegaChunk megaChunk = screen.getMegaChunkFromPixelPos(pos, true);
-                megaChunk.structures.Remove(id);
+                foreach ((int x, int y) pos in megaChunkPresence.Keys)
+                {
+                    MegaChunk megaChunk = screen.getMegaChunkFromMegaPos(pos, true);
+                    megaChunk.structures.Remove(id);
+                    saveMegaChunk(megaChunk);
+                }
                 if (screen.activeStructures.ContainsKey(id)) { screen.activeStructures.Remove(id); }
-                saveMegaChunk(megaChunk);
                 isErasedFromTheWorld = true;
+                saveStructure();
                 if (sisterStructure != null) { sisterStructure.EraseFromTheWorld(); }
             }
             public void makeBitmap()

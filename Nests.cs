@@ -657,6 +657,7 @@ namespace Cave
             public Nest(Game game, NestJson nestJson)
             {
                 setAllStructureJsonVariables(game, nestJson);
+                if (isErasedFromTheWorld) { return; }
 
                 foreach (RoomJson roomJson in nestJson.rooms)
                 {

@@ -1025,7 +1025,7 @@ namespace Cave
                                     Room room = nest.rooms[nest.getRoomId(targetPos)];
                                     if (room.type == 3 && Place(targetPos.x, targetPos.y, (3, 0, 1), true))
                                     {
-                                        Entity kiddo = screen.entitesToAdd[screen.entitesToAdd.Count - 1];
+                                        Entity kiddo = screen.entitesToAdd.Values.ToArray()[screen.entitesToAdd.Count - 1];
                                         kiddo.nest = nest;
                                         room.assignedEntities.Add(kiddo);  // since it's the last to be added, add last entity in entity list to the room
                                         nest.larvae.Add(kiddo);

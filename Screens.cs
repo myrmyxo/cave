@@ -65,9 +65,9 @@ namespace Cave
                 bool isPngToExport = false;
 
                 loadStructuresYesOrNo = true;
-                spawnEntities = false;
-                spawnPlants = false;
-                bool spawnNOTHING = false;
+                spawnEntities = true;
+                spawnPlants = true;
+                bool spawnNOTHING = true;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntities = false; spawnPlants = false; }
 
                 if (randomSeed)
@@ -318,6 +318,7 @@ namespace Cave
                     {
                         structure.EraseFromTheWorld();
                     }
+                    structuresToRemove = new Dictionary<int, Structure>();
                 }
                 foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.unloadFarawayChunks(); }
                 setUnloadingImmunity(); // Prevent MegaChunks/Chunks/Structures to be unloaded when they should not be
