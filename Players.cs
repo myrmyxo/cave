@@ -29,6 +29,7 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace Cave
 {
@@ -97,28 +98,33 @@ namespace Cave
                 camPosY = posY - ChunkLength * 24;
                 realCamPosY = camPosY;
             }
-            public (int, int) findIntPos(float positionX, float positionY)
-            {
-                return ((int)Floor(positionX, 1), (int)Floor(positionY, 1));
-            }
             public void placePlayer()
             {
+                if (devMode) { return; }
                 int counto = 0;
+                (int x, int y) chunkPos = (0, 0);
+                Chunk chunk;
                 while (counto < 10000)
                 {
-                    int randX = rand.Next((ChunkLength - 1) * 32);
-                    int randY = rand.Next((ChunkLength - 1) * 32);
-                    Chunk randChunk = screen.loadedChunks[(randX / 32, randY / 32)];
-                    if (randChunk.fillStates[randX % 32, randY % 32].type == 0)
+                    chunk = screen.getChunkFromChunkPos(chunkPos);
+                    for (int j = 0; j < 32; j++)
                     {
-                        posX = randX;
-                        realPosX = randX;
-                        posY = randY;
-                        realPosY = randY;
-                        break;
+                        for (int i = 0; i < 32; i++)
+                        {
+                            if (chunk.fillStates[i % 32, j % 32].type == 0)
+                            {
+                                posX = chunk.pos.x * 32 + i;
+                                realPosX = posX;
+                                posY = chunk.pos.y * 32 + j;
+                                realPosY = posY;
+                                goto ExitLoop;
+                            }
+                        }
                     }
+                    chunkPos = spiralProgression(chunkPos);
                     counto++;
                 }
+            ExitLoop:;
                 initializeInventory();
             }
             public void initializeInventory()
@@ -559,8 +565,7 @@ namespace Cave
                     {
                         currentPos = (currentPos.x + xMult * (valueX + 0.0001f), currentPos.y + yMult * yToX * (valueX + 0.0001f));
                         currentPosInt = ((int)currentPos.x, (int)currentPos.y);
-                        chunkPos = ChunkIdx(currentPosInt.x, currentPosInt.y);
-                        chunkToTest = screen.tryToGetChunk(chunkPos);
+                        chunkToTest = screen.getChunkFromPixelPos(currentPosInt);
                         posList.Add(currentPosInt);
                         if (lives < 3 || chunkToTest.fillStates[PosMod(currentPosInt.x), PosMod(currentPosInt.y)].type > 0)
                         {
@@ -572,8 +577,7 @@ namespace Cave
                     {
                         currentPos = (currentPos.x + xMult * xToY * (valueY + 0.0001f), currentPos.y + yMult * (valueY + 0.0001f));
                         currentPosInt = ((int)currentPos.x, (int)currentPos.y);
-                        chunkPos = ChunkIdx(currentPosInt.x, currentPosInt.y);
-                        chunkToTest = screen.tryToGetChunk(chunkPos);
+                        chunkToTest = screen.getChunkFromPixelPos(currentPosInt);
                         posList.Add(currentPosInt);
                         if (lives < 3 || chunkToTest.fillStates[PosMod(currentPosInt.x), PosMod(currentPosInt.y)].type > 0)
                         {

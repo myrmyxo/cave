@@ -181,6 +181,7 @@ namespace Cave
                     }
                     int nestAmount = (int)((seedX + seedY) % 3);
                     totalStructureTestedCount += nestAmount;
+                    if (!spawnNests) { nestAmount = 0; }
                     for (int i = 0; i < nestAmount; i++)
                     {
                         seedX = LCGyPos(seedX); // on porpoise x    /\_/\
@@ -218,7 +219,7 @@ namespace Cave
             public ChunkJson(Chunk chunk)
             {
                 seed = chunk.chunkSeed;
-                pos = chunk.position;
+                pos = chunk.pos;
                 (int[,] one, int[,] two) returnTuple = ChunkToChunkJsonfillStates(chunk.fillStates);
                 fill1 = returnTuple.one;
                 fill2 = returnTuple.two;
@@ -658,7 +659,7 @@ namespace Cave
             serializer.Converters.Add(new JavaScriptDateTimeConverter());
             serializer.NullValueHandling = NullValueHandling.Ignore;
 
-            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{chunk.screen.game.seed}\\ChunkData\\{chunk.screen.id}\\{chunk.position.Item1}.{chunk.position.Item2}.json"))
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{chunk.screen.game.seed}\\ChunkData\\{chunk.screen.id}\\{chunk.pos.Item1}.{chunk.pos.Item2}.json"))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
                 ChunkJson baby = new ChunkJson(chunk);
@@ -672,48 +673,37 @@ namespace Cave
                 saveChunk(chunko);
             }
         }
-        public static void loadChunk(Chunk chunk, bool loadEntitiesAndPlants)
+        public static ChunkJson getChunkJson(Screens.Screen screen, (int x, int y) pos)
         {
-            //bool willSpawnEntities;
-            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{chunk.screen.game.seed}\\ChunkData\\{chunk.screen.id}\\{chunk.position.Item1}.{chunk.position.Item2}.json"))
+            if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{worldSeed}\\ChunkData\\{screen.id}\\{pos.x}.{pos.y}.json")) { return null; }
+            using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{worldSeed}\\ChunkData\\{screen.id}\\{pos.x}.{pos.y}.json"))
             {
-                string content = f.ReadToEnd();
-                ChunkJson chunkJson = JsonConvert.DeserializeObject<ChunkJson>(content);
-
-                chunk.chunkSeed = chunkJson.seed;
-                chunk.position = chunkJson.pos;
-                chunk.fillStates = ChunkJsonToChunkfillStates(chunkJson.fill1, chunkJson.fill2);
-                chunk.entitiesAndPlantsSpawned = chunkJson.spwnd;
-
-                if (loadEntitiesAndPlants)
-                {
-                    chunk.entityList = new List<Entity>();
-                    foreach (int entityId in chunkJson.eLst)
-                    {
-                        chunk.entityList.Add(loadEntity(chunk.screen, entityId));
-                    }
-                    chunk.plantList = new List<Plant>();
-                    foreach (int plantId in chunkJson.pLst)
-                    {
-                        chunk.plantList.Add(loadPlant(chunk.screen, plantId));
-                    }
-                }
-
-                chunk.explorationLevel = chunkJson.explLvl;
-                if (chunk.explorationLevel == 1)
-                {
-                    chunk.fogOfWar = chunkJson.fog;
-                    chunk.fogBitmap = new Bitmap(32, 32);
-                    for (int i = 0; i < 32; i++)
-                    {
-                        for (int j = 0; j < 32; j++)
-                        {
-                            if (!chunk.fogOfWar[i, j]) { setPixelButFaster(chunk.fogBitmap, (i, j), Color.Black); }
-                        }
-                    }
-                }
-                else { chunk.fogOfWar = null; }
+                return JsonConvert.DeserializeObject<ChunkJson>(f.ReadToEnd());
             }
+        }
+        public static Chunk loadChunk(Screens.Screen screen, (int x, int y) pos, bool isExtraLoading)
+        {
+            bool firstLoading = false;
+            Chunk newChunk;
+            ChunkJson chunkJson = null;
+            if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{worldSeed}\\ChunkData\\{screen.id}\\{pos.x}.{pos.y}.json"))
+            {
+                firstLoading = true;
+                newChunk = new Chunk(screen, pos);
+            }
+            else
+            {
+                chunkJson = getChunkJson(screen, pos);
+                newChunk = new Chunk(screen, chunkJson);
+            }
+            if (isExtraLoading) { screen.extraLoadedChunks[pos] = newChunk; }
+            else
+            {
+                screen.loadedChunks[pos] = newChunk;
+                newChunk.promoteFromExtraToFullyLoaded(chunkJson);
+            }
+            if (firstLoading) { saveChunk(newChunk); }
+            return newChunk;
         }
         public static Plant loadPlant(Screens.Screen screenToPut, int plantId)
         {

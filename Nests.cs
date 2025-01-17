@@ -235,14 +235,12 @@ namespace Cave
             public void fillTiles()
             {
                 Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
-                (int x, int y) chunkPos;
                 Chunk chunkToTest;
                 (int type, int subType) typeToFill = (0, 0);
 
                 foreach ((int x, int y) posToTest in tiles)
                 {
-                    chunkPos = ChunkIdx(posToTest);
-                    chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
+                    chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, chunkDict);
                     chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)] = typeToFill;
                     chunkToTest.modificationCount = 1;
                     chunkToTest.findTileColor(PosMod(posToTest.x), PosMod(posToTest.y));
@@ -361,7 +359,7 @@ namespace Cave
                         {
                             posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
                             (int x, int y) chunkPos = ChunkIdx(posToTest);
-                            Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
+                            Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, chunkDict);
                             int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                             if (fillState <= 0 || fillState > 1 || nest.tiles.ContainsKey(posToTest))
                             {
@@ -414,8 +412,7 @@ namespace Cave
                         goto SkipToNextIteration;
                     }
 
-                    (int x, int y) chunkPos = ChunkIdx(posToTest);
-                    Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
+                    Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, chunkDict);
                     int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                     if (fillState <= 0)
                     {
@@ -478,8 +475,7 @@ namespace Cave
                         foreach ((int x, int y) mod in neighbourArray)
                         {
                             posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
-                            (int x, int y) chunkPos = ChunkIdx(posToTest);
-                            Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
+                            Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, chunkDict);
                             int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                             if (((fillState <= 0 || fillState > 1) || nest.tiles.ContainsKey(posToTest)) && repeatCounter >= startPosList.Count) //cumsum yummy yum
                             {
@@ -528,8 +524,7 @@ namespace Cave
 
                 foreach ((int x, int y) pos in tiles)
                 {
-                    (int x, int y) chunkPos = ChunkIdx(pos);
-                    Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
+                    Chunk chunkToTest = nest.screen.getChunkFromPixelPos(pos, true, chunkDict);
                     int fillState = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)].type;
                     if (pos.y == maxBordelLevel - 1)
                     {
@@ -585,8 +580,7 @@ namespace Cave
                 {
                     foreach ((int x, int y) posToTest in tiles)
                     {
-                        (int x, int y) chunkPos = ChunkIdx(posToTest);
-                        Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
+                        Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, chunkDict);
                         int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                         if (posToTest.y < maxBordelLevel)
                         {
@@ -618,8 +612,7 @@ namespace Cave
                     idxToTest = rand.Next(tileList.Count);
                     posToTest = tileList[idxToTest];
                     tileList.RemoveAt(idxToTest);
-                    (int x, int y) chunkPos = ChunkIdx(posToTest);
-                    Chunk chunkToTest = nest.screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
+                    Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, chunkDict);
                     int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                     if (fillState == typeToFind)
                     {
@@ -806,8 +799,7 @@ namespace Cave
                 while (repeatCounter < amountToTest)
                 {
                     currentPos = tilesToTest[repeatCounter];
-                    (int x, int y) chunkPos = ChunkIdx(currentPos);
-                    Chunk chunkToTest = screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
+                    Chunk chunkToTest = screen.getChunkFromPixelPos(pos, true, chunkDict);
                     int fillState = chunkToTest.fillStates[PosMod(currentPos.x), PosMod(currentPos.y)].type;
                     if (fillState <= 0 || fillState > 2 || tiles.ContainsKey(currentPos))
                     {
@@ -998,8 +990,7 @@ namespace Cave
                 digErrands = new List<(int x, int y)>();
                 foreach ((int x, int y) pos in tiles.Keys)
                 {
-                    (int x, int y) chunkPos = ChunkIdx(pos);
-                    Chunk chunkToTest = screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
+                    Chunk chunkToTest = screen.getChunkFromPixelPos(pos, true);
                     (int type, int subType) fillState = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)];
                     Room room = rooms[getRoomId(pos)];
                     if (fillState.type == 0 || (fillState.type == -5 && room.type == 2)) { }
@@ -1012,8 +1003,6 @@ namespace Cave
             }
             public void updateDropPositions()
             {
-                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
-
                 availableHoneyRooms = new List<int>();
                 availableNurseries = new List<int>();
                 updateTiles();

@@ -41,6 +41,7 @@ namespace Cave
         {
             public static bool devMode = true;
             public static bool loadStructuresYesOrNo = false;
+            public static bool spawnNests = false;
             public static bool spawnEntities = false;
             public static bool spawnPlants = false;
 
@@ -437,6 +438,14 @@ namespace Cave
             }
 
             loadSpriteDictionaries();
+            // -> Do : fix ray bugs. Keep rays when they don't hit anything for next frame (decrease amount the ray moves per frame also).
+            // Add Axe. Axe attack ?
+            // Make nests not appear in certain biomes.
+            // Fix plants spawning. Make megaChunks priority loading (to stop overlaps and weird generation).
+            // Make player die ! Amulet that when in inventory protects player from lava, and acid. And breathing ! And hp and food ! And the rest !!
+            // Idea : affuter blades ? Maybe they can get rusty ? Multiple species of mushroom (move mold to 0 ? or its whole thing prolly better).
+            // Player fairy transfo when in fairy liquid. Craft tools. Add ICE. Auto sorting in inventory. Blood breathing ? Extract o2 from blood.
+            // Optimize/functionalize lake maker function
 
             // cool ideas for later !
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
@@ -448,6 +457,7 @@ namespace Cave
             // Whipped cream biome, chocolate biome... idk
             // Add a portal that is inside lava oceans; in a structure (obsidian city ?), that needs to be turned on with maybe liquid obsidian or oil, and teleports to like hell, or an obsidian dimension made ouf of only obsidian shit ?.
             // Amnesia spell that makes u forget parts of the map lol
+            // Make it so lakes that are big enough (megaLakes) have stuff similar to ocean in them. Like idk mermaids or other shite ? Since they're huge and are like mini oceans.
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
@@ -487,7 +497,7 @@ namespace Cave
             // 2807443684 : the most FUCKING enormous OCEAN biome it is so fucking big... wtf
             // 3548078961 : giant fish in oceaon omggggg also banger terrain like wtf
             // 3452270044 : chill start frost inside ocean
-            
+
             Game game = new Game();
             timer1.Tag = game;
             timeAtLauch = DateTime.Now;
@@ -1022,6 +1032,15 @@ namespace Cave
             int distX = (pos1.x - pos2.x);
             int distY = (pos1.y - pos2.y);
             return Sqrt(distX*distX + distY*distY);
+        }
+
+
+        public static (int x, int y) spiralProgression((int x, int y) pos)  // From a pos tuple, returns the next one in a clockwise spiral progression centered on (0, 0)
+        {
+            if (pos.y > Abs(pos.x)) { return (pos.x + 1, pos.y); }
+            if (pos.x <= 0 && Abs(pos.x) >= Abs(pos.y)) { return (pos.x, pos.y + 1); }
+            if (pos.y < 0 && Abs(pos.y) >= Abs(pos.x)) { return (pos.x - 1, pos.y); }
+            return (pos.x, pos.y - 1);
         }
 
 

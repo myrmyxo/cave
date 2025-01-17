@@ -40,8 +40,9 @@ namespace Cave
 
             public long chunkSeed;
 
-            public (int x, int y) position;
+            public (int x, int y) pos;
             public bool isImmuneToUnloading = true; // Immune to unloading on startup. Should fix shit I hope.
+            public int framesSinceLastExtraGetting = 0;
 
             public ((int biome, int subBiome), int)[,][] biomeIndex;
 
@@ -65,30 +66,115 @@ namespace Cave
             {
 
             }
-            public Chunk((int x, int y) posToPut, bool structureGenerated, Screens.Screen screenToPut)
+            public Chunk(Screens.Screen screenToPut, ChunkJson chunkJson)
             {
                 screen = screenToPut;
-                position = posToPut;
+                pos = chunkJson.pos;
+                chunkSeed = chunkJson.seed;
+                fillStates = ChunkJsonToChunkfillStates(chunkJson.fill1, chunkJson.fill2);
+                entitiesAndPlantsSpawned = chunkJson.spwnd;
 
-                bool filePresent = testLoadChunk(structureGenerated);
-                long chunkX = position.x * 2;
-                long chunkY = position.y * 2;
+                determineContents(chunkJson);
+            }
+            public Chunk(Screens.Screen screenToPut, (int x, int y) posToPut)
+            {
+                screen = screenToPut;
+                pos = posToPut;
 
-                chunkSeed = findPlantSeed(chunkX, chunkY, screen, 0);
+                determineContents(null);
+            }
+            public void promoteFromExtraToFullyLoaded(ChunkJson chunkJson)  // Can be used both for promotion and simple loading (careful dict displacement is not made by this function !)
+            {
+                // 3 Cases :
+                // If loading (full) during the first loading, no Json, so Json not used
+                // If loading (full) but not a first loading, the Json that was just loaded in LoadChunk will be used
+                // If promoting from an extra loaded chunk, the Json used will have been retrieved from the game's files (must use the most up to date if entities were saved to it)
+                if (chunkJson != null)  // If not on first loading (but full loading)
+                {
+                    foreach (int entityId in chunkJson.eLst)
+                    {
+                        entityList.Add(loadEntity(screen, entityId));
+                    }
+                    foreach (int plantId in chunkJson.pLst)
+                    {
+                        plantList.Add(loadPlant(screen, plantId));
+                    }
+
+                    explorationLevel = chunkJson.explLvl;
+                    if (explorationLevel == 1)
+                    {
+                        fogOfWar = chunkJson.fog;
+                        fogBitmap = new Bitmap(32, 32);
+                        for (int i = 0; i < 32; i++)
+                        {
+                            for (int j = 0; j < 32; j++)
+                            {
+                                if (!fogOfWar[i, j]) { setPixelButFaster(fogBitmap, (i, j), Color.Black); }
+                            }
+                        }
+                    }
+                    else { fogOfWar = null; }
+                }
+
+                if (!entitiesAndPlantsSpawned)
+                {
+                    screen.chunksToSpawnEntitiesIn[pos] = true;
+                }
+            }
+            public void demoteToExtra()
+            {
+                entityList = new List<Entity>();
+                plantList = new List<Plant>();
+                fogOfWar = null;
+                fogBitmap = null;
+                framesSinceLastExtraGetting = 0;
+            }
+            public void determineContents(ChunkJson chunkJson)
+            {
+                chunkSeed = findPlantSeed(pos.x, pos.y, screen, 0);
                 long bigSeed = LCGxNeg(LCGz(LCGyPos(LCGxNeg(screen.seed))));
                 long bigSeed2 = LCGxNeg(LCGz(LCGyPos(LCGxPos(bigSeed))));
                 long bigSeed3 = LCGxNeg(LCGz(LCGyPos(LCGxNeg(bigSeed2))));
 
+                (int[,,] secondaryBiomeValues, (int temp, int humi, int acid, int toxi)[,] tileValuesArray) tupelo = determineAllBiomeValues(bigSeed);
+
+                if (chunkJson == null) { generateTerrain(bigSeed, bigSeed2, bigSeed3, tupelo.secondaryBiomeValues, tupelo.tileValuesArray); }   // If first loading only, generate terrain
+
+                for (int i = 0; i < 32; i++)
+                {
+                    for (int j = 0; j < 32; j++)
+                    {
+                        int darkness = 0;
+                        foreach (((int biome, int subBiome), int) tupel in biomeIndex[i, j])
+                        {
+                            if (darkBiomes.ContainsKey(tupel.Item1))
+                            {
+                                darkness += (int)(tupel.Item2 * 0.3f);
+                            }
+                        }
+                        darkness = Max(0, 255 - darkness);
+                        Color colorToDraw = Color.FromArgb(255, darkness, darkness, darkness);
+                        setPixelButFaster(lightBitmap, (i, j), colorToDraw);
+                    }
+                }
+
+                for (int i = 0; i < 32; i++)
+                {
+                    for (int j = 0; j < 32; j++)
+                    {
+                        findTileColor(i, j);
+                    }
+                }
+            }
+            public (int[,,] secondaryBiomeValues, (int temp, int humi, int acid, int toxi)[,] tileValuesArray) determineAllBiomeValues(long bigSeed)
+            {
                 (int x, int y) mod;
-                (int x, int y) chunkRealPos = (position.x * 32, position.y * 32);
-
-                // biome shit generation
-
+                (int x, int y) chunkRealPos = (pos.x * 32, pos.y * 32);
                 int layerStart = 0;
                 if (screen.isMonoBiome) { layerStart = 4; }
 
-                chunkX = Floor(position.x, 16) / 16;
-                chunkY = Floor(position.y, 16) / 16;
+                long chunkX = Floor(pos.x, 16) / 16;
+                long chunkY = Floor(pos.y, 16) / 16;
                 int[,] primaryBiomeValues = new int[6, 4];
                 for (int i = layerStart; i < 6; i++)
                 {
@@ -99,8 +185,8 @@ namespace Cave
                     }
                 }
 
-                chunkX = ChunkIdx(position.Item1);
-                chunkY = ChunkIdx(position.Item2);
+                chunkX = ChunkIdx(pos.Item1);
+                chunkY = ChunkIdx(pos.Item2);
                 int[,] primaryBigBiomeValues = new int[6, 4];
                 for (int i = layerStart; i < 6; i++)
                 {
@@ -158,183 +244,147 @@ namespace Cave
                     }
                 }
 
-
-                int[,,] secondaryFillValues = null;
-                int[,,] secondaryBigFillValues = null;
-                int[,] primaryFillValues = null;
-                int[,] primaryBigFillValues = null;
-
-                // terrain noise shit generation
-                if (!filePresent)
+                return (secondaryBiomeValues, tileValuesArray);
+            }
+            public void generateTerrain(long bigSeed, long bigSeed2, long bigSeed3, int[,,] secondaryBiomeValues, (int temp, int humi, int acid, int toxi)[,] tileValuesArray)
+            {
+                int chunkX = pos.x * 2;
+                int chunkY = pos.y * 2;
+                (int x, int y) mod;
+                (int x, int y) chunkRealPos = (pos.x * 32, pos.y * 32);
+                int[,] primaryFillValues = new int[4, 9];
+                for (int j = 0; j < 9; j++)
                 {
-                    chunkX = position.x * 2;
-                    chunkY = position.y * 2;
-                    primaryFillValues = new int[4, 9];
-                    for (int j = 0; j < 9; j++)
-                    {
-                        mod = bigSquareModArray[j];
-                        primaryFillValues[0, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, screen.seed);
-                        primaryFillValues[1, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed);
-                        primaryFillValues[2, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed2, 2048);
-                        primaryFillValues[3, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed3, 2048);
-                    }
-
-
-                    chunkX = Floor(position.x, 2) / 2;
-                    chunkY = Floor(position.y, 2) / 2;
-                    primaryBigFillValues = new int[2, 4];
-                    for (int j = 0; j < 4; j++)
-                    {
-                        mod = squareModArray[j];
-                        primaryBigFillValues[0, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed2);
-                        primaryBigFillValues[1, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed3);
-                    }
-
-                    secondaryFillValues = new int[4, 32, 32];
-                    secondaryBigFillValues = new int[2, 32, 32];
-                    fillStates = new (int type, int subType)[32, 32];
+                    mod = bigSquareModArray[j];
+                    primaryFillValues[0, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, screen.seed);
+                    primaryFillValues[1, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed);
+                    primaryFillValues[2, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed2, 2048);
+                    primaryFillValues[3, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed3, 2048);
                 }
+
+                chunkX = Floor(pos.x, 2) / 2;
+                chunkY = Floor(pos.y, 2) / 2;
+                int[,] primaryBigFillValues = new int[2, 4];
+                for (int j = 0; j < 4; j++)
+                {
+                    mod = squareModArray[j];
+                    primaryBigFillValues[0, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed2);
+                    primaryBigFillValues[1, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed3);
+                }
+
+                int[,,] secondaryFillValues = new int[4, 32, 32];
+                int[,,] secondaryBigFillValues = new int[2, 32, 32];
+                fillStates = new (int type, int subType)[32, 32];
 
                 for (int i = 0; i < 32; i++)
                 {
                     for (int j = 0; j < 32; j++)
                     {
-                        if (!filePresent)
-                        {
-                            secondaryFillValues[0, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 0);
-                            secondaryBigFillValues[0, i, j] = findSecondaryBigNoiseValue(primaryBigFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 0);
-                            int value1 = secondaryBigFillValues[0, i, j] + (int)(0.25 * secondaryFillValues[0, i, j]) - 32;
-                            //value1 = secondaryFillValues[0, i, j];
-                            //value1 = 0;
-                            secondaryFillValues[1, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 1);
-                            secondaryBigFillValues[1, i, j] = findSecondaryBigNoiseValue(primaryBigFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 1);
-                            int value2 = secondaryBigFillValues[1, i, j] + (int)(0.25 * secondaryFillValues[1, i, j]) - 32;
-                            //value2 = secondaryBigFillValues[1, i, j];
-                            //value2 = 128;
-                            int temperature = secondaryBiomeValues[i, j, 0];
-                            int mod1 = (int)(secondaryBiomeValues[i, j, 4] * 0.25);
-                            int mod2 = (int)(secondaryBiomeValues[i, j, 5] * 0.25);
+                        secondaryFillValues[0, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 0);
+                        secondaryBigFillValues[0, i, j] = findSecondaryBigNoiseValue(primaryBigFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 0);
+                        int value1 = secondaryBigFillValues[0, i, j] + (int)(0.25 * secondaryFillValues[0, i, j]) - 32;
+                        //value1 = secondaryFillValues[0, i, j];
+                        //value1 = 0;
+                        secondaryFillValues[1, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 1);
+                        secondaryBigFillValues[1, i, j] = findSecondaryBigNoiseValue(primaryBigFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 1);
+                        int value2 = secondaryBigFillValues[1, i, j] + (int)(0.25 * secondaryFillValues[1, i, j]) - 32;
+                        //value2 = secondaryBigFillValues[1, i, j];
+                        //value2 = 128;
+                        int temperature = secondaryBiomeValues[i, j, 0];
+                        int mod1 = (int)(secondaryBiomeValues[i, j, 4] * 0.25);
+                        int mod2 = (int)(secondaryBiomeValues[i, j, 5] * 0.25);
 
-                            int plateauPos = (int)(chunkSeed % 32);
+                        int plateauPos = (int)(chunkSeed % 32);
 
-                            float valueToBeAdded;
-                            float value1modifier = 0;
-                            float value2PREmodifier;
-                            float value2modifier = 0;
-                            float mod2divider = 1;
-                            float foresto = 1;
-                            float oceano = 0;
-                            float oceanoSeeSaw = 0;
+                        float valueToBeAdded;
+                        float value1modifier = 0;
+                        float value2PREmodifier;
+                        float value2modifier = 0;
+                        float mod2divider = 1;
+                        float foresto = 1;
+                        float oceano = 0;
+                        float oceanoSeeSaw = 0;
 
-                            float mult;
-                            foreach (((int biome, int subBiome), int) tupel in biomeIndex[i, j])
-                            {
-                                mult = tupel.Item2 * 0.001f;
-                                if (tupel.Item1 == (1, 0))
-                                {
-                                    value2modifier += -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11));
-                                }
-                                else if (tupel.Item1 == (3, 0) || tupel.Item1 == (9, 0))
-                                {
-                                    foresto += mult;
-                                }
-                                else if (tupel.Item1 == (4, 0))
-                                {
-                                    float see1 = Sin(i + mod2 * 0.3f + 0.5f, 16);
-                                    float see2 = Sin(j + mod2 * 0.3f + 0.5f, 16);
-                                    valueToBeAdded = mult * Min(0, 20 * (see1 + see2) - 10);
-                                    value2modifier += valueToBeAdded;
-                                    value1modifier += valueToBeAdded + 2;
-                                }
-                                else if (tupel.Item1 == (2, 2))
-                                {
-                                    float see1 = Obs((position.Item1 * 32) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
-                                    float see2 = Obs((position.Item2 * 32) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
-                                    if (false && (value2 < 50 || value2 > 200))
-                                    {
-                                        value2PREmodifier = 300;
-                                    }
-                                    else
-                                    {
-                                        value2PREmodifier = (Min(0, -40 * (see1 + see2) + 20) * 10 + value2 - 200);
-                                    }
-                                    value1modifier += 5 * mult;
-                                    value2modifier += mult * value2PREmodifier;
-                                    mod2divider += mult * 1.5f;
-                                }
-                                else if (tupel.Item1 == (8, 0) || tupel.Item1 == (2, 1) || tupel.Item1 == (10, 3) || tupel.Item1 == (10, 4))
-                                {
-                                    oceano = Max(oceano, mult * 10); // To make separation between OCEAN biomes (like acid and blood). CHANGE THIS to make ocean biomes that can merge with one another (like idk cool water ocean and temperate water ocean idk)
-                                }
-                                else { value2modifier += mult * ((2 * value1) % 32); }
-                            }
-
-                            oceanoSeeSaw = Min(Seesaw((int)oceano, 8), 8 - oceano);
-                            if (oceanoSeeSaw < 0)
-                            {
-                                oceanoSeeSaw = oceanoSeeSaw * oceanoSeeSaw * oceanoSeeSaw;
-                            }
-                            else { oceanoSeeSaw = oceanoSeeSaw * Abs(oceanoSeeSaw); }
-                            oceano *= 10;
-                            oceanoSeeSaw *= 10;
-
-                            mod2 = (int)(mod2 / mod2divider);
-
-                            (int type, int subType) elementToFillVoidWith;
-                            if (biomeIndex[i, j][0].Item1 == (8, 0)) { elementToFillVoidWith = (-2, 0); } // ocean
-                            else if (biomeIndex[i, j][0].Item1 == (2, 1)) { elementToFillVoidWith = (-4, 0); } // lava ocean
-                            else if (biomeIndex[i, j][0].Item1 == (10, 3)) { elementToFillVoidWith = (-6, 0); } // blood ocean
-                            else if (biomeIndex[i, j][0].Item1 == (10, 4)) { elementToFillVoidWith = (-7, 0); } // acid ocean
-                            else { elementToFillVoidWith = (0, 0); }
-
-                            float score1 = Min(value1 - (122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw * 0.1f)), -value1 + (133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw));
-                            bool fillTest1 = score1 > 0;
-                            float score2 = Max(value2 - (200 + value2modifier + oceano), -value2 + ((foresto - 1) * 75f - oceano));
-                            bool fillTest2 = score2 > 0;
-                            float plateauScore = Max(score1, score2) - (Abs(plateauPos - j) - 5) * 10;
-                            //if (fillTest1 && fillTest2) { fillStates[i, j] = 4; }
-                            //else if (fillTest1) { fillStates[i, j] = 3; }
-                            //else if (fillTest2) { fillStates[i, j] = 2; }
-                            if (((fillTest1 || fillTest2) && true) || (false && plateauScore >= 0)) { fillStates[i, j] = elementToFillVoidWith; }
-                            else
-                            {
-                                secondaryFillValues[2, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 2);
-                                secondaryFillValues[3, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 3);
-                                Dictionary<(int type, int subType), float> dicto = findTransitions(biomeIndex[i, j], tileValuesArray[i, j]);
-                                fillStates[i, j] = findMaterialToFillWith((secondaryFillValues[2, i, j], secondaryFillValues[3, i, j]), biomeIndex[i, j][0].Item1, dicto);
-                            }
-                            //if (rand.Next(500) != 0){ fillStates[i, j] = 1; }
-                        }
-
-                        int darkness = 0;
+                        float mult;
                         foreach (((int biome, int subBiome), int) tupel in biomeIndex[i, j])
                         {
-                            if (darkBiomes.ContainsKey(tupel.Item1))
+                            mult = tupel.Item2 * 0.001f;
+                            if (tupel.Item1 == (1, 0))
                             {
-                                darkness += (int)(tupel.Item2 * 0.3f);
+                                value2modifier += -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11));
                             }
+                            else if (tupel.Item1 == (3, 0) || tupel.Item1 == (9, 0))
+                            {
+                                foresto += mult;
+                            }
+                            else if (tupel.Item1 == (4, 0))
+                            {
+                                float see1 = Sin(i + mod2 * 0.3f + 0.5f, 16);
+                                float see2 = Sin(j + mod2 * 0.3f + 0.5f, 16);
+                                valueToBeAdded = mult * Min(0, 20 * (see1 + see2) - 10);
+                                value2modifier += valueToBeAdded;
+                                value1modifier += valueToBeAdded + 2;
+                            }
+                            else if (tupel.Item1 == (2, 2))
+                            {
+                                float see1 = Obs((pos.Item1 * 32) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
+                                float see2 = Obs((pos.Item2 * 32) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
+                                if (false && (value2 < 50 || value2 > 200))
+                                {
+                                    value2PREmodifier = 300;
+                                }
+                                else
+                                {
+                                    value2PREmodifier = (Min(0, -40 * (see1 + see2) + 20) * 10 + value2 - 200);
+                                }
+                                value1modifier += 5 * mult;
+                                value2modifier += mult * value2PREmodifier;
+                                mod2divider += mult * 1.5f;
+                            }
+                            else if (tupel.Item1 == (8, 0) || tupel.Item1 == (2, 1) || tupel.Item1 == (10, 3) || tupel.Item1 == (10, 4))
+                            {
+                                oceano = Max(oceano, mult * 10); // To make separation between OCEAN biomes (like acid and blood). CHANGE THIS to make ocean biomes that can merge with one another (like idk cool water ocean and temperate water ocean idk)
+                            }
+                            else { value2modifier += mult * ((2 * value1) % 32); }
                         }
-                        darkness = Max(0, 255 - darkness);
-                        Color colorToDraw = Color.FromArgb(255, darkness, darkness, darkness);
-                        setPixelButFaster(lightBitmap, (i, j), colorToDraw);
+
+                        oceanoSeeSaw = Min(Seesaw((int)oceano, 8), 8 - oceano);
+                        if (oceanoSeeSaw < 0)
+                        {
+                            oceanoSeeSaw = oceanoSeeSaw * oceanoSeeSaw * oceanoSeeSaw;
+                        }
+                        else { oceanoSeeSaw = oceanoSeeSaw * Abs(oceanoSeeSaw); }
+                        oceano *= 10;
+                        oceanoSeeSaw *= 10;
+
+                        mod2 = (int)(mod2 / mod2divider);
+
+                        (int type, int subType) elementToFillVoidWith;
+                        if (biomeIndex[i, j][0].Item1 == (8, 0)) { elementToFillVoidWith = (-2, 0); } // ocean
+                        else if (biomeIndex[i, j][0].Item1 == (2, 1)) { elementToFillVoidWith = (-4, 0); } // lava ocean
+                        else if (biomeIndex[i, j][0].Item1 == (10, 3)) { elementToFillVoidWith = (-6, 0); } // blood ocean
+                        else if (biomeIndex[i, j][0].Item1 == (10, 4)) { elementToFillVoidWith = (-7, 0); } // acid ocean
+                        else { elementToFillVoidWith = (0, 0); }
+
+                        float score1 = Min(value1 - (122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw * 0.1f)), -value1 + (133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw));
+                        bool fillTest1 = score1 > 0;
+                        float score2 = Max(value2 - (200 + value2modifier + oceano), -value2 + ((foresto - 1) * 75f - oceano));
+                        bool fillTest2 = score2 > 0;
+                        float plateauScore = Max(score1, score2) - (Abs(plateauPos - j) - 5) * 10;
+                        //if (fillTest1 && fillTest2) { fillStates[i, j] = 4; }
+                        //else if (fillTest1) { fillStates[i, j] = 3; }
+                        //else if (fillTest2) { fillStates[i, j] = 2; }
+                        if (((fillTest1 || fillTest2) && true) || (false && plateauScore >= 0)) { fillStates[i, j] = elementToFillVoidWith; }
+                        else
+                        {
+                            secondaryFillValues[2, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 2);
+                            secondaryFillValues[3, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 3);
+                            Dictionary<(int type, int subType), float> dicto = findTransitions(biomeIndex[i, j], tileValuesArray[i, j]);
+                            fillStates[i, j] = findMaterialToFillWith((secondaryFillValues[2, i, j], secondaryFillValues[3, i, j]), biomeIndex[i, j][0].Item1, dicto);
+                        }
+                        //if (rand.Next(500) != 0){ fillStates[i, j] = 1; }
                     }
                 }
-
-                for (int i = 0; i < 32; i++)
-                {
-                    for (int j = 0; j < 32; j++)
-                    {
-                        findTileColor(i, j);
-                    }
-                }
-
-
-                if (!structureGenerated && !entitiesAndPlantsSpawned)
-                {
-                    screen.chunksToSpawnEntitiesIn[position] = true;
-                }
-
-                if (!structureGenerated) { getMegaChunk(true); }
             }
             public (int type, int subType) findMaterialToFillWith((int, int) values, (int type, int subType) biome, Dictionary<(int type, int subType), float> dicto)
             {
@@ -366,27 +416,7 @@ namespace Cave
                     if (Max(0, (int)(Abs(Abs(values.Item1 - 1024) * 0.49f))) >= 1024 - dicto[biome] * 1024) { return (5, 0); }
                 }
 
-
-
-
                 return (1, 0);
-            }
-            public bool testLoadChunk(bool structureGenerated)
-            {
-                if (structureGenerated)
-                {
-                    if (System.IO.File.Exists($"{currentDirectory}\\CaveData\\{screen.game.seed}\\ChunkData\\{screen.id}\\{position.Item1}.{position.Item2}.json"))
-                    {
-                        loadChunk(this, false);
-                        return true;
-                    }
-                }
-                else if (System.IO.File.Exists($"{currentDirectory}\\CaveData\\{screen.game.seed}\\ChunkData\\{screen.id}\\{position.Item1}.{position.Item2}.json"))
-                {
-                    loadChunk(this, true);
-                    return true;
-                }
-                return false;
             }
             public void findTileColor(int i, int j)
             {
@@ -400,7 +430,7 @@ namespace Cave
                         colorArray[k] = (int)(colorArray[k] * materialColor.mult);
                     };
                     int rando = 0;
-                    if (fillStates[i, j] == (5, 0)) { rando = Abs((int)(LCGyNeg(LCGxPos(position.x * 32 + i)%153 + LCGyPos(position.y * 32 + j)%247) % 279)) % 40 - 20; }
+                    if (fillStates[i, j] == (5, 0)) { rando = Abs((int)(LCGyNeg(LCGxPos(pos.x * 32 + i)%153 + LCGyPos(pos.y * 32 + j)%247) % 279)) % 40 - 20; }
                     colorArray[0] += (int)(materialColor.r * (1 - materialColor.mult)) + rando;
                     colorArray[1] += (int)(materialColor.g * (1 - materialColor.mult)) + rando;
                     colorArray[2] += (int)(materialColor.b * (1 - materialColor.mult)) + rando;
@@ -417,7 +447,7 @@ namespace Cave
             {
                 i = PosMod(i);
                 j = PosMod(j);
-                (int x, int y) posToModify = (i + position.x * 32, j + position.y * 32);
+                (int x, int y) posToModify = (i + pos.x * 32, j + pos.y * 32);
                 (int type, int subType) previous = fillStates[i, j];
                 fillStates[i, j] = newMaterial;
                 findTileColor(i, j);
@@ -523,18 +553,18 @@ namespace Cave
                     int randX = rand.Next(32);
                     int randY = rand.Next(32);
                     if (forbiddenPositions.ContainsKey((randX, randY))) { }
-                    else if (screen.loadedChunks.TryGetValue(position, out Chunk chunkToTest))
+                    else if (screen.loadedChunks.TryGetValue(pos, out Chunk chunkToTest))
                     {
                         if (chunkToTest.fillStates[randX, randY].type <= 0)
                         {
-                            chunkPos = ChunkIdx(position.x*32 + randX, position.y*32 + randY - 1);
+                            chunkPos = ChunkIdx(pos.x*32 + randX, pos.y*32 + randY - 1);
                             if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
                             {
                                 tileIndex = PosMod((randX, randY - 1));
                                 if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type > 0)
                                 {
                                     forbiddenPositions[(randX, randY)] = true;
-                                    return ((position.x*32 + randX, position.y*32 + randY), true);
+                                    return ((pos.x*32 + randX, pos.y*32 + randY), true);
                                 }
                             }
                         }
@@ -553,19 +583,19 @@ namespace Cave
                     int randX = rand.Next(32);
                     int randY = rand.Next(32);
                     if (forbiddenPositions.ContainsKey((randX, randY))) { }
-                    else if (screen.loadedChunks.TryGetValue(position, out Chunk chunkToTest))
+                    else if (screen.loadedChunks.TryGetValue(pos, out Chunk chunkToTest))
                     {
                         tileIndex = PosMod((randX, randY));
                         if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0)
                         {
-                            chunkPos = ChunkIdx(position.x*32 + randX, position.y*32 + randY + 1);
+                            chunkPos = ChunkIdx(pos.x*32 + randX, pos.y*32 + randY + 1);
                             if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
                             {
                                 tileIndex = PosMod((randX, randY + 1));
                                 if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type > 0)
                                 {
                                     forbiddenPositions[(randX, randY)] = true;
-                                    return ((position.x*32 + randX, position.y*32 + randY), true);
+                                    return ((pos.x*32 + randX, pos.y*32 + randY), true);
                                 }
                             }
                         }
@@ -578,15 +608,15 @@ namespace Cave
             {
                 if (unstableLiquidCount > 0) //here
                 {
-                    (int x, int y) chunkCoords = ChunkIdx(position.Item1 * 32 - 32, position.Item2 * 32);
+                    (int x, int y) chunkCoords = ChunkIdx(pos.Item1 * 32 - 32, pos.Item2 * 32);
                     Chunk leftChunk = screen.tryToGetChunk(chunkCoords);
-                    chunkCoords = ChunkIdx(position.Item1 * 32 - 32, position.Item2 * 32 - 32);
+                    chunkCoords = ChunkIdx(pos.Item1 * 32 - 32, pos.Item2 * 32 - 32);
                     Chunk bottomLeftChunk = screen.tryToGetChunk(chunkCoords);
-                    chunkCoords = ChunkIdx(position.Item1 * 32, position.Item2 * 32 - 32);
+                    chunkCoords = ChunkIdx(pos.Item1 * 32, pos.Item2 * 32 - 32);
                     Chunk bottomChunk = screen.tryToGetChunk(chunkCoords);
-                    chunkCoords = ChunkIdx(position.Item1 * 32 + 32, position.Item2 * 32 - 32);
+                    chunkCoords = ChunkIdx(pos.Item1 * 32 + 32, pos.Item2 * 32 - 32);
                     Chunk bottomRightChunk = screen.tryToGetChunk(chunkCoords);
-                    chunkCoords = ChunkIdx(position.Item1 * 32 + 32, position.Item2 * 32);
+                    chunkCoords = ChunkIdx(pos.Item1 * 32 + 32, pos.Item2 * 32);
                     Chunk rightChunk = screen.tryToGetChunk(chunkCoords);
 
                     unstableLiquidCount = 0;
@@ -675,7 +705,7 @@ namespace Cave
                         middleTestPositionChunk.tileModification(i, jb, material);
                         return true;
                     } // THIS ONE WAS FUCKING BUGGYYYYY BRUH
-                    if ((i < 15 || middleTestPositionChunk.position.Item1 < rightTestPositionChunk.position.Item1) && (rightTestPositionChunk.fillStates[ir, j].type == 0 || middleTestPositionChunk.fillStates[i, jb].type < 0) && rightDiagTestPositionChunk.fillStates[ir, jb].type == 0)
+                    if ((i < 15 || middleTestPositionChunk.pos.Item1 < rightTestPositionChunk.pos.Item1) && (rightTestPositionChunk.fillStates[ir, j].type == 0 || middleTestPositionChunk.fillStates[i, jb].type < 0) && rightDiagTestPositionChunk.fillStates[ir, jb].type == 0)
                     {
                         tileModification(i, j, (0, 0));
                         rightDiagTestPositionChunk.tileModification(ir, jb, material);
@@ -688,7 +718,7 @@ namespace Cave
                             return true;
                         }
                     }
-                    if ((i > 0 || leftTestPositionChunk.position.Item1 < middleTestPositionChunk.position.Item1) && (leftTestPositionChunk.fillStates[il, j].type == 0 || middleTestPositionChunk.fillStates[i, jb].type < 0) && leftDiagTestPositionChunk.fillStates[il, jb].type == 0)
+                    if ((i > 0 || leftTestPositionChunk.pos.Item1 < middleTestPositionChunk.pos.Item1) && (leftTestPositionChunk.fillStates[il, j].type == 0 || middleTestPositionChunk.fillStates[i, jb].type < 0) && leftDiagTestPositionChunk.fillStates[il, jb].type == 0)
                     {
                         tileModification(i, j, (0, 0));
                         leftDiagTestPositionChunk.tileModification(il, jb, material);
@@ -709,8 +739,8 @@ namespace Cave
                 int iTested = i;
                 int jTested = j - 1;
 
-                int absChunkX = position.Item1;
-                int absChunkY = position.Item2;
+                int absChunkX = pos.Item1;
+                int absChunkY = pos.Item2;
                 if (jTested < 0) { jTested += 32; absChunkY--; }
                 (int, int) chunkCoords = ChunkIdx(absChunkX * 32, absChunkY * 32);
                 Chunk chunkToTest = screen.tryToGetChunk(chunkCoords);
@@ -755,8 +785,8 @@ namespace Cave
                 int iTested = i;
                 int jTested = j - 1;
 
-                int absChunkX = position.Item1;
-                int absChunkY = position.Item2;
+                int absChunkX = pos.Item1;
+                int absChunkY = pos.Item2;
                 if (jTested < 0) { jTested += 32; absChunkY--; }
                 (int, int) chunkCoords = ChunkIdx(absChunkX * 32, absChunkY * 32);
                 Chunk chunkToTest = screen.tryToGetChunk(chunkCoords);
@@ -954,7 +984,7 @@ namespace Cave
             }
             public MegaChunk getMegaChunk(bool isExtraGetting = false)
             {
-                (int x, int y) pos = MegaChunkIdxFromChunkPos(position);
+                (int x, int y) pos = MegaChunkIdxFromChunkPos(this.pos);
                 if (screen.megaChunks.ContainsKey(pos)) { return screen.megaChunks[pos]; }
                 if (screen.extraLoadedMegaChunks.ContainsKey(pos))
                 {

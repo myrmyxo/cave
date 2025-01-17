@@ -833,26 +833,14 @@ namespace Cave
             {
                 return (posX + pos.x, posY + pos.y);
             }
-            public bool testIfPositionEmpty((int x, int y) mod)
+            public bool testIfPositionEmpty((int x, int y) mod) // Improve for water (returns true for water, should only do that for plants)
             {
                 (int x, int y) pixelPos = getRealPos(mod);
                 (int x, int y) pixelTileIndex = PosMod(pixelPos);
                 (int x, int y) chunkPos = ChunkIdx(pixelPos);
 
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    if (screen.loadedChunks[chunkPos].fillStates[pixelTileIndex.x, pixelTileIndex.y].type > 0)
-                    {
-                        return false;
-                    }
-                    return true;
-                }
-
-                if (!screen.extraLoadedChunks.ContainsKey(chunkPos)) { screen.extraLoadedChunks.Add(chunkPos, new Chunk(chunkPos, true, screen)); }
-                if (screen.extraLoadedChunks[chunkPos].fillStates[pixelTileIndex.x, pixelTileIndex.y].type > 0)
-                {
-                    return false;
-                }
+                Chunk chunkToTest = screen.getChunkFromPixelPos(pixelPos, true);
+                if (chunkToTest.fillStates[pixelTileIndex.x, pixelTileIndex.y].type > 0) { return false; }
                 return true;
             }
             public void makeBitmap()

@@ -261,10 +261,6 @@ namespace Cave
             {
                 lightColor = Color.FromArgb(255, (color.R + 255) / 2, (color.G + 255) / 2, (color.B + 255) / 2);
             }
-            public (int, int) findIntPos(float positionX, float positionY)
-            {
-                return ((int)Floor(positionX, 1), (int)Floor(positionY, 1));
-            }
             public void placeEntity(Chunk chunk)
             {
                 int randX = rand.Next(32);
@@ -280,9 +276,9 @@ namespace Cave
                     randY = rand.Next(32);
                     counto += 1;
                 }
-                posX = chunk.position.Item1 * 32 + randX;
+                posX = chunk.pos.Item1 * 32 + randX;
                 realPosX = posX;
-                posY = chunk.position.Item2 * 32 + randY;
+                posY = chunk.pos.Item2 * 32 + randY;
                 realPosY = posY;
                 targetPos = (posX, posY);
                 return;

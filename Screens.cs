@@ -52,7 +52,7 @@ namespace Cave
             public bool isLight = true;
             public Game()
             {
-                devMode = true;
+                devMode = false;
                 bool randomSeed = true;
                 seed = 123456;
 
@@ -65,9 +65,10 @@ namespace Cave
                 bool isPngToExport = false;
 
                 loadStructuresYesOrNo = true;
+                spawnNests = true;
                 spawnEntities = true;
                 spawnPlants = true;
-                bool spawnNOTHING = true;
+                bool spawnNOTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntities = false; spawnPlants = false; }
 
                 if (randomSeed)
@@ -121,6 +122,8 @@ namespace Cave
                     int oldChunkLength = ChunkLength;
                     ChunkLength = PNGsize;
                     loadDimension(idToPut, true, isMonoeBiomeToPut, forceBiome.type, forceBiome.subType);
+                    setPlayerDimension(player, idToPut);
+                    player.placePlayer();
                     timeAtLauch = DateTime.Now;
 
                     runGame(null, null);
@@ -132,6 +135,7 @@ namespace Cave
 
                 loadDimension(idToPut, false, isMonoeBiomeToPut, forceBiome.type, forceBiome.subType);
                 setPlayerDimension(player, idToPut);
+                player.placePlayer();
             }
             public void movePlayerStuff(Player player)
             {
@@ -196,7 +200,6 @@ namespace Cave
 
                 foreach (Screen screen in loadedScreens.Values.ToArray())
                 {
-                    screen.extraLoadedChunks = new Dictionary<(int x, int y), Chunk>(); // this will make many bugs
                     screen.liquidsThatCantGoLeft = new Dictionary<(int, int), bool>();
                     screen.liquidsThatCantGoRight = new Dictionary<(int, int), bool>();
                     screen.entitesToRemove = new Dictionary<int, Entity>();
@@ -321,6 +324,7 @@ namespace Cave
                     structuresToRemove = new Dictionary<int, Structure>();
                 }
                 foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.unloadFarawayChunks(); }
+                foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.manageExtraLoadedChunks(); }
                 setUnloadingImmunity(); // Prevent MegaChunks/Chunks/Structures to be unloaded when they should not be
                 foreach (Screen screen in loadedScreens.Values.ToArray())
                 {
@@ -385,7 +389,7 @@ namespace Cave
                     MegaChunk megaChunk;
                     foreach (Chunk chunk in screen.loadedChunks.Values.ToArray())
                     {
-                        if (!screen.activeStructureLoadedChunkIndexes.ContainsKey(chunk.position))
+                        if (!screen.activeStructureLoadedChunkIndexes.ContainsKey(chunk.pos))
                         {
                             chunk.isImmuneToUnloading = true;
                             megaChunk = chunk.getMegaChunk();
@@ -427,7 +431,7 @@ namespace Cave
                         screen = structure.screen;
                         foreach ((int x, int y) chunkPos in structure.chunkPresence.Keys)
                         {
-                            chunkToTest = screen.tryToGetChunk(chunkPos);
+                            chunkToTest = screen.getChunkFromChunkPos(chunkPos, true);
                             if (chunkToTest.isImmuneToUnloading || chunkToTest == theFilledChunk) { continue; } // To not do the same one twice -> infinite loop, or if chunk wasn't loaded (impossible but better safe than salsifi
                             chunkToTest.isImmuneToUnloading = true;
                             newImmuneChunks[chunkToTest] = true;
@@ -439,7 +443,7 @@ namespace Cave
                         screen = nest.screen;
                         foreach ((int x, int y) chunkPos in nest.chunkPresence.Keys)
                         {
-                            chunkToTest = screen.tryToGetChunk(chunkPos);
+                            chunkToTest = screen.getChunkFromChunkPos(chunkPos, true);
                             if (chunkToTest.isImmuneToUnloading || chunkToTest == theFilledChunk) { continue; } // To not do the same one twice -> infinite loop, or if chunk wasn't loaded (impossible but better safe than salsifi
                             chunkToTest.isImmuneToUnloading = true;
                             newImmuneChunks[chunkToTest] = true;
@@ -713,21 +717,21 @@ namespace Cave
             }
             public void addPlantsToChunk(Chunk chunk)
             {
-                if (outOfBoundsPlants.ContainsKey((chunk.position.Item1, chunk.position.Item2)))
+                if (outOfBoundsPlants.ContainsKey((chunk.pos.Item1, chunk.pos.Item2)))
                 {
-                    chunk.exteriorPlantList = outOfBoundsPlants[(chunk.position.Item1, chunk.position.Item2)];
-                    outOfBoundsPlants.Remove((chunk.position.Item1, chunk.position.Item2));
+                    chunk.exteriorPlantList = outOfBoundsPlants[(chunk.pos.Item1, chunk.pos.Item2)];
+                    outOfBoundsPlants.Remove((chunk.pos.Item1, chunk.pos.Item2));
                 }
             }
             public void removePlantsFromChunk(Chunk chunk)
             {
                 if (chunk.exteriorPlantList.Count > 0)
                 {
-                    outOfBoundsPlants.Add((chunk.position.Item1, chunk.position.Item2), new List<Plant>());
+                    outOfBoundsPlants.Add((chunk.pos.Item1, chunk.pos.Item2), new List<Plant>());
                 }
                 foreach (Plant plant in chunk.exteriorPlantList)
                 {
-                    outOfBoundsPlants[(chunk.position.Item1, chunk.position.Item2)].Add(plant);
+                    outOfBoundsPlants[(chunk.pos.Item1, chunk.pos.Item2)].Add(plant);
                 }
             }
             public void addRemoveEntities()
@@ -797,24 +801,18 @@ namespace Cave
             }
             public void forceLoadChunksForOnePoint((int x, int y) chunkLoadingPos, int magnitude)
             {
-                Chunk newChunk;
                 (int x, int y) posToTest;
                 for (int i = -(int)(magnitude * 0.5f); i < (int)(magnitude * 0.5f); i++)
                 {
                     for (int j = -(int)(magnitude * 0.5f); j < (int)(magnitude * 0.5f); j++)
                     {
                         posToTest = (chunkLoadingPos.x + i, chunkLoadingPos.y + j);
-                        if (!loadedChunks.ContainsKey(posToTest))
-                        {
-                            newChunk = new Chunk(posToTest, false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
-                            if (!loadedChunks.ContainsKey(posToTest)) { loadedChunks[posToTest] = newChunk; }
-                        }
+                        getChunkFromChunkPos(posToTest);
                     }
                 }
             }
             public void forceLoadChunksForAllPoints()
             {
-                Chunk newChunk;
                 (int x, int y) posToTest;
                 int magnitude;
                 foreach ((int x, int y) chunkLoadingPos in chunkLoadingPoints.Keys)
@@ -825,18 +823,13 @@ namespace Cave
                         for (int j = -(int)(magnitude * 0.5f); j < (int)(magnitude * 0.5f); j++)
                         {
                             posToTest = (chunkLoadingPos.x + i, chunkLoadingPos.y + j);
-                            if (!loadedChunks.ContainsKey(posToTest))
-                            {
-                                newChunk = new Chunk(posToTest, false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
-                                if (!loadedChunks.ContainsKey(posToTest)) { loadedChunks[posToTest] = newChunk; }
-                            }
+                            getChunkFromChunkPos(posToTest);
                         }
                     }
                 }
             }
             public void loadCloseChunks()
             {
-                Chunk newChunk;
                 (int x, int y) posToTest;
                 int magnitude;
                 int count = 0;
@@ -850,8 +843,7 @@ namespace Cave
                             posToTest = (chunkLoadingPos.x + i, chunkLoadingPos.y + j);
                             if (!loadedChunks.ContainsKey(posToTest))
                             {
-                                newChunk = new Chunk(posToTest, false, this); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
-                                if (!loadedChunks.ContainsKey(posToTest)) { loadedChunks[posToTest] = newChunk; }
+                                getChunkFromChunkPos(posToTest);
                                 count++;
                                 if (count > 1 + 0.5 * (Abs(game.playerList[0].speedX) + Abs(game.playerList[0].speedY))) { return; }
                             }
@@ -896,6 +888,7 @@ namespace Cave
             }
             public void actuallyUnloadTheChunks(Dictionary<(int x, int y), bool> chunksDict)  // Be careful to have put entities and plants inside the chunk before or else they won't be unloaded !! ! ! ! !
             {
+                Chunk chunk;
                 if (chunksDict.Count > 0 && true)
                 {
                     foreach ((int, int) chunkPos in chunksDict.Keys)
@@ -903,22 +896,35 @@ namespace Cave
                         if (loadedChunks.ContainsKey(chunkPos))
                         {
                             //removePlantsFromChunk(loadedChunks[chunkPos]);
-                            Files.saveChunk(loadedChunks[chunkPos]);
+                            chunk = loadedChunks[chunkPos];
+                            saveChunk(loadedChunks[chunkPos]);
+                            chunk.demoteToExtra();
+                            extraLoadedChunks[chunkPos] = chunk;
                             loadedChunks.Remove(chunkPos);
                         }
                     }
                 }
             }
+            public void manageExtraLoadedChunks()
+            {
+                Dictionary<(int x, int y), bool> extraLoadedChunksToRemove = new Dictionary<(int x, int y), bool>();
+                foreach (Chunk chunk in extraLoadedChunks.Values)
+                {
+                    chunk.framesSinceLastExtraGetting += 1;
+                    if (chunk.framesSinceLastExtraGetting > 5) { extraLoadedChunksToRemove[chunk.pos] = true; }
+                }
+                foreach ((int x, int y) pos in extraLoadedChunksToRemove.Keys) { extraLoadedChunks.Remove(pos); }
+            }
             public void unloadMegaChunks() // megachunk resolution : 512*512
             {
                 Dictionary<(int x, int y), MegaChunk> newMegaChunks = new Dictionary<(int x, int y), MegaChunk>();
                 (int x, int y) megaChunkPos;
-                foreach ((int x, int y) chunkPos in loadedChunks.Keys)
+                foreach ((int x, int y) chunkPos in loadedChunks.Keys.ToArray())
                 {
                     megaChunkPos = MegaChunkIdxFromChunkPos(chunkPos);
                     if (newMegaChunks.ContainsKey(megaChunkPos)) { continue; }
                     if (activeStructureLoadedChunkIndexes.ContainsKey(chunkPos)) { continue; }
-                    newMegaChunks[megaChunkPos] = getMegaChunkFromMegaPos(megaChunkPos);
+                    newMegaChunks[megaChunkPos] = getMegaChunkFromMegaPos(megaChunkPos, true);
                     megaChunks.Remove(megaChunkPos);
                 }
                 Dictionary<(int x, int y), bool> chunksToRemove = new Dictionary<(int x, int y), bool>();
@@ -1052,7 +1058,7 @@ namespace Cave
                             continue;
                         }
                         chunko = loadedChunks[chunkPos];
-                        pasteImage(gameBitmap, chunko.bitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator);
+                        pasteImage(gameBitmap, chunko.bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, PNGmultiplicator);
                         //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32), PNGmultiplicator); } // if want to show chunk origin
                     }
                 }
@@ -1202,11 +1208,11 @@ namespace Cave
                             chunko = loadedChunks[(chunkX + i, chunkY + j)];
                             if (chunko.explorationLevel == 0)
                             {
-                                pasteImage(gameBitmap, black32Bitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator);
+                                pasteImage(gameBitmap, black32Bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, PNGmultiplicator);
                             }
                             else if (chunko.explorationLevel == 1)
                             {
-                                pasteImage(gameBitmap, chunko.fogBitmap, (chunko.position.x * 32, chunko.position.y * 32), camPos, PNGmultiplicator);
+                                pasteImage(gameBitmap, chunko.fogBitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, PNGmultiplicator);
                             }
                         }
                     }
@@ -1298,7 +1304,7 @@ namespace Cave
 
                         foreach (Chunk chunkoko in screenToDebug.loadedChunks.Values)
                         {
-                            if (chunkoko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunkoko.position.x * 32 - xOffset, chunkoko.position.y * 32), camPos, PNGmultiplicator); }
+                            if (chunkoko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunkoko.pos.x * 32 - xOffset, chunkoko.pos.y * 32), camPos, PNGmultiplicator); }
                         }
                         xOffset -= 50;
                     }
@@ -1319,62 +1325,42 @@ namespace Cave
             }
             public (int type, int subType) getTileContent((int x, int y) posToTest)
             {
-                (int x, int y) chunkPos = ChunkIdx(posToTest);
-                Chunk chunkToTest;
-                if (loadedChunks.ContainsKey(chunkPos)) { chunkToTest = loadedChunks[chunkPos]; }
-                else
-                {
-                    if (!extraLoadedChunks.ContainsKey(chunkPos))
-                    {
-                        extraLoadedChunks.Add(chunkPos, new Chunk(chunkPos, true, this));
-                    }
-                    chunkToTest = extraLoadedChunks[chunkPos];
-                }
-                return chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
+                return getChunkFromPixelPos(posToTest, true).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
             }
             public (int type, int subType) setTileContent((int x, int y) posToTest, (int type, int subType) typeToSet)
             {
-                (int x, int y) chunkPos = ChunkIdx(posToTest);
-                Chunk chunkToTest;
-                if (loadedChunks.ContainsKey(chunkPos)) { chunkToTest = loadedChunks[chunkPos]; }
-                else
-                {
-                    if (!extraLoadedChunks.ContainsKey(chunkPos))
-                    {
-                        extraLoadedChunks.Add(chunkPos, new Chunk(chunkPos, true, this));
-                    }
-                    chunkToTest = extraLoadedChunks[chunkPos];
-                }
-                (int type, int subType) previous = chunkToTest.tileModification(posToTest.x, posToTest.y, typeToSet);
-                return previous;
+                return getChunkFromPixelPos(posToTest, true).tileModification(posToTest.x, posToTest.y, typeToSet);
             }
-            public int getTileContent((int x, int y) posToTest, Dictionary<(int x, int y), Chunk> extraDictToCheckFrom)
+            public Chunk getChunkFromPixelPos((int x, int y) pos, bool isExtraGetting = false, Dictionary<(int x, int y), Chunk> extraDict = null)
             {
-                (int x, int y) chunkPos = ChunkIdx(posToTest);
-                Chunk chunkToTest = getChunkEvenIfNotLoaded(chunkPos, extraDictToCheckFrom);
-                return chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
+                return getChunkFromChunkPos(ChunkIdx(pos), isExtraGetting, extraDict);
             }
-            public Chunk getChunkEvenIfNotLoaded((int x, int y) chunkPos, Dictionary<(int x, int y), Chunk> chunkDict)
+            public Chunk getChunkFromChunkPos((int x, int y) pos, bool isExtraGetting = false, Dictionary<(int x, int y), Chunk> extraDict = null)  // Extradict is used
             {
-                Chunk chunkToTest;
-                if (loadedChunks.ContainsKey(chunkPos)) { chunkToTest = loadedChunks[chunkPos]; }
-                else
+                Chunk chunkToGet;
+                if (loadedChunks.ContainsKey(pos))
                 {
-                    if (chunkDict.ContainsKey(chunkPos)) { }
-                    else if (extraLoadedChunks.ContainsKey(chunkPos))
-                    {
-                        chunkDict.Add(chunkPos, extraLoadedChunks[chunkPos]);
-                    }
-                    else
-                    {
-                        Chunk newChunk = new Chunk(chunkPos, true, this);
-                        if (extraLoadedChunks.ContainsKey(chunkPos)) { newChunk = extraLoadedChunks[chunkPos]; }    // THIS WAS MADE TO HIS THE BUG OF CHUNK LOADING LOADING NEW CHUNKS N SHITE !   NEED TO ACTUALLY FIND A WAY TO FIX THAT BUG as it's present EVERYWHERE !   Remove the "newchunktoload" list, and try to get loadedChunks by a LIST of the current ones maybe ? idk
-                        else { extraLoadedChunks.Add(chunkPos, newChunk); }
-                        chunkDict.Add(chunkPos, newChunk);
-                    }
-                    chunkToTest = chunkDict[chunkPos];
+                    if (extraDict != null) { extraDict[pos] = loadedChunks[pos]; }
+                    return loadedChunks[pos];
                 }
-                return chunkToTest;
+                if (extraLoadedChunks.ContainsKey(pos))
+                {
+                    chunkToGet = extraLoadedChunks[pos];
+                    if (isExtraGetting)
+                    {
+                        chunkToGet.framesSinceLastExtraGetting = 0;
+                        if (extraDict != null) { extraDict[pos] = chunkToGet; }
+                        return chunkToGet;
+                    }
+                    chunkToGet.promoteFromExtraToFullyLoaded(getChunkJson(this, pos));  // Upgrade the extraLoaded Chunk to a full Chunk, by loading all its entities, fog, plants... etc
+                    loadedChunks[pos] = chunkToGet;
+                    extraLoadedMegaChunks.Remove(pos);
+                    if (extraDict != null) { extraDict[pos] = chunkToGet; }
+                    return chunkToGet;
+                }
+                chunkToGet = loadChunk(this, pos, isExtraGetting);
+                if (extraDict != null) { extraDict[pos] = chunkToGet; }
+                return chunkToGet;
             }
             public MegaChunk getMegaChunkFromPixelPos((int x, int y) pos, bool isExtraGetting = false)
             {

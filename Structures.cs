@@ -146,16 +146,11 @@ namespace Cave
             public virtual int setClassTypeInJson() { return 0; }
             public void addStructureToTheRightDictInTheScreen()
             {
-                Chunk newChunk;
                 if (isDynamic)
                 {
                     foreach ((int, int) chunkPos in chunkPresence.Keys)
                     {
-                        if (!screen.loadedChunks.ContainsKey(chunkPos))
-                        {
-                            newChunk = new Chunk(chunkPos, false, screen); // this is needed cause uhh yeah idk sometimes loadedChunks is FUCKING ADDED IN AGAIN ???
-                            if (!screen.loadedChunks.ContainsKey(chunkPos)) { screen.loadedChunks[chunkPos] = newChunk; }
-                        }
+                        screen.getChunkFromChunkPos(chunkPos);
                     }
                     screen.activeStructures[id] = this;
                     isImmuneToUnloading = false;
@@ -199,8 +194,8 @@ namespace Cave
 
                 long seedo = (seed.x / 2 + seed.y / 2) % 79461537;
                 int megaLake = 0;
-                if (seedo % 100 == 0) { megaLake = 10000; }
-                else if (seedo % 10 == 0) { megaLake = 2500; }
+                if (seedo % 250 == 0) { megaLake = 3000; }
+                else if (seedo % 50 == 0) { megaLake = 1500; }
 
                 int[] tilesFilled = new int[] { 0, 1 + Min((int)(seedo % 1009), (int)(seedo % 1277)) + megaLake}; // just a way to update the amount of tiles filled recursively not to go too high lolol. 2nd is maximum not to go over.
                 Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
@@ -261,11 +256,9 @@ namespace Cave
             bool floodPixel((int x, int y) pos, int maxY, Dictionary<(int x, int y), bool> tilesToFill, Dictionary<(int x, int y), bool> newTilesToFill, Dictionary<(int x, int y), Chunk> chunkDict, int[] tilesFilled)
             {
                 if (tilesToFill.ContainsKey(pos) || newTilesToFill.ContainsKey(pos)) { return true; } // already tried to filled this one, don't try to fill it but continue the fill
-                if (tilesFilled[0] > 2000) { return false; } // lake tooo biiig, ABORT ABORT
+                if (tilesFilled[0] > tilesFilled[1]) { return false; } // lake tooo biiig, ABORT ABORT
 
-                (int x, int y) chunkPos = ChunkIdx(pos);
-                Chunk chunkToTest = screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
-                chunkDict[chunkPos] = chunkToTest;
+                Chunk chunkToTest = screen.getChunkFromPixelPos(pos, true, chunkDict);
                 (int type, int subType) material = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)];
 
                 if (material.type < 0) { return false; } // bumped on a liquid tile, ABORT ABORT
@@ -568,13 +561,11 @@ namespace Cave
             public void imprintChunks()
             {
                 Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
-                (int x, int y) chunkPos;
                 Chunk chunkToTest;
 
                 foreach ((int x, int y) posToTest in structureDict.Keys)
                 {
-                    chunkPos = ChunkIdx(posToTest);
-                    chunkToTest = screen.getChunkEvenIfNotLoaded(chunkPos, chunkDict);
+                    chunkToTest = screen.getChunkFromPixelPos(posToTest, true, chunkDict);
                     chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)] = structureDict[posToTest];
                     chunkToTest.modificationCount = 1;
                     chunkToTest.findTileColor(PosMod(posToTest.x), PosMod(posToTest.y));
