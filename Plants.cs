@@ -592,6 +592,8 @@ namespace Cave
             public List<Branch> childBranches = new List<Branch>();
             public List<Flower> childFlowers = new List<Flower>();
 
+            public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>();
+
             public bool isDeadAndShouldDisappear = false;
             public bool isStable = false;
             public Plant(Screens.Screen screenToPut, PlantJson plantJson)
@@ -642,7 +644,7 @@ namespace Cave
                 posX = positionToPut.Item1;
                 posY = positionToPut.Item2;
                 type = typeToPut;
-                if (upsideDownPlants.ContainsKey(typeToPut)) { attachPoint = 3; }
+                if (upsideDownPlants.ContainsKey(typeToPut)) { attachPoint = 1; }
                 seed = rand.Next(1000000000); //                               FALSE RANDOM NOT SEEDED ARGHHEHEEEE
                 id = currentPlantId;
                 growthLevel = -1;
@@ -663,13 +665,7 @@ namespace Cave
             public void findType(int group) // 0 = small, 1 = tree
             {
                 (int x, int y) tileIndex = PosMod((posX, posY));
-
-                (int x, int y) chunkPos = ChunkIdx(posX, posY);
-                if (!screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    return;
-                }
-                Chunk chunkToTest = screen.loadedChunks[chunkPos];
+                Chunk chunkToTest = screen.getChunkFromPixelPos((posX, posY));
 
                 (int biome, int subBiome) biome = chunkToTest.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
                 if (biome == (6, 0)) // Mold
@@ -714,7 +710,7 @@ namespace Cave
                     }
                 }
 
-                else if (attachPoint == 3)
+                else if (attachPoint == 1)
                 {
                     if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type < 0)
                     {
@@ -837,9 +833,8 @@ namespace Cave
             {
                 (int x, int y) pixelPos = getRealPos(mod);
                 (int x, int y) pixelTileIndex = PosMod(pixelPos);
-                (int x, int y) chunkPos = ChunkIdx(pixelPos);
 
-                Chunk chunkToTest = screen.getChunkFromPixelPos(pixelPos, true);
+                Chunk chunkToTest = screen.getChunkFromPixelPos(pixelPos);
                 if (chunkToTest.fillStates[pixelTileIndex.x, pixelTileIndex.y].type > 0) { return false; }
                 return true;
             }
@@ -932,8 +927,16 @@ namespace Cave
                 bounds[2] = tupela.Item1;
                 bounds[3] = tupela.Item2;
 
-                //addPlantInChunks();
+                findChunkPresence(fillDict);
                 findLightPositions(branchList, flowerList);
+            }
+            public void findChunkPresence(Dictionary<(int x, int y), (int type, int subType)> fillDict)
+            {
+                chunkPresence = new Dictionary<(int x, int y), bool>();
+                foreach ((int x, int y) posToTest in fillDict.Keys)
+                {
+                    chunkPresence[ChunkIdx(getRealPos(posToTest))] = true;
+                }
             }
             public void findLightPositions(List<Branch> branchList, List<Flower> flowerList)
             {
@@ -1316,139 +1319,72 @@ namespace Cave
                 }
                 return false;
             }
-            public void addPlantInChunks()
-            {/*
-                (int, int) chunkPos;
-                Chunk chunkToTest;
-
-                for (int i = bounds[0]; i <= bounds[1]; i++)
-                {
-                    for (int j = bounds[2]; j <= bounds[3]; j++)
-                    {
-                        if (i < screen.chunkX || i >= screen.chunkX + screen.chunkResolution || j < screen.chunkY || j >= screen.chunkY + screen.chunkResolution)
-                        {
-                            if (i == chunk.position.Item1 && j == chunk.position.Item2)
-                            {
-                                chunkPos = ChunkIdx(i, j);
-                                chunkToTest = screen.loadedChunks[chunkPos];
-                                chunkToTest.plantList.Add(this);
-                            }
-                            else
-                            {
-                                chunkPos = ChunkIdx(i, j);
-                                chunkToTest = screen.loadedChunks[chunkPos];
-                                chunkToTest.exteriorPlantList.Add(this);
-                            }
-                        }
-                        else
-                        {
-                            if (screen.outOfBoundsPlants.ContainsKey((i, j)))
-                            {
-                                screen.outOfBoundsPlants[(i, j)].Add(this);
-                            }
-                            else
-                            {
-                                screen.outOfBoundsPlants.Add((i, j), new List<Plant> { this });
-                            }
-                        }
-                    }
-                }*/
-            }
             public void placePlant()
             {
+                Chunk chunk = screen.getChunkFromPixelPos((posX, posY));
+                Chunk chunk2;
+                (int x, int y) posToTest;
                 int counto = 0;
                 while (counto < 1000)
                 {
                     int randX = rand.Next(32);
                     int randY = rand.Next(32);
-                    posX += randX;
-                    posY += randY;
-                    (int x, int y) chunkPos = ChunkIdx(posX, posY);
-                    if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                    posToTest = (posX + randX, posY + randY);
+                    if (chunk.fillStates[randX, randY].type <= 0)
                     {
-                        (int x, int y) tileIndex = PosMod((posX, posY));
-                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0)
+                        if (randY == 0) { chunk2 = screen.getChunkFromPixelPos((posToTest.x, posToTest.y - 1)); }
+                        else { chunk2 = chunk; }
+                        if (chunk2.fillStates[randX, PosMod(randY - 1)].type > 0)
                         {
-                            chunkPos = ChunkIdx(posX, posY - 1);
-                            if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
-                            {
-                                tileIndex = PosMod((posX, posY - 1));
-                                if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type > 0)
-                                {
-                                    attachPoint = 0;
-                                    return;
-                                }
-                            }
-                            chunkPos = ChunkIdx(posX, posY + 1);
-                            if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesto))
-                            {
-                                tileIndex = PosMod((posX, posY + 1));
-                                if (chunkToTesto.fillStates[tileIndex.x, tileIndex.y].type > 0)
-                                {
-                                    attachPoint = 3;
-                                    return;
-                                }
-                            }
+                            attachPoint = 0;
+                            return;
+                        }
+                        if (randY == 31) { chunk2 = screen.getChunkFromPixelPos((posToTest.x, posToTest.y + 1)); }
+                        else { chunk2 = chunk; }
+                        if (chunk2.fillStates[randX, PosMod(randY + 1)].type > 0)
+                        {
+                            attachPoint = 1;
+                            return;
                         }
                     }
-                    posX -= randX;
-                    posY -= randY;
+                    posX = posToTest.x;
+                    posY = posToTest.y;
                     counto += 1;
                 }
                 isDeadAndShouldDisappear = true;
             }
             public void testPlantPosition()
             {
-                (int x, int y) chunkPos = ChunkIdx(posX, posY);
-                if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                Chunk chunk = screen.getChunkFromPixelPos((posX, posY));
+                int modX = PosMod(posX);
+                int modY = PosMod(posY);
+                if (chunk.fillStates[modX, modY].type > 0) { goto Fail; } // Full tile -> Fail
+                Chunk chunk2;
+                if (attachPoint == 0)       // ground plant
                 {
-                    (int x, int y) tileIndex = PosMod((posX, posY));
-                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0)
-                    {
-                        chunkPos = ChunkIdx(posX, posY - 1);
-                        if (attachPoint == 0 && screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesto))
-                        {
-                            tileIndex = PosMod((posX, posY - 1));
-                            if (chunkToTesto.fillStates[tileIndex.x, tileIndex.y].type > 0)
-                            {
-                                return;
-                            }
-                        }
-                        chunkPos = ChunkIdx(posX, posY + 1);
-                        if (attachPoint == 3 && screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
-                        {
-                            tileIndex = PosMod((posX, posY + 1));
-                            if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type > 0)
-                            {
-                                return;
-                            }
-                        }
-                    }
+                    if (modY == 0) { chunk2 = screen.getChunkFromPixelPos((posX, posY - 1)); }
+                    else { chunk2 = chunk; }
+                    if (chunk2.fillStates[modX, PosMod(modY - 1)].type > 0) { return; } // tile under full -> Success
                 }
+                else if (attachPoint == 1)  // Upside down pland
+                {
+                    if (modY == 31) { chunk2 = screen.getChunkFromPixelPos((posX, posY + 1)); }
+                    else { chunk2 = chunk; }
+                    if (chunk2.fillStates[modX, PosMod(modY + 1)].type > 0) { return; } // tile on top full -> Success
+                }
+            Fail:;
                 isDeadAndShouldDisappear = true;
             }
             public (List<Branch>, List<Flower>) returnAllBranchesAndFlowers()
             {
                 List<Branch> branchesToTest = new List<Branch>();
                 List<Flower> flowersToTest = new List<Flower>();
-                foreach (Branch branch in childBranches)
-                {
-                    branchesToTest.Add(branch);
-                }
-                foreach (Flower flower in childFlowers)
-                {
-                    flowersToTest.Add(flower);
-                }
+                foreach (Branch branch in childBranches) { branchesToTest.Add(branch); }
+                foreach (Flower flower in childFlowers) { flowersToTest.Add(flower); }
                 for (int i = 0; i < branchesToTest.Count; i++)
                 {
-                    foreach (Branch branch in branchesToTest[i].childBranches)
-                    {
-                        branchesToTest.Add(branch);
-                    }
-                    foreach (Flower flower in branchesToTest[i].childFlowers)
-                    {
-                        flowersToTest.Add(flower);
-                    }
+                    foreach (Branch branch in branchesToTest[i].childBranches) { branchesToTest.Add(branch); }
+                    foreach (Flower flower in branchesToTest[i].childFlowers) { flowersToTest.Add(flower); }
                 }
                 return (branchesToTest, flowersToTest);
             }

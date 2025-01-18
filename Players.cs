@@ -106,7 +106,7 @@ namespace Cave
                 Chunk chunk;
                 while (counto < 10000)
                 {
-                    chunk = screen.getChunkFromChunkPos(chunkPos);
+                    chunk = screen.getChunkFromChunkPos(chunkPos, false);
                     for (int j = 0; j < 32; j++)
                     {
                         for (int i = 0; i < 32; i++)
@@ -722,7 +722,7 @@ namespace Cave
                     return;
                 }
 
-                Chunk chunkToTest = screen.getChunkFromPixelPos(attack.pos, true);
+                Chunk chunkToTest = screen.getChunkFromPixelPos(attack.pos);
                 if (attack.attack == (2, 0))
                 {
                     PlantDig(chunkToTest, attack.pos, (attack.attack.type, attack.attack.subType, 4));
@@ -755,7 +755,7 @@ namespace Cave
             }
             public void TerrainDig((int x, int y) posToDig)
             {
-                Chunk chunkToTest = screen.getChunkFromPixelPos(posToDig, true);
+                Chunk chunkToTest = screen.getChunkFromPixelPos(posToDig);
                 (int type, int subType) tileContent = chunkToTest.fillStates[PosMod(posToDig.x), PosMod(posToDig.y)];
                 if (tileContent.type != 0)
                 {
@@ -780,7 +780,7 @@ namespace Cave
                     }
                 }
             }
-            public void PlantDig(Chunk chunkToDigIn, (int x, int y) posToDig, (int type, int subType, int typeOfElement) currentItem)
+            public void PlantDig(Chunk chunkToDigIn, (int x, int y) posToDig, (int type, int subType, int typeOfElement) currentItem)   // Will be useful when plants will be correctly put in chunks... one day lmfao
             {
                 (int type, int subType) value;
                 foreach (Plant plant in chunkToDigIn.plantList)
@@ -798,7 +798,7 @@ namespace Cave
             }
             public void Place((int x, int y) posToPlace)
             {
-                Chunk chunkToTest = screen.getChunkFromPixelPos(posToPlace, true);
+                Chunk chunkToTest = screen.getChunkFromPixelPos(posToPlace);
                 (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
                 (int type, int subType) tileState = chunkToTest.fillStates[PosMod(posToPlace.x), PosMod(posToPlace.y)];
                 if (tileState.type == 0 || tileState.type < 0 && currentItem.typeOfElement > 0)

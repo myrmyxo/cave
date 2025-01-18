@@ -456,6 +456,9 @@ namespace Cave
             // Player fairy transfo when in fairy liquid. Craft tools. Add ICE. Auto sorting in inventory. Blood breathing ? Extract o2 from blood.
             // Optimize/functionalize lake maker function
             // Make player be an inheritance from entity ! Would simplify shit a LOT -> same PV system as entity (when it's gonna be implemented lol) and just override if wanna change it
+            // Empty plants getting deleted ! No being stuck there forever...
+            // EntityCemetary and PlantCemetary folders, putting the files of dead Entities/Plants there
+            // Hornet nests -> search for point of interests in plants should take place with SPIRAL function
 
             // cool ideas for later !
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.

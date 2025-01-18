@@ -150,7 +150,7 @@ namespace Cave
                 {
                     foreach ((int, int) chunkPos in chunkPresence.Keys)
                     {
-                        screen.getChunkFromChunkPos(chunkPos);
+                        screen.getChunkFromChunkPos(chunkPos, false);
                     }
                     screen.activeStructures[id] = this;
                     isImmuneToUnloading = false;
@@ -159,10 +159,12 @@ namespace Cave
             }
             public void findChunkPresence()
             {
+                chunkPresence = new Dictionary<(int x, int y), bool>();
                 foreach ((int x, int y) posToTest in structureDict.Keys)
                 {
                     chunkPresence[ChunkIdx(posToTest)] = true;
                 }
+                megaChunkPresence = new Dictionary<(int x, int y), bool>();
                 foreach ((int x, int y) poso in chunkPresence.Keys)
                 {
                     megaChunkPresence[MegaChunkIdxFromChunkPos(poso)] = true;
@@ -313,7 +315,7 @@ namespace Cave
                 MegaChunk megaChunk;
                 foreach ((int x, int y) pos in megaChunkPresence.Keys)
                 {
-                    megaChunk = screen.getMegaChunkFromMegaPos(pos, true);
+                    megaChunk = screen.getMegaChunkFromMegaPos(pos);
                     if (!megaChunk.structures.Contains(id)) // should always be the case but whatever
                     {
                         megaChunk.structures.Add(id);
@@ -581,7 +583,7 @@ namespace Cave
                 if (isErasedFromTheWorld) { return; }
                 foreach ((int x, int y) pos in megaChunkPresence.Keys)
                 {
-                    MegaChunk megaChunk = screen.getMegaChunkFromMegaPos(pos, true);
+                    MegaChunk megaChunk = screen.getMegaChunkFromMegaPos(pos);
                     megaChunk.structures.Remove(id);
                     saveMegaChunk(megaChunk);
                 }

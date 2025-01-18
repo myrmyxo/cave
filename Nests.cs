@@ -990,7 +990,7 @@ namespace Cave
                 digErrands = new List<(int x, int y)>();
                 foreach ((int x, int y) pos in tiles.Keys)
                 {
-                    Chunk chunkToTest = screen.getChunkFromPixelPos(pos, true);
+                    Chunk chunkToTest = screen.getChunkFromPixelPos(pos);
                     (int type, int subType) fillState = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)];
                     Room room = rooms[getRoomId(pos)];
                     if (fillState.type == 0 || (fillState.type == -5 && room.type == 2)) { }

@@ -509,7 +509,7 @@ namespace Cave
                         ((int x, int y), bool valid) returnTuple = findCeilingPlantPosition(forbiddenPositions);
                         if (returnTuple.valid)
                         {
-                            Plant newPlant = new Plant(this, 0, 3, returnTuple.Item1);
+                            Plant newPlant = new Plant(this, 0, 1, returnTuple.Item1);
                             if (!newPlant.isDeadAndShouldDisappear)
                             {
                                 screen.activePlants[newPlant.id] = newPlant;

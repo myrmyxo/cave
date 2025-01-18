@@ -288,20 +288,19 @@ namespace Cave
                     }
 
                     screen.putEntitiesAndPlantsInChunks();
-
-                    // attack shit
                     foreach (((int x, int y) pos, (int type, int subType) attack) attack in screen.attacksToDo)
                     {
                         player.sendAttack(attack);
                     }
                     if (player.willBeSetAsNotAttacking) { player.setAsNotAttacking(); }
+
                     while (structuresToAdd.Count > 0)
                     {
                         Dictionary<int, Structure> structuresToAddNow = new Dictionary<int, Structure>(structuresToAdd);
                         structuresToAdd = new Dictionary<int, Structure>();
                         foreach (Structure structure in structuresToAddNow.Values)
                         {
-                            MegaChunk megaChunk = screen.getMegaChunkFromPixelPos(structure.pos);
+                            MegaChunk megaChunk = screen.getMegaChunkFromPixelPos(structure.pos, false);
                             foreach (int id in megaChunk.structures) // this checks is there is already a structure of the same type overlapping with the chunks of the new one (not to make duplicates for portals n shite)
                             {
                                 if (!structure.screen.activeStructures.ContainsKey(id)) { continue; }
@@ -431,7 +430,7 @@ namespace Cave
                         screen = structure.screen;
                         foreach ((int x, int y) chunkPos in structure.chunkPresence.Keys)
                         {
-                            chunkToTest = screen.getChunkFromChunkPos(chunkPos, true);
+                            chunkToTest = screen.getChunkFromChunkPos(chunkPos);
                             if (chunkToTest.isImmuneToUnloading || chunkToTest == theFilledChunk) { continue; } // To not do the same one twice -> infinite loop, or if chunk wasn't loaded (impossible but better safe than salsifi
                             chunkToTest.isImmuneToUnloading = true;
                             newImmuneChunks[chunkToTest] = true;
@@ -443,7 +442,7 @@ namespace Cave
                         screen = nest.screen;
                         foreach ((int x, int y) chunkPos in nest.chunkPresence.Keys)
                         {
-                            chunkToTest = screen.getChunkFromChunkPos(chunkPos, true);
+                            chunkToTest = screen.getChunkFromChunkPos(chunkPos);
                             if (chunkToTest.isImmuneToUnloading || chunkToTest == theFilledChunk) { continue; } // To not do the same one twice -> infinite loop, or if chunk wasn't loaded (impossible but better safe than salsifi
                             chunkToTest.isImmuneToUnloading = true;
                             newImmuneChunks[chunkToTest] = true;
@@ -741,42 +740,46 @@ namespace Cave
                 entitesToRemove = new Dictionary<int, Entity>();
                 entitesToAdd = new Dictionary<int, Entity>();
             }
-            public void putEntitiesAndPlantsInChunks()
+            public void putPlantsInChunks()
+            {
+                Plant[] plantArray = activePlants.Values.ToArray();
+                Plant plant;
+                for (int i = 0; i < plantArray.Length; i++)
+                {
+                    plant = plantArray[i];
+                    foreach ((int x, int y) chunkPos in plant.chunkPresence.Keys)
+                    {
+                        getChunkFromChunkPos(chunkPos).plantList.Add(activePlants[plant.id]);
+                    }
+                    activePlants.Remove(plant.id);
+                }
+            }
+            public void putEntitiesInChunks()
             {
                 (int, int) chunkIndex;
-                Chunk chunk;
-                int id;
                 List<Entity> cringeEntities = new List<Entity>();
-                int[] entityIdArray = activeEntities.Keys.ToArray();
-                for (int i = 0; i < entityIdArray.Length; i++)
+                Entity[] entityArray = activeEntities.Values.ToArray();
+                Entity entity;
+                for (int i = 0; i < entityArray.Length; i++)
                 {
-                    id = entityIdArray[i];
-                    chunkIndex = ChunkIdx(activeEntities[id].posX, activeEntities[id].posY);
+                    entity = entityArray[i];
+                    chunkIndex = ChunkIdx(entity.posX, entity.posY);
                     if (loadedChunks.ContainsKey(chunkIndex))
                     {
-                        chunk = loadedChunks[chunkIndex];
-                        chunk.entityList.Add(activeEntities[id]);
-                        activeEntities.Remove(id);
+                        getChunkFromChunkPos(chunkIndex).entityList.Add(activeEntities[entity.id]);
                     }
-                    else
-                    {
-                        cringeEntities.Add(activeEntities[id]);
-                        activeEntities.Remove(id);
-                    }
-                }
-                int[] plantIdArray = activePlants.Keys.ToArray();
-                for (int i = 0; i < plantIdArray.Length; i++)
-                {
-                    id = plantIdArray[i];
-                    chunkIndex = ChunkIdx(activePlants[id].posX, activePlants[id].posY);
-                    chunk = loadedChunks[chunkIndex];
-                    chunk.plantList.Add(activePlants[id]);
-                    activePlants.Remove(id);
+                    else { cringeEntities.Add(activeEntities[id]); }
+                    activeEntities.Remove(entity.id);
                 }
                 foreach (Entity entito in cringeEntities)
                 {
                     activeEntities[entito.id] = entito;
                 }
+            }
+            public void putEntitiesAndPlantsInChunks()
+            {
+                putEntitiesInChunks();
+                putPlantsInChunks();
             }
             public void removeEntitiesAndPlantsFromChunks(bool reinitializeActivePlantsAndEntities)
             {
@@ -807,7 +810,7 @@ namespace Cave
                     for (int j = -(int)(magnitude * 0.5f); j < (int)(magnitude * 0.5f); j++)
                     {
                         posToTest = (chunkLoadingPos.x + i, chunkLoadingPos.y + j);
-                        getChunkFromChunkPos(posToTest);
+                        getChunkFromChunkPos(posToTest, false);
                     }
                 }
             }
@@ -823,7 +826,7 @@ namespace Cave
                         for (int j = -(int)(magnitude * 0.5f); j < (int)(magnitude * 0.5f); j++)
                         {
                             posToTest = (chunkLoadingPos.x + i, chunkLoadingPos.y + j);
-                            getChunkFromChunkPos(posToTest);
+                            getChunkFromChunkPos(posToTest, false);
                         }
                     }
                 }
@@ -843,7 +846,7 @@ namespace Cave
                             posToTest = (chunkLoadingPos.x + i, chunkLoadingPos.y + j);
                             if (!loadedChunks.ContainsKey(posToTest))
                             {
-                                getChunkFromChunkPos(posToTest);
+                                getChunkFromChunkPos(posToTest, false);
                                 count++;
                                 if (count > 1 + 0.5 * (Abs(game.playerList[0].speedX) + Abs(game.playerList[0].speedY))) { return; }
                             }
@@ -924,7 +927,7 @@ namespace Cave
                     megaChunkPos = MegaChunkIdxFromChunkPos(chunkPos);
                     if (newMegaChunks.ContainsKey(megaChunkPos)) { continue; }
                     if (activeStructureLoadedChunkIndexes.ContainsKey(chunkPos)) { continue; }
-                    newMegaChunks[megaChunkPos] = getMegaChunkFromMegaPos(megaChunkPos, true);
+                    newMegaChunks[megaChunkPos] = getMegaChunkFromMegaPos(megaChunkPos);
                     megaChunks.Remove(megaChunkPos);
                 }
                 Dictionary<(int x, int y), bool> chunksToRemove = new Dictionary<(int x, int y), bool>();
@@ -1325,17 +1328,17 @@ namespace Cave
             }
             public (int type, int subType) getTileContent((int x, int y) posToTest)
             {
-                return getChunkFromPixelPos(posToTest, true).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
+                return getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
             }
             public (int type, int subType) setTileContent((int x, int y) posToTest, (int type, int subType) typeToSet)
             {
-                return getChunkFromPixelPos(posToTest, true).tileModification(posToTest.x, posToTest.y, typeToSet);
+                return getChunkFromPixelPos(posToTest).tileModification(posToTest.x, posToTest.y, typeToSet);
             }
-            public Chunk getChunkFromPixelPos((int x, int y) pos, bool isExtraGetting = false, Dictionary<(int x, int y), Chunk> extraDict = null)
+            public Chunk getChunkFromPixelPos((int x, int y) pos, bool isExtraGetting = true, Dictionary<(int x, int y), Chunk> extraDict = null)
             {
                 return getChunkFromChunkPos(ChunkIdx(pos), isExtraGetting, extraDict);
             }
-            public Chunk getChunkFromChunkPos((int x, int y) pos, bool isExtraGetting = false, Dictionary<(int x, int y), Chunk> extraDict = null)  // Extradict is used
+            public Chunk getChunkFromChunkPos((int x, int y) pos, bool isExtraGetting = true, Dictionary<(int x, int y), Chunk> extraDict = null)  // Extradict is used
             {
                 Chunk chunkToGet;
                 if (loadedChunks.ContainsKey(pos))
@@ -1362,15 +1365,15 @@ namespace Cave
                 if (extraDict != null) { extraDict[pos] = chunkToGet; }
                 return chunkToGet;
             }
-            public MegaChunk getMegaChunkFromPixelPos((int x, int y) pos, bool isExtraGetting = false)
+            public MegaChunk getMegaChunkFromPixelPos((int x, int y) pos, bool isExtraGetting = true)
             {
                 return getMegaChunkFromMegaPos(MegaChunkIdxFromPixelPos(pos), isExtraGetting);
             }
-            public MegaChunk getMegaChunkFromChunkPos((int x, int y) pos, bool isExtraGetting = false)
+            public MegaChunk getMegaChunkFromChunkPos((int x, int y) pos, bool isExtraGetting = true)
             {
                 return getMegaChunkFromMegaPos(MegaChunkIdxFromChunkPos(pos), isExtraGetting);
             }
-            public MegaChunk getMegaChunkFromMegaPos((int x, int y) pos, bool isExtraGetting = false)
+            public MegaChunk getMegaChunkFromMegaPos((int x, int y) pos, bool isExtraGetting = true)
             {
                 if (megaChunks.ContainsKey(pos)) { return megaChunks[pos]; }
                 if (extraLoadedMegaChunks.ContainsKey(pos))
