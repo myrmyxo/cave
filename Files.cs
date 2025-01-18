@@ -282,7 +282,7 @@ namespace Cave
             public (float, float) speed;
             public int[,] inv;
             public (float, float) lastDP;
-            public int hp;
+            public float hp;
             public float brth;
             public float sttCh;
             public float tp;

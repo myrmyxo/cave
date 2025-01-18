@@ -1466,6 +1466,50 @@ namespace Cave
                     {
                         if (value.type != 0)
                         {
+                            return value;
+                        }
+                    }
+                }
+
+                foreach (Branch branch in branchesToTest)
+                {
+                    posToTest = (posToDigX - posX - branch.pos.x, posToDigY - posY - branch.pos.y);
+                    if (branch.fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value))
+                    {
+                        if (value.type != 0)
+                        {
+                            return value;
+                        }
+                    }
+                }
+
+                {
+                    posToTest = (posToDigX - posX, posToDigY - posY);
+                    if (fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value))
+                    {
+                        if (value.type != 0)
+                        {
+                            return value;
+                        }
+                    }
+                }
+
+                return (0, 0);
+            }
+            public (int type, int subType) actuallyDig(int posToDigX, int posToDigY)    // The testDig and actuallyDig functions are SOOO SHITE LMFAOOOO
+            {
+                (List<Branch>, List<Flower>) returnedTuple = returnAllBranchesAndFlowers();
+                List<Branch> branchesToTest = returnedTuple.Item1;
+                List<Flower> flowersToTest = returnedTuple.Item2;
+
+                (int x, int y) posToTest;
+                foreach (Flower flower in flowersToTest)
+                {
+                    posToTest = (posToDigX - posX - flower.pos.x, posToDigY - posY - flower.pos.y);
+                    if (flower.fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value))
+                    {
+                        if (value.type != 0)
+                        {
                             flower.fillStates.Remove((posToTest.x, posToTest.y));
                             makeBitmap();
                             return value;

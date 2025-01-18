@@ -134,12 +134,14 @@ namespace Cave
                     inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
                     {
                         {(0, 0, 4), -999 }, // tools
+                        {(4, 0, 4), -999 },
                         {(1, 0, 4), -999 },
                         {(2, 0, 4), -999 },
                     };
                     inventoryElements = new List<(int index, int subType, int typeOfElement)>
                     {
                         (0, 0, 4), // tools
+                        (4, 0, 4),
                         (1, 0, 4),
                         (2, 0, 4),
                     };
@@ -149,6 +151,7 @@ namespace Cave
                     inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
                     {
                         {(0, 0, 4), -999 }, // tools
+                        {(4, 0, 4), -999 },
                         {(1, 0, 4), -999 },
                         {(2, 0, 4), -999 },
                         {(3, 0, 4), -999 },
@@ -173,6 +176,7 @@ namespace Cave
                     inventoryElements = new List<(int index, int subType, int typeOfElement)>
                     {
                         (0, 0, 4), // tools
+                        (4, 0, 4),
                         (1, 0, 4),
                         (2, 0, 4),
                         (3, 0, 4),
@@ -200,7 +204,7 @@ namespace Cave
                     inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
                     {
                         {(0, 0, 4), -999 }, // tools
-                        {(1, 0, 4), -999 },
+                        {(4, 0, 4), -999 },
                         {(2, 0, 4), -999 },
                         {(3, 0, 4), -999 },
                         {(0, 0, 1), -999 }, // entitities
@@ -230,6 +234,7 @@ namespace Cave
                     inventoryElements = new List<(int index, int subType, int typeOfElement)>
                     {
                         (0, 0, 4), // tools
+                        (4, 0, 4),
                         (1, 0, 4),
                         (2, 0, 4),
                         (3, 0, 4),
@@ -324,43 +329,28 @@ namespace Cave
 
                 if (digPress && timeElapsed > timeAtLastDig /*+ 0.2f*/)
                 {
-                    if (arrowKeysState[0] && !arrowKeysState[1])
-                    {
-                        Dig(posX - 1, posY);
-                    }
-                    else if (arrowKeysState[1] && !arrowKeysState[0])
-                    {
-                        Dig(posX + 1, posY);
-                    }
-                    else if (arrowKeysState[2] && !arrowKeysState[3])
-                    {
-                        Dig(posX, posY - 1);
-                    }
-                    else if (arrowKeysState[3] && !arrowKeysState[2])
-                    {
-                        Dig(posX, posY + 1);
-                    }
+                    (int x, int y) digPos;
+                    if (arrowKeysState[0] && !arrowKeysState[1]) { digPos = (posX - 1, posY); }
+                    else if (arrowKeysState[1] && !arrowKeysState[0]) { digPos = (posX + 1, posY); }
+                    else if (arrowKeysState[2] && !arrowKeysState[3]) { digPos = (posX, posY - 1); }
+                    else if (arrowKeysState[3] && !arrowKeysState[2]) { digPos = (posX, posY + 1); }
+                    else { digPos = (posX, posY); }
+
+                    (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
+                    if (currentItem == (1, 0, 4)) { TerrainDig(digPos); }
+                    if (currentItem == (4, 0, 4)) { PlantDig(digPos, currentItem); }     // Don't do scythe here cause it's done with the attacks !
                 }
                 if ((placePress[0] || placePress[1]) && ((inventoryElements[inventoryCursor].typeOfElement == 0 && timeElapsed > timeAtLastPlace + 0.01f) || (timeElapsed > timeAtLastPlace + 0.2f)))
                 {
-                    if (arrowKeysState[0] && !arrowKeysState[1])
-                    {
-                        Place(posX - 1, posY);
-                    }
-                    else if (arrowKeysState[1] && !arrowKeysState[0])
-                    {
-                        Place(posX + 1, posY);
-                    }
-                    else if (arrowKeysState[2] && !arrowKeysState[3])
-                    {
-                        Place(posX, posY - 1);
-                    }
-                    else if (arrowKeysState[3] && !arrowKeysState[2])
-                    {
-                        Place(posX, posY + 1);
-                    }
+                    (int x, int y) placePos;
+                    if (arrowKeysState[0] && !arrowKeysState[1]) { placePos = (posX - 1, posY); }
+                    else if (arrowKeysState[1] && !arrowKeysState[0]) { placePos = (posX + 1, posY); }
+                    else if (arrowKeysState[2] && !arrowKeysState[3]) { placePos = (posX, posY - 1); }
+                    else if (arrowKeysState[3] && !arrowKeysState[2]) { placePos = (posX, posY + 1); }
+                    else { goto notPlace; }
+                    Place(placePos);
                 }
-
+            notPlace:;
 
 
 
@@ -610,6 +600,7 @@ namespace Cave
                 if (digPress && currentAttack.type == -1 && currentItem.megaType == 4 )  // start an attack if a tool that can attack is selected, X is pressed, and player is not already attacking
                 {
                     if (currentItem == (0, 0, 4)) { startAttack((0, 0)); }
+                    if (currentItem == (2, 0, 4)) { startAttack((2, 0)); }
                     else if (currentItem == (3, 0, 4)) { startAttack((3, 0)); }
                 }
 
@@ -653,7 +644,30 @@ namespace Cave
 
                     if (attackState >= 4) { willBeSetAsNotAttacking = true; }
                 }
-                else if (currentAttack == (3, 0))
+                else if (currentAttack == (2, 0)) // if scythe attack
+                {
+                    attackState++;
+                    (int x, int y) attackPos = (0, 0);
+                    int sign = 1;
+                    if (direction.x > 0) { sign = -1; }
+                    
+                    if (attackState == 0) { attackPos = (posX + sign, posY + 1); }
+                    else if (attackState == 1) { attackPos = (posX - sign, posY + 1); }
+                    else if (attackState == 2) { attackPos = (posX - 2 * sign, posY); }
+                    else if (attackState == 3) { attackPos = (posX - sign, posY - 1); }
+                    else if (attackState == 4) { attackPos = (posX, posY - 1); }
+
+                    posToDrawList.Add(((attackPos.x, attackPos.y), Color.White));
+                    posToDrawList.Add(((attackPos.x - sign, attackPos.y), Color.White));
+                    for (int j = -1; j <= 1; j+= 1)
+                    {
+                        posToAttackList.Add(((attackPos.x, attackPos.y + j), currentAttack));
+                        posToAttackList.Add(((attackPos.x - sign, attackPos.y + j), currentAttack));
+                    }
+
+                    if (attackState >= 4) { willBeSetAsNotAttacking = true; }
+                }
+                else if (currentAttack == (3, 0))   // If magic wand attack
                 {
                     attackState++;
                     int sign = -1;
@@ -702,28 +716,33 @@ namespace Cave
             }
             public void sendAttack(((int x, int y) pos, (int type, int subType) attack) attack)
             {
-                (int x, int y) chunkIndex = ChunkIdx(attack.pos);
-                if (!screen.loadedChunks.ContainsKey(chunkIndex)) { return; }
-                Chunk chunkToTest = screen.loadedChunks[chunkIndex];
-                if (attack.attack == (0, 0))
-                {
-                    foreach (Entity entity in chunkToTest.entityList)
-                    {
-                        if ((entity.posX, entity.posY) == attack.pos && !entitiesAlreadyHitByCurrentAttack.ContainsKey(entity.id))
-                        {
-                            entity.hp -= 1;
-                            entitiesAlreadyHitByCurrentAttack[entity.id] = true;
-                            entity.timeAtLastGottenHit = timeElapsed;
-                            if (entity.hp <= 0)
-                            {
-                                entity.dieAndDrop(this);
-                            }
-                        }
-                    }
-                }
-                else if (attack.attack == (3, 0))
+                if (attack.attack == (3, 0))
                 {
                     if (screen.type.type != 2) testForBloodAltar(screen, attack.pos);
+                    return;
+                }
+
+                Chunk chunkToTest = screen.getChunkFromPixelPos(attack.pos, true);
+                if (attack.attack == (2, 0))
+                {
+                    PlantDig(chunkToTest, attack.pos, (attack.attack.type, attack.attack.subType, 4));
+                }
+
+                float damage = 0;
+                if (attack.attack == (0, 0)) { damage = 1; }
+                if (attack.attack == (2, 0)) { damage = 0.5f; }
+                foreach (Entity entity in chunkToTest.entityList)
+                {
+                    if ((entity.posX, entity.posY) == attack.pos && !entitiesAlreadyHitByCurrentAttack.ContainsKey(entity.id))
+                    {
+                        entity.hp -= damage;
+                        entitiesAlreadyHitByCurrentAttack[entity.id] = true;
+                        entity.timeAtLastGottenHit = timeElapsed;
+                        if (entity.hp <= 0)
+                        {
+                            entity.dieAndDrop(this);
+                        }
+                    }
                 }
             }
             public bool CheckStructurePosChange()
@@ -734,15 +753,25 @@ namespace Cave
                 if (oldStructurePos == (structureX, structureY)) { return false; }
                 return true;
             }
-            public void Dig(int posToDigX, int posToDigY)
+            public void TerrainDig((int x, int y) posToDig)
             {
-                (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
-                if (currentItem != (1, 0, 4)) { return; }   // if current selected item is not pickaxe, can't dig lol
-                (int, int) chunkPos = ChunkIdx(posToDigX, posToDigY);
+                Chunk chunkToTest = screen.getChunkFromPixelPos(posToDig, true);
+                (int type, int subType) tileContent = chunkToTest.fillStates[PosMod(posToDig.x), PosMod(posToDig.y)];
+                if (tileContent.type != 0)
+                {
+                    addElementToInventory((tileContent.type, tileContent.subType, 0));
+                    chunkToTest.tileModification(posToDig.x, posToDig.y, (0, 0));
+                    timeAtLastDig = timeElapsed;
+                }
+            }
+            public void PlantDig((int x, int y) posToDig, (int type, int subType, int typeOfElement) currentItem)
+            {
                 (int type, int subType) value;
                 foreach (Plant plant in screen.activePlants.Values)
                 {
-                    value = plant.testDig(posToDigX, posToDigY);
+                    value = plant.testDig(posToDig.x, posToDig.y);
+                    if (materialGatheringToolRequirement.ContainsKey(value) && materialGatheringToolRequirement[value] != currentItem) { continue; }
+                    value = plant.actuallyDig(posToDig.x, posToDig.y);
                     if (value.type != 0)
                     {
                         addElementToInventory((value.type, value.subType, 3));
@@ -750,37 +779,44 @@ namespace Cave
                         return;
                     }
                 }
-                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return; }
-                (int type, int subType) tileContent = chunkToTest.fillStates[PosMod(posToDigX), PosMod(posToDigY)];
-                if (tileContent.type != 0)
+            }
+            public void PlantDig(Chunk chunkToDigIn, (int x, int y) posToDig, (int type, int subType, int typeOfElement) currentItem)
+            {
+                (int type, int subType) value;
+                foreach (Plant plant in chunkToDigIn.plantList)
                 {
-                    addElementToInventory((tileContent.type, tileContent.subType, 0));
-                    chunkToTest.tileModification(posToDigX, posToDigY, (0, 0));
-                    timeAtLastDig = timeElapsed;
+                    value = plant.testDig(posToDig.x, posToDig.y);
+                    if (materialGatheringToolRequirement.ContainsKey(value) && materialGatheringToolRequirement[value] != currentItem) { continue; }
+                    value = plant.actuallyDig(posToDig.x, posToDig.y);
+                    if (value.type != 0)
+                    {
+                        addElementToInventory((value.type, value.subType, 3));
+                        timeAtLastDig = timeElapsed;
+                        return;
+                    }
                 }
             }
-            public void Place(int posToDigX, int posToDigY)
+            public void Place((int x, int y) posToPlace)
             {
-                (int, int) chunkPos = ChunkIdx(posToDigX, posToDigY);
-                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return; }
+                Chunk chunkToTest = screen.getChunkFromPixelPos(posToPlace, true);
                 (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
-                (int type, int subType) tileState = chunkToTest.fillStates[PosMod(posToDigX), PosMod(posToDigY)];
+                (int type, int subType) tileState = chunkToTest.fillStates[PosMod(posToPlace.x), PosMod(posToPlace.y)];
                 if (tileState.type == 0 || tileState.type < 0 && currentItem.typeOfElement > 0)
                 {
                     if (currentItem.typeOfElement == 0)
                     {
-                        chunkToTest.screen.setTileContent((posToDigX, posToDigY), (currentItem.type, currentItem.subType));
+                        chunkToTest.screen.setTileContent(posToPlace, (currentItem.type, currentItem.subType));
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (currentItem.typeOfElement == 1)
                     {
-                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), (currentItem.type, currentItem.subType));
+                        Entity newEntity = new Entity(screen, posToPlace, (currentItem.type, currentItem.subType));
                         screen.activeEntities[newEntity.id] = newEntity;
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (currentItem.typeOfElement == 2)
                     {
-                        Plant newPlant = new Plant(screen, (posToDigX, posToDigY), (currentItem.type, currentItem.subType));
+                        Plant newPlant = new Plant(screen, posToPlace, (currentItem.type, currentItem.subType));
                         if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
                         timeAtLastPlace = timeElapsed;
                     }

@@ -222,8 +222,8 @@ namespace Cave
                 { (10, 2), (320, 200, 256, 512, 1000, 0) }, // Bone biome...
                 { (10, 3), (320, 880, 380, 360, 1000, 0) }, // Blood ocean biome !
                 { (10, 4), (720, 600, 880, 880, 1000, 0) }, // Acid ocean biome !
-
             };
+
             public static Dictionary<(int type, int subType), (int r, int g, int b, float mult)> tileColors = new Dictionary<(int type, int subType), (int r, int g, int b, float mult)>
             { // mult is in percent (0-100) : how much biome color is taken into account on the modifiying of the color shite.
                 { (-7, 0), (120, 180, 60, 0.2f)}, // acid
@@ -255,6 +255,13 @@ namespace Cave
 
                 { (5, 0), (50, 50, 100, 0.1f)},   // mold tile
             };
+
+            public static Dictionary<(int type, int subType), (int type, int subType, int typeOfElement)> materialGatheringToolRequirement = new Dictionary<(int type, int subType), (int type, int subType, int typeOfElement)>()
+            {   // For plants ! Not terrain !
+                { (1, 1), (4, 0, 4) },  // Wood -> Axe
+                { (11, 1), (4, 0, 4) }  // Metal -> Axe
+            };
+
             public static List<((int type, int subType, int megaType) material, int count)[]> craftRecipes = new List<((int type, int subType, int megaType) material, int count)[]>
             {
                 new ((int type, int subType, int megaType) material, int count)[] // flesh to flesh tile
@@ -431,6 +438,7 @@ namespace Cave
                 turnPngIntoString("Sword");
                 turnPngIntoString("Pickaxe");
                 turnPngIntoString("Scythe");
+                turnPngIntoString("Axe");
                 turnPngIntoString("MagicWand");
 
                 turnPngIntoString("Fire");
@@ -438,7 +446,8 @@ namespace Cave
             }
 
             loadSpriteDictionaries();
-            // -> Do : fix ray bugs. Keep rays when they don't hit anything for next frame (decrease amount the ray moves per frame also).
+            //      --- - TO DO LIST - ---
+            // Fix ray bugs. Keep rays when they don't hit anything for next frame (decrease amount the ray moves per frame also).
             // Add Axe. Axe attack ?
             // Make nests not appear in certain biomes.
             // Fix plants spawning. Make megaChunks priority loading (to stop overlaps and weird generation).
@@ -446,6 +455,7 @@ namespace Cave
             // Idea : affuter blades ? Maybe they can get rusty ? Multiple species of mushroom (move mold to 0 ? or its whole thing prolly better).
             // Player fairy transfo when in fairy liquid. Craft tools. Add ICE. Auto sorting in inventory. Blood breathing ? Extract o2 from blood.
             // Optimize/functionalize lake maker function
+            // Make player be an inheritance from entity ! Would simplify shit a LOT -> same PV system as entity (when it's gonna be implemented lol) and just override if wanna change it
 
             // cool ideas for later !
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
@@ -468,7 +478,8 @@ namespace Cave
             // Make it so fairies and other creatures have songs. Like maybe in a fairy village there's a village theme song that's procedurally generated. Idk. ANd they can teach u the song and u can sing it with instrument or voice idk.
             // Add winged waterSkipper : when the population in a lake is too high, or food is too scarse, some old enough waterSkippers can become winged, and fly around to lakes with none or few waterSkippers/lots of food. Migration patterns ? idk
             // add tribes of snowmen ! lmao
-            // ADD SPIDERS !! That can put strings and you can get stuck into them ? Webs ? And you get eARTER ? ? 
+            // ADD SPIDERS !! That can put strings and you can get stuck into them ? Webs ? And you get eARTER ? ?
+            // Civilisations of undead. That are not necessarly evil or eat the player (maybe multiple kinds of zombies ? civilisations of cannibalistic zombies that eat those whose brain deteriorates too much ? Like a second death ?)
 
             // Plants ideas !
             // Tendril shits in living diomension

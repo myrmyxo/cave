@@ -134,6 +134,7 @@ namespace Cave
                 { (1, 0), new OneSprite("Pickaxe", true)},                   // TO CHANGE
                 { (2, 0), new OneSprite("Scythe", true)},                    // TO CHANGE
                 { (3, 0), new OneSprite("MagicWand", true)},                 // TO CHANGE
+                { (4, 0), new OneSprite("Axe", true)},                    // TO CHANGE
             };
             overlayBackground = new OneSprite("OverlayBackground", false);
 

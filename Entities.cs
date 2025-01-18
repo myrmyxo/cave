@@ -64,7 +64,7 @@ namespace Cave
             public List<(int index, int subType, int typeOfElement)> inventoryElements;
             public int elementsPossessed = 0;
 
-            public int hp = 1;
+            public float hp = 1;
             public int food = 0;
 
             public float timeAtBirth = 0;
@@ -1324,7 +1324,7 @@ namespace Cave
                 (int type, int subType) value;
                 foreach (Plant plant in screen.activePlants.Values)
                 {
-                    value = plant.testDig(posToDigX, posToDigY);
+                    value = plant.actuallyDig(posToDigX, posToDigY);
                     if (value.type != 0)
                     {
                         addElementToInventory((value.type, value.subType, 3));
