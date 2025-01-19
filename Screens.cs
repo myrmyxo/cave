@@ -52,7 +52,7 @@ namespace Cave
             public bool isLight = true;
             public Game()
             {
-                devMode = false;
+                devMode = true;
                 bool randomSeed = true;
                 seed = 123456;
 
@@ -64,11 +64,11 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                loadStructuresYesOrNo = true;
+                loadStructuresYesOrNo = false;
                 spawnNests = true;
                 spawnEntities = true;
                 spawnPlants = true;
-                bool spawnNOTHING = false;
+                bool spawnNOTHING = true;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntities = false; spawnPlants = false; }
 
                 if (randomSeed)
@@ -287,12 +287,16 @@ namespace Cave
                         screen.loadedChunks[(pos.x, pos.y)].moveLiquids();
                     }
 
+                    screen.makeBitmapsOfPlants();
                     screen.putEntitiesAndPlantsInChunks();
                     foreach (((int x, int y) pos, (int type, int subType) attack) attack in screen.attacksToDo)
                     {
                         player.sendAttack(attack);
                     }
                     if (player.willBeSetAsNotAttacking) { player.setAsNotAttacking(); }
+                    screen.removePlants();
+                    screen.makeBitmapsOfPlants();
+
 
                     while (structuresToAdd.Count > 0)
                     {
@@ -573,6 +577,8 @@ namespace Cave
             public Dictionary<int, Entity> entitesToRemove = new Dictionary<int, Entity>();
             public Dictionary<int, Entity> entitesToAdd = new Dictionary<int, Entity>();
             public Dictionary<int, Plant> activePlants = new Dictionary<int, Plant>();
+            public Dictionary<int, Plant> plantsToRemove = new Dictionary<int, Plant>();
+            public Dictionary<int, Plant> plantsToMakeBitmapsOf = new Dictionary<int, Plant>();
             public List<Particle> activeParticles = new List<Particle>();
             public List<Particle> particlesToAdd = new List<Particle>();
             public Dictionary<Particle, bool> particlesToRemove = new Dictionary<Particle, bool>();
@@ -739,6 +745,23 @@ namespace Cave
                 foreach (Entity entity in entitesToAdd.Values) { activeEntities[entity.id] = entity; }
                 entitesToRemove = new Dictionary<int, Entity>();
                 entitesToAdd = new Dictionary<int, Entity>();
+            }
+            public void removePlants()
+            {
+                foreach (Plant plant in plantsToRemove.Values)
+                {
+                    foreach ((int x, int y) chunkPos in plant.chunkPresence.Keys) { getChunkFromChunkPos(chunkPos).plantList.Remove(plant); }
+                    activePlants.Remove(plant.id);
+                }
+                plantsToRemove = new Dictionary<int, Plant>();
+            }
+            public void makeBitmapsOfPlants()
+            {
+                foreach (Plant plant in plantsToMakeBitmapsOf.Values)
+                {
+                    plant.makeBitmap();
+                }
+                plantsToMakeBitmapsOf = new Dictionary<int, Plant>();
             }
             public void putPlantsInChunks()
             {

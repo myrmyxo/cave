@@ -929,10 +929,13 @@ namespace Cave
 
                 findChunkPresence(fillDict);
                 findLightPositions(branchList, flowerList);
+
+                testDeath(fillDict);
             }
             public void findChunkPresence(Dictionary<(int x, int y), (int type, int subType)> fillDict)
             {
                 chunkPresence = new Dictionary<(int x, int y), bool>();
+                if (fillDict.Count == 0) { chunkPresence[ChunkIdx(posX, posY)] = true; }    // Needed if plant at stage 0 so it doesn't disappear forever lmfao !
                 foreach ((int x, int y) posToTest in fillDict.Keys)
                 {
                     chunkPresence[ChunkIdx(getRealPos(posToTest))] = true;
@@ -1447,7 +1450,7 @@ namespace Cave
                         if (value.type != 0)
                         {
                             flower.fillStates.Remove((posToTest.x, posToTest.y));
-                            makeBitmap();
+                            screen.plantsToMakeBitmapsOf[id] = this;
                             return value;
                         }
                     }
@@ -1461,7 +1464,7 @@ namespace Cave
                         if (value.type != 0)
                         {
                             branch.fillStates.Remove((posToTest.x, posToTest.y));
-                            makeBitmap();
+                            screen.plantsToMakeBitmapsOf[id] = this;
                             return value;
                         }
                     }
@@ -1474,7 +1477,7 @@ namespace Cave
                         if (value.type != 0)
                         {
                             fillStates.Remove((posToTest.x, posToTest.y));
-                            makeBitmap();
+                            screen.plantsToMakeBitmapsOf[id] = this;
                             return value;
                         }
                     }
@@ -1530,6 +1533,18 @@ namespace Cave
                 }
 
                 return (false, 0, 0);
+            }
+            public void testDeath(Dictionary<(int x, int y), (int type, int subType)> fillDict)
+            {
+                if (growthLevel > 0 && fillDict.Count == 0)
+                {
+                    dieAndDrop();
+                }
+            }
+
+            public void dieAndDrop()
+            {
+                screen.plantsToRemove[id] = this;
             }
         }
     }
