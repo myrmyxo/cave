@@ -15,9 +15,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 using static Cave.Form1;
-using static Cave.Form1.Globals;
+using static Cave.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
@@ -32,6 +33,53 @@ using static Cave.Particles;
 
 namespace Cave
 {
+    public partial class Globals
+    {
+
+        public static string[] nameArray = new string[]
+        {
+                "ka",
+                "ko",
+                "ku",
+                "ki",
+                "ke",
+                "ro",
+                "ra",
+                "re",
+                "ru",
+                "ri",
+                "do",
+                "da",
+                "de",
+                "du",
+                "di",
+                "va",
+                "vo",
+                "ve",
+                "vu",
+                "vi",
+                "sa",
+                "so",
+                "se",
+                "su",
+                "si",
+                "in",
+                "on",
+                "an",
+                "en",
+                "un",
+        };
+
+        public static Dictionary<(int type, int subType, int subSubType), string> structureNames = new Dictionary<(int type, int subType, int subSubType), string>
+        {
+            { (0, 0, 0), "lake" },
+            { (1, 0, 0), "cube amalgam" },
+            { (2, 0, 0), "sawblade" },
+            { (2, 1, 0), "star" },
+            { (3, 0, 0), "portal" },
+            { (3, 0, 1), "portal" },
+        };
+    }
     public class Structures
     {
         public class Structure
@@ -610,16 +658,10 @@ namespace Cave
             if (material != (4, 0)) { return false; } // if start tile isn't fleshTile, fail
             dicto[startPos] = (0, 0);
 
-            (int x, int y) chunkPos;
-            Chunk chunkToTest;
             foreach ((int x, int y) mod in directionPositionArray)
             {
-                chunkPos = ChunkIdx(startPos.x + mod.x, startPos.y + mod.y);
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[PosMod(startPos.x + mod.x), PosMod(startPos.y + mod.y)].type != 0) { return false; }
-                }
+                posToTest = (startPos.x + mod.x, startPos.y + mod.y);
+                if (screen.getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type != 0) { return false; }
                 else { return false; } // if chunks loaded DO NOT make altar lololol
             }
 

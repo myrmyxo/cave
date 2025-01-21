@@ -15,9 +15,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 using static Cave.Form1;
-using static Cave.Form1.Globals;
+using static Cave.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
@@ -64,11 +65,11 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                loadStructuresYesOrNo = false;
+                loadStructuresYesOrNo = true;
                 spawnNests = true;
                 spawnEntities = true;
                 spawnPlants = true;
-                bool spawnNOTHING = true;
+                bool spawnNOTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntities = false; spawnPlants = false; }
 
                 if (randomSeed)
@@ -1071,19 +1072,12 @@ namespace Cave
                 if (isPngToBeExported) { PNGmultiplicator = 1; }
                 Player player = game.playerList[0];
                 (int x, int y) camPos = (player.camPosX, player.camPosY);
-                (int x, int y) chunkPos;
 
                 for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
                 {
                     for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
                     {
-                        chunkPos = (chunkX + i, chunkY + j);
-                        if (!loadedChunks.ContainsKey(chunkPos))
-                        {
-                            int a = 2;
-                            continue;
-                        }
-                        chunko = loadedChunks[chunkPos];
+                        chunko = getChunkFromChunkPos((chunkX + i, chunkY + j), !isPngToBeExported);
                         pasteImage(gameBitmap, chunko.bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, PNGmultiplicator);
                         //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32), PNGmultiplicator); } // if want to show chunk origin
                     }
@@ -1150,23 +1144,11 @@ namespace Cave
                     drawPixel(gameBitmap, color, (particle.posX, particle.posY), camPos, PNGmultiplicator);
                 }
 
-                { // player
-                    Color color = Color.Green;
-                    chunkPos = ChunkIdx(player.posX, player.posY);
-                    if (!loadedChunks.ContainsKey(chunkPos))
-                    {
-                        int seeeEEEXXXXXXXOOOOOOOOOOOODANAAAAAAAAAAAAAAAAAAAAaaaaaaaaaaaaaaa = 69;
-                        goto helpMe;
-                    }
-                    Chunk chunkToTest = loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[PosMod(player.posX), PosMod(player.posY)].type > 0)
-                    {
-                        color = Color.Red;
-                    }
-                    if (game.isLight) { lightPositions.Add((player.posX, player.posY, 9, player.lightColor)); }
-                    drawPixel(gameBitmap, color, (player.posX, player.posY), camPos, PNGmultiplicator);
-                helpMe:;
-                }
+                // player
+                Color playerColor = player.color;
+                if (getChunkFromPixelPos((player.posX, player.posY)).fillStates[PosMod(player.posX), PosMod(player.posY)].type > 0) { playerColor = Color.Red; }
+                if (game.isLight) { lightPositions.Add((player.posX, player.posY, 9, player.lightColor)); }
+                drawPixel(gameBitmap, playerColor, (player.posX, player.posY), camPos, PNGmultiplicator);
 
                 foreach (((int x, int y) pos, Color color) item in attacksToDraw)
                 {
@@ -1187,14 +1169,8 @@ namespace Cave
                     {
                         for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
                         {
-                            chunkPos = (chunkX + i, chunkY + j);
-                            if (!loadedChunks.ContainsKey(chunkPos))
-                            {
-                                int a = 2;
-                                continue;
-                            }
-                            chunko = loadedChunks[chunkPos];
-                            pasteImage(lightBitmap, chunko.lightBitmap, (chunkPos.x * 32, chunkPos.y * 32), camPos, 1);
+                            chunko = getChunkFromChunkPos((chunkX + i, chunkY + j));
+                            pasteImage(lightBitmap, chunko.lightBitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, 1);
                             //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32), PNGmultiplicator); } // if want to show chunk origin
                         }
                     }

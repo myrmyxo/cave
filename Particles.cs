@@ -1,11 +1,24 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 using static Cave.Form1;
-using static Cave.Form1.Globals;
+using static Cave.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
@@ -17,8 +30,6 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
-using System.Data;
-using System.Drawing;
 
 namespace Cave
 {
@@ -46,7 +57,7 @@ namespace Cave
 
             public float timeAtBirth;
             public float lifeExpectancy;
-            public Particle(Screen screenToPut, (int x, int y) positionToPut, (int x, int y) targetPosToPut, (int type, int subType, int subSubType) typeToPut, int idToPut = -1)
+            public Particle(Screens.Screen screenToPut, (int x, int y) positionToPut, (int x, int y) targetPosToPut, (int type, int subType, int subSubType) typeToPut, int idToPut = -1)
             {
                 screen = screenToPut;
                 refId = idToPut;

@@ -15,9 +15,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 using static Cave.Form1;
-using static Cave.Form1.Globals;
+using static Cave.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
@@ -29,25 +30,18 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace Cave
 {
     public class Players
     {
-        public class Player
+        public class Player : Entity
         {
-            public Screens.Screen screen;
             public int dimension = 0;
 
-            public float realPosX = 0;
-            public float realPosY = 0;
-            public int posX = 0;
-            public int posY = 0;
             public int structureX = 0;
             public int structureY = 0;
-            public float speedX = 0;
-            public float speedY = 0;
+
             public (int x, int y) direction = (-1, 0);
 
             public (int type, int subType) currentAttack = (-1, -1);
@@ -63,15 +57,8 @@ namespace Cave
             public float speedCamX = 0;
             public float speedCamY = 0;
 
-            public float timeAtLastDig = -9999;
-            public float timeAtLastPlace = -9999;
             public float timeAtLastMenuChange = -9999;
-            public float timeAtLastTeleportation = -9999;
 
-            public Color lightColor = Color.FromArgb(255, (Color.Green.R + 255) / 2, (Color.Green.G + 255) / 2, (Color.Green.B + 255) / 2);
-
-            public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
-            public List<(int index, int subType, int typeOfElement)> inventoryElements;
             public int inventoryCursor = 0;
             public int craftCursor = 0;
             public Player(SettingsJson settingsJson)
@@ -97,6 +84,9 @@ namespace Cave
                 realCamPosX = camPosX;
                 camPosY = posY - ChunkLength * 24;
                 realCamPosY = camPosY;
+
+                color = Color.Green;
+                findLightColor();
             }
             public void placePlayer()
             {
@@ -127,8 +117,9 @@ namespace Cave
             ExitLoop:;
                 initializeInventory();
             }
-            public void initializeInventory()
+            public override void initializeInventory()
             {
+                bool plantsMode = true;
                 if (!devMode)
                 {
                     inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
@@ -146,7 +137,7 @@ namespace Cave
                         (2, 0, 4),
                     };
                 }
-                else if (false) // True -> Important things, False -> EVERY thing
+                else if (!plantsMode) // True -> Important things, False -> EVERY thing
                 {
                     inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
                     {
@@ -265,18 +256,10 @@ namespace Cave
                     };
                 }
             }
-            public void applyGravity()
-            {
-                speedY -= 0.5f;
-            }
             public void ariGeoSlowDown(float ari, float geo)
             {
                 speedX = Sign(speedX) * Max(0, Abs(speedX) * geo - ari);
                 speedY = Sign(speedY) * Max(0, Abs(speedY) * geo - ari);
-            }
-            public void ariGeoSlowDownX(float geo, float ari)
-            {
-                speedX = Sign(speedX) * Max(0, Abs(speedX) * geo - ari);
             }
             public void Jump(int direction, float jumpSpeed)
             {
@@ -285,26 +268,10 @@ namespace Cave
             }
             public void movePlayer()
             {
-                bool onGround = false;
                 bool inWater = false;
-                {
-                    (int, int) chunkPos = ChunkIdx(posX, posY);
-                    if (screen.loadedChunks.ContainsKey(chunkPos))
-                    {
-                        if (screen.loadedChunks[chunkPos].fillStates[PosMod(posX), PosMod(posY)].type < 0)
-                        {
-                            inWater = true;
-                        }
-                    }
-                    chunkPos = ChunkIdx(posX, posY - 1);
-                    if (screen.loadedChunks.ContainsKey(chunkPos))
-                    {
-                        if (screen.loadedChunks[chunkPos].fillStates[PosMod(posX), PosMod((posY - 1))].type > 0)
-                        {
-                            onGround = true;
-                        }
-                    }
-                }
+                if (screen.getChunkFromPixelPos((posX, posY)).fillStates[PosMod(posX), PosMod(posY)].type < 0) { inWater = true; }
+                bool onGround = false;
+                if (screen.getChunkFromPixelPos((posX, posY - 1)).fillStates[PosMod(posX), PosMod((posY - 1))].type > 0) { onGround = true; }
 
                 ariGeoSlowDownX(0.8f, 0.15f);
                 if (inWater) { ariGeoSlowDown(0.95f, 0.2f); }
@@ -353,17 +320,31 @@ namespace Cave
                 }
             notPlace:;
 
-
-
                 if (currentAttack.type == (-1)) // only update direction for attack if player is not attacking lol
                 {
                     updateDirectionForAttack();
                 }
 
-
-
                 // Actually move the player
+                actuallyMoveTheEntity();
 
+                // camera stuff (not really working anymore which makes it better than it was before yayyy) 
+
+                int posDiffX = posX - (camPosX + 16 * (screen.chunkResolution - 1)); //*2 is needed cause there's only *8 and not *16 before
+                int posDiffY = posY - (camPosY + 16 * (screen.chunkResolution - 1));
+                speedCamX = Clamp(posDiffX/2, -15f, 15f);
+                speedCamY = Clamp(posDiffY/2, -15f, 15f);
+                realCamPosX += speedCamX;
+                realCamPosY += speedCamY;
+                camPosX = (int)(realCamPosX + 0.5f);
+                camPosY = (int)(realCamPosY + 0.5f);
+
+                updateFogOfWar();
+                updateAttack();
+                if (craftSelection && digPress && tryCraft()) { digPress = false; }
+            }
+            public override void actuallyMoveTheEntity()
+            {
                 (int type, int subType) material;
                 int posToTest;
                 float realPosToTest;
@@ -417,23 +398,8 @@ namespace Cave
                         break;
                     }
                 }
-
-                // camera stuff (not really working anymore which makes it better than it was before yayyy) 
-
-                int posDiffX = posX - (camPosX + 16 * (screen.chunkResolution - 1)); //*2 is needed cause there's only *8 and not *16 before
-                int posDiffY = posY - (camPosY + 16 * (screen.chunkResolution - 1));
-                speedCamX = Clamp(posDiffX/2, -15f, 15f);
-                speedCamY = Clamp(posDiffY/2, -15f, 15f);
-                realCamPosX += speedCamX;
-                realCamPosY += speedCamY;
-                camPosX = (int)(realCamPosX + 0.5f);
-                camPosY = (int)(realCamPosY + 0.5f);
-
-                updateFogOfWar();
-                updateAttack();
-                if (craftSelection && digPress && tryCraft()) { digPress = false; }
             }
-            public void teleport((int x, int y) newPos, int dimensionToTeleportTo)
+            public override void teleport((int x, int y) newPos, int dimensionToTeleportTo)
             {
                 screen.game.setPlayerDimension(this, dimensionToTeleportTo);
                 posX = newPos.x;
@@ -541,7 +507,6 @@ namespace Cave
 
                 (float x, float y) currentPos = (startPos.x + 0.5f, startPos.y + 0.5f);
                 (int x, int y) currentPosInt;
-                (int x, int y) chunkPos;
                 Chunk chunkToTest;
                 float valueX;
                 float valueY;
@@ -828,21 +793,7 @@ namespace Cave
                     }
                 }
             }
-            public void addElementToInventory((int index, int subType, int typeOfElement) elementToAdd, int quantityToAdd = 1)
-            {
-                if (!inventoryQuantities.ContainsKey(elementToAdd))
-                {
-                    inventoryQuantities.Add(elementToAdd, quantityToAdd);
-                    inventoryElements.Add(elementToAdd);
-                    return;
-                }
-                if (inventoryQuantities[elementToAdd] != -999)
-                {
-                    inventoryQuantities[elementToAdd] += quantityToAdd;
-                }
-                return;
-            }
-            public void removeElementFromInventory((int index, int subType, int typeOfElement) elementToRemove, int quantityToRemove = 1)
+            public override void removeElementFromInventory((int index, int subType, int typeOfElement) elementToRemove, int quantityToRemove = 1)
             {
                 if (!inventoryQuantities.ContainsKey(elementToRemove)) { return; }
                 if (inventoryQuantities[elementToRemove] != -999)

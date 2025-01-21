@@ -18,7 +18,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 using static Cave.Form1;
-using static Cave.Form1.Globals;
+using static Cave.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
@@ -29,6 +29,7 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using static Cave.Particles;
 
 namespace Cave
 {
@@ -99,7 +100,6 @@ namespace Cave
             }
             public void unloadAllNestsAndStructuresAndChunks(Dictionary<(int x, int y), bool> chunksToRemove)
             {
-                Nest nest;
                 (int x, int y) playerPos = (ChunkIdx(screen.game.playerList[0].posX), ChunkIdx(screen.game.playerList[0].posY));
                 Structure structure;
                 foreach (int structureId in structures)

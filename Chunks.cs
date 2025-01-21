@@ -15,9 +15,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 using static Cave.Form1;
-using static Cave.Form1.Globals;
+using static Cave.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
@@ -28,7 +29,7 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
+using static Cave.Particles;
 
 namespace Cave
 {
@@ -1405,7 +1406,8 @@ namespace Cave
             int acidity = values.acid;
             int toxicity = values.toxi;
 
-            if (0 > 0) // distance shit that's slow asf and bad asf
+            bool expensiveUglyBlending = false;
+            if (expensiveUglyBlending) // distance shit that's slow asf and bad asf
             {
                 //int cumScore = 0; // heehee !
                 foreach ((int biome, int subBiome) i in biomeTypicalValues.Keys)
@@ -1450,86 +1452,89 @@ namespace Cave
                     listo.Add(((-1, 0), 1000));
                 }
 
-            } // distance shit that's slow asf and bad asf
-            else if (dimensionType == (0, 0)) // type == 1, normal dimension
-            {
-                listo = new List<((int biome, int subBiome), int)>();
-
-                percentageFree -= calculateAndAddBiome(listo, (6, 0), percentageFree, Min(500 - temperature, humidity - 500, acidity - 500), (0, 999999), 5);  // add mold
-
-                if (humidity - Abs((int)(0.4f*(temperature - 512))) > 720)
-                {
-                    percentageFree -= calculateAndAddBiome(listo, (8, 0), percentageFree, humidity - Abs((int)(0.4f*(temperature - 512))), (720, 999999)); // ocean
-                }
-
-                if (percentageFree <= 0) { goto AfterTest; }
-
-                if (temperature > 720)
-                {
-                    int hotness = calculateBiome(percentageFree, temperature, (720, 999999));
-                    if (temperature > 1024)
-                    {
-                        int lavaness = calculateAndAddBiome(listo, (2, 1), hotness, temperature - Max(0, humidity - 512), (1024, 999999));
-                        percentageFree -= lavaness;
-                        hotness -= lavaness;
-                    }
-                    if (temperature > 840 && humidity > 600)
-                    {
-                        int obsidianess = calculateAndAddBiome(listo, (2, 2), hotness, Min(temperature - 840, humidity - 600), (0, 999999));
-                        percentageFree -= obsidianess;
-                        hotness -= obsidianess;
-                    }
-                    percentageFree -= testAddBiome(listo, (2, 0), hotness);
-                }
-
-                if (temperature < 440 && percentageFree > 0)
-                {
-                    int coldness = calculateBiome(percentageFree, temperature, (-999999, 440));
-                    if (temperature < 0)
-                    {
-                        int frostness = calculateAndAddBiome(listo, (0, 1), coldness, temperature, (-999999, 0));
-                        percentageFree -= frostness;
-                        coldness -= frostness;
-                    }
-
-                    int savedColdness = calculateBiome(coldness, temperature, (-999999, 120));
-                    coldness -= savedColdness;
-
-                    if (acidity > 700)
-                    {
-                        int acidness = calculateAndAddBiome(listo, (1, 0), coldness, acidity, (700, 999999));
-                        percentageFree -= acidness;
-                        coldness -= acidness;
-                    }
-                    if (humidity > toxicity)
-                    {
-                        int fairyness = calculateAndAddBiome(listo, (5, 0), coldness, humidity - toxicity, (0, 999999));
-                        percentageFree -= fairyness;
-                        coldness -= fairyness;
-                    }
-
-                    coldness += savedColdness;
-                    percentageFree -= testAddBiome(listo, (0, 0), coldness);
-                }
-
-                if (percentageFree > 0)
-                {
-                    percentageFree -= calculateAndAddBiome(listo, (4, 0), percentageFree, toxicity, (715, 999999));  // add slime
-                    percentageFree -= calculateAndAddBiome(listo, (3, 1), percentageFree, (500 - toxicity) + (int)(0.4f*(humidity - temperature)), (0, 999999));  // add flower forest
-                    testAddBiome(listo, (3, 0), percentageFree); // add what's remaining as forest
-                }
             }
-            else if (dimensionType == (1, 0)) // type == 1, chandelier dimension
+            else    // The GOOD version of the biome shit
             {
-                testAddBiome(listo, (9, 0), percentageFree);
-            }
-            else if (dimensionType == (2, 0)) // type == 2, living dimension
-            {
-                percentageFree -= calculateAndAddBiome(listo, (10, 4), percentageFree, acidity, (700, 999999)); // acid ocean
-                percentageFree -= calculateAndAddBiome(listo, (10, 3), percentageFree, temperature, (-999999, 400)); // blood ocean
-                percentageFree -= calculateAndAddBiome(listo, (10, 0), percentageFree, humidity, (660, 999999)); // flesh
-                percentageFree -= calculateAndAddBiome(listo, (10, 2), percentageFree, humidity, (-999999, 340)); // bone
-                testAddBiome(listo, (10, 1), percentageFree); // flesh and bone
+                if (dimensionType == (0, 0)) // type == 1, normal dimension
+                {
+                    listo = new List<((int biome, int subBiome), int)>();
+
+                    percentageFree -= calculateAndAddBiome(listo, (6, 0), percentageFree, Min(500 - temperature, humidity - 500, acidity - 500), (0, 999999), 5);  // add mold
+
+                    if (humidity - Abs((int)(0.4f * (temperature - 512))) > 720)
+                    {
+                        percentageFree -= calculateAndAddBiome(listo, (8, 0), percentageFree, humidity - Abs((int)(0.4f * (temperature - 512))), (720, 999999)); // ocean
+                    }
+
+                    if (percentageFree <= 0) { goto AfterTest; }
+
+                    if (temperature > 720)
+                    {
+                        int hotness = calculateBiome(percentageFree, temperature, (720, 999999));
+                        if (temperature > 1024)
+                        {
+                            int lavaness = calculateAndAddBiome(listo, (2, 1), hotness, temperature - Max(0, humidity - 512), (1024, 999999));
+                            percentageFree -= lavaness;
+                            hotness -= lavaness;
+                        }
+                        if (temperature > 840 && humidity > 600)
+                        {
+                            int obsidianess = calculateAndAddBiome(listo, (2, 2), hotness, Min(temperature - 840, humidity - 600), (0, 999999));
+                            percentageFree -= obsidianess;
+                            hotness -= obsidianess;
+                        }
+                        percentageFree -= testAddBiome(listo, (2, 0), hotness);
+                    }
+
+                    if (temperature < 440 && percentageFree > 0)
+                    {
+                        int coldness = calculateBiome(percentageFree, temperature, (-999999, 440));
+                        if (temperature < 0)
+                        {
+                            int frostness = calculateAndAddBiome(listo, (0, 1), coldness, temperature, (-999999, 0));
+                            percentageFree -= frostness;
+                            coldness -= frostness;
+                        }
+
+                        int savedColdness = calculateBiome(coldness, temperature, (-999999, 120));
+                        coldness -= savedColdness;
+
+                        if (acidity > 700)
+                        {
+                            int acidness = calculateAndAddBiome(listo, (1, 0), coldness, acidity, (700, 999999));
+                            percentageFree -= acidness;
+                            coldness -= acidness;
+                        }
+                        if (humidity > toxicity)
+                        {
+                            int fairyness = calculateAndAddBiome(listo, (5, 0), coldness, humidity - toxicity, (0, 999999));
+                            percentageFree -= fairyness;
+                            coldness -= fairyness;
+                        }
+
+                        coldness += savedColdness;
+                        percentageFree -= testAddBiome(listo, (0, 0), coldness);
+                    }
+
+                    if (percentageFree > 0)
+                    {
+                        percentageFree -= calculateAndAddBiome(listo, (4, 0), percentageFree, toxicity, (715, 999999));  // add slime
+                        percentageFree -= calculateAndAddBiome(listo, (3, 1), percentageFree, (500 - toxicity) + (int)(0.4f * (humidity - temperature)), (0, 999999));  // add flower forest
+                        testAddBiome(listo, (3, 0), percentageFree); // add what's remaining as forest
+                    }
+                }
+                else if (dimensionType == (1, 0)) // type == 1, chandelier dimension
+                {
+                    testAddBiome(listo, (9, 0), percentageFree);
+                }
+                else if (dimensionType == (2, 0)) // type == 2, living dimension
+                {
+                    percentageFree -= calculateAndAddBiome(listo, (10, 4), percentageFree, acidity, (700, 999999)); // acid ocean
+                    percentageFree -= calculateAndAddBiome(listo, (10, 3), percentageFree, temperature, (-999999, 400)); // blood ocean
+                    percentageFree -= calculateAndAddBiome(listo, (10, 0), percentageFree, humidity, (660, 999999)); // flesh
+                    percentageFree -= calculateAndAddBiome(listo, (10, 2), percentageFree, humidity, (-999999, 340)); // bone
+                    testAddBiome(listo, (10, 1), percentageFree); // flesh and bone
+                }
             }
 
             if (listo.Count == 0) { testAddBiome(listo, (-1, 0), percentageFree); }

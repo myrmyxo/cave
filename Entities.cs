@@ -15,9 +15,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 using static Cave.Form1;
-using static Cave.Form1.Globals;
+using static Cave.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
@@ -32,6 +33,59 @@ using static Cave.Particles;
 
 namespace Cave
 {
+    public partial class Globals
+    {
+        public static Dictionary<(int type, int subType), int> entityStartingHp = new Dictionary<(int type, int subType), int>
+        {
+            { (0, 0), 4}, // Fairy
+            { (0, 1), 10}, // ObsidianFairy
+            { (0, 2), 4}, // FrostFairy
+            { (0, 3), 15}, // SkeletonFairy
+            { (1, 0), 2}, // Frog
+            { (1, 1), 7}, // Carnal
+            { (1, 2), 7}, // Skeletal
+            { (2, 0), 2}, // Fish
+            { (2, 1), 2}, // SkeletonFish
+            { (3, 0), 2}, // HornetEgg 
+            { (3, 1), 3}, // HornetLarva
+            { (3, 2), 20}, // HornetCocoon
+            { (3, 3), 6}, // Hornet
+            { (4, 0), 7}, // Worm
+            { (4, 1), 3}, // Nematode
+            { (5, 0), 3}, // WaterSkipper
+        };
+        public static Dictionary<(int type, int subType), ((int type, int subType, int megaType) element, int count)> entityDrops = new Dictionary<(int type, int subType), ((int type, int subType, int megaType), int count)>
+        {
+            { (0, 0), ((-3, 0, 0), 1)}, // Fairy          --> Fairy Liquid
+            { (0, 1), ((-3, 0, 0), 1)}, // ObsidianFairy  --> Fairy Liquid
+            { (0, 2), ((-3, 0, 0), 1)}, // FrostFairy     --> Fairy Liquid
+            { (0, 3), ((8, 1, 3), 1)},  // SkeletonFairy  --> Bone
+            { (1, 0), ((8, 0, 3), 1)},  // Frog           --> Flesh
+            { (1, 1), ((8, 0, 3), 1)},  // Carnal         --> Flesh
+            { (1, 2), ((8, 1, 3), 1)},  // Skeletal       --> Bone
+            { (2, 0), ((8, 0, 3), 1)},  // Fish           --> Flesh
+            { (2, 1), ((8, 1, 3), 1)},  // SkeletonFish   --> Bone
+            { (3, 0), ((8, 0, 3), 1)},  // HornetEgg      --> Flesh
+            { (3, 1), ((8, 0, 3), 1)},  // HornetLarva    --> Flesh
+            { (3, 2), ((8, 0, 3), 1)},  // HornetCocoon   --> Flesh
+            { (3, 3), ((8, 0, 3), 1)},  // Hornet         --> Flesh
+            { (4, 0), ((8, 0, 3), 1)},  // Worm           --> Flesh
+            { (4, 1), ((8, 0, 3), 1)},  // Nematode       --> Flesh
+            { (5, 0), ((8, 0, 3), 1)},  // WaterSkipper   --> Flesh
+        };
+
+        public static Dictionary<int, int> costDict = new Dictionary<int, int>
+        {
+            { 0, 1 },       // air
+            { -1, 3 },      // piss
+            { -2, 3 },      // water
+            { -3, 10 },     // fairy liquid
+            { -4, 999999 }, // lava (cannot cross)
+            { -5, 5 },      // honey
+            { -6, 3 },      // blood
+            { -7, 999999 }, // acid (cannot cross)
+        };
+    }
     public class Entities
     {
         public class Entity
@@ -78,6 +132,7 @@ namespace Cave
 
             public Nest nest = null;
             public int nestId = -1;
+            public Entity() { }
             public Entity(Screens.Screen screenToPut, EntityJson entityJson)
             {
                 screen = screenToPut;
@@ -630,7 +685,7 @@ namespace Cave
                 speedX = Sign(speedX) * Max(Abs(speedX) - slowdownSpeed, 0);
                 speedY = Sign(speedY) * Max(Abs(speedY) - slowdownSpeed, 0);
             }
-            public void ariGeoSlowDownX(float ari, float geo)
+            public void ariGeoSlowDownX(float geo, float ari)
             {
                 speedX = Sign(speedX) * Max(0, Abs(speedX) * geo - ari);
             }
@@ -1189,7 +1244,7 @@ namespace Cave
                     }
                 }
             }
-            public void actuallyMoveTheEntity()
+            public virtual void actuallyMoveTheEntity()
             {
                 (int x, int y) chunkPos;
                 (int x, int y) previousPos = (posX, posY);
@@ -1267,7 +1322,7 @@ namespace Cave
                     }
                 }
             }
-            public void teleport((int x, int y) newPos, int screenIdToTeleport)
+            public virtual void teleport((int x, int y) newPos, int screenIdToTeleport)
             {
                 Screens.Screen screenToTeleportTo = screen.game.getScreen(screenIdToTeleport);
                 screen.entitesToRemove[id] = this;
@@ -1281,7 +1336,7 @@ namespace Cave
                 speedY = 0;
                 timeAtLastTeleportation = timeElapsed;
             }
-            public void initializeInventory()
+            public virtual void initializeInventory()
             {
                 inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
                 {
@@ -1306,7 +1361,7 @@ namespace Cave
                 }
                 return;
             }
-            public void removeElementFromInventory((int index, int subType, int typeOfElement) elementToRemove, int quantityToRemove = 1)
+            public virtual void removeElementFromInventory((int index, int subType, int typeOfElement) elementToRemove, int quantityToRemove = 1)
             {
                 if (!inventoryQuantities.ContainsKey(elementToRemove)) { return; }
                 if (inventoryQuantities[elementToRemove] != -999)
@@ -1334,6 +1389,25 @@ namespace Cave
                 }
                 return false;
             }
+            public void PlantDig((int x, int y) posToDig, (int type, int subType, int typeOfElement) currentItem)
+            {
+                (int type, int subType) value;
+                foreach (Plant plant in screen.activePlants.Values)
+                {
+                    value = plant.testDig(posToDig.x, posToDig.y);
+                    if (((type, subType) == (3, 3)) || (materialGatheringToolRequirement.ContainsKey(value) && materialGatheringToolRequirement[value] != currentItem)) { continue; }
+                    value = plant.actuallyDig(posToDig.x, posToDig.y);
+                    if (value.type != 0)
+                    {
+                        addElementToInventory((value.type, value.subType, 3));
+                        timeAtLastDig = timeElapsed;
+                        return;
+                    }
+                }
+            }
+
+
+
             public (int type, int subType) Dig(int posToDigX, int posToDigY)
             {
                 (int, int) chunkPos = ChunkIdx(posToDigX, posToDigY);

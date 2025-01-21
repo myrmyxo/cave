@@ -15,9 +15,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 using static Cave.Form1;
-using static Cave.Form1.Globals;
+using static Cave.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
@@ -28,331 +29,239 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using static Cave.Particles;
 
 
 namespace Cave
 {
-    public partial class Form1 : Form
+    public partial class Globals
     {
         public const float div32 = 0.03125f;
         public const float _1On255 = 0.00393f;
         public const float _1On17 = 0.0588f;
-        public class Globals
+
+        public static bool devMode = true;
+        public static bool loadStructuresYesOrNo = false;
+        public static bool spawnNests = false;
+        public static bool spawnEntities = false;
+        public static bool spawnPlants = false;
+
+        public static int ChunkLength = 4;
+        public static int UnloadedChunksAmount = 8;
+
+        public static Bitmap black32Bitmap = new Bitmap(32, 32);
+        public static Bitmap transBlue32Bitmap = new Bitmap(32, 32);
+        public static Chunk theFilledChunk;
+        public static Color transparentColor = Color.FromArgb(0, 255, 255, 255);
+
+        public static Random rand = new Random();
+
+        public static bool[] arrowKeysState = { false, false, false, false };
+        public static bool digPress = false;
+        public static bool[] placePress = { false, false };
+        public static bool[] zoomPress = { false, false };
+        public static bool[] inventoryChangePress = { false, false };
+        public static bool pausePress = false;
+        public static bool fastForward = false;
+        public static bool debugMode = false;
+        public static bool craftPress = false;
+        public static bool craftSelection = false;
+        public static bool shiftPress = false;
+        public static bool dimensionChangePress = false;
+        public static bool dimensionSelection = false;
+        public static int currentTargetDimension = 0;
+        public static float lastZoom = 0;
+        public static DateTime timeAtLauch;
+        public static float timeElapsed = 0;
+
+        public static int liquidSlideCount = 0;
+
+        public static string currentDirectory;
+
+        public static int currentStructureId = 0;
+        public static int currentEntityId = 0;
+        public static int currentPlantId = 0;
+        public static int currentDimensionId = 0;
+
+        public static long worldSeed = 0;
+
+        public static (int, int)[] squareModArray = new (int, int)[4] { (0, 0), (1, 0), (0, 1), (1, 1) };
+        public static (int, int)[] bigSquareModArray = new (int, int)[9] { (0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2) };
+        public static (int, int)[] neighbourArray = new (int, int)[4] { (-1, 0), (1, 0), (0, 1), (0, -1) };
+        public static (int, int)[] diagArray = new (int, int)[4] { (-1, 1), (1, 1), (1, -1), (-1, -1) };
+        public static (int x, int y)[] directionPositionArray = new (int x, int y)[] { (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), };
+
+        public static Dictionary<(int x, int y), int> directionPositionDictionary = new Dictionary<(int x, int y), int>
         {
-            public static bool devMode = true;
-            public static bool loadStructuresYesOrNo = false;
-            public static bool spawnNests = false;
-            public static bool spawnEntities = false;
-            public static bool spawnPlants = false;
+            { (-1, 0), 0 },
+            { (-1, 1), 1 },
+            { (0, 1), 2 },
+            { (1, 1), 3 },
+            { (1, 0), 4},
+            { (1, -1), 5 },
+            { (0, -1), 6 },
+            { (-1, -1), 7 },
+        };
 
-            public static int ChunkLength = 4;
-            public static int UnloadedChunksAmount = 8;
+        public static Dictionary<(int biome, int subBiome), bool> darkBiomes = new Dictionary<(int biome, int subBiome), bool>
+        {
+            { (9, 0), true }, // chandelier biome
+        };
 
-            public static Bitmap black32Bitmap = new Bitmap(32, 32);
-            public static Bitmap transBlue32Bitmap = new Bitmap(32, 32);
-            public static Chunk theFilledChunk;
-            public static Color transparentColor = Color.FromArgb(0, 255, 255, 255);
+        public static Dictionary<(int biome, int subBiome), (int, int, int)> biomeDict = new Dictionary<(int biome, int subBiome), (int, int, int)>
+        {
+            { (-1, 0), (1200, -100, 1200) },                                               // undefined
 
-            public static Random rand = new Random();
+            { (0, 0), (Color.Blue.R,Color.Blue.G,Color.Blue.B) },                          // cold biome
+            { (0, 1), (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) },           // frost biome
 
-            public static bool[] arrowKeysState = { false, false, false, false };
-            public static bool digPress = false;
-            public static bool[] placePress = { false, false };
-            public static bool[] zoomPress = { false, false };
-            public static bool[] inventoryChangePress = { false, false };
-            public static bool pausePress = false;
-            public static bool fastForward = false;
-            public static bool debugMode = false;
-            public static bool craftPress = false;
-            public static bool craftSelection = false;
-            public static bool shiftPress = false;
-            public static bool dimensionChangePress = false;
-            public static bool dimensionSelection = false;
-            public static int currentTargetDimension = 0;
-            public static float lastZoom = 0;
-            public static DateTime timeAtLauch;
-            public static float timeElapsed = 0;
+            { (1, 0), (Color.Fuchsia.R,Color.Fuchsia.G,Color.Fuchsia.B) },                 // acid biome
 
-            public static int liquidSlideCount = 0;
+            { (2, 0), (Color.OrangeRed.R,Color.OrangeRed.G,Color.OrangeRed.B) },           // hot biome
+            { (2, 1), (Color.OrangeRed.R + 90,Color.OrangeRed.G + 30,Color.OrangeRed.B) }, // lava ocean biome
+            { (2, 2), (-100,-100,-100) },                                                  // obsidian biome...
 
-            public static string currentDirectory;
-
-            public static int currentStructureId = 0;
-            public static int currentEntityId = 0;
-            public static int currentPlantId = 0;
-            public static int currentDimensionId = 0;
-
-            public static long worldSeed = 0;
-
-            public static (int, int)[] squareModArray = new (int, int)[4] { (0, 0), (1, 0), (0, 1), (1, 1) };
-            public static (int, int)[] bigSquareModArray = new (int, int)[9] { (0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2) };
-            public static (int, int)[] neighbourArray = new (int, int)[4] { (-1, 0), (1, 0), (0, 1), (0, -1) };
-            public static (int, int)[] diagArray = new (int, int)[4] { (-1, 1), (1, 1), (1, -1), (-1, -1) };
-            public static (int x, int y)[] directionPositionArray = new (int x, int y)[] { (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), };
-            public static Dictionary<(int x, int y), int> directionPositionDictionary = new Dictionary<(int x, int y), int>
-            {
-                { (-1, 0), 0 },
-                { (-1, 1), 1 },
-                { (0, 1), 2 },
-                { (1, 1), 3 },
-                { (1, 0), 4},
-                { (1, -1), 5 },
-                { (0, -1), 6 },
-                { (-1, -1), 7 },
-            };
-            public static Dictionary<(int type, int subType), int> entityStartingHp = new Dictionary<(int type, int subType), int>
-            {
-                { (0, 0), 2}, // Fairy
-                { (0, 1), 4}, // ObsidianFairy
-                { (0, 2), 2}, // FrostFairy
-                { (0, 3), 5}, // SkeletonFairy
-                { (1, 0), 1}, // Frog
-                { (1, 1), 3}, // Carnal
-                { (1, 2), 3}, // Skeletal
-                { (2, 0), 1}, // Fish
-                { (2, 1), 1}, // SkeletonFish
-                { (3, 0), 1}, // HornetEgg 
-                { (3, 1), 2}, // HornetLarva
-                { (3, 2), 5}, // HornetCocoon
-                { (3, 3), 3}, // Hornet
-                { (4, 0), 4}, // Worm
-                { (4, 1), 2}, // Nematode
-                { (5, 0), 1}, // WaterSkipper
-            };
-            public static Dictionary<(int type, int subType), ((int type, int subType, int megaType) element, int count)> entityDrops = new Dictionary<(int type, int subType), ((int type, int subType, int megaType), int count)>
-            {
-                { (0, 0), ((-3, 0, 0), 1)}, // Fairy          --> Fairy Liquid
-                { (0, 1), ((-3, 0, 0), 1)}, // ObsidianFairy  --> Fairy Liquid
-                { (0, 2), ((-3, 0, 0), 1)}, // FrostFairy     --> Fairy Liquid
-                { (0, 3), ((8, 1, 3), 1)},  // SkeletonFairy  --> Bone
-                { (1, 0), ((8, 0, 3), 1)},  // Frog           --> Flesh
-                { (1, 1), ((8, 0, 3), 1)},  // Carnal         --> Flesh
-                { (1, 2), ((8, 1, 3), 1)},  // Skeletal       --> Bone
-                { (2, 0), ((8, 0, 3), 1)},  // Fish           --> Flesh
-                { (2, 1), ((8, 1, 3), 1)},  // SkeletonFish   --> Bone
-                { (3, 0), ((8, 0, 3), 1)},  // HornetEgg      --> Flesh
-                { (3, 1), ((8, 0, 3), 1)},  // HornetLarva    --> Flesh
-                { (3, 2), ((8, 0, 3), 1)},  // HornetCocoon   --> Flesh
-                { (3, 3), ((8, 0, 3), 1)},  // Hornet         --> Flesh
-                { (4, 0), ((8, 0, 3), 1)},  // Worm           --> Flesh
-                { (4, 1), ((8, 0, 3), 1)},  // Nematode       --> Flesh
-                { (5, 0), ((8, 0, 3), 1)},  // WaterSkipper   --> Flesh
-            };
-
-            public static Dictionary<int, int> costDict = new Dictionary<int, int>
-            {
-                { 0, 1 },       // air
-                { -1, 3 },      // piss
-                { -2, 3 },      // water
-                { -3, 10 },     // fairy liquid
-                { -4, 999999 }, // lava (cannot cross)
-                { -5, 5 },      // honey
-                { -6, 3 },      // blood
-                { -7, 999999 }, // acid (cannot cross)
-            };
-
-            public static Dictionary<(int biome, int subBiome), bool> darkBiomes = new Dictionary<(int biome, int subBiome), bool>
-            {
-                { (9, 0), true }, // chandelier biome
-            };
-
-            public static Dictionary<(int biome, int subBiome), (int, int, int)> biomeDict = new Dictionary<(int biome, int subBiome), (int, int, int)>
-            {
-                { (-1, 0), (1200, -100, 1200) },                                               // undefined
-
-                { (0, 0), (Color.Blue.R,Color.Blue.G,Color.Blue.B) },                          // cold biome
-                { (0, 1), (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) },           // frost biome
-
-                { (1, 0), (Color.Fuchsia.R,Color.Fuchsia.G,Color.Fuchsia.B) },                 // acid biome
-
-                { (2, 0), (Color.OrangeRed.R,Color.OrangeRed.G,Color.OrangeRed.B) },           // hot biome
-                { (2, 1), (Color.OrangeRed.R + 90,Color.OrangeRed.G + 30,Color.OrangeRed.B) }, // lava ocean biome
-                { (2, 2), (-100,-100,-100) },                                                  // obsidian biome...
-
-                { (3, 0), (Color.Green.R,Color.Green.G,Color.Green.B)},                        // forest biome
-                { (3, 1), (Color.Green.R,Color.Green.G + 40,Color.Green.B + 80)},              // flower forest biome
+            { (3, 0), (Color.Green.R,Color.Green.G,Color.Green.B)},                        // forest biome
+            { (3, 1), (Color.Green.R,Color.Green.G + 40,Color.Green.B + 80)},              // flower forest biome
                                                                                                
-                { (4, 0), (Color.GreenYellow.R,Color.GreenYellow.G,Color.GreenYellow.B) },     // toxic biome
+            { (4, 0), (Color.GreenYellow.R,Color.GreenYellow.G,Color.GreenYellow.B) },     // toxic biome
                                                                                                
-                { (5, 0), (Color.LightPink.R,Color.LightPink.G,Color.LightPink.B) },           // fairy biome !
+            { (5, 0), (Color.LightPink.R,Color.LightPink.G,Color.LightPink.B) },           // fairy biome !
 
-                { (6, 0), (Color.DarkBlue.R,Color.DarkBlue.G + 20,Color.DarkBlue.B + 40) },    // mold biome. .. . . . 
+            { (6, 0), (Color.DarkBlue.R,Color.DarkBlue.G + 20,Color.DarkBlue.B + 40) },    // mold biome. .. . . . 
                                                                                                
-                { (8, 0), (Color.LightBlue.R,Color.LightBlue.G+60,Color.LightBlue.B+130) },    // ocean biome !
+            { (8, 0), (Color.LightBlue.R,Color.LightBlue.G+60,Color.LightBlue.B+130) },    // ocean biome !
                                                                                                
-                { (9, 0), (Color.Gray.R,Color.Gray.G,Color.Gray.B) },                          // stoplights and chandeliers biome !?!
+            { (9, 0), (Color.Gray.R,Color.Gray.G,Color.Gray.B) },                          // stoplights and chandeliers biome !?!
                                                                                                
-                { (10, 0), (Color.Red.R,Color.Red.G,Color.Red.B) },                            // flesh biome
-                { (10, 1), (Color.Pink.R,Color.Pink.G,Color.Pink.B) },                         // flesh and bone biome
-                { (10, 2), (Color.White.R,Color.White.G,Color.White.B) },                      // Bone biome...
-                { (10, 3), (Color.DarkRed.R,Color.DarkRed.G,Color.DarkRed.B) },                // blood ocean
-                { (10, 4), (Color.YellowGreen.R,Color.YellowGreen.G,Color.YellowGreen.B) },    // acid ocean
-                
-            };
+            { (10, 0), (Color.Red.R,Color.Red.G,Color.Red.B) },                            // flesh biome
+            { (10, 1), (Color.Pink.R,Color.Pink.G,Color.Pink.B) },                         // flesh and bone biome
+            { (10, 2), (Color.White.R,Color.White.G,Color.White.B) },                      // Bone biome...
+            { (10, 3), (Color.DarkRed.R,Color.DarkRed.G,Color.DarkRed.B) },                // blood ocean
+            { (10, 4), (Color.YellowGreen.R,Color.YellowGreen.G,Color.YellowGreen.B) },    // acid ocean  
+        };
 
-            // 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
-            public static Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int range, int prio)> biomeTypicalValues = new Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int range, int prio)>
+        // 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
+        public static Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int range, int prio)> biomeTypicalValues = new Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int range, int prio)>
+        {
+            { (-1, 0), (690, 690, 690, 690, 1000, 0)},  // undefined
+
+            { (0, 0), (200, 320, 320, 512, 1000, 0) },  // cold biome
+            { (0, 1), (-100, 320, 320, 512, 1000, 2) }, // frost biome
+
+            { (1, 0), (200, 300, 800, 512, 1000, 0) },  // acid biome
+
+            { (2, 0), (840, 512, 512, 512, 1000, 1) },  // hot biome
+            { (2, 1), (1024, 512, 512, 512, 1000, 3) }, // lava ocean biome
+            { (2, 2), (880, 880, 512, 512, 1000, 2) },  // obsidian biome...
+
+            { (3, 0), (512, 720, 768, 340, 1000, 0) },  // forest biome
+            { (3, 1), (512, 720, 256, 220, 1000, 0) },  // flower forest biome
+
+            { (4, 0), (512, 280, 512, 680, 1000, 0) },  // toxic biome
+
+            { (5, 0), (200, 840, 200, 320, 1000, 0) },  // fairy biome !
+                
+            { (6, 0), (200, 800, 800, 512, 1000, 0) },  // mold biome
+
+            { (8, 0), (512, 960, 512, 512, 1000, 0) },  // ocean biome !
+
+            { (9, 0), (320, 320, 240, 240, 1000, 0) },  // chandeliers biome !
+
+            { (10, 0), (720, 512, 512, 512, 1000, 0) }, // Flesh biome !
+            { (10, 1), (512, 360, 380, 512, 1000, 0) }, // Flesh and bone biome !
+            { (10, 2), (320, 200, 256, 512, 1000, 0) }, // Bone biome...
+            { (10, 3), (320, 880, 380, 360, 1000, 0) }, // Blood ocean biome !
+            { (10, 4), (720, 600, 880, 880, 1000, 0) }, // Acid ocean biome !
+        };
+
+        public static Dictionary<(int type, int subType), (int r, int g, int b, float mult)> tileColors = new Dictionary<(int type, int subType), (int r, int g, int b, float mult)>
+        { // mult is in percent (0-100) : how much biome color is taken into account on the modifiying of the color shite.
+            { (-7, 0), (120, 180, 60, 0.2f)}, // acid
+                
+            { (-6, 1), (65, 5, 35, 0.2f)},    // deoxygenated blood
+            { (-6, 0), (100, 15, 25, 0.2f)},  // blood
+
+            { (-5, 0), (160, 120, 70, 0.2f)}, // honey
+                
+            { (-4, 0), (255, 90, 0, 0.05f)},  // lava
+                
+            { (-3, 0), (105, 80, 120, 0.2f)}, // fairy liquid
+                
+            { (-2, 0), (80, 80, 120, 0.2f)},  // water
+                
+            { (-1, 0), (120, 120, 80, 0.2f)}, // piss
+                
+            { (0, 0), (140, 140, 140, 0.5f)}, // air lol
+
+            { (1, 0), (30, 30, 30, 0.5f)},    // normal rock
+            { (1, 1), (10, 10, 10, 0.2f)},    // dense rock... no... DANCE ROCK !! Yay ! Dance !! Luka Luka Night Fever !!
+                
+            { (2, 0), (80, 60, 20, 0.5f)},    // dirt
+                
+            { (3, 0), (10, 60, 30, 0.35f)},   // plant matter
+                
+            { (4, 0), (135, 55, 55, 0.2f)},   // flesh tile
+            { (4, 1), (240, 230, 245, 0.2f)}, // bone tile
+
+            { (5, 0), (50, 50, 100, 0.1f)},   // mold tile
+        };
+
+        public static Dictionary<(int type, int subType), (int type, int subType, int typeOfElement)> materialGatheringToolRequirement = new Dictionary<(int type, int subType), (int type, int subType, int typeOfElement)>()
+        {   // For plants ! Not terrain !
+            { (1, 1), (4, 0, 4) },  // Wood -> Axe
+            { (11, 1), (4, 0, 4) }  // Metal -> Axe
+        };
+
+        public static List<((int type, int subType, int megaType) material, int count)[]> craftRecipes = new List<((int type, int subType, int megaType) material, int count)[]>
+        {
+            new ((int type, int subType, int megaType) material, int count)[] // flesh to flesh tile
             {
-                { (-1, 0), (690, 690, 690, 690, 1000, 0)},  // undefined
-
-                { (0, 0), (200, 320, 320, 512, 1000, 0) },  // cold biome
-                { (0, 1), (-100, 320, 320, 512, 1000, 2) }, // frost biome
-
-                { (1, 0), (200, 300, 800, 512, 1000, 0) },  // acid biome
-
-                { (2, 0), (840, 512, 512, 512, 1000, 1) },  // hot biome
-                { (2, 1), (1024, 512, 512, 512, 1000, 3) }, // lava ocean biome
-                { (2, 2), (880, 880, 512, 512, 1000, 2) },  // obsidian biome...
-
-                { (3, 0), (512, 720, 768, 340, 1000, 0) },  // forest biome
-                { (3, 1), (512, 720, 256, 220, 1000, 0) },  // flower forest biome
-
-                { (4, 0), (512, 280, 512, 680, 1000, 0) },  // toxic biome
-
-                { (5, 0), (200, 840, 200, 320, 1000, 0) },  // fairy biome !
-                
-                { (6, 0), (200, 800, 800, 512, 1000, 0) },  // mold biome
-
-                { (8, 0), (512, 960, 512, 512, 1000, 0) },  // ocean biome !
-
-                { (9, 0), (320, 320, 240, 240, 1000, 0) },  // chandeliers biome !
-
-                { (10, 0), (720, 512, 512, 512, 1000, 0) }, // Flesh biome !
-                { (10, 1), (512, 360, 380, 512, 1000, 0) }, // Flesh and bone biome !
-                { (10, 2), (320, 200, 256, 512, 1000, 0) }, // Bone biome...
-                { (10, 3), (320, 880, 380, 360, 1000, 0) }, // Blood ocean biome !
-                { (10, 4), (720, 600, 880, 880, 1000, 0) }, // Acid ocean biome !
-            };
-
-            public static Dictionary<(int type, int subType), (int r, int g, int b, float mult)> tileColors = new Dictionary<(int type, int subType), (int r, int g, int b, float mult)>
-            { // mult is in percent (0-100) : how much biome color is taken into account on the modifiying of the color shite.
-                { (-7, 0), (120, 180, 60, 0.2f)}, // acid
-                
-                { (-6, 1), (65, 5, 35, 0.2f)},    // deoxygenated blood
-                { (-6, 0), (100, 15, 25, 0.2f)},  // blood
-
-                { (-5, 0), (160, 120, 70, 0.2f)}, // honey
-                
-                { (-4, 0), (255, 90, 0, 0.05f)},  // lava
-                
-                { (-3, 0), (105, 80, 120, 0.2f)}, // fairy liquid
-                
-                { (-2, 0), (80, 80, 120, 0.2f)},  // water
-                
-                { (-1, 0), (120, 120, 80, 0.2f)}, // piss
-                
-                { (0, 0), (140, 140, 140, 0.5f)}, // air lol
-
-                { (1, 0), (30, 30, 30, 0.5f)},    // normal rock
-                { (1, 1), (10, 10, 10, 0.2f)},    // dense rock... no... DANCE ROCK !! Yay ! Dance !! Luka Luka Night Fever !!
-                
-                { (2, 0), (80, 60, 20, 0.5f)},    // dirt
-                
-                { (3, 0), (10, 60, 30, 0.35f)},   // plant matter
-                
-                { (4, 0), (135, 55, 55, 0.2f)},   // flesh tile
-                { (4, 1), (240, 230, 245, 0.2f)}, // bone tile
-
-                { (5, 0), (50, 50, 100, 0.1f)},   // mold tile
-            };
-
-            public static Dictionary<(int type, int subType), (int type, int subType, int typeOfElement)> materialGatheringToolRequirement = new Dictionary<(int type, int subType), (int type, int subType, int typeOfElement)>()
-            {   // For plants ! Not terrain !
-                { (1, 1), (4, 0, 4) },  // Wood -> Axe
-                { (11, 1), (4, 0, 4) }  // Metal -> Axe
-            };
-
-            public static List<((int type, int subType, int megaType) material, int count)[]> craftRecipes = new List<((int type, int subType, int megaType) material, int count)[]>
+                ((8, 0, 3), -10),
+                ((4, 0, 0), 1),
+            },
+            new ((int type, int subType, int megaType) material, int count)[] // bone to bone tile
             {
-                new ((int type, int subType, int megaType) material, int count)[] // flesh to flesh tile
-                {
-                    ((8, 0, 3), -10),
-                    ((4, 0, 0), 1),
-                },
-                new ((int type, int subType, int megaType) material, int count)[] // bone to bone tile
-                {
-                    ((8, 1, 3), -10),
-                    ((4, 1, 0), 1),
-                },
+                ((8, 1, 3), -10),
+                ((4, 1, 0), 1),
+            },
 
-                new ((int type, int subType, int megaType) material, int count)[] // blood to water and flesh
-                {
-                    ((-6, 0, 0), -3),
-                    ((-2, 0, 0), 3),
-                    ((8, 0, 3), 1),
-                },
-
-                new ((int type, int subType, int megaType) material, int count)[] // fleshTile to blood
-                {
-                    ((4, 0, 0), -3),
-                    ((-6, 0, 0), 1),
-                },
-
-                new ((int type, int subType, int megaType) material, int count)[] // INFINITE FLESH
-                {
-                    ((8, 0, 3), 100),
-                },
-
-                new ((int type, int subType, int megaType) material, int count)[] // Dense rock and Fairy liquid to MagicRock
-                {
-                    ((1, 1, 0), -1),
-                    ((-3, 0, 0), -1),
-                    ((10, 0, 3), 1)
-                },
-
-                new ((int type, int subType, int megaType) material, int count)[] // Wood, MagicRock and Fairy liquid to MagicWand
-                {
-                    ((1, 1, 3), -3),
-                    ((10, 0, 3), -1),
-                    ((-3, 0, 0), -2),
-                    ((3, 0, 4), 1)
-                },
-            };
-
-            public static string[] nameArray = new string[]
+            new ((int type, int subType, int megaType) material, int count)[] // blood to water and flesh
             {
-                "ka",
-                "ko",
-                "ku",
-                "ki",
-                "ke",
-                "ro",
-                "ra",
-                "re",
-                "ru",
-                "ri",
-                "do",
-                "da",
-                "de",
-                "du",
-                "di",
-                "va",
-                "vo",
-                "ve",
-                "vu",
-                "vi",
-                "sa",
-                "so",
-                "se",
-                "su",
-                "si",
-                "in",
-                "on",
-                "an",
-                "en",
-                "un",
-            };
+                ((-6, 0, 0), -3),
+                ((-2, 0, 0), 3),
+                ((8, 0, 3), 1),
+            },
 
-            public static Dictionary<(int type, int subType, int subSubType), string> structureNames = new Dictionary<(int type, int subType, int subSubType), string>
+            new ((int type, int subType, int megaType) material, int count)[] // fleshTile to blood
             {
-                { (0, 0, 0), "lake" },
-                { (1, 0, 0), "cube amalgam" },
-                { (2, 0, 0), "sawblade" },
-                { (2, 1, 0), "star" },
-                { (3, 0, 0), "portal" },
-                { (3, 0, 1), "portal" },
-            };
-        }
+                ((4, 0, 0), -3),
+                ((-6, 0, 0), 1),
+            },
+
+            new ((int type, int subType, int megaType) material, int count)[] // INFINITE FLESH
+            {
+                ((8, 0, 3), 100),
+            },
+
+            new ((int type, int subType, int megaType) material, int count)[] // Dense rock and Fairy liquid to MagicRock
+            {
+                ((1, 1, 0), -1),
+                ((-3, 0, 0), -1),
+                ((10, 0, 3), 1)
+            },
+
+            new ((int type, int subType, int megaType) material, int count)[] // Wood, MagicRock and Fairy liquid to MagicWand
+            {
+                ((1, 1, 3), -3),
+                ((10, 0, 3), -1),
+                ((-3, 0, 0), -2),
+                ((3, 0, 4), 1)
+            },
+        };
+    }
+    public partial class Form1 : Form
+    {
         public Form1()
         {
             InitializeComponent();
@@ -460,6 +369,8 @@ namespace Cave
             // Hornet nests -> search for point of interests in plants should take place with SPIRAL function
             // Make every kind of digging an attack. Including terrain, plant, and those of entities.
             // Update tryGrowth stuff in plants to fix bugs and make growth more intelligently
+            // Optimization of biome getting -> if all 4 corners of a chunk are Monobiome of the same biome, no need to computer all the other ones inside ! thank you noiseposti.ng 
+            // When multiple players, movePlayer them in random order. So no player gets a real advantage sorta ig.
 
             // cool ideas for later !
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
@@ -484,6 +395,7 @@ namespace Cave
             // add tribes of snowmen ! lmao
             // ADD SPIDERS !! That can put strings and you can get stuck into them ? Webs ? And you get eARTER ? ?
             // Civilisations of undead. That are not necessarly evil or eat the player (maybe multiple kinds of zombies ? civilisations of cannibalistic zombies that eat those whose brain deteriorates too much ? Like a second death ?)
+            // Bat/Pterosaur like creatures that can dive in lake to catch fish (or just surface and they catch water skippers) like they glide and shit. But like they're big.
 
             // Plants ideas !
             // Tendril shits in living diomension

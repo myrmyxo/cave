@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Security.Policy;
@@ -14,9 +15,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 using static Cave.Form1;
-using static Cave.Form1.Globals;
+using static Cave.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
 using static Cave.Structures;
@@ -27,6 +29,7 @@ using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
+using static Cave.Particles;
 
 namespace Cave
 {
@@ -358,7 +361,6 @@ namespace Cave
                         for (int mult = 1; mult <= 2; mult++)
                         {
                             posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
-                            (int x, int y) chunkPos = ChunkIdx(posToTest);
                             Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, chunkDict);
                             int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                             if (fillState <= 0 || fillState > 1 || nest.tiles.ContainsKey(posToTest))
