@@ -30,6 +30,7 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TreeView;
 
 namespace Cave
 {
@@ -826,10 +827,8 @@ namespace Cave
                     colorDict.Add((1, 2), Color.FromArgb(30 - shadeVar, 90 - shadeVar + hueVar, 140 - shadeVar - hueVar));
                 }
             }
-            public (int x, int y) getRealPos((int x, int y) pos)
-            {
-                return (posX + pos.x, posY + pos.y);
-            }
+            public (int x, int y) getRealPos((int x, int y) pos) { return (posX + pos.x, posY + pos.y); }
+            public (int x, int y) getRelativePos((int x, int y) pos) { return (pos.x - posX, pos.y - posY); }
             public bool testIfPositionEmpty((int x, int y) mod) // Improve for water (returns true for water, should only do that for plants)
             {
                 (int x, int y) pixelPos = getRealPos(mod);
@@ -841,39 +840,10 @@ namespace Cave
             }
             public void makeBitmap()
             {
-                List<Branch> branchList = new List<Branch>(childBranches);
-                List<Flower> flowerList = new List<Flower>(childFlowers);
-
-                Branch currentBranch;
-                for (int i = 0; i < branchList.Count; i++)
-                {
-                    currentBranch = branchList[i];
-                    foreach (Branch branch in currentBranch.childBranches)
-                    {
-                        branchList.Add(branch);
-                    }
-                    foreach (Flower flower in currentBranch.childFlowers)
-                    {
-                        flowerList.Add(flower);
-                    }
-                }
-
-                Dictionary<(int x, int y), (int type, int subType)> fillDict = new Dictionary<(int x, int y), (int type, int subType)>(fillStates);
-
-                foreach (Branch branch in branchList)
-                {
-                    foreach ((int x, int y) keyo in branch.fillStates.Keys)
-                    {
-                        fillDict[(keyo.x + branch.pos.x, keyo.y + branch.pos.y)] = branch.fillStates[keyo];
-                    }
-                }
-                foreach (Flower flower in flowerList)
-                {
-                    foreach ((int x, int y) keyo in flower.fillStates.Keys)
-                    {
-                        fillDict[(keyo.x + flower.pos.x, keyo.y + flower.pos.y)] = flower.fillStates[keyo];
-                    }
-                }
+                (List<Branch>, List<Flower>) returnedTuple = returnAllBranchesAndFlowers();
+                List<Branch> branchList = returnedTuple.Item1;
+                List<Flower> flowerList = returnedTuple.Item2;
+                Dictionary<(int x, int y), (int type, int subType)> fillDict = returnFullPlantFillDict(branchList, flowerList);
 
                 int minX = 0;
                 int maxX = 0;
@@ -882,22 +852,10 @@ namespace Cave
 
                 foreach ((int x, int y) drawPos in fillDict.Keys)
                 {
-                    if (drawPos.x < minX)
-                    {
-                        minX = drawPos.x;
-                    }
-                    else if (drawPos.x > maxX)
-                    {
-                        maxX = drawPos.x;
-                    }
-                    if (drawPos.y < minY)
-                    {
-                        minY = drawPos.y;
-                    }
-                    else if (drawPos.y > maxY)
-                    {
-                        maxY = drawPos.y;
-                    }
+                    if (drawPos.x < minX) { minX = drawPos.x; }
+                    else if (drawPos.x > maxX) { maxX = drawPos.x; }
+                    if (drawPos.y < minY) { minY = drawPos.y; }
+                    else if (drawPos.y > maxY) { maxY = drawPos.y; }
                 }
 
                 int width = maxX - minX + 1;
@@ -1379,6 +1337,25 @@ namespace Cave
             Fail:;
                 isDeadAndShouldDisappear = true;
             }
+            public Dictionary<(int x, int y), (int type, int subType)> returnFullPlantFillDict(List<Branch> branchList = null, List<Flower> flowerList = null)
+            {
+                if (branchList == null)
+                {
+                    (List<Branch>, List<Flower>) returnedTuple = returnAllBranchesAndFlowers();
+                    branchList = returnedTuple.Item1;
+                    flowerList = returnedTuple.Item2;
+                }
+                Dictionary<(int x, int y), (int type, int subType)> fillDict = new Dictionary<(int x, int y), (int type, int subType)>(fillStates);
+                foreach (Branch branch in branchList)
+                {
+                    foreach ((int x, int y) keyo in branch.fillStates.Keys) { fillDict[(keyo.x + branch.pos.x, keyo.y + branch.pos.y)] = branch.fillStates[keyo]; }
+                }
+                foreach (Flower flower in flowerList)
+                {
+                    foreach ((int x, int y) keyo in flower.fillStates.Keys) { fillDict[(keyo.x + flower.pos.x, keyo.y + flower.pos.y)] = flower.fillStates[keyo]; }
+                }
+                return fillDict;
+            }
             public (List<Branch>, List<Flower>) returnAllBranchesAndFlowers()
             {
                 List<Branch> branchesToTest = new List<Branch>();
@@ -1392,7 +1369,7 @@ namespace Cave
                 }
                 return (branchesToTest, flowersToTest);
             }
-            public (int type, int subType) testDig(int posToDigX, int posToDigY)
+            public (int type, int subType) tryDig((int x, int y) posToDig, (int type, int subType, int typeOfElement)? currentItem = null, (int type, int subType)? targetMaterialNullable = null, bool toolRestrictions = true)
             {
                 (List<Branch>, List<Flower>) returnedTuple = returnAllBranchesAndFlowers();
                 List<Branch> branchesToTest = returnedTuple.Item1;
@@ -1401,54 +1378,10 @@ namespace Cave
                 (int x, int y) posToTest;
                 foreach (Flower flower in flowersToTest)
                 {
-                    posToTest = (posToDigX - posX - flower.pos.x, posToDigY - posY - flower.pos.y);
+                    posToTest = (posToDig.x - posX - flower.pos.x, posToDig.y - posY - flower.pos.y);
                     if (flower.fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value))
                     {
-                        if (value.type != 0)
-                        {
-                            return value;
-                        }
-                    }
-                }
-
-                foreach (Branch branch in branchesToTest)
-                {
-                    posToTest = (posToDigX - posX - branch.pos.x, posToDigY - posY - branch.pos.y);
-                    if (branch.fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value))
-                    {
-                        if (value.type != 0)
-                        {
-                            return value;
-                        }
-                    }
-                }
-
-                {
-                    posToTest = (posToDigX - posX, posToDigY - posY);
-                    if (fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value))
-                    {
-                        if (value.type != 0)
-                        {
-                            return value;
-                        }
-                    }
-                }
-
-                return (0, 0);
-            }
-            public (int type, int subType) actuallyDig(int posToDigX, int posToDigY)    // The testDig and actuallyDig functions are SOOO SHITE LMFAOOOO
-            {
-                (List<Branch>, List<Flower>) returnedTuple = returnAllBranchesAndFlowers();
-                List<Branch> branchesToTest = returnedTuple.Item1;
-                List<Flower> flowersToTest = returnedTuple.Item2;
-
-                (int x, int y) posToTest;
-                foreach (Flower flower in flowersToTest)
-                {
-                    posToTest = (posToDigX - posX - flower.pos.x, posToDigY - posY - flower.pos.y);
-                    if (flower.fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value))
-                    {
-                        if (value.type != 0)
+                        if ((targetMaterialNullable is null ? true : targetMaterialNullable == value) && (!toolRestrictions || !materialGatheringToolRequirement.ContainsKey(value) || materialGatheringToolRequirement[value] == currentItem))
                         {
                             flower.fillStates.Remove((posToTest.x, posToTest.y));
                             screen.plantsToMakeBitmapsOf[id] = this;
@@ -1459,10 +1392,10 @@ namespace Cave
 
                 foreach (Branch branch in branchesToTest)
                 {
-                    posToTest = (posToDigX - posX - branch.pos.x, posToDigY - posY - branch.pos.y);
+                    posToTest = (posToDig.x - posX - branch.pos.x, posToDig.y - posY - branch.pos.y);
                     if (branch.fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value))
                     {
-                        if (value.type != 0)
+                        if ((targetMaterialNullable is null ? true : targetMaterialNullable == value) && (!toolRestrictions || !materialGatheringToolRequirement.ContainsKey(value) || materialGatheringToolRequirement[value] == currentItem))
                         {
                             branch.fillStates.Remove((posToTest.x, posToTest.y));
                             screen.plantsToMakeBitmapsOf[id] = this;
@@ -1471,19 +1404,17 @@ namespace Cave
                     }
                 }
 
+                posToTest = (posToDig.x - posX, posToDig.y - posY);
+                if (fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value2))
                 {
-                    posToTest = (posToDigX - posX, posToDigY - posY);
-                    if (fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value))
+                    if ((targetMaterialNullable is null ? true : targetMaterialNullable == value2) && (!toolRestrictions || !materialGatheringToolRequirement.ContainsKey(value2) || materialGatheringToolRequirement[value2] == currentItem))
                     {
-                        if (value.type != 0)
-                        {
-                            fillStates.Remove((posToTest.x, posToTest.y));
-                            screen.plantsToMakeBitmapsOf[id] = this;
-                            return value;
-                        }
+                        fillStates.Remove((posToTest.x, posToTest.y));
+                        screen.plantsToMakeBitmapsOf[id] = this;
+                        return value2;
                     }
                 }
-
+                
                 return (0, 0);
             }
             public (bool found, int x, int y) findPointOfInterestInPlant((int type, int subType) elementOfInterest)

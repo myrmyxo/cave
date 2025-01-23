@@ -116,7 +116,6 @@ namespace Cave
 
             public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
             public List<(int index, int subType, int typeOfElement)> inventoryElements;
-            public int elementsPossessed = 0;
 
             public float hp = 1;
             public int food = 0;
@@ -412,16 +411,11 @@ namespace Cave
                     costOfTiles[location] = 0;
                     return 0;
                 }
-                (int x, int y) chunkPos = ChunkIdx(location.x, location.y);
-                if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest))
+                int tileContent = screen.getChunkFromPixelPos(location).fillStates[PosMod(location.x), PosMod(location.y)].type;
+                if (tileContent <= 0)
                 {
-                    (int x, int y) tileIndex = PosMod(location);
-                    int tileContent = chunkToTest.fillStates[tileIndex.x, tileIndex.y].type;
-                    if (tileContent <= 0)
-                    {
-                        costOfTiles[location] = costDict[tileContent];
-                        return costOfTiles[location];
-                    }
+                    costOfTiles[location] = costDict[tileContent];
+                    return costOfTiles[location];
                 }
                 costOfTiles[location] = 1000000;
                 return 1000000;
@@ -852,7 +846,7 @@ namespace Cave
                                 }
                                 nest.adults.Add(this);
                             }
-                            transformEntity(3, 2, true);
+                            transformEntity(3, 3, true);
                             timeAtLastStateChange = timeElapsed;
                         }
                     }
@@ -972,14 +966,11 @@ namespace Cave
                             {
                                 if (state == 10009)
                                 {
+                                    if (targetEntity is null) { state = 1; }
                                     if (manhattanDistance((targetEntity.posX, targetEntity.posY), (posX, posY)) > maxDist)
                                     {
                                         targetPos = (targetEntity.posX, targetEntity.posY);
-                                        if (pathfindToLocation(targetPos))
-                                        {
-
-                                        }
-                                        else
+                                        if (!pathfindToLocation(targetPos))
                                         {
                                             targetEntity = null;
                                             pathToTarget = new List<(int x, int y)>();
@@ -1011,7 +1002,7 @@ namespace Cave
                         {
                             if (timeAtLastDig + 1 < timeElapsed)
                             {
-                                if (tryPlantDig(targetPos.x, targetPos.y))
+                                if (PlantDig(targetPos, null, null, (2, 1), false))
                                 {
                                     tryManufactureElement();
                                 }
@@ -1022,7 +1013,7 @@ namespace Cave
                         {
                             if (timeAtLastDig + 1 < timeElapsed)
                             {
-                                (int type, int subType) dugTile = Dig(targetPos.x, targetPos.y);
+                                (int type, int subType) dugTile = TerrainDig(targetPos);
                                 if (nest != null)
                                 {
                                     if (dugTile.type >= 0) { nest.digErrands.Remove(targetPos); }
@@ -1051,7 +1042,7 @@ namespace Cave
                         {
                             if (timeAtLastPlace + 1 < timeElapsed)
                             {
-                                Place(targetPos.x, targetPos.y, (-5, 0, 0), false);
+                                Place(targetPos, (-5, 0, 0), false);
                                 if (nest != null)
                                 {
                                     Room room = nest.rooms[nest.getRoomId(targetPos)];
@@ -1074,7 +1065,7 @@ namespace Cave
                                 if (timeAtLastPlace + 1 < timeElapsed)
                                 {
                                     Room room = nest.rooms[nest.getRoomId(targetPos)];
-                                    if (room.type == 3 && Place(targetPos.x, targetPos.y, (3, 0, 1), true))
+                                    if (room.type == 3 && Place(targetPos, (3, 0, 1), true))
                                     {
                                         Entity kiddo = screen.entitesToAdd.Values.ToArray()[screen.entitesToAdd.Count - 1];
                                         kiddo.nest = nest;
@@ -1154,10 +1145,7 @@ namespace Cave
                 if (type != 2 && (type, subType) != (4, 1))
                 {
                     (int type, int subType) material = screen.getTileContent((posX, posY));
-                    if (material.type < 0)
-                    {
-                        ariGeoSlowDownX(0.15f, 0.85f);
-                    }
+                    if (material.type < 0) { ariGeoSlowDownX(0.15f, 0.85f); }
                 }
 
                 actuallyMoveTheEntity();
@@ -1177,24 +1165,15 @@ namespace Cave
                     }
                     if (type == 2 && material == (-7, 0))
                     {
-                        if (rand.Next(10) == 0)
-                        {
-                            transformEntity(2, 1, true);
-                        }
+                        if (rand.Next(10) == 0) { transformEntity(2, 1, true); }
                     }
                     if (material == (-4, 0) && type != 2 && (type, subType) != (0, 3))
                     {
-                        if (rand.Next(10) == 0)
-                        {
-                            screen.entitesToRemove[id] = this;
-                        }
+                        if (rand.Next(10) == 0) { screen.entitesToRemove[id] = this; }
                     }
                     if (material == (-7, 0) && type != 2 && (type, subType) != (0, 3) && (type, subType) != (4, 1) && (type, subType) != (1, 1) && (type, subType) != (1, 2))
                     {
-                        if (rand.Next(10) == 0)
-                        {
-                            screen.entitesToRemove[id] = this;
-                        }
+                        if (rand.Next(10) == 0) { screen.entitesToRemove[id] = this; }
                     }
                 }
             }
@@ -1238,10 +1217,7 @@ namespace Cave
                 if (counto == 0 || pastPositions[0].x == posX || pastPositions[0].y == posY || manhattanDistance(pastPositions[0], (posX, posY)) > 2) // if pos-2 and current pos have no x and y in common, means there are diag and pos - 1 should not be added
                 {
                     pastPositions.Insert(0, posToAdd);
-                    if (counto >= length)
-                    {
-                        pastPositions.RemoveAt(counto - 1);
-                    }
+                    if (counto >= length) { pastPositions.RemoveAt(counto - 1); }
                 }
             }
             public virtual void actuallyMoveTheEntity()
@@ -1338,14 +1314,8 @@ namespace Cave
             }
             public virtual void initializeInventory()
             {
-                inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
-                {
-
-                };
-                inventoryElements = new List<(int index, int subType, int typeOfElement)>
-                {
-
-                };
+                inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int> { };
+                inventoryElements = new List<(int index, int subType, int typeOfElement)> { };
             }
             public void addElementToInventory((int index, int subType, int typeOfElement) elementToAdd, int quantityToAdd = 1)
             {
@@ -1355,10 +1325,7 @@ namespace Cave
                     inventoryElements.Add(elementToAdd);
                     return;
                 }
-                if (inventoryQuantities[elementToAdd] != -999)
-                {
-                    inventoryQuantities[elementToAdd] += quantityToAdd;
-                }
+                if (inventoryQuantities[elementToAdd] != -999) { inventoryQuantities[elementToAdd] += quantityToAdd; }
                 return;
             }
             public virtual void removeElementFromInventory((int index, int subType, int typeOfElement) elementToRemove, int quantityToRemove = 1)
@@ -1374,78 +1341,58 @@ namespace Cave
                     }
                 }
             }
-            public bool tryPlantDig(int posToDigX, int posToDigY)
+            public bool PlantDig((int x, int y) posToDig, (int type, int subType, int typeOfElement)? currentItem = null, Chunk chunk = null, (int type, int subType)? targetMaterialNullable = null, bool toolRestrictions = true)
             {
+                (int x, int y) targetMaterial = targetMaterialNullable ?? (0, 0);
+                if (toolRestrictions && targetMaterialNullable != null && materialGatheringToolRequirement.ContainsKey(targetMaterial) && materialGatheringToolRequirement[targetMaterial] != currentItem) { return false; }   // Don't bother digging if trying to dig a particular tile without having the correct tool equipped. Should rarely happen but whatever
                 (int type, int subType) value;
-                foreach (Plant plant in screen.activePlants.Values)
+                foreach (Plant plant in chunk is null ? screen.activePlants.Values : chunk.plants.Values)
                 {
-                    value = plant.actuallyDig(posToDigX, posToDigY);
-                    if (value.type != 0)
-                    {
-                        addElementToInventory((value.type, value.subType, 3));
-                        timeAtLastDig = timeElapsed;
-                        return true;
-                    }
+                    value = plant.tryDig(posToDig, currentItem, targetMaterialNullable, toolRestrictions);
+                    if (value == (0, 0)) { continue; }
+                    addElementToInventory((value.type, value.subType, 3));
+                    timeAtLastDig = timeElapsed;
+                    return true;
                 }
                 return false;
             }
-            public void PlantDig((int x, int y) posToDig, (int type, int subType, int typeOfElement) currentItem)
+            public (int type, int subType) TerrainDig((int x, int y) posToDig)
             {
-                (int type, int subType) value;
-                foreach (Plant plant in screen.activePlants.Values)
-                {
-                    value = plant.testDig(posToDig.x, posToDig.y);
-                    if (((type, subType) == (3, 3)) || (materialGatheringToolRequirement.ContainsKey(value) && materialGatheringToolRequirement[value] != currentItem)) { continue; }
-                    value = plant.actuallyDig(posToDig.x, posToDig.y);
-                    if (value.type != 0)
-                    {
-                        addElementToInventory((value.type, value.subType, 3));
-                        timeAtLastDig = timeElapsed;
-                        return;
-                    }
-                }
-            }
-
-
-
-            public (int type, int subType) Dig(int posToDigX, int posToDigY)
-            {
-                (int, int) chunkPos = ChunkIdx(posToDigX, posToDigY);
+                (int, int) chunkPos = ChunkIdx(posToDig);
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return (0, 0); }
-                (int x, int y) tileIndex = PosMod((posToDigX, posToDigY));
+                (int x, int y) tileIndex = PosMod(posToDig);
                 (int type, int subType) tileContent = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
                 if (tileContent.type != 0)
                 {
                     addElementToInventory((tileContent.type, tileContent.subType, 0));
-                    chunkToTest.tileModification(posToDigX, posToDigY, (0, 0));
-                    elementsPossessed++;
+                    chunkToTest.tileModification(posToDig.x, posToDig.y, (0, 0));
                     timeAtLastDig = timeElapsed;
                 }
                 return tileContent;
             }
-            public bool Place(int posToDigX, int posToDigY, (int type, int subType, int typeOfElement) elementToPlace, bool forcePlace)
+            public bool Place((int x, int y) posToDig, (int type, int subType, int typeOfElement) elementToPlace, bool forcePlace)
             {
-                (int, int) chunkPos = ChunkIdx(posToDigX, posToDigY);
+                (int, int) chunkPos = ChunkIdx(posToDig);
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return false; }
                 if (!forcePlace && !inventoryElements.Contains(elementToPlace)) { return false; } 
-                (int x, int y) tileIndex = PosMod((posToDigX, posToDigY));
+                (int x, int y) tileIndex = PosMod(posToDig);
                 int tileState = chunkToTest.fillStates[tileIndex.x, tileIndex.y].type;
                 if (tileState == 0 || tileState < 0 && elementToPlace.typeOfElement > 0)
                 {
                     if (elementToPlace.typeOfElement == 0)
                     {
-                        chunkToTest.screen.setTileContent((posToDigX, posToDigY), (elementToPlace.type, elementToPlace.subType));
+                        chunkToTest.screen.setTileContent(posToDig, (elementToPlace.type, elementToPlace.subType));
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (elementToPlace.typeOfElement == 1)
                     {
-                        Entity newEntity = new Entity(screen, (posToDigX, posToDigY), (elementToPlace.type, elementToPlace.subType));
+                        Entity newEntity = new Entity(screen, posToDig, (elementToPlace.type, elementToPlace.subType));
                         screen.entitesToAdd[newEntity.id] = newEntity;
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (elementToPlace.typeOfElement == 2)
                     {
-                        Plant newPlant = new Plant(screen, (posToDigX, posToDigY), (elementToPlace.type, elementToPlace.subType));
+                        Plant newPlant = new Plant(screen, posToDig, (elementToPlace.type, elementToPlace.subType));
                         if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
                         timeAtLastPlace = timeElapsed;
                     }

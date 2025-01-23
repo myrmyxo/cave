@@ -371,6 +371,10 @@ namespace Cave
             // Update tryGrowth stuff in plants to fix bugs and make growth more intelligently
             // Optimization of biome getting -> if all 4 corners of a chunk are Monobiome of the same biome, no need to computer all the other ones inside ! thank you noiseposti.ng 
             // When multiple players, movePlayer them in random order. So no player gets a real advantage sorta ig.
+            // Fluid dezoom, not by gigaChunks of whatever. No ChunkLength, but instead a size of forceLoading (radius in chunks). When dezoom goes over it, it takes the dezoom factor instead to forceLoad/loadCloseChunks.
+            // So infinite dezoom (and zoom up to 1 pixel theoretically). Make the bitmap be created at each UpdateScreen also, not only on zoom/dezoom
+            // Hornets : 3 types of attack. Warning sting (first attack, to tell to fuk off, scares creatures off the den, second attack, actual stings that deal poison, third attack, mandible slash that can cause bleeding)
+            // GoHome function for hornets. They go to main room/random room in the nest
 
             // cool ideas for later !
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.

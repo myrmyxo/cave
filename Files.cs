@@ -232,12 +232,12 @@ namespace Cave
                 }
                 chunk.entityList = new List<Entity>();
                 pLst = new List<int>();
-                foreach (Plant plant in chunk.plantList)
+                foreach (Plant plant in chunk.plants.Values)
                 {
                     savePlant(plant);
                     pLst.Add(plant.id);
                 }
-                chunk.plantList = new List<Plant>();
+                chunk.plants = new Dictionary<int, Plant>();
                 explLvl = chunk.explorationLevel;
                 if (explLvl == 1)
                 {
@@ -628,7 +628,7 @@ namespace Cave
         }
         public static MegaChunk loadMegaChunk(Screens.Screen screenToPut, (int x, int y) pos, bool isExtraLoading)
         {
-            // --- IMPROVEMENT TO MAKE --- When CREATING a new megachunk, it loads all structure, to unload all of them, to reload them... a bit useless... Need me a function to upgrade extraloaded to loaded, for Nest chunk shite
+            // --- IMPROVEMENT TO MAKE --- When CREATING a new megachunk, it loads all structure, to unload all of them, to reload them... a bit useless... TBH it might actually already not unload the structures LMFAO but idk
             MegaChunk newMegaChunk;
             if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{screenToPut.id}\\{pos.x}.{pos.y}.json"))
             {
@@ -707,6 +707,7 @@ namespace Cave
         }
         public static Plant loadPlant(Screens.Screen screenToPut, int plantId)
         {
+            if (screenToPut.activePlants.ContainsKey(plantId)) { return screenToPut.activePlants[plantId]; }
             using (StreamReader f = new StreamReader($"{currentDirectory}\\CaveData\\{worldSeed}\\PlantData\\{plantId}.json"))
             {
                 string content = f.ReadToEnd();

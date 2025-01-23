@@ -68,7 +68,7 @@ namespace Cave
                 loadStructuresYesOrNo = true;
                 spawnNests = true;
                 spawnEntities = true;
-                spawnPlants = true;
+                spawnPlants = false;
                 bool spawnNOTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntities = false; spawnPlants = false; }
 
@@ -751,7 +751,7 @@ namespace Cave
             {
                 foreach (Plant plant in plantsToRemove.Values)
                 {
-                    foreach ((int x, int y) chunkPos in plant.chunkPresence.Keys) { getChunkFromChunkPos(chunkPos).plantList.Remove(plant); }
+                    foreach ((int x, int y) chunkPos in plant.chunkPresence.Keys) { getChunkFromChunkPos(chunkPos).plants.Remove(plant.id); }
                     activePlants.Remove(plant.id);
                 }
                 plantsToRemove = new Dictionary<int, Plant>();
@@ -773,7 +773,7 @@ namespace Cave
                     plant = plantArray[i];
                     foreach ((int x, int y) chunkPos in plant.chunkPresence.Keys)
                     {
-                        getChunkFromChunkPos(chunkPos).plantList.Add(activePlants[plant.id]);
+                        getChunkFromChunkPos(chunkPos).plants[plant.id] = activePlants[plant.id];
                     }
                     activePlants.Remove(plant.id);
                 }
@@ -814,16 +814,10 @@ namespace Cave
                 }
                 foreach (Chunk chunko in loadedChunks.Values)
                 {
-                    foreach (Entity entity in chunko.entityList)
-                    {
-                        activeEntities[entity.id] = entity;
-                    }
-                    foreach (Plant plant in chunko.plantList)
-                    {
-                        activePlants[plant.id] = plant;
-                    }
+                    foreach (Entity entity in chunko.entityList) { activeEntities[entity.id] = entity; }
+                    foreach (Plant plant in chunko.plants.Values) { activePlants[plant.id] = plant; }
                     chunko.entityList = new List<Entity>();
-                    chunko.plantList = new List<Plant>();
+                    chunko.plants = new Dictionary<int, Plant>();
                 }
             }
             public void forceLoadChunksForOnePoint((int x, int y) chunkLoadingPos, int magnitude)

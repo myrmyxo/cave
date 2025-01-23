@@ -52,7 +52,7 @@ namespace Cave
             public Bitmap bitmap;
 
             public List<Entity> entityList = new List<Entity>();
-            public List<Plant> plantList = new List<Plant>();
+            public Dictionary<int, Plant> plants = new Dictionary<int, Plant>();
             public List<Plant> exteriorPlantList = new List<Plant>();
 
             public int modificationCount = 0;
@@ -92,14 +92,8 @@ namespace Cave
                 // If promoting from an extra loaded chunk, the Json used will have been retrieved from the game's files (must use the most up to date if entities were saved to it)
                 if (chunkJson != null)  // If not on first loading (but full loading)
                 {
-                    foreach (int entityId in chunkJson.eLst)
-                    {
-                        entityList.Add(loadEntity(screen, entityId));
-                    }
-                    foreach (int plantId in chunkJson.pLst)
-                    {
-                        plantList.Add(loadPlant(screen, plantId));
-                    }
+                    foreach (int entityId in chunkJson.eLst) { entityList.Add(loadEntity(screen, entityId)); }
+                    foreach (int plantId in chunkJson.pLst) { plants[plantId] = loadPlant(screen, plantId); }
 
                     explorationLevel = chunkJson.explLvl;
                     if (explorationLevel == 1)
@@ -125,7 +119,7 @@ namespace Cave
             public void demoteToExtra()
             {
                 entityList = new List<Entity>();
-                plantList = new List<Plant>();
+                plants = new Dictionary<int, Plant>();
                 fogOfWar = null;
                 fogBitmap = null;
                 framesSinceLastExtraGetting = 0;

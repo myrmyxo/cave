@@ -691,7 +691,7 @@ namespace Cave
                 Chunk chunkToTest = screen.getChunkFromPixelPos(attack.pos);
                 if (attack.attack == (2, 0))
                 {
-                    PlantDig(chunkToTest, attack.pos, (attack.attack.type, attack.attack.subType, 4));
+                    PlantDig(attack.pos, (attack.attack.type, attack.attack.subType, 4), chunkToTest);
                 }
 
                 float damage = 0;
@@ -719,50 +719,7 @@ namespace Cave
                 if (oldStructurePos == (structureX, structureY)) { return false; }
                 return true;
             }
-            public void TerrainDig((int x, int y) posToDig)
-            {
-                Chunk chunkToTest = screen.getChunkFromPixelPos(posToDig);
-                (int type, int subType) tileContent = chunkToTest.fillStates[PosMod(posToDig.x), PosMod(posToDig.y)];
-                if (tileContent.type != 0)
-                {
-                    addElementToInventory((tileContent.type, tileContent.subType, 0));
-                    chunkToTest.tileModification(posToDig.x, posToDig.y, (0, 0));
-                    timeAtLastDig = timeElapsed;
-                }
-            }
-            public void PlantDig((int x, int y) posToDig, (int type, int subType, int typeOfElement) currentItem)
-            {
-                (int type, int subType) value;
-                foreach (Plant plant in screen.activePlants.Values)
-                {
-                    value = plant.testDig(posToDig.x, posToDig.y);
-                    if (materialGatheringToolRequirement.ContainsKey(value) && materialGatheringToolRequirement[value] != currentItem) { continue; }
-                    value = plant.actuallyDig(posToDig.x, posToDig.y);
-                    if (value.type != 0)
-                    {
-                        addElementToInventory((value.type, value.subType, 3));
-                        timeAtLastDig = timeElapsed;
-                        return;
-                    }
-                }
-            }
-            public void PlantDig(Chunk chunkToDigIn, (int x, int y) posToDig, (int type, int subType, int typeOfElement) currentItem)   // Will be useful when plants will be correctly put in chunks... one day lmfao
-            {
-                (int type, int subType) value;
-                foreach (Plant plant in chunkToDigIn.plantList)
-                {
-                    value = plant.testDig(posToDig.x, posToDig.y);
-                    if (materialGatheringToolRequirement.ContainsKey(value) && materialGatheringToolRequirement[value] != currentItem) { continue; }
-                    value = plant.actuallyDig(posToDig.x, posToDig.y);
-                    if (value.type != 0)
-                    {
-                        addElementToInventory((value.type, value.subType, 3));
-                        timeAtLastDig = timeElapsed;
-                        return;
-                    }
-                }
-            }
-            public void Place((int x, int y) posToPlace)
+            public bool Place((int x, int y) posToPlace)
             {
                 Chunk chunkToTest = screen.getChunkFromPixelPos(posToPlace);
                 (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
@@ -786,12 +743,11 @@ namespace Cave
                         if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
                         timeAtLastPlace = timeElapsed;
                     }
-                    else { return; }
-                    if (inventoryQuantities[currentItem] != -999)
-                    {
-                        removeElementFromInventory(currentItem);
-                    }
+                    else { return false; }
+                    if (inventoryQuantities[currentItem] != -999) { removeElementFromInventory(currentItem); }
+                    return true;
                 }
+                return false;
             }
             public override void removeElementFromInventory((int index, int subType, int typeOfElement) elementToRemove, int quantityToRemove = 1)
             {
