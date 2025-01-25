@@ -1273,11 +1273,11 @@ namespace Cave
             {
                 return getChunkFromPixelPos(posToTest).tileModification(posToTest.x, posToTest.y, typeToSet);
             }
-            public Chunk getChunkFromPixelPos((int x, int y) pos, bool isExtraGetting = true, Dictionary<(int x, int y), Chunk> extraDict = null)
+            public Chunk getChunkFromPixelPos((int x, int y) pos, bool isExtraGetting = true, bool onlyGetIfFullyLoaded = false, Dictionary<(int x, int y), Chunk> extraDict = null)
             {
-                return getChunkFromChunkPos(ChunkIdx(pos), isExtraGetting, extraDict);
+                return getChunkFromChunkPos(ChunkIdx(pos), isExtraGetting, onlyGetIfFullyLoaded, extraDict);
             }
-            public Chunk getChunkFromChunkPos((int x, int y) pos, bool isExtraGetting = true, Dictionary<(int x, int y), Chunk> extraDict = null)  // Extradict is used
+            public Chunk getChunkFromChunkPos((int x, int y) pos, bool isExtraGetting = true, bool onlyGetIfFullyLoaded = false, Dictionary<(int x, int y), Chunk> extraDict = null)  // Extradict is used
             {
                 Chunk chunkToGet;
                 if (loadedChunks.ContainsKey(pos))
@@ -1285,6 +1285,7 @@ namespace Cave
                     if (extraDict != null) { extraDict[pos] = loadedChunks[pos]; }
                     return loadedChunks[pos];
                 }
+                else if (onlyGetIfFullyLoaded) { return null; }
                 if (extraLoadedChunks.ContainsKey(pos))
                 {
                     chunkToGet = extraLoadedChunks[pos];

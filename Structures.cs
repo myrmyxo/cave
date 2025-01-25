@@ -308,7 +308,7 @@ namespace Cave
                 if (tilesToFill.ContainsKey(pos) || newTilesToFill.ContainsKey(pos)) { return true; } // already tried to filled this one, don't try to fill it but continue the fill
                 if (tilesFilled[0] > tilesFilled[1]) { return false; } // lake tooo biiig, ABORT ABORT
 
-                Chunk chunkToTest = screen.getChunkFromPixelPos(pos, true, chunkDict);
+                Chunk chunkToTest = screen.getChunkFromPixelPos(pos, true, false, chunkDict);
                 (int type, int subType) material = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)];
 
                 if (material.type < 0) { return false; } // bumped on a liquid tile, ABORT ABORT
@@ -615,7 +615,7 @@ namespace Cave
 
                 foreach ((int x, int y) posToTest in structureDict.Keys)
                 {
-                    chunkToTest = screen.getChunkFromPixelPos(posToTest, true, chunkDict);
+                    chunkToTest = screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
                     chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)] = structureDict[posToTest];
                     chunkToTest.modificationCount = 1;
                     chunkToTest.findTileColor(PosMod(posToTest.x), PosMod(posToTest.y));

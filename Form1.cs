@@ -364,7 +364,6 @@ namespace Cave
             // Idea : affuter blades ? Maybe they can get rusty ? Multiple species of mushroom (move mold to 0 ? or its whole thing prolly better).
             // Player fairy transfo when in fairy liquid. Craft tools. Add ICE. Auto sorting in inventory. Blood breathing ? Extract o2 from blood.
             // Optimize/functionalize lake maker function
-            // Make player be an inheritance from entity ! Would simplify shit a LOT -> same PV system as entity (when it's gonna be implemented lol) and just override if wanna change it
             // EntityCemetary and PlantCemetary folders, putting the files of dead Entities/Plants there
             // Hornet nests -> search for point of interests in plants should take place with SPIRAL function
             // Make every kind of digging an attack. Including terrain, plant, and those of entities.
@@ -374,6 +373,8 @@ namespace Cave
             // Fluid dezoom, not by gigaChunks of whatever. No ChunkLength, but instead a size of forceLoading (radius in chunks). When dezoom goes over it, it takes the dezoom factor instead to forceLoad/loadCloseChunks.
             // So infinite dezoom (and zoom up to 1 pixel theoretically). Make the bitmap be created at each UpdateScreen also, not only on zoom/dezoom
             // Hornets : 3 types of attack. Warning sting (first attack, to tell to fuk off, scares creatures off the den, second attack, actual stings that deal poison, third attack, mandible slash that can cause bleeding)
+            // Message from player character portrait (LMFAO LIKE IF THERE WAS ONE) : "I feel like i'm very much not wanted here..." to tell player that hornet did a warning attack. "I should really get out before they get angry" on the second one.
+            // They a loud BUZZ and every hornet aggroes on the player
             // GoHome function for hornets. They go to main room/random room in the nest
 
             // cool ideas for later !
@@ -832,13 +833,13 @@ namespace Cave
         {
             return value - (((value % modulo) + modulo) % modulo);
         }
-        public static (int, int) ChunkIdx(int pixelPosX, int pixelPosY)
+        public static (int x, int y) ChunkIdx(int pixelPosX, int pixelPosY)
         {
             int chunkPosX = Floor(pixelPosX, 32) / 32;
             int chunkPosY = Floor(pixelPosY, 32) / 32;
             return (chunkPosX, chunkPosY);
         }
-        public static (int, int) ChunkIdx((int x, int y) pos)
+        public static (int x, int y) ChunkIdx((int x, int y) pos)
         {
             int chunkPosX = Floor(pos.x, 32) / 32;
             int chunkPosY = Floor(pos.y, 32) / 32;
@@ -848,13 +849,13 @@ namespace Cave
         {
             return Floor(pos, 32) / 32;
         }
-        public static (int, int) MegaChunkIdxFromChunkPos((int x, int y) pos)
+        public static (int x, int y) MegaChunkIdxFromChunkPos((int x, int y) pos)
         {
             int chunkPosX = Floor(pos.x, 16) / 16;
             int chunkPosY = Floor(pos.y, 16) / 16;
             return (chunkPosX, chunkPosY);
         }
-        public static (int, int) MegaChunkIdxFromPixelPos((int x, int y) pos)
+        public static (int x, int y) MegaChunkIdxFromPixelPos((int x, int y) pos)
         {
             int chunkPosX = Floor(pos.x, 512) / 512;
             int chunkPosY = Floor(pos.y, 512) / 512;
@@ -1002,13 +1003,27 @@ namespace Cave
             return Sqrt(distX*distX + distY*distY);
         }
 
-
-        public static (int x, int y) spiralProgression((int x, int y) pos)  // From a pos tuple, returns the next one in a clockwise spiral progression centered on (0, 0)
+        // Coordinate manipulation stuff
+        public static (int x, int y) spiralProgression((int x, int y) pos, int rotation = 0, int flipNum = 0)  // From a pos tuple, returns the next one in a clockwise spiral progression centered on (0, 0)
         {
-            if (pos.y > Abs(pos.x)) { return (pos.x + 1, pos.y); }
-            if (pos.x <= 0 && Abs(pos.x) >= Abs(pos.y)) { return (pos.x, pos.y + 1); }
-            if (pos.y < 0 && Abs(pos.y) >= Abs(pos.x)) { return (pos.x - 1, pos.y); }
-            return (pos.x, pos.y - 1);
+            flip(pos, flipNum);
+            rotate(pos, rotation);
+            if (pos.y > Abs(pos.x)) { pos = (pos.x + 1, pos.y); }
+            else if (pos.x <= 0 && Abs(pos.x) >= Abs(pos.y)) { pos = (pos.x, pos.y + 1); }
+            else if (pos.y < 0 && Abs(pos.y) >= Abs(pos.x)) { pos = (pos.x - 1, pos.y); }
+            else { pos = (pos.x, pos.y - 1); }
+            rotate(pos, -rotation);
+            flip(pos, flipNum);
+            return pos;
+        }
+        public static (int x, int y) rotate((int x, int y) pos, int rotation) // 0 : nothing, +1 -> + 90‹ (so -1/3, -2/2, -3,1 do the same)
+        {
+            rotation = PosMod(rotation, 4);
+            return ((rotation % 2 == 0 ? pos.x : pos.y) * (rotation >= 2 ? -1 : 1), (rotation % 2 == 0 ? pos.y : pos.x) * (rotation == 1 || rotation == 2 ? -1 : 1));
+        }
+        public static (int x, int y) flip((int x, int y) pos, int flip) // 0 : nothing, 1 : vertical, 2 : horizontal, 3 : both
+        {
+            return (pos.x * (flip >= 2 ? -1 : 1), pos.y * (flip % 2 == 1 ? -1 : 1));
         }
 
 

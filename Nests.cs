@@ -243,7 +243,7 @@ namespace Cave
 
                 foreach ((int x, int y) posToTest in tiles)
                 {
-                    chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, chunkDict);
+                    chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
                     chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)] = typeToFill;
                     chunkToTest.modificationCount = 1;
                     chunkToTest.findTileColor(PosMod(posToTest.x), PosMod(posToTest.y));
@@ -361,7 +361,7 @@ namespace Cave
                         for (int mult = 1; mult <= 2; mult++)
                         {
                             posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
-                            Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, chunkDict);
+                            Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
                             int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                             if (fillState <= 0 || fillState > 1 || nest.tiles.ContainsKey(posToTest))
                             {
@@ -414,7 +414,7 @@ namespace Cave
                         goto SkipToNextIteration;
                     }
 
-                    Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, chunkDict);
+                    Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
                     int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                     if (fillState <= 0)
                     {
@@ -477,7 +477,7 @@ namespace Cave
                         foreach ((int x, int y) mod in neighbourArray)
                         {
                             posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
-                            Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, chunkDict);
+                            Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
                             int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                             if (((fillState <= 0 || fillState > 1) || nest.tiles.ContainsKey(posToTest)) && repeatCounter >= startPosList.Count) //cumsum yummy yum
                             {
@@ -526,7 +526,7 @@ namespace Cave
 
                 foreach ((int x, int y) pos in tiles)
                 {
-                    Chunk chunkToTest = nest.screen.getChunkFromPixelPos(pos, true, chunkDict);
+                    Chunk chunkToTest = nest.screen.getChunkFromPixelPos(pos, true, false, chunkDict);
                     int fillState = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)].type;
                     if (pos.y == maxBordelLevel - 1)
                     {
@@ -582,7 +582,7 @@ namespace Cave
                 {
                     foreach ((int x, int y) posToTest in tiles)
                     {
-                        Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, chunkDict);
+                        Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
                         int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                         if (posToTest.y < maxBordelLevel)
                         {
@@ -614,7 +614,7 @@ namespace Cave
                     idxToTest = rand.Next(tileList.Count);
                     posToTest = tileList[idxToTest];
                     tileList.RemoveAt(idxToTest);
-                    Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, chunkDict);
+                    Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
                     int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
                     if (fillState == typeToFind)
                     {
@@ -801,7 +801,7 @@ namespace Cave
                 while (repeatCounter < amountToTest)
                 {
                     currentPos = tilesToTest[repeatCounter];
-                    Chunk chunkToTest = screen.getChunkFromPixelPos(pos, true, chunkDict);
+                    Chunk chunkToTest = screen.getChunkFromPixelPos(pos, true, false, chunkDict);
                     int fillState = chunkToTest.fillStates[PosMod(currentPos.x), PosMod(currentPos.y)].type;
                     if (fillState <= 0 || fillState > 2 || tiles.ContainsKey(currentPos))
                     {

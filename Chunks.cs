@@ -937,8 +937,54 @@ namespace Cave
 
 
 
-
-
+            public void createFogOfWar()
+            {
+                explorationLevel = 1;
+                fogOfWar = new bool[32, 32];
+                fogBitmap = new Bitmap(32, 32);
+                for (int ii = 0; ii < 32; ii++)
+                {
+                    for (int jj = 0; jj < 32; jj++)
+                    {
+                        setPixelButFaster(fogBitmap, (ii, jj), Color.Black);
+                    }
+                }
+            }
+            public void updateFogOfWarOneTile(Dictionary<Chunk, bool> chunkDict, (int x, int y) posToTest)
+            {
+                if (explorationLevel == 2) { return; }
+                if (explorationLevel == 0)
+                {
+                    createFogOfWar();
+                    chunkDict[this] = true;
+                }
+                (int x, int y) tileIndex = PosMod(posToTest);
+                if (!fogOfWar[tileIndex.x, tileIndex.y])
+                {
+                    fogOfWar[tileIndex.x, tileIndex.y] = true;
+                    setPixelButFaster(fogBitmap, (tileIndex.x, tileIndex.y), Color.Transparent);
+                    chunkDict[this] = true;
+                }
+            }
+            public void updateFogOfWarFull()
+            {
+                bool setAsVisited = true;
+                foreach (bool boolo in fogOfWar)
+                {
+                    if (!boolo)
+                    {
+                        setAsVisited = false;
+                        fogBitmap.MakeTransparent(Color.White);
+                        break;
+                    }
+                }
+                if (setAsVisited)
+                {
+                    explorationLevel = 2;
+                    fogOfWar = null;
+                    fogBitmap = null;
+                }
+            }
 
 
 

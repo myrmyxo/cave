@@ -46,7 +46,7 @@ namespace Cave
             { (1, 2), 7}, // Skeletal
             { (2, 0), 2}, // Fish
             { (2, 1), 2}, // SkeletonFish
-            { (3, 0), 2}, // HornetEgg 
+            { (3, 0), 2}, // HornetEgg
             { (3, 1), 3}, // HornetLarva
             { (3, 2), 20}, // HornetCocoon
             { (3, 3), 6}, // Hornet

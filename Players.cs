@@ -61,6 +61,8 @@ namespace Cave
 
             public int inventoryCursor = 0;
             public int craftCursor = 0;
+
+            public List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)> rayCastsToContinue = new List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)>();
             public Player(SettingsJson settingsJson)
             {
                 if (settingsJson == null)
@@ -424,140 +426,59 @@ namespace Cave
             }
             public void updateFogOfWar()
             {
-                // CAREFUL, for fog of war, a false means the tile has not been visited (false = fog present), and a true means a tile has been visited (true = fog absent)
-
-                (int x, int y) chunkPos;
-                (int x, int y) posToTest;
-                (int x, int y) tileIndex;
-                Chunk chunkToTest;
+                (float x, float y) poso = (posX + 0.5f, posY + 0.5f);
+                (int lives, bool lifeLoss) life = (3, false);
                 Dictionary<Chunk, bool> visitedChunks = new Dictionary<Chunk, bool>();
-                List<(int x, int y)> modsToTest = new List<(int x, int y)>();
-                modsToTest.Add((25, 25));
-                modsToTest.Add((-25, 25));
-                modsToTest.Add((25, -25));
-                modsToTest.Add((-25, -25));
-                for (int i = -24; i < 25; i++)
+                List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)> modsToTest = new List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)>();
+                for (float i = -24; i < 25; i++)
                 {
-                    modsToTest.Add((-25, i));
-                    modsToTest.Add((25, i));
-                    modsToTest.Add((i, 25));
-                    modsToTest.Add((i, -25));
+                    modsToTest.Add((poso, (-25, i), life));
+                    modsToTest.Add((poso, (25, i), life));
+                    modsToTest.Add((poso, (i, 25), life));
+                    modsToTest.Add((poso, (i, -25), life));
                 }
+                foreach (((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life) value in rayCastsToContinue) { modsToTest.Add(value); }
+                rayCastsToContinue = new List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)>();
 
-                foreach ((int x, int y) mod in modsToTest)
-                {
-                    List<(int x, int y)> posList = rayCast((posX, posY), (posX + mod.x, posY + mod.y));
-                    foreach ((int x, int y) pos in posList)
-                    {
-                        posToTest = pos;
-                        chunkPos = ChunkIdx(posToTest.x, posToTest.y);
-                        if (screen.loadedChunks.ContainsKey(chunkPos))
-                        {
-                            chunkToTest = screen.loadedChunks[chunkPos];
-                        }
-                        else { continue; }
-                        if (chunkToTest.explorationLevel == 2) { continue; }
-                        visitedChunks[chunkToTest] = true;
-                        if (chunkToTest.explorationLevel == 0)
-                        {
-                            chunkToTest.explorationLevel = 1;
-                            chunkToTest.fogOfWar = new bool[32, 32];
-                            chunkToTest.fogBitmap = new Bitmap(32, 32);
-                            for (int ii = 0; ii < 32; ii++)
-                            {
-                                for (int jj = 0; jj < 32; jj++)
-                                {
-                                    setPixelButFaster(chunkToTest.fogBitmap, (ii, jj), Color.Black);
-                                }
-                            }
-                        }
-                        tileIndex = PosMod(posToTest);
-                        if (!chunkToTest.fogOfWar[tileIndex.x, tileIndex.y])
-                        {
-                            chunkToTest.fogOfWar[tileIndex.x, tileIndex.y] = true;
-                            setPixelButFaster(chunkToTest.fogBitmap, (tileIndex.x, tileIndex.y), Color.Transparent);
-                        }
-                    }
-                }
-                foreach (Chunk chunko in visitedChunks.Keys)
-                {
-                    bool setAsVisited = true;
-                    foreach (bool boolo in chunko.fogOfWar)
-                    {
-                        if (!boolo)
-                        {
-                            setAsVisited = false;
-                            chunko.fogBitmap.MakeTransparent(Color.White);
-                            break;
-                        }
-                    }
-                    if (setAsVisited)
-                    {
-                        chunko.explorationLevel = 2;
-                        chunko.fogOfWar = null;
-                        chunko.fogBitmap = null;
-                    }
-                }
+                foreach (((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life) value in modsToTest) { rayCast(visitedChunks, value, 25); }
+                foreach (Chunk chunk in visitedChunks.Keys) { chunk.updateFogOfWarFull(); }
             }
-            public List<(int x, int y)> rayCast((int x, int y) startPos, (int x, int y) targetPos)
+            public void rayCast(Dictionary<Chunk, bool> chunkDict, ((float x, float y) startPos, (float x, float y) angle, (int lives, bool lifeLoss) life) values, int limit = 45)
             {
-                int lives = 3;
+                float xRatio = (values.angle.x) / (Abs(values.angle.y) + 0.0000001f);
+                float yRatio = (values.angle.y) / (Abs(values.angle.x) + 0.0000001f);
+                int signX = Sign(values.angle.x);
+                int signY = Sign(values.angle.y);
 
-                List<(int x, int y)> posList = new List<(int x, int y)>();
+                (float x, float y) currentPos = (signX >= 0 ? 0 : -1, signY >= 0 ? 0 : -1); // Very important !
+                (int x, int y) currentPosInt = (0, 0);
 
-                (int x, int y) diff = (targetPos.x - startPos.x, targetPos.y - startPos.y);
-                bool goingUp = diff.x > 0;
-                bool goingRight = diff.y > 0;
-                int xMult;
-                if (goingUp) { xMult = 1; }
-                else { xMult = -1; }
-                int yMult;
-                if (goingRight) { yMult = 1; }
-                else { yMult = -1; }
-
-                float xToY = Abs((float)diff.x) / (diff.y + 0.0001f);
-                float yToX = Abs((float)diff.y) / (diff.x + 0.0001f);
-
-                (float x, float y) currentPos = (startPos.x + 0.5f, startPos.y + 0.5f);
-                (int x, int y) currentPosInt;
-                Chunk chunkToTest;
-                float valueX;
-                float valueY;
-                int repeatCounter = 0;
-                while (repeatCounter < 100)
+                bool lifeLoss = values.life.lifeLoss;
+                int lives = values.life.lives;
+                int limitSquared = limit * limit;
+                while (currentPos.x * currentPos.x + currentPos.y * currentPos.y < limitSquared)
                 {
-                    valueX = PosMod(currentPos.x, 1);
-                    if (goingUp) { valueX = 1 - valueX; };
-                    valueY = PosMod(currentPos.y, 1);
-                    if (goingRight) { valueY = 1 - valueY; }
-                    if (Abs(valueX * xToY) > Abs(valueY))
+                    (float x, float y) diff = ((1 - Abs(currentPos.x) % 1), (1 - Abs(currentPos.y) % 1));
+                    if (diff.x * Abs(yRatio) < diff.y)
                     {
-                        currentPos = (currentPos.x + xMult * (valueX + 0.0001f), currentPos.y + yMult * yToX * (valueX + 0.0001f));
-                        currentPosInt = ((int)currentPos.x, (int)currentPos.y);
-                        chunkToTest = screen.getChunkFromPixelPos(currentPosInt);
-                        posList.Add(currentPosInt);
-                        if (lives < 3 || chunkToTest.fillStates[PosMod(currentPosInt.x), PosMod(currentPosInt.y)].type > 0)
-                        {
-                            lives--;
-                            if (lives <= 0) { return posList; }
-                        }
+                        currentPosInt = (currentPosInt.x + signX, currentPosInt.y);
+                        currentPos = (currentPosInt.x, currentPos.y + diff.x * yRatio);
                     }
                     else
                     {
-                        currentPos = (currentPos.x + xMult * xToY * (valueY + 0.0001f), currentPos.y + yMult * (valueY + 0.0001f));
-                        currentPosInt = ((int)currentPos.x, (int)currentPos.y);
-                        chunkToTest = screen.getChunkFromPixelPos(currentPosInt);
-                        posList.Add(currentPosInt);
-                        if (lives < 3 || chunkToTest.fillStates[PosMod(currentPosInt.x), PosMod(currentPosInt.y)].type > 0)
-                        {
-                            lives--;
-                            if (lives <= 0) { return posList; }
-                        }
+                        currentPosInt = (currentPosInt.x, currentPosInt.y + signY);
+                        currentPos = (currentPos.x + diff.y * xRatio, currentPosInt.y);
                     }
-                    repeatCounter++;
-                }
-
-                return posList;
+                    (int x, int y) posToTest = (currentPosInt.x + (int)Floor(values.startPos.x, 1), currentPosInt.y + (int)Floor(values.startPos.y, 1));
+                    Chunk chunk = screen.getChunkFromPixelPos(posToTest, true, true);
+                    if (chunk is null) { return; }
+                    (int type, int subType) tileValue = screen.getTileContent(posToTest);
+                    chunk.updateFogOfWarOneTile(chunkDict, posToTest);
+                    if (tileValue.type > 0) { lifeLoss = true; }
+                    if (lifeLoss) { lives--; }
+                    if (lives <= 0) { return; }
+                }   // Under this comment, important to keep the sign >= 0 ? 0 : 1 stuff !!! Else it will drift of when raycasting in negatives
+                rayCastsToContinue.Add(((values.startPos.x + currentPos.x + (signX >= 0 ? 0 : 1), values.startPos.y + currentPos.y + (signY >= 0 ? 0 : 1)), values.angle, (lives, lifeLoss)));
             }
             public void updateDirectionForAttack()
             {
