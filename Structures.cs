@@ -662,7 +662,6 @@ namespace Cave
             {
                 posToTest = (startPos.x + mod.x, startPos.y + mod.y);
                 if (screen.getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type != 0) { return false; }
-                else { return false; } // if chunks loaded DO NOT make altar lololol
             }
 
             int count = 1;

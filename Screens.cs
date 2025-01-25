@@ -68,8 +68,8 @@ namespace Cave
                 loadStructuresYesOrNo = true;
                 spawnNests = true;
                 spawnEntities = true;
-                spawnPlants = false;
-                bool spawnNOTHING = false;
+                spawnPlants = true;
+                bool spawnNOTHING = true;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntities = false; spawnPlants = false; }
 
                 if (randomSeed)
@@ -556,7 +556,7 @@ namespace Cave
             public Dictionary<(int x, int y), MegaChunk> megaChunks = new Dictionary<(int x, int y), MegaChunk>();
             public Dictionary<(int x, int y), MegaChunk> extraLoadedMegaChunks = new Dictionary<(int x, int y), MegaChunk>();
 
-            public List<long>[,] LCGCacheListMatrix;
+            public Dictionary<((int x, int y) pos, int layer), int> LCGCacheDict = new Dictionary<((int x, int y) pos, int layer), int>();
 
             public int chunkResolution; // included both loaded and unloaded chunks, side of the square
             public bool isPngToBeExported;
@@ -644,7 +644,6 @@ namespace Cave
                 isPngToBeExported = isPngToExport;
                 chunkResolution = chunkResolutionToPut + UnloadedChunksAmount * 2; // invisible chunks of the sides/top/bottom
                 createDimensionFolders(game, id);
-                LCGCacheInit();
                 Player player = game.playerList[0];
                 if (isPngToBeExported) { gameBitmap = new Bitmap(32 * (chunkResolution - 1), 32 * (chunkResolution - 1)); }
                 else { gameBitmap = new Bitmap(128 * (ChunkLength - 1), 128 * (ChunkLength - 1)); }
@@ -663,63 +662,10 @@ namespace Cave
                     }
                 }
             }
-            public void LCGCacheInit()
+            public int getLCGValue(((int x, int y) pos, int layer) key, int noiseAmplitude)
             {
-                LCGCacheListMatrix = new List<long>[2, 5];
-                long longo;
-                long longo2;
-                for (int i = 0; i < 5; i++)
-                {
-                    LCGCacheListMatrix[0, i] = new List<long>();
-                    LCGCacheListMatrix[1, i] = new List<long>();
-                }
-                longo = seed;
-                longo2 = LCGz(seed);
-                for (int j = 0; j < 10000; j += 50)
-                {
-                    LCGCacheListMatrix[0, 0].Add(longo);
-                    LCGCacheListMatrix[1, 0].Add(longo2);
-                    longo = LCGxPos(longo);
-                    longo2 = LCGxPos(longo);
-                }
-                longo = seed;
-                for (int j = 0; j < 10000; j += 50)
-                {
-                    LCGCacheListMatrix[0, 1].Add(longo);
-                    LCGCacheListMatrix[1, 1].Add(longo2);
-                    longo = LCGxNeg(longo);
-                    longo2 = LCGxNeg(longo);
-                }
-                longo = seed;
-                for (int j = 0; j < 10000; j += 50)
-                {
-                    LCGCacheListMatrix[0, 2].Add(longo);
-                    LCGCacheListMatrix[1, 2].Add(longo2);
-                    longo = LCGyPos(longo);
-                    longo2 = LCGyPos(longo);
-                }
-                longo = seed;
-                for (int j = 0; j < 10000; j += 50)
-                {
-                    if (j % 50 == 0)
-                    {
-                        LCGCacheListMatrix[0, 3].Add(longo);
-                        LCGCacheListMatrix[1, 3].Add(longo2);
-                    }
-                    longo = LCGyNeg(longo);
-                    longo2 = LCGyNeg(longo);
-                }
-                longo = seed;
-                for (int j = 0; j < 10000; j += 50)
-                {
-                    if (j % 50 == 0)
-                    {
-                        LCGCacheListMatrix[0, 4].Add(longo);
-                        LCGCacheListMatrix[1, 4].Add(longo2);
-                    }
-                    longo = LCGz(longo);
-                    longo2 = LCGz(longo);
-                }
+                if (!LCGCacheDict.ContainsKey(key)) { LCGCacheDict[key] = (int)(LCGxy(key, seed) % noiseAmplitude); }
+                return LCGCacheDict[key];
             }
             public void addPlantsToChunk(Chunk chunk)
             {

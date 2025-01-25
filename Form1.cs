@@ -649,25 +649,66 @@ namespace Cave
     }
     public class MathF
     {
+        public static long cash((int x, int y, int z) pos, long seed)  // cash stands for chaos hash :D. Thank you soooo much bakkaa on stackoverflow
+        {
+            long h = seed + pos.x * 374761393 + pos.y * 668265263 + pos.z * 39079; // all constants are prime
+            h = (h ^ (h >> 13)) * 1274126177;
+            return h ^ (h >> 16);
+        }
+        public static long XorShift(long seed)      // Doesn't work...
+        {
+            ulong seedo = (ulong)seed;
+            seedo ^= (seedo << 21);
+            seedo ^= (seedo >> 35);
+            seedo ^= (seedo << 4);
+            return (long)seedo;
+        }
+        public static long LCGxy(((int x, int y) pos, int layer) pos, long seed)
+        {
+            return cash((pos.pos.x, pos.pos.y, pos.layer), seed);
+
+            // This thing here is to test random number generators
+            /*
+            Dictionary<long, long> numbersPassed = new Dictionary<long, long>();
+            long current = 0;
+            long i = 0;
+            int rep = 0;
+            while (true)
+            {
+                current = cash((i, pos.pos.y, pos.layer), seed);
+                if (numbersPassed.ContainsKey(current) || rep > 1280)
+                {
+                    Dictionary<int, int> dicto = new Dictionary<int, int>();
+                    for (int j = 0; j < 256; j++) { dicto[j] = 0; }
+                    foreach (int num in numbersPassed.Values) { dicto[num]++; }
+                    dicto = dicto;
+                    int a = 0;
+                }
+                numbersPassed[current] = current % 256;
+                i++;
+                rep++;
+            }
+            */
+        }
         public static long LCGxPos(long seed) // WARNING the 1073741824 is not 2^32 but it's 2^30 cause... lol
         {
-            return ((long)(55797) * seed + (long)9973) % (long)4294967291;
+            return (758267 * seed + 281641) % 4294967291;
         }
         public static long LCGxNeg(long seed)
         {
-            return ((long)(12616645) * seed + (long)8123) % (long)4294967291;
+            return (337651 * seed + 502553) % 4294967291;
         }
         public static long LCGyPos(long seed)
         {
-            return ((long)(251253) * seed + (long)6763) % (long)4294967291;
+            return (834959 * seed + 545437) % 4294967291;
         }
         public static long LCGyNeg(long seed)
         {
-            return (long)((121525) * seed + (long)9109) % (long)4294967291;
+            return (921677 * seed + 766177) % 4294967291;
         }
         public static long LCGz(long seed)
         {
-            return (long)((121525) * seed + (long)6763) % (long)4294967291;
+            return (152953 * seed + 845003) % 4294967291;
         }
         public static int LCGint1(int seed)
         {
@@ -818,10 +859,6 @@ namespace Cave
             int chunkPosX = Floor(pos.x, 512) / 512;
             int chunkPosY = Floor(pos.y, 512) / 512;
             return (chunkPosX, chunkPosY);
-        }
-        public static int StructChunkIdx(int pos)
-        {
-            return Floor(pos, 512) / 512;
         }
         public static int Sign(int a)
         {

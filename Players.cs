@@ -90,6 +90,19 @@ namespace Cave
             }
             public void placePlayer()
             {
+                bool setFarAway = true;
+                if (setFarAway)
+                {
+                    posX = 189495;
+                    realPosX = posX;
+                    posY = 344453;
+                    realPosY = posY;
+                    camPosX = posX;
+                    realCamPosX = camPosX;
+                    camPosY = posY;
+                    realCamPosY = camPosY;
+                }
+
                 if (devMode) { return; }
                 int counto = 0;
                 (int x, int y) chunkPos = (0, 0);
@@ -710,14 +723,6 @@ namespace Cave
                         }
                     }
                 }
-            }
-            public bool CheckStructurePosChange()
-            {
-                (int, int) oldStructurePos = (structureX, structureY);
-                structureX = StructChunkIdx(posX);
-                structureY = StructChunkIdx(posY);
-                if (oldStructurePos == (structureX, structureY)) { return false; }
-                return true;
             }
             public bool Place((int x, int y) posToPlace)
             {

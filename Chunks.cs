@@ -126,14 +126,11 @@ namespace Cave
             }
             public void determineContents(ChunkJson chunkJson)
             {
-                chunkSeed = findPlantSeed(pos.x, pos.y, screen, 0);
-                long bigSeed = LCGxNeg(LCGz(LCGyPos(LCGxNeg(screen.seed))));
-                long bigSeed2 = LCGxNeg(LCGz(LCGyPos(LCGxPos(bigSeed))));
-                long bigSeed3 = LCGxNeg(LCGz(LCGyPos(LCGxNeg(bigSeed2))));
+                chunkSeed = screen.getLCGValue((pos, 0), 32);
 
-                (int[,,] secondaryBiomeValues, (int temp, int humi, int acid, int toxi)[,] tileValuesArray) tupelo = determineAllBiomeValues(bigSeed);
+                (int temp, int humi, int acid, int toxi, int mod1, int mod2)[,] tileValuesArray = determineAllBiomeValues();
 
-                if (chunkJson == null) { generateTerrain(bigSeed, bigSeed2, bigSeed3, tupelo.secondaryBiomeValues, tupelo.tileValuesArray); }   // If first loading only, generate terrain
+                if (chunkJson == null) { generateTerrain(tileValuesArray); }   // If first loading only, generate terrain
 
                 for (int i = 0; i < 32; i++)
                 {
@@ -161,133 +158,79 @@ namespace Cave
                     }
                 }
             }
-            public (int[,,] secondaryBiomeValues, (int temp, int humi, int acid, int toxi)[,] tileValuesArray) determineAllBiomeValues(long bigSeed)
+            public (int temp, int humi, int acid, int toxi, int mod1, int mod2)[,] determineAllBiomeValues()
             {
-                (int x, int y) mod;
-                (int x, int y) chunkRealPos = (pos.x * 32, pos.y * 32);
-                int layerStart = 0;
-                if (screen.isMonoBiome) { layerStart = 4; }
-
-                long chunkX = Floor(pos.x, 16) / 16;
-                long chunkY = Floor(pos.y, 16) / 16;
-                int[,] primaryBiomeValues = new int[6, 4];
-                for (int i = layerStart; i < 6; i++)
+                int[,,] biomeValues = new int[33, 33, 12];
+                if (!screen.isMonoBiome)
                 {
-                    for (int j = 0; j < 4; j++)
-                    {
-                        mod = squareModArray[j];
-                        primaryBiomeValues[i, j] = findPrimaryBiomeValue(chunkX + mod.x, chunkY + mod.y, screen.seed, i);
-                    }
+                    findNoiseValues(biomeValues, 0, 100, 512, 1028);    // big temp
+                    findNoiseValues(biomeValues, 1, 101, 1024, 1028);   // small temp
+                    findNoiseValues(biomeValues, 2, 102, 512, 1028);    // big humi
+                    findNoiseValues(biomeValues, 3, 103, 1024, 1028);   // small humi
+                    findNoiseValues(biomeValues, 4, 104, 512, 1028);    // big acid
+                    findNoiseValues(biomeValues, 5, 105, 1024, 1028);   // small acid
+                    findNoiseValues(biomeValues, 6, 106, 512, 1028);    // big toxi
+                    findNoiseValues(biomeValues, 7, 107, 1024, 1028);   // small toxi
+                    findNoiseValues(biomeValues, 8, 108, 512, 1028);    // big mod1
+                    findNoiseValues(biomeValues, 9, 109, 1024, 1028);   // small mod1
+                    findNoiseValues(biomeValues, 10, 110, 512, 1028);   // big mod2
+                    findNoiseValues(biomeValues, 11, 111, 1024, 1028);  // small mod2
                 }
 
-                chunkX = ChunkIdx(pos.Item1);
-                chunkY = ChunkIdx(pos.Item2);
-                int[,] primaryBigBiomeValues = new int[6, 4];
-                for (int i = layerStart; i < 6; i++)
-                {
-                    for (int j = 0; j < 4; j++)
-                    {
-                        mod = squareModArray[j];
-                        primaryBigBiomeValues[i, j] = findPrimaryBiomeValue(chunkX + mod.x, chunkY + mod.y, bigSeed, i);
-                    }
-                }
-
-                int[,,] secondaryBiomeValues = new int[32, 32, 6];
-                int[,,] secondaryBigBiomeValues = new int[32, 32, 6];
-                (int temp, int humi, int acid, int toxi)[,] tileValuesArray = new (int temp, int humi, int acid, int toxi)[32, 32];
+                (int temp, int humi, int acid, int toxi, int mod1, int mod2)[,] tileValuesArray = new (int temp, int humi, int acid, int toxi, int mod1, int mod2)[32, 32];
                 biomeIndex = new ((int biome, int subBiome), int)[32, 32][];
                 baseColors = new (int, int, int)[32, 32];
                 bitmap = new Bitmap(32, 32);
 
-
-                int stepo = 1;
-                bool doSecondMethodOfFindingBiomeValue = false;// debugMode2;
-                if (doSecondMethodOfFindingBiomeValue) { stepo = 31; }
-
-                for (int i = 0; i < 32; i += stepo)
+                for (int i = 0; i < 32; i += 1)
                 {
-                    for (int j = 0; j < 32; j += stepo)
+                    for (int j = 0; j < 32; j += 1)
                     {
-                        for (int k = layerStart; k < 6; k++)
+                        (int temp, int humi, int acid, int toxi, int mod1, int mod2) tileValues;
+                        if (screen.isMonoBiome)
                         {
-                            secondaryBiomeValues[i, j, k] = findSecondaryBiomeValue(primaryBiomeValues, chunkRealPos.x + i, chunkRealPos.y + j, k);
-                            secondaryBigBiomeValues[i, j, k] = findSecondaryBigBiomeValue(primaryBigBiomeValues, chunkRealPos.x + i, chunkRealPos.y + j, k);
+                            tileValues = makeTileBiomeValueArrayMonoBiome(screen.type);
+                            biomeIndex[i, j] = new ((int biome, int subBiome), int)[] { (screen.type, 1000) };
                         }
-                        (int temp, int humi, int acid, int toxi) tileValues;
-                        if (screen.isMonoBiome) { tileValues = makeTileBiomeValueArrayMonoBiome(screen.type); }
-                        else { tileValues = makeTileBiomeValueArray(secondaryBigBiomeValues, secondaryBiomeValues, i, j); }
+                        else
+                        {
+                            tileValues = makeTileBiomeValueArray(biomeValues, i, j);
+                            biomeIndex[i, j] = findBiome(screen.type, tileValues);
+                        }
                         tileValuesArray[i, j] = tileValues;
-                        if (screen.isMonoBiome) { biomeIndex[i, j] = new ((int biome, int subBiome), int)[] { (screen.type, 1000) }; }
-                        else { biomeIndex[i, j] = findBiome(this.screen.type, tileValues); }
 
                         int[] colorArray = findBiomeColor(biomeIndex[i, j]);
                         baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
                     }
                 }
-                if (doSecondMethodOfFindingBiomeValue)
-                {
-                    for (int i = 0; i < 32; i += 1)
-                    {
-                        for (int j = 0; j < 32; j += 1)
-                        {
-                            if (screen.isMonoBiome) { biomeIndex[i, j] = new ((int biome, int subBiome), int)[] { (screen.type, 1000) }; }
-                            else { biomeIndex[i, j] = findBiomeByMean(biomeIndex, i, j); }
 
-                            int[] colorArray = findBiomeColor(biomeIndex[i, j]);
-                            baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
-                        }
-                    }
-                }
-
-                return (secondaryBiomeValues, tileValuesArray);
+                return tileValuesArray;
             }
-            public void generateTerrain(long bigSeed, long bigSeed2, long bigSeed3, int[,,] secondaryBiomeValues, (int temp, int humi, int acid, int toxi)[,] tileValuesArray)
+            public void generateTerrain((int temp, int humi, int acid, int toxi, int mod1, int mod2)[,] tileValuesArray)
             {
-                int chunkX = pos.x * 2;
-                int chunkY = pos.y * 2;
-                (int x, int y) mod;
-                (int x, int y) chunkRealPos = (pos.x * 32, pos.y * 32);
-                int[,] primaryFillValues = new int[4, 9];
-                for (int j = 0; j < 9; j++)
-                {
-                    mod = bigSquareModArray[j];
-                    primaryFillValues[0, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, screen.seed);
-                    primaryFillValues[1, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed);
-                    primaryFillValues[2, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed2, 2048);
-                    primaryFillValues[3, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed3, 2048);
-                }
-
-                chunkX = Floor(pos.x, 2) / 2;
-                chunkY = Floor(pos.y, 2) / 2;
-                int[,] primaryBigFillValues = new int[2, 4];
-                for (int j = 0; j < 4; j++)
-                {
-                    mod = squareModArray[j];
-                    primaryBigFillValues[0, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed2);
-                    primaryBigFillValues[1, j] = findPrimaryNoiseValue(chunkX + mod.x, chunkY + mod.y, bigSeed3);
-                }
-
-                int[,,] secondaryFillValues = new int[4, 32, 32];
-                int[,,] secondaryBigFillValues = new int[2, 32, 32];
                 fillStates = new (int type, int subType)[32, 32];
+
+                int[,,] terrainValues = new int[33, 33, 6];
+                findNoiseValues(terrainValues, 0, 1, 64);           // big slither
+                findNoiseValuesQuartile(terrainValues, 1, 2);       // small slither
+                findNoiseValues(terrainValues, 2, 3, 64);           // big bubble
+                findNoiseValuesQuartile(terrainValues, 3, 4);       // small bubble
+                findNoiseValuesQuartile(terrainValues, 4, 5, 2048); // Stuff for minerals (dense rock), not efficient here since it should be one measured for nonfilled tiles, but whatever
+                findNoiseValuesQuartile(terrainValues, 5, 6, 2048); // Stuff for minerals (dense rock), not efficient here since it should be one measured for nonfilled tiles, but whatever
 
                 for (int i = 0; i < 32; i++)
                 {
                     for (int j = 0; j < 32; j++)
                     {
-                        secondaryFillValues[0, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 0);
-                        secondaryBigFillValues[0, i, j] = findSecondaryBigNoiseValue(primaryBigFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 0);
-                        int value1 = secondaryBigFillValues[0, i, j] + (int)(0.25 * secondaryFillValues[0, i, j]) - 32;
-                        //value1 = secondaryFillValues[0, i, j];
-                        //value1 = 0;
-                        secondaryFillValues[1, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 1);
-                        secondaryBigFillValues[1, i, j] = findSecondaryBigNoiseValue(primaryBigFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 1);
-                        int value2 = secondaryBigFillValues[1, i, j] + (int)(0.25 * secondaryFillValues[1, i, j]) - 32;
-                        //value2 = secondaryBigFillValues[1, i, j];
-                        //value2 = 128;
-                        int temperature = secondaryBiomeValues[i, j, 0];
-                        int mod1 = (int)(secondaryBiomeValues[i, j, 4] * 0.25);
-                        int mod2 = (int)(secondaryBiomeValues[i, j, 5] * 0.25);
+                        int value1 = terrainValues[i, j, 0] + (int)(0.25 * terrainValues[i, j, 1]) - 32;
+                        // value1 = terrainValues[i, j, 1];
+                        // value1 = 0;
+                        int value2 = terrainValues[i, j, 2] + (int)(0.25 * terrainValues[i, j, 3]) - 32;
+                        // value2 = terrainValues[i, j, 3];
+                        // value2 = 128;
+                        int temperature = tileValuesArray[i, j].temp;
+                        int mod1 = (int)(tileValuesArray[i, j].mod1 * 0.25);
+                        int mod2 = (int)(tileValuesArray[i, j].mod2 * 0.25);
 
                         int plateauPos = (int)(chunkSeed % 32);
 
@@ -304,15 +247,15 @@ namespace Cave
                         foreach (((int biome, int subBiome), int) tupel in biomeIndex[i, j])
                         {
                             mult = tupel.Item2 * 0.001f;
-                            if (tupel.Item1 == (1, 0))
+                            if (tupel.Item1 == (1, 0))  // acid biome
                             {
                                 value2modifier += -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11));
                             }
-                            else if (tupel.Item1 == (3, 0) || tupel.Item1 == (9, 0))
+                            else if (tupel.Item1 == (3, 0) || tupel.Item1 == (9, 0))    // forest and chandelier biomes
                             {
                                 foresto += mult;
                             }
-                            else if (tupel.Item1 == (4, 0))
+                            else if (tupel.Item1 == (4, 0)) // toxic biome
                             {
                                 float see1 = Sin(i + mod2 * 0.3f + 0.5f, 16);
                                 float see2 = Sin(j + mod2 * 0.3f + 0.5f, 16);
@@ -320,7 +263,7 @@ namespace Cave
                                 value2modifier += valueToBeAdded;
                                 value1modifier += valueToBeAdded + 2;
                             }
-                            else if (tupel.Item1 == (2, 2))
+                            else if (tupel.Item1 == (2, 2)) // obsidian biome
                             {
                                 float see1 = Obs((pos.Item1 * 32) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
                                 float see2 = Obs((pos.Item2 * 32) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
@@ -336,7 +279,7 @@ namespace Cave
                                 value2modifier += mult * value2PREmodifier;
                                 mod2divider += mult * 1.5f;
                             }
-                            else if (tupel.Item1 == (8, 0) || tupel.Item1 == (2, 1) || tupel.Item1 == (10, 3) || tupel.Item1 == (10, 4))
+                            else if (tupel.Item1 == (8, 0) || tupel.Item1 == (2, 1) || tupel.Item1 == (10, 3) || tupel.Item1 == (10, 4))    // ocean biomes
                             {
                                 oceano = Max(oceano, mult * 10); // To make separation between OCEAN biomes (like acid and blood). CHANGE THIS to make ocean biomes that can merge with one another (like idk cool water ocean and temperate water ocean idk)
                             }
@@ -372,10 +315,8 @@ namespace Cave
                         if (((fillTest1 || fillTest2) && true) || (false && plateauScore >= 0)) { fillStates[i, j] = elementToFillVoidWith; }
                         else
                         {
-                            secondaryFillValues[2, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 2);
-                            secondaryFillValues[3, i, j] = findSecondaryNoiseValue(primaryFillValues, chunkRealPos.x + i, chunkRealPos.y + j, 3);
                             Dictionary<(int type, int subType), float> dicto = findTransitions(biomeIndex[i, j], tileValuesArray[i, j]);
-                            fillStates[i, j] = findMaterialToFillWith((secondaryFillValues[2, i, j], secondaryFillValues[3, i, j]), biomeIndex[i, j][0].Item1, dicto);
+                            fillStates[i, j] = findMaterialToFillWith((terrainValues[i, j, 4], terrainValues[i, j, 5]), biomeIndex[i, j][0].Item1, dicto);
                         }
                         //if (rand.Next(500) != 0){ fillStates[i, j] = 1; }
                     }
@@ -992,6 +933,99 @@ namespace Cave
                 }
                 return loadMegaChunk(screen, pos, isExtraGetting);
             }
+
+
+
+
+
+
+
+
+
+
+
+
+
+            public int[,,] findNoiseValues(int[,,] noiseValues, int layer, int realLayer, int modulo, int noiseAmplitude = 256)  // noiseValues is int[32, 32, depends]   // layer is the one set in the array, realLayer is the one actually gotten   // Modulo is the resolution : 16 for small terrain noise, 64 for big, 1024 for biome.... for example
+            {
+                (int x, int y) realPos = (pos.x * 32, pos.y * 32);
+                int scale = Max(32, modulo) / 32;
+                (int x, int y) posToGet = (ChunkIdx(realPos.x / scale), ChunkIdx(realPos.y / scale));
+
+                (int x, int y) mod = PosMod((realPos.x, realPos.y), modulo); 
+                (int x, int y) modTopRight = PosMod((realPos.x + 31, realPos.y + 31), modulo);
+                (int left, int right) preTopValues = (screen.getLCGValue(((posToGet.x, posToGet.y + 1), realLayer), noiseAmplitude), screen.getLCGValue(((posToGet.x + 1, posToGet.y + 1), realLayer), noiseAmplitude));
+                (int left, int right) prebottomValues = (screen.getLCGValue((posToGet, realLayer), noiseAmplitude), screen.getLCGValue(((posToGet.x + 1, posToGet.y), realLayer), noiseAmplitude));
+                (int left, int right) topValues = ((prebottomValues.left * (modulo - modTopRight.y) + preTopValues.left * modTopRight.y) / modulo, (prebottomValues.right * (modulo - modTopRight.y) + preTopValues.right * modTopRight.y) / modulo);
+                (int left, int right) bottomValues = ((prebottomValues.left * (modulo - mod.y) + preTopValues.left * mod.y) / modulo, (prebottomValues.right * (modulo - mod.y) + preTopValues.right * mod.y) / modulo);
+                for (int i = 0; i < 32; i++)
+                {
+                    mod = PosMod((realPos.x + i, realPos.y), modulo);
+                    noiseValues[i, 0, layer] = (bottomValues.left * (modulo - mod.x) + bottomValues.right * mod.x) / modulo;
+                    noiseValues[i, 32, layer] = (topValues.left * (modulo - mod.x) + topValues.right * mod.x) / modulo;  // ITS NORMAL THAT ITS mod.x in both lines. DONT CHANGEEEEEEEEeeeeeeeee (istg it's true) (ur getting the 2 x bands, THEN with mod.y it makes part of the 2... ITS NORMAL. DONT HCANGE IT. PLS)
+                }
+                for (int i = 0; i < 32; i++)
+                {
+                    for (int j = 1; j < 32; j++)
+                    {
+                        noiseValues[i, j, layer] = (noiseValues[i, 0, layer] * (32 - j) + noiseValues[i, 32, layer] * j) / 32;
+                    }
+                }
+
+                // if (layer == 0) { exportNoiseMap(noiseValues, layer); }
+                return noiseValues;
+            }
+            public int[,,] findNoiseValuesQuartile(int[,,] noiseValues, int layer, int realLayer, int noiseAmplitude = 256)  // noiseValues is int[32, 32, depends]   // layer is the one set in the array, realLayer is the one actually gotten   // Modulo is the resolution : 16 for small terrain noise, 64 for big, 1024 for biome.... for example
+            {
+                (int x, int y) posToGet = ChunkIdx(pos.x * 64, pos.y * 64);
+                (int x, int y) mod;
+                foreach ((int x, int y) modo in bigSquareModArray)
+                {
+                    mod = (modo.x * 16, modo.y * 16);
+                    noiseValues[mod.x, mod.y, layer] = screen.getLCGValue(((posToGet.x + modo.x, posToGet.y + modo.y), realLayer), noiseAmplitude);
+                }
+                foreach ((int x, int y) modo in squareModArray)
+                {
+                    mod = (modo.x * 16, modo.y * 16);
+                    for (int ii = 1; ii < 16; ii++)
+                    {
+                        int i = ii + mod.x;
+                        int j = mod.y;
+                        noiseValues[i, j, layer] = (noiseValues[mod.x, j, layer] * (16 - ii) + noiseValues[mod.x + 16, j, layer] * ii) / 16;
+                        noiseValues[i, j + 16, layer] = (noiseValues[mod.x, j + 16, layer] * (16 - ii) + noiseValues[mod.x + 16, j + 16, layer] * ii) / 16;  // ITS NORMAL THAT ITS mod.x in both lines. DONT CHANGEEEEEEEEeeeeeeeee (istg it's true) (ur getting the 2 x bands, THEN with mod.y it makes part of the 2... ITS NORMAL. DONT HCANGE IT. PLS)
+                    }
+                }
+                foreach ((int x, int y) modo in squareModArray)
+                {
+                    mod = (modo.x * 16, modo.y * 16);
+                    for (int ii = 0; ii < 16; ii++)
+                    {
+                        for (int jj = 1; jj < 16; jj++)
+                        {
+                            int i = ii + mod.x;
+                            int j = jj + mod.y;
+                            noiseValues[i, j, layer] = (noiseValues[i, mod.y, layer] * (16 - jj) + noiseValues[i, 16 + mod.y, layer] * jj) / 16;
+                        }
+                    }
+                }
+
+                // if (layer == 1) { exportNoiseMap(noiseValues, layer); }
+                return noiseValues;
+            }
+            public void exportNoiseMap(int[,,] noiseValues, int layer)  // Keep ! Exports the NoiseMap of Chunks. Useful.
+            {
+                Bitmap bitmapToExport = new Bitmap(noiseValues.GetLength(0), noiseValues.GetLength(1));
+                int value;
+                for (int i = 0; i < noiseValues.GetLength(0); i++)
+                {
+                    for (int j = 0; j < noiseValues.GetLength(1); j++)
+                    {
+                        value = noiseValues[i, j, layer];
+                        setPixelButFaster(bitmapToExport, (i, noiseValues.GetLength(1) - 1 - j), Color.FromArgb(value, value, value));
+                    }
+                }
+                bitmapToExport.Save($"{currentDirectory}\\CaveData\\{screen.game.seed}\\ChunkNoise\\x{pos.x}y{pos.y}.png");
+            }
         }
         public static void makeTheFilledChunk()
         {
@@ -1004,310 +1038,7 @@ namespace Cave
                 }
             }
         }
-        public static long findPlantSeed(long posX, long posY, Screens.Screen screen, int layer)
-        {
-            long x = posX;
-            long y = posY;
-            long seedX;
-            if (x >= 0)
-            {
-                seedX = screen.LCGCacheListMatrix[layer, 0][(int)(x / 50)];
-                x = x % 50;
-                while (x > 0)
-                {
-                    seedX = LCGxPos(seedX);
-                    x--;
-                }
-            }
-            else
-            {
-                x = -x;
-                seedX = screen.LCGCacheListMatrix[layer, 1][(int)(x / 50)];
-                x = x % 50;
-                while (x > 0)
-                {
-                    seedX = LCGxNeg(seedX);
-                    x--;
-                }
-            }
-            long seedY;
-            if (y >= 0)
-            {
-                seedY = screen.LCGCacheListMatrix[layer, 2][(int)(y / 50)];
-                y = y % 50;
-                while (y > 0)
-                {
-                    seedY = LCGyPos(seedY);
-                    y--;
-                }
-            }
-            else
-            {
-                y = -y;
-                seedY = screen.LCGCacheListMatrix[layer, 3][(int)(y / 50)];
-                y = y % 50;
-                while (y > 0)
-                {
-                    seedY = LCGyNeg(seedY);
-                    y--;
-                }
-            }
-            int z = (int)((256 + seedX % 256 + seedY % 256) % 256);
-            long seedZ = screen.LCGCacheListMatrix[layer, 4][(int)(z / 50)];
-            z = z % 50;
-            while (z > 0)
-            {
-                seedZ = LCGz(seedZ);
-                z--;
-            }
-            return (seedZ + seedX + seedY) / 3;
-            //return ((int)(seedX%512)-256, (int)(seedY%512)-256);
-        }
-        public static int findPrimaryNoiseValue(long posX, long posY, long seed, int maxValue = 256)
-        {
-            long x = posX;
-            long y = posY;
-            long seedX = seed;
-            if (x >= 0)
-            {
-                while (x > 0)
-                {
-                    seedX = LCGxPos(seedX);
-                    x--;
-                }
-            }
-            else
-            {
-                x = -x;
-                while (x > 0)
-                {
-                    seedX = LCGxNeg(seedX);
-                    x--;
-                }
-            }
-            long seedY = seed;
-            if (y >= 0)
-            {
-                while (y > 0)
-                {
-                    seedY = LCGyPos(seedY);
-                    y--;
-                }
-            }
-            else
-            {
-                y = -y;
-                while (y > 0)
-                {
-                    seedY = LCGyNeg(seedY);
-                    y--;
-                }
-            }
-            int z = (int)((256 + seedX % 256 + seedY % 256) % 256);
-            long seedZ = z;
-            while (z > 0)
-            {
-                seedZ = LCGz(seedZ);
-                z--;
-            }
-            return (int)((seedZ + seedX + seedY) % maxValue);
-        }
-        public static int findPrimaryNoiseValueCACHE(long posX, long posY, Screens.Screen screen, int layer)
-        {
-            long x = posX;
-            long y = posY;
-            long seedX;
-            if (x >= 0)
-            {
-                seedX = screen.LCGCacheListMatrix[layer, 0][(int)(x / 50)];
-                x = x % 50;
-                while (x > 0)
-                {
-                    seedX = LCGxPos(seedX);
-                    x--;
-                }
-            }
-            else
-            {
-                x = -x;
-                seedX = screen.LCGCacheListMatrix[layer, 1][(int)(x / 50)];
-                x = x % 50;
-                while (x > 0)
-                {
-                    seedX = LCGxNeg(seedX);
-                    x--;
-                }
-            }
-            long seedY;
-            if (y >= 0)
-            {
-                seedY = screen.LCGCacheListMatrix[layer, 2][(int)(y / 50)];
-                y = y % 50;
-                while (y > 0)
-                {
-                    seedY = LCGyPos(seedY);
-                    y--;
-                }
-            }
-            else
-            {
-                y = -y;
-                seedY = screen.LCGCacheListMatrix[layer, 3][(int)(y / 50)];
-                y = y % 50;
-                while (y > 0)
-                {
-                    seedY = LCGyNeg(seedY);
-                    y--;
-                }
-            }
-            int z = (int)((256 + seedX % 256 + seedY % 256) % 256);
-            long seedZ = screen.LCGCacheListMatrix[layer, 4][(int)(z / 50)];
-            z = z % 50;
-            while (z > 0)
-            {
-                seedZ = LCGz(seedZ);
-                z--;
-            }
-            return (int)((seedZ + seedX + seedY) % 256);
-        }
-        public static int findPrimaryBiomeValue(long posX, long posY, long seed, long layer)
-        {
-            long x = posX;
-            long y = posY;
-            int counto = 0;
-            while (counto < 10 + layer * 10)
-            {
-                seed = LCGz(seed);
-                counto += 1;
-            }
-            long seedX = seed;
-            if (x >= 0)
-            {
-                while (x > 0)
-                {
-                    seedX = LCGyPos(seedX);
-                    x--;
-                }
-            }
-            else
-            {
-                x = -x;
-                while (x > 0)
-                {
-                    seedX = LCGyNeg(seedX);
-                    x--;
-                }
-            }
-            long seedY = seed;
-            if (y >= 0)
-            {
-                while (y > 0)
-                {
-                    seedY = LCGxPos(seedY);
-                    y--;
-                }
-            }
-            else
-            {
-                y = -y;
-                while (y > 0)
-                {
-                    seedY = LCGxNeg(seedY);
-                    y--;
-                }
-            }
-            int seedXY = (int)((8192 + seedX % 1024 + seedY % 1024) % 1024);
-            long seedZ = Abs(3 + posX + posY * 11);
-            int z = seedXY;
-            while (z > 0)
-            {
-                seedZ = LCGz(seedZ);
-                z--;
-            }
-            return (int)((seedZ + seedXY) % 1024);
-            //return ((int)(seedX%512)-256, (int)(seedY%512)-256);
-        }
-        public static int findSecondaryNoiseValue(int[,] values, int posX, int posY, int layer) // posX/Y is real pos and not %32 !!! same for all findSecondary functions
-        {
-            int modulo = 16;
-            int modX = PosMod(posX, modulo);
-            int modY = PosMod(posY, modulo);
-
-            int quartile = 0;
-            if (PosMod(posX) >= 16) { quartile += 1; }
-            if (PosMod(posY) >= 16) { quartile += 3; }
-
-            int fX1 = values[layer, 0 + quartile] * (modulo - modX) + values[layer, 1 + quartile] * modX;
-            int fX2 = values[layer, 3 + quartile] * (modulo - modX) + values[layer, 4 + quartile] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
-            int fY = fX1 * (modulo - modY) + fX2 * modY;
-            return fY / (modulo * modulo);
-        }
-        public static int findSecondaryBigNoiseValue(int[,] values, int posX, int posY, int layer)
-        {
-            int modulo = 64;
-            int modX = PosMod(posX, modulo);
-            int modY = PosMod(posY, modulo);
-            int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
-            int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
-            int fY = fX1 * (modulo - modY) + fX2 * modY;
-            return fY / (modulo * modulo);
-        }
-        public static int findSecondaryBiomeValue(int[,] values, int posX, int posY, int layer)
-        {
-            int modulo = 512;
-            int modX = PosMod(posX, modulo);
-            int modY = PosMod(posY, modulo);
-            int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
-            int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
-            int fY = fX1 * (modulo - modY) + fX2 * modY;
-            return fY / (modulo * modulo);
-        }
-        public static int findSecondaryBigBiomeValue(int[,] values, int posX, int posY, int layer)
-        {
-            int modulo = 1024;
-            int modX = PosMod(posX, modulo);
-            int modY = PosMod(posY, modulo);
-            int fX1 = values[layer, 0] * (modulo - modX) + values[layer, 1] * modX;
-            int fX2 = values[layer, 2] * (modulo - modX) + values[layer, 3] * modX; // ITS NORMAL THAT ITS modX DONT CHANGEEEEEEEEeeeeeeeee (istg it's true)
-            int fY = fX1 * (modulo - modY) + fX2 * modY;
-            return fY / (modulo * modulo);
-        }
-        public static ((int biome, int subBiome), int)[] findBiomeByMean(((int biome, int subBiome), int)[,][] biomeIndex, int posX, int posY) // posX/Y is %32 and not real pos
-        {
-            float step = 0.03226f; // 1/31
-            float pondX2 = posX * step;
-            float pondX = 1 - pondX2;
-            float pondY2 = posY * step;
-            float pondY = 1 - pondY2;
-            Dictionary<(int x, int y), float> ponderation = new Dictionary<(int x, int y), float>
-            {
-                {(0, 0), pondX*pondY},
-                {(1, 0), pondX2*pondY},
-                {(0, 1), pondX*pondY2},
-                {(1, 1), pondX2*pondY2}
-            };
-            Dictionary<(int biome, int subBiome), int> dicto = new Dictionary<(int biome, int subBiome), int>();
-
-            foreach ((int x, int y) pos in squareModArray)
-            {
-                foreach (((int biome, int subBiome), int) biome in biomeIndex[pos.x * 31, pos.y * 31])
-                {
-                    if (!dicto.ContainsKey(biome.Item1)) { dicto[biome.Item1] = (int)(biome.Item2 * ponderation[pos]); }
-                    else { dicto[biome.Item1] += (int)(biome.Item2 * ponderation[pos]); }
-                }
-            }
-
-            List<((int biome, int subBiome), int)> listo = new List<((int biome, int subBiome), int)>();
-            foreach (KeyValuePair<(int biome, int subBiome), int> pair in dicto) { listo.Add((pair.Key, pair.Value)); }
-            SortByItem2(listo);
-            ((int biome, int subBiome), int)[] arrayo = new ((int biome, int subBiome), int)[listo.Count];
-            for (int i = 0; i < arrayo.Length; i++)
-            {
-                arrayo[i] = listo[i];
-            }
-            return arrayo;
-        }
-        public static Dictionary<(int type, int subType), float> findTransitions(((int biome, int subBiome), int)[] biomeArray, (int temp, int humi, int acid, int toxi) values)
+        public static Dictionary<(int type, int subType), float> findTransitions(((int biome, int subBiome), int)[] biomeArray, (int temp, int humi, int acid, int toxi, int mod1, int mod2) values)
         {
             Dictionary<(int type, int subType), float> dicto = new Dictionary<(int type, int subType), float>();
             foreach (((int type, int subType), int) key in biomeArray)
@@ -1323,7 +1054,7 @@ namespace Cave
             }
             return dicto;
         }
-        public static float findTransition((int type, int subType) biome, (int temp, int humi, int acid, int toxi) values)
+        public static float findTransition((int type, int subType) biome, (int temp, int humi, int acid, int toxi, int mod1, int mod2) values)
         {
             if (biome == (10, 1) || biome == (10, 3) || biome == (10, 4))
             {
@@ -1336,29 +1067,35 @@ namespace Cave
 
             return 0;
         }
-        public static (int temp, int humi, int acid, int toxi) makeTileBiomeValueArrayMonoBiome((int type, int subType) biome)
+        public static (int temp, int humi, int acid, int toxi, int mod1, int mod2) makeTileBiomeValueArrayMonoBiome((int type, int subType) biome)
         {
             int temperature = biomeTypicalValues[biome].temp;
             int humidity = biomeTypicalValues[biome].humi;
             int acidity = biomeTypicalValues[biome].acid;
             int toxicity = biomeTypicalValues[biome].toxi;
-            return (temperature, humidity, acidity, toxicity);
+            int mod1 = 0;
+            int mod2 = 0;
+            return (temperature, humidity, acidity, toxicity, mod1, mod2);
         }
-        public static (int temp, int humi, int acid, int toxi) makeTileBiomeValueArray(int[,,] bigValues, int[,,] values, int posX, int posY)
+        public static (int temp, int humi, int acid, int toxi, int mod1, int mod2) makeTileBiomeValueArray(int[,,] values, int posX, int posY)
         {
-            int temperature = bigValues[posX, posY, 0] + values[posX, posY, 0] - 512;
-            int humidity = bigValues[posX, posY, 1] + values[posX, posY, 1] - 512;
-            int acidity = bigValues[posX, posY, 2] + values[posX, posY, 2] - 512;
-            int toxicity = bigValues[posX, posY, 3] + values[posX, posY, 3] - 512;
-            return (temperature, humidity, acidity, toxicity);
+            int temperature = values[posX, posY, 0] + values[posX, posY, 1] - 512;
+            int humidity = values[posX, posY, 2] + values[posX, posY, 3] - 512;
+            int acidity = values[posX, posY, 4] + values[posX, posY, 5] - 512;
+            int toxicity = values[posX, posY, 6] + values[posX, posY, 7] - 512;
+            int mod1 = values[posX, posY, 8] + values[posX, posY, 9] - 512;
+            int mod2 = values[posX, posY, 10] + values[posX, posY, 11] - 512;
+            return (temperature, humidity, acidity, toxicity, mod1, mod2);
         }
-        public static (int temp, int humi, int acid, int toxi) makeTileBiomeValueArray(int[] values, int posX, int posY)
+        public static (int temp, int humi, int acid, int toxi, int mod1, int mod2) makeTileBiomeValueArray(int[] values, int posX, int posY)
         {
             int temperature = values[0];
             int humidity = values[1];
             int acidity = values[2];
             int toxicity = values[3];
-            return (temperature, humidity, acidity, toxicity);
+            int mod1 = values[4];
+            int mod2 = values[5];
+            return (temperature, humidity, acidity, toxicity, mod1, mod2);
         }
         public static int testAddBiome(List<((int biome, int subBiome), int)> biomeList, (int biome, int subBiome) biomeToTest, int biomeness)
         {
@@ -1383,9 +1120,9 @@ namespace Cave
         }
         public static ((int biome, int subBiome), int)[] findBiome((int, int) dimensionType, int[] values)
         {
-            return findBiome(dimensionType, (values[0], values[1], values[2], values[3]));
+            return findBiome(dimensionType, (values[0], values[1], values[2], values[3], values[4], values[5]));
         }
-        public static ((int biome, int subBiome), int)[] findBiome((int, int) dimensionType, (int temp, int humi, int acid, int toxi) values)
+        public static ((int biome, int subBiome), int)[] findBiome((int, int) dimensionType, (int temp, int humi, int acid, int toxi, int mod1, int mod2) values)
         {
             //return new (int, int)[]{ (8, 1000) }; // use this to force a biome for debug (infite biome)
 

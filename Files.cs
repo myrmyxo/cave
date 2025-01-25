@@ -844,6 +844,10 @@ namespace Cave
             {
                 Directory.CreateDirectory($"{currentDirectory}\\BiomeDiagrams");
             }
+            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\ChunkNoise"))
+            {
+                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\ChunkNoise");
+            }
 
 
             if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\DimensionData"))
