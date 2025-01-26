@@ -377,6 +377,7 @@ namespace Cave
             // Upside down trees ! And other plants like that !
             // Fix the fucking mold... or make it interesting. Make that, on mold conversion, it Digs ALL tiles in plants present. As an ATTACK like all diggings will be made.
             // The uh... menu... and uh text... and uh dialogues... and uh villages... and uhhhhhhh make an actual fucking game uhhh
+            // System to DEMOTE megaChunks and chunks to ExtraLoaded. Also in the debugging put extraLoadedMegachunks as another color than the red. Ig.
 
             // cool ideas for later !
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
