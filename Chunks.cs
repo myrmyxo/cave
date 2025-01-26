@@ -96,20 +96,20 @@ namespace Cave
                     foreach (int plantId in chunkJson.pLst) { plants[plantId] = loadPlant(screen, plantId); }
 
                     explorationLevel = chunkJson.explLvl;
-                    if (explorationLevel == 1)
+                }
+                if (explorationLevel == 1)
+                {
+                    fogOfWar = chunkJson.fog;
+                    fogBitmap = new Bitmap(32, 32);
+                    for (int i = 0; i < 32; i++)
                     {
-                        fogOfWar = chunkJson.fog;
-                        fogBitmap = new Bitmap(32, 32);
-                        for (int i = 0; i < 32; i++)
+                        for (int j = 0; j < 32; j++)
                         {
-                            for (int j = 0; j < 32; j++)
-                            {
-                                if (!fogOfWar[i, j]) { setPixelButFaster(fogBitmap, (i, j), Color.Black); }
-                            }
+                            if (!fogOfWar[i, j]) { setPixelButFaster(fogBitmap, (i, j), Color.Black); }
                         }
                     }
-                    else { fogOfWar = null; }
                 }
+                else { fogOfWar = null; }
 
                 if (!entitiesAndPlantsSpawned)
                 {
@@ -544,16 +544,11 @@ namespace Cave
             {
                 if (unstableLiquidCount > 0) //here
                 {
-                    (int x, int y) chunkCoords = ChunkIdx(pos.Item1 * 32 - 32, pos.Item2 * 32);
-                    Chunk leftChunk = screen.tryToGetChunk(chunkCoords);
-                    chunkCoords = ChunkIdx(pos.Item1 * 32 - 32, pos.Item2 * 32 - 32);
-                    Chunk bottomLeftChunk = screen.tryToGetChunk(chunkCoords);
-                    chunkCoords = ChunkIdx(pos.Item1 * 32, pos.Item2 * 32 - 32);
-                    Chunk bottomChunk = screen.tryToGetChunk(chunkCoords);
-                    chunkCoords = ChunkIdx(pos.Item1 * 32 + 32, pos.Item2 * 32 - 32);
-                    Chunk bottomRightChunk = screen.tryToGetChunk(chunkCoords);
-                    chunkCoords = ChunkIdx(pos.Item1 * 32 + 32, pos.Item2 * 32);
-                    Chunk rightChunk = screen.tryToGetChunk(chunkCoords);
+                    Chunk leftChunk = screen.getChunkFromChunkPos((pos.Item1 - 1, pos.Item2), false, true) ?? theFilledChunk;
+                    Chunk bottomLeftChunk = screen.getChunkFromChunkPos((pos.Item1 - 1, pos.Item2 - 1), false, true) ?? theFilledChunk;
+                    Chunk bottomChunk = screen.getChunkFromChunkPos((pos.Item1, pos.Item2 - 1), false, true) ?? theFilledChunk;
+                    Chunk bottomRightChunk = screen.getChunkFromChunkPos((pos.Item1 + 1, pos.Item2 - 1), false, true) ?? theFilledChunk;
+                    Chunk rightChunk = screen.getChunkFromChunkPos((pos.Item1 + 1, pos.Item2), false, true) ?? theFilledChunk;
 
                     unstableLiquidCount = 0;
 
@@ -678,8 +673,8 @@ namespace Cave
                 int absChunkX = pos.Item1;
                 int absChunkY = pos.Item2;
                 if (jTested < 0) { jTested += 32; absChunkY--; }
-                (int, int) chunkCoords = ChunkIdx(absChunkX * 32, absChunkY * 32);
-                Chunk chunkToTest = screen.tryToGetChunk(chunkCoords);
+                Chunk chunkToTest = screen.getChunkFromChunkPos((absChunkX, absChunkY), false, true);    // Should alwats be loaded
+                if (chunkToTest is null) { return false; }
 
                 List<(int x, int y)> posVisited = new List<(int x, int y)> { (absChunkX * 32 + iTested, absChunkY*32 + jTested) };
                 (int x, int y) posToTest;
@@ -691,14 +686,13 @@ namespace Cave
                     if (iTested > 31)
                     {
                         absChunkX++;
-                        chunkCoords = ChunkIdx(absChunkX * 32, absChunkY * 32);
-                        chunkToTest = screen.tryToGetChunk(chunkCoords);
                         iTested -= 32;
-                        if (absChunkX >= screen.chunkX + screen.chunkResolution) { break; }
+                        chunkToTest = screen.getChunkFromChunkPos((absChunkX, absChunkY), false, true);
+                        if (chunkToTest is null) { break; }
                     }
                     posToTest = (absChunkX * 32 + iTested, absChunkY * 32 + jTested);
                     (int type, int subType) material = chunkToTest.fillStates[iTested, jTested];
-                    if (material.type > 0 || screen.liquidsThatCantGoRight.ContainsKey(posToTest)) { goto bumpedOnSolid; }
+                    if (material.type > 0 || screen.liquidsThatCantGoRight.ContainsKey(posToTest)) { break; }
                     if (material.type == 0)
                     {
                         chunkToTest.tileModification(iTested, jTested, tileModification(i, j, (0, 0)));
@@ -708,8 +702,6 @@ namespace Cave
                     liquidSlideCount++;
                     repeatCounter++;
                 }
-                return false;
-            bumpedOnSolid:;
                 foreach ((int x, int y) pos in posVisited)
                 {
                     screen.liquidsThatCantGoRight[pos] = true;
@@ -724,8 +716,8 @@ namespace Cave
                 int absChunkX = pos.Item1;
                 int absChunkY = pos.Item2;
                 if (jTested < 0) { jTested += 32; absChunkY--; }
-                (int, int) chunkCoords = ChunkIdx(absChunkX * 32, absChunkY * 32);
-                Chunk chunkToTest = screen.tryToGetChunk(chunkCoords);
+                Chunk chunkToTest = screen.getChunkFromChunkPos((absChunkX, absChunkY), false, true);    // Should alwats be loaded
+                if (chunkToTest is null) { return false; }
 
                 List<(int x, int y)> posVisited = new List<(int x, int y)> { (absChunkX * 32 + iTested, absChunkY * 32 + jTested) };
                 (int x, int y) posToTest;
@@ -737,14 +729,13 @@ namespace Cave
                     if (iTested < 0)
                     {
                         absChunkX--;
-                        chunkCoords = ChunkIdx(absChunkX * 32, absChunkY * 32);
-                        chunkToTest = screen.tryToGetChunk(chunkCoords);
                         iTested += 32;
-                        if (absChunkX < screen.chunkX) { break; }
+                        chunkToTest = screen.getChunkFromChunkPos((absChunkX, absChunkY), false, true);
+                        if (chunkToTest is null) { break; }
                     }
                     posToTest = (absChunkX * 32 + iTested, absChunkY * 32 + jTested);
                     (int type, int subType) material = chunkToTest.fillStates[iTested, jTested];
-                    if (material.type > 0 || screen.liquidsThatCantGoLeft.ContainsKey(posToTest)) { goto bumpedOnSolid; }
+                    if (material.type > 0 || screen.liquidsThatCantGoLeft.ContainsKey(posToTest)) { break; }   // Bumped on solid
                     if (material.type == 0)
                     {
                         chunkToTest.tileModification(iTested, jTested, tileModification(i, j, (0, 0)));
@@ -754,8 +745,6 @@ namespace Cave
                     liquidSlideCount++;
                     repeatCounter++;
                 }
-                return false;
-            bumpedOnSolid:;
                 foreach ((int x, int y) pos in posVisited)
                 {
                     screen.liquidsThatCantGoLeft[pos] = true;
@@ -764,20 +753,14 @@ namespace Cave
             }
             public void testLiquidUnstableNonspecific(int posX, int posY)
             {
-                (int, int) chunkPos;
                 Chunk chunkToTest;
-
                 foreach ((int x, int y) mod in directionPositionArray)
                 {
-                    chunkPos = ChunkIdx(posX + mod.x, posY + mod.y);
-                    if (screen.loadedChunks.ContainsKey(chunkPos))
+                    chunkToTest = screen.getChunkFromPixelPos((posX + mod.x, posY + mod.y));
+                    if (chunkToTest.fillStates[PosMod(posX + mod.x), PosMod(posY + mod.y)].type <= 0)
                     {
-                        chunkToTest = screen.loadedChunks[chunkPos];
-                        if (chunkToTest.fillStates[PosMod(posX + mod.x), PosMod(posY + mod.y)].type <= 0)
-                        {
-                            chunkToTest.unstableLiquidCount++;
-                            unstableLiquidCount++;
-                        }
+                        chunkToTest.unstableLiquidCount++;
+                        unstableLiquidCount++;
                     }
                 }
             }

@@ -712,7 +712,7 @@ namespace Cave
                 byte bitsPerPixel2 = (byte)System.Drawing.Image.GetPixelFormatSize(bData2.PixelFormat);
                 byte* scan02 = (byte*)bData2.Scan0.ToPointer();
 
-                (int x, int y) poso = (posot.x - posot.radius - camPos.x - UnloadedChunksAmount * 32, posot.y - posot.radius - camPos.y - UnloadedChunksAmount * 32);
+                (int x, int y) poso = (posot.x - posot.radius - camPos.x, posot.y - posot.radius - camPos.y);
                 for (int i = 0; i < bData2.Height; ++i)
                 {
                     for (int j = 0; j < bData2.Width; ++j)
@@ -756,7 +756,7 @@ namespace Cave
                     data2 = scan02 + i * bData2.Stride + j * bitsPerPixel2 / 8;
                     for (int k = 0; k < 3; k++)
                     {
-                        //data1[k] = (byte)(100 + k*50);
+                        // data1[k] = (byte)(100 + k*50);
                         data1[k] = (byte)(Min((int)data2[3], 1)*data1[k]*data2[k]*_1On255);
                     }
                 }

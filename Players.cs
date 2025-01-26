@@ -82,9 +82,9 @@ namespace Cave
                     timeAtLastPlace = settingsJson.player.lastDP.Item2;
                 }
 
-                camPosX = posX - ChunkLength * 24;
+                camPosX = posX;
                 realCamPosX = camPosX;
-                camPosY = posY - ChunkLength * 24;
+                camPosY = posY;
                 realCamPosY = camPosY;
 
                 color = Color.Green;
@@ -92,7 +92,7 @@ namespace Cave
             }
             public void placePlayer()
             {
-                bool setFarAway = true;
+                bool setFarAway = false;
                 if (setFarAway)
                 {
                     posX = 189495;
@@ -345,8 +345,8 @@ namespace Cave
 
                 // camera stuff (not really working anymore which makes it better than it was before yayyy) 
 
-                int posDiffX = posX - (camPosX + 16 * (screen.chunkResolution - 1)); //*2 is needed cause there's only *8 and not *16 before
-                int posDiffY = posY - (camPosY + 16 * (screen.chunkResolution - 1));
+                int posDiffX = posX - camPosX; //*2 is needed cause there's only *8 and not *16 before
+                int posDiffY = posY - camPosY;
                 speedCamX = Clamp(posDiffX/2, -15f, 15f);
                 speedCamY = Clamp(posDiffY/2, -15f, 15f);
                 realCamPosX += speedCamX;
@@ -429,6 +429,7 @@ namespace Cave
                 (float x, float y) poso = (posX + 0.5f, posY + 0.5f);
                 (int lives, bool lifeLoss) life = (3, false);
                 Dictionary<Chunk, bool> visitedChunks = new Dictionary<Chunk, bool>();
+                screen.getChunkFromPixelPos((posX, posY)).updateFogOfWarOneTile(visitedChunks, (posX, posY)); // Useful if player stuck in solid terrain only, but to make sure that the pixel the player is on is tested
                 List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)> modsToTest = new List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)>();
                 for (float i = -24; i < 25; i++)
                 {
@@ -470,7 +471,7 @@ namespace Cave
                         currentPos = (currentPos.x + diff.y * xRatio, currentPosInt.y);
                     }
                     (int x, int y) posToTest = (currentPosInt.x + (int)Floor(values.startPos.x, 1), currentPosInt.y + (int)Floor(values.startPos.y, 1));
-                    Chunk chunk = screen.getChunkFromPixelPos(posToTest, true, true);
+                    Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                     if (chunk is null) { return; }
                     (int type, int subType) tileValue = screen.getTileContent(posToTest);
                     chunk.updateFogOfWarOneTile(chunkDict, posToTest);

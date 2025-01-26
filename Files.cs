@@ -111,7 +111,7 @@ namespace Cave
                         structure.saveStructure();
                         foreach ((int x, int y) pososo in screen.activeStructures[structureId].chunkPresence.Keys) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
                         {
-                            if (Distance(pososo, playerPos) > 0.8f * screen.chunkResolution) { chunksToRemove[pososo] = true; }
+                            if (Distance(pososo, playerPos) * 32 > 1.6f * screen.game.effectiveRadius) { chunksToRemove[pososo] = true; }
                         }
                         screen.activeStructures.Remove(structureId);
                     }

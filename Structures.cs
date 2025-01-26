@@ -35,7 +35,6 @@ namespace Cave
 {
     public partial class Globals
     {
-
         public static string[] nameArray = new string[]
         {
                 "ka",
@@ -76,8 +75,8 @@ namespace Cave
             { (1, 0, 0), "cube amalgam" },
             { (2, 0, 0), "sawblade" },
             { (2, 1, 0), "star" },
-            { (3, 0, 0), "portal" },
-            { (3, 0, 1), "portal" },
+            { (3, 0, 0), "entry portal" },
+            { (3, 0, 1), "exit portal" },
         };
     }
     public class Structures

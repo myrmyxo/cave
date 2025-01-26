@@ -50,6 +50,11 @@ namespace Cave
             public long seed;
             public int livingDimensionId = -1;
 
+            public int zoomLevel;
+            public int effectiveRadius;
+
+            public Bitmap gameBitmap;
+            public Bitmap lightBitmap;
             public bool isLight = true;
             public Game()
             {
@@ -62,6 +67,9 @@ namespace Cave
                 int PNGsize = 150;
                 PNGsize = 100;
 
+                zoomLevel = 42;
+                effectiveRadius = chunkLoadMininumRadius;
+
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
@@ -69,7 +77,7 @@ namespace Cave
                 spawnNests = true;
                 spawnEntities = true;
                 spawnPlants = true;
-                bool spawnNOTHING = true;
+                bool spawnNOTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntities = false; spawnPlants = false; }
 
                 if (randomSeed)
@@ -120,23 +128,28 @@ namespace Cave
                 if (isPngToExport)
                 {
                     debugMode = true;
-                    int oldChunkLength = ChunkLength;
-                    ChunkLength = PNGsize;
+                    int oldChunkLength = chunkLoadMininumRadius;
+                    chunkLoadMininumRadius = PNGsize;
+                    findEffectiveChunkLoadingRadius();
                     loadDimension(idToPut, true, isMonoeBiomeToPut, forceBiome.type, forceBiome.subType);
                     setPlayerDimension(player, idToPut);
                     player.placePlayer();
                     timeAtLauch = DateTime.Now;
 
                     runGame(null, null);
-
-                    loadedScreens[idToPut].updateScreen().Save($"{currentDirectory}\\caveMap.png");
-                    loadedScreens.Remove(idToPut);
-                    ChunkLength = oldChunkLength;
+                    makeGameBitmaps(true);
+                    loadedScreens[idToPut].updateScreen(gameBitmap, lightBitmap, true).Save($"{currentDirectory}\\caveMap.png");
+                    makeGameBitmaps(false);
+                    chunkLoadMininumRadius = oldChunkLength;
+                    findEffectiveChunkLoadingRadius();
                 }
-
-                loadDimension(idToPut, false, isMonoeBiomeToPut, forceBiome.type, forceBiome.subType);
-                setPlayerDimension(player, idToPut);
-                player.placePlayer();
+                else
+                {
+                    makeGameBitmaps(false);
+                    loadDimension(idToPut, false, isMonoeBiomeToPut, forceBiome.type, forceBiome.subType);
+                    setPlayerDimension(player, idToPut);
+                    player.placePlayer();
+                }
             }
             public void movePlayerStuff(Player player)
             {
@@ -259,8 +272,8 @@ namespace Cave
 
 
                 foreach (Screen screen in loadedScreens.Values) { screen.chunkLoadingPoints = new Dictionary<(int x, int y), int>(); }
-                makeChunkLoadingPoints(new Dictionary<int, bool>(), playerScreen.chunkResolution);
-                playerScreen.forceLoadChunksForOnePoint(ChunkIdx(player.posX, player.posY), playerScreen.chunkResolution);
+                makeChunkLoadingPoints(new Dictionary<int, bool>(), playerScreen.game.effectiveRadius);
+                playerScreen.forceLoadChunksForOnePoint(ChunkIdx(player.posX, player.posY), playerScreen.game.effectiveRadius);
 
                 List<int> dimensionsToUnload = new List<int>();
                 foreach (Screen screen in loadedScreens.Values.ToArray())
@@ -358,7 +371,7 @@ namespace Cave
 
                 // render screen and update game image box thing
                 playerScreen = getScreen(player.dimension);
-                gamePictureBox.Image = playerScreen.updateScreen();
+                gamePictureBox.Image = playerScreen.updateScreen(gameBitmap, lightBitmap);
                 gamePictureBox.Refresh();
                 overlayPictureBox.Image = overlayBitmap;
                 Sprites.drawSpriteOnCanvas(overlayBitmap, overlayBackground.bitmap, (0, 0), 4, false);
@@ -471,27 +484,23 @@ namespace Cave
             {
                 if (isZooming)
                 {
-                    if (ChunkLength > 2)
-                    {
-                        ChunkLength -= 2;
-                        UnloadedChunksAmount++;
-                    }
+                    zoomLevel += 5;
                 }
                 else
                 {
-                    if (UnloadedChunksAmount > 1)
-                    {
-                        ChunkLength += 2;
-                        UnloadedChunksAmount--;
-                    }
-
+                    zoomLevel -= 5;
+                    zoomLevel = Max(zoomLevel, 2);
                 }
-                foreach (Screen screen in loadedScreens.Values) { screen.gameBitmap = new Bitmap(128 * (ChunkLength - 1), 128 * (ChunkLength - 1)); }
-                lastZoom = timeElapsed;
+                findEffectiveChunkLoadingRadius();
+                makeGameBitmaps();
+                lastZoom = timeElapsed - 100;
             }
-            public void renderScreen()
+            public void findEffectiveChunkLoadingRadius() { effectiveRadius = Max(chunkLoadMininumRadius, RoundUp(zoomLevel, 32) / 32); }
+            public void makeGameBitmaps(bool isPngToBeExported = false)
             {
-
+                if (isPngToBeExported) { gameBitmap = new Bitmap(2 * zoomLevel + 1, 2 * zoomLevel + 1); }
+                else { gameBitmap = new Bitmap(8 * zoomLevel + 1, 8 * zoomLevel + 1); }
+                lightBitmap = new Bitmap(2 * zoomLevel + 1, 2 * zoomLevel + 1);
             }
             public void setPlayerDimension(Player player, int targetDimension)
             {
@@ -508,7 +517,7 @@ namespace Cave
             {
                 if (!loadedScreens.ContainsKey(idToLoad))
                 {
-                    Screen newScreen = new Screen(this, ChunkLength, idToLoad, isPngToExport, isMonoToPut, typeToPut, subTypeToPut);
+                    Screen newScreen = new Screen(this, idToLoad, isMonoToPut, typeToPut, subTypeToPut);
                     loadedScreens[idToLoad] = newScreen;
                     return newScreen;
                 }
@@ -558,17 +567,10 @@ namespace Cave
 
             public Dictionary<((int x, int y) pos, int layer), int> LCGCacheDict = new Dictionary<((int x, int y) pos, int layer), int>();
 
-            public int chunkResolution; // included both loaded and unloaded chunks, side of the square
-            public bool isPngToBeExported;
-
             public long seed;
             public int id;
             public (int type, int subType) type;
             public bool isMonoBiome; // if yes, then the whole-ass dimension is only made ouf of ONE biome, that is of the type of... well type. If not, type is the type of dimension and not the biome (like idk normal, frozen, lampadaire, shitpiss world...)
-
-            public Bitmap gameBitmap;
-
-            public Bitmap lightBitmap;
 
             public (float x, float y) playerStartPos = (0, 0);
 
@@ -605,7 +607,7 @@ namespace Cave
             public Dictionary<(int x, int y), bool> inertStructureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), bool> activeStructureLoadedChunkIndexes = new Dictionary<(int x, int y), bool>();
 
-            public Screen(Game gameToPut, int chunkResolutionToPut, int idToPut, bool isPngToExport, bool isMonoToPut = false, int forceType = -999, int forceSubType = -999)
+            public Screen(Game gameToPut, int idToPut, bool isMonoToPut = false, int forceType = -999, int forceSubType = -999)
             {
                 game = gameToPut;
                 id = idToPut;
@@ -641,12 +643,8 @@ namespace Cave
                     if (game.livingDimensionId == -1 && isMonoBiome == false && type == (2, 0)) { game.livingDimensionId = id; }
                 }
                 saveDimensionData(this);
-                isPngToBeExported = isPngToExport;
-                chunkResolution = chunkResolutionToPut + UnloadedChunksAmount * 2; // invisible chunks of the sides/top/bottom
                 createDimensionFolders(game, id);
                 Player player = game.playerList[0];
-                if (isPngToBeExported) { gameBitmap = new Bitmap(32 * (chunkResolution - 1), 32 * (chunkResolution - 1)); }
-                else { gameBitmap = new Bitmap(128 * (ChunkLength - 1), 128 * (ChunkLength - 1)); }
                 chunkX = ChunkIdx(player.posX);
                 chunkY = ChunkIdx(player.posY);
                 if (player.dimension == id)
@@ -769,9 +767,9 @@ namespace Cave
             public void forceLoadChunksForOnePoint((int x, int y) chunkLoadingPos, int magnitude)
             {
                 (int x, int y) posToTest;
-                for (int i = -(int)(magnitude * 0.5f); i < (int)(magnitude * 0.5f); i++)
+                for (int i = -magnitude; i < magnitude; i++)
                 {
-                    for (int j = -(int)(magnitude * 0.5f); j < (int)(magnitude * 0.5f); j++)
+                    for (int j = -magnitude; j < magnitude; j++)
                     {
                         posToTest = (chunkLoadingPos.x + i, chunkLoadingPos.y + j);
                         getChunkFromChunkPos(posToTest, false);
@@ -785,9 +783,9 @@ namespace Cave
                 foreach ((int x, int y) chunkLoadingPos in chunkLoadingPoints.Keys)
                 {
                     magnitude = chunkLoadingPoints[chunkLoadingPos];
-                    for (int i = -(int)(magnitude * 0.5f); i < (int)(magnitude * 0.5f); i++)
+                    for (int i = -magnitude; i < magnitude; i++)
                     {
-                        for (int j = -(int)(magnitude * 0.5f); j < (int)(magnitude * 0.5f); j++)
+                        for (int j = -magnitude; j < magnitude; j++)
                         {
                             posToTest = (chunkLoadingPos.x + i, chunkLoadingPos.y + j);
                             getChunkFromChunkPos(posToTest, false);
@@ -803,9 +801,9 @@ namespace Cave
                 foreach ((int x, int y) chunkLoadingPos in chunkLoadingPoints.Keys)
                 {
                     magnitude = chunkLoadingPoints[chunkLoadingPos];
-                    for (int i = -1 -(int)(magnitude * 0.5f); i <= (int)(magnitude * 0.5f); i++)
+                    for (int i = -1 - magnitude; i <= magnitude; i++)
                     {
-                        for (int j = -1 -(int)(magnitude * 0.5f); j <= (int)(magnitude * 0.5f); j++)
+                        for (int j = -1 - magnitude; j <= magnitude; j++)
                         {
                             posToTest = (chunkLoadingPos.x + i, chunkLoadingPos.y + j);
                             if (!loadedChunks.ContainsKey(posToTest))
@@ -844,7 +842,7 @@ namespace Cave
                         foreach ((int x, int y) pos in chunkLoadingPoints.Keys)
                         {
                             distanceToCenter = Distance(currentIdx, pos);
-                            if ((float)(rand.NextDouble()) * distanceToCenter < 0.8f * chunkLoadingPoints[pos]) { goto Fail; } // if it's too close to ANY point of loading, do not unload
+                            if ((float)(rand.NextDouble()) * distanceToCenter < 1.6f * chunkLoadingPoints[pos]) { goto Fail; } // if it's too close to ANY point of loading, do not unload
                         }
                         chunksToRemove[currentIdx] = true;
                     Fail:;
@@ -945,8 +943,8 @@ namespace Cave
             }
             public void drawPixel(Bitmap receiver, Color color, (int x, int y) position, (int x, int y) camPos, int PNGmultiplicator)
             {
-                (int x, int y) posToDraw = (position.x - camPos.x - UnloadedChunksAmount * 32, position.y - camPos.y - UnloadedChunksAmount * 32);
-                if (posToDraw.x >= 0 && posToDraw.x < (chunkResolution - 1) * 32 && posToDraw.y >= 0 && posToDraw.y < (chunkResolution - 1) * 32)
+                (int x, int y) posToDraw = (position.x - camPos.x, position.y - camPos.y);
+                if (posToDraw.x >= 0 && posToDraw.x < receiver.Width && posToDraw.y >= 0 && posToDraw.y < receiver.Height)
                 {
                     using (var g = Graphics.FromImage(receiver))
                     {
@@ -956,8 +954,8 @@ namespace Cave
             }
             public void pasteImage(Bitmap receiver, Bitmap bitmapToDraw, (int x, int y) position, (int x, int y) camPos, int PNGmultiplicator)
             {
-                (int x, int y) posToDraw = (position.x - camPos.x - UnloadedChunksAmount * 32, position.y - camPos.y - UnloadedChunksAmount * 32);
-                if (true || posToDraw.x >= -bitmapToDraw.Width && posToDraw.x < (chunkResolution) * 32 && posToDraw.y >= -bitmapToDraw.Height && posToDraw.y < (chunkResolution) * 32)
+                (int x, int y) posToDraw = (position.x - camPos.x, position.y - camPos.y);
+                if (true || posToDraw.x >= 0 && posToDraw.x < receiver.Width && posToDraw.y >= 0 && posToDraw.y < receiver.Height)
                 {
                     using (Graphics g = Graphics.FromImage(receiver))
                     {
@@ -984,8 +982,8 @@ namespace Cave
                     bitmapToDraw.Palette = newPalette; // The crucial statement
                 }*/
 
-                (int x, int y) posToDraw = (position.x - camPos.x - UnloadedChunksAmount * 32, position.y - camPos.y - UnloadedChunksAmount * 32);
-                if (true || posToDraw.x >= -bitmapToDraw.Width && posToDraw.x < (chunkResolution) * 32 && posToDraw.y >= -bitmapToDraw.Height && posToDraw.y < (chunkResolution) * 32)
+                (int x, int y) posToDraw = (position.x - camPos.x, position.y - camPos.y);
+                if (true || posToDraw.x >= -bitmapToDraw.Width && posToDraw.x < game.effectiveRadius * 32 && posToDraw.y >= -bitmapToDraw.Height && posToDraw.y < game.effectiveRadius * 32)
                 {
                     using (Graphics g = Graphics.FromImage(receiver))
                     {
@@ -999,7 +997,7 @@ namespace Cave
 
                 //bitmapToDraw.UnlockBits(bData);
             }
-            public Bitmap updateScreen()
+            public Bitmap updateScreen(Bitmap gameBitmap, Bitmap lightBitmap, bool isPngToBeExported = false)
             {
                 Graphics gg = Graphics.FromImage(gameBitmap);
                 gg.Clear(Color.White);
@@ -1011,11 +1009,11 @@ namespace Cave
                 int PNGmultiplicator = 4;
                 if (isPngToBeExported) { PNGmultiplicator = 1; }
                 Player player = game.playerList[0];
-                (int x, int y) camPos = (player.camPosX, player.camPosY);
+                (int x, int y) camPos = (player.camPosX - game.zoomLevel, player.camPosY - game.zoomLevel);
 
-                for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
+                for (int i = -game.effectiveRadius; i <= game.effectiveRadius; i++)
                 {
-                    for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
+                    for (int j = -game.effectiveRadius; j <= game.effectiveRadius; j++)
                     {
                         chunko = getChunkFromChunkPos((chunkX + i, chunkY + j), !isPngToBeExported);
                         pasteImage(gameBitmap, chunko.bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, PNGmultiplicator);
@@ -1104,16 +1102,17 @@ namespace Cave
 
                 if (game.isLight && !debugMode) // light shit
                 {
-                    lightBitmap = new Bitmap(gameBitmap.Size.Width / 4, gameBitmap.Size.Height / 4);
-                    for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
+                    for (int i = -game.effectiveRadius; i <= game.effectiveRadius; i++)
                     {
-                        for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
+                        for (int j = -game.effectiveRadius; j <= game.effectiveRadius; j++)
                         {
                             chunko = getChunkFromChunkPos((chunkX + i, chunkY + j));
                             pasteImage(lightBitmap, chunko.lightBitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, 1);
                             //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32), PNGmultiplicator); } // if want to show chunk origin
                         }
                     }
+
+
 
 
                     pasteBitmapTransparenciesOnBitmap(lightBitmap, lightPositions, camPos); // very slow for some reason !
@@ -1130,31 +1129,30 @@ namespace Cave
                         }
                     }*/
 
-                    Bitmap resizedBitmap = new Bitmap(lightBitmap.Width * 4, lightBitmap.Height * 4);
+                    Bitmap resizedBitmap = new Bitmap(gameBitmap.Width, gameBitmap.Height);
                     using (Graphics g = Graphics.FromImage(resizedBitmap))
                     {
                         g.PixelOffsetMode = PixelOffsetMode.HighQuality;
                         g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
                         g.DrawImage(lightBitmap, 0, 0, resizedBitmap.Width, resizedBitmap.Height);
                     }
-                    lightBitmap = resizedBitmap;
-                    pasteLightBitmapOnGameBitmap(gameBitmap, lightBitmap);
+                    pasteLightBitmapOnGameBitmap(gameBitmap, resizedBitmap);
                 }
 
                 if (!debugMode) // fog of war
                 {
-                    for (int i = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); i <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; i++)
+                    for (int i = -game.effectiveRadius; i <= game.effectiveRadius; i++)
                     {
-                        for (int j = UnloadedChunksAmount - (int)(chunkResolution * 0.5f); j <= (int)(chunkResolution * 0.5f) - UnloadedChunksAmount; j++)
+                        for (int j = -game.effectiveRadius; j <= game.effectiveRadius; j++)
                         {
-                            chunko = loadedChunks[(chunkX + i, chunkY + j)];
+                            chunko = getChunkFromChunkPos((chunkX + i, chunkY + j));
                             if (chunko.explorationLevel == 0)
                             {
                                 pasteImage(gameBitmap, black32Bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, PNGmultiplicator);
                             }
                             else if (chunko.explorationLevel == 1)
-                            {
-                                pasteImage(gameBitmap, chunko.fogBitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, PNGmultiplicator);
+                            {                                           // THIS SHOULD NEVER HAPPEN ! Like actually what the fuck ! Due to switching from Debug mode to not debug it seems
+                                pasteImage(gameBitmap, chunko.fogBitmap ?? transBlue32Bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, PNGmultiplicator);
                             }
                         }
                     }
@@ -1256,14 +1254,6 @@ namespace Cave
 
                 gameBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 return gameBitmap;
-            }
-            public Chunk tryToGetChunk((int x, int y) chunkCoords)
-            {
-                if (loadedChunks.TryGetValue(chunkCoords, out Chunk chunkToTest))
-                {
-                    return chunkToTest;
-                }
-                return theFilledChunk;
             }
             public (int type, int subType) getTileContent((int x, int y) posToTest)
             {

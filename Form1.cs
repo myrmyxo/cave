@@ -46,8 +46,7 @@ namespace Cave
         public static bool spawnEntities = false;
         public static bool spawnPlants = false;
 
-        public static int ChunkLength = 4;
-        public static int UnloadedChunksAmount = 8;
+        public static int chunkLoadMininumRadius = 8;
 
         public static Bitmap black32Bitmap = new Bitmap(32, 32);
         public static Bitmap transBlue32Bitmap = new Bitmap(32, 32);
@@ -356,7 +355,6 @@ namespace Cave
 
             loadSpriteDictionaries();
             //      --- - TO DO LIST - ---
-            // Fix ray bugs. Keep rays when they don't hit anything for next frame (decrease amount the ray moves per frame also).
             // Axe attack ?
             // Make nests not appear in certain biomes.
             // Fix plants spawning. Make megaChunks priority loading (to stop overlaps and weird generation).
@@ -376,6 +374,9 @@ namespace Cave
             // Message from player character portrait (LMFAO LIKE IF THERE WAS ONE) : "I feel like i'm very much not wanted here..." to tell player that hornet did a warning attack. "I should really get out before they get angry" on the second one.
             // They a loud BUZZ and every hornet aggroes on the player
             // GoHome function for hornets. They go to main room/random room in the nest
+            // Upside down trees ! And other plants like that !
+            // Fix the fucking mold... or make it interesting. Make that, on mold conversion, it Digs ALL tiles in plants present. As an ATTACK like all diggings will be made.
+            // The uh... menu... and uh text... and uh dialogues... and uh villages... and uhhhhhhh make an actual fucking game uhhh
 
             // cool ideas for later !
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
@@ -412,6 +413,8 @@ namespace Cave
             // Which turns them into skeletals, these skeletals migrate to the bone biome, and then the war can start again lol. Periodic even that can be witnessed by the player maybe ?
             // Supah powerful wizards can create dimensions. Maybe dimensions that are super weird and shit can be justified this was LOL
             // Star people who have left star structures such as : "star" "big star" "bigbigstar" "bi gbigbigbi g star". Like maybe nests and shite made out of starz.
+            // Day and night cycle (that... doesn't exist yet lmfao) due to huge influx of light from another dimension. Like in all points of the dimension photons just happen to be transferred during the day, but it stops during the nigh
+            // Same reason for the seasons(?) and shit, but over a long period of time
 
             //
             // cool seeds !!!! DO NOT DELETE      yeah actually since world gen keeps on changing they're fucking useless LMFAO
@@ -832,6 +835,21 @@ namespace Cave
         public static long Floor(long value, long modulo)
         {
             return value - (((value % modulo) + modulo) % modulo);
+        }
+        public static int RoundUp(int value, int modulo)
+        {
+            if (value % modulo == 0) { return value; }
+            return Floor(value, modulo) + modulo;
+        }
+        public static float RoundUp(float value, float modulo)
+        {
+            if (value % modulo == 0) { return value; }
+            return Floor(value, modulo) + modulo;
+        }
+        public static long RoundUp(long value, long modulo)
+        {
+            if (value % modulo == 0) { return value; }
+            return Floor(value, modulo) + modulo;
         }
         public static (int x, int y) ChunkIdx(int pixelPosX, int pixelPosY)
         {
