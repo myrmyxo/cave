@@ -69,7 +69,6 @@ namespace Cave
         public static bool dimensionChangePress = false;
         public static bool dimensionSelection = false;
         public static int currentTargetDimension = 0;
-        public static float lastZoom = 0;
         public static DateTime timeAtLauch;
         public static float timeElapsed = 0;
 
@@ -378,6 +377,9 @@ namespace Cave
             // Fix the fucking mold... or make it interesting. Make that, on mold conversion, it Digs ALL tiles in plants present. As an ATTACK like all diggings will be made.
             // The uh... menu... and uh text... and uh dialogues... and uh villages... and uhhhhhhh make an actual fucking game uhhh
             // System to DEMOTE megaChunks and chunks to ExtraLoaded. Also in the debugging put extraLoadedMegachunks as another color than the red. Ig.
+            // Upgrade plants spawning : if Maxgrowth returns a growth level that is too small, it FAILS, and tries again with another position
+            // make global using thing because it's RAD
+            // Make a 1 pixel screen on UpdateScreen, then upscale it simply -> would make shit a LOT smoother for small zoom levels ig and shit. Also useful for liggt/fog ?
 
             // cool ideas for later !
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.

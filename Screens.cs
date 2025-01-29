@@ -51,8 +51,10 @@ namespace Cave
             public int livingDimensionId = -1;
 
             public int zoomLevel;
+            public float realZoomLevel;
             public int effectiveRadius;
             public int PNGmultiplicator;
+            public float zoomingSpeed = 0;
 
             public Bitmap gameBitmap;
             public Bitmap lightBitmap;
@@ -69,6 +71,7 @@ namespace Cave
                 PNGsize = 100;
 
                 zoomLevel = 42;
+                realZoomLevel = zoomLevel;
                 effectiveRadius = chunkLoadMininumRadius;
 
                 bool isMonoeBiomeToPut = false;
@@ -249,8 +252,8 @@ namespace Cave
                     else { craftSelection = true; }
                     craftPress = false;
                 }
-                if (zoomPress[0] && timeElapsed > lastZoom + 0.25f) { zoom(true); }
-                if (zoomPress[1] && timeElapsed > lastZoom + 0.25f) { zoom(false); }
+                zoomUpdate();
+                
 
 
 
@@ -481,20 +484,26 @@ namespace Cave
                     newImmuneChunks = new Dictionary<Chunk, bool>();
                 }
             }
-            public void zoom(bool isZooming)
+            public void zoomUpdate()
             {
-                if (isZooming)
+                if (zoomPress[0] == zoomPress[1])
                 {
-                    zoomLevel += 5;
+                    zoomingSpeed = Sign(zoomingSpeed) * Max(0.7f * Abs(zoomingSpeed) - 1, 0);
                 }
                 else
                 {
-                    zoomLevel -= 5;
-                    zoomLevel = Max(zoomLevel, 2);
+                    float factor = realZoomLevel / 50;
+                    float limit = Max(1, factor * 3);
+                    int sign = zoomPress[0] ? 1 : -1;
+                    zoomingSpeed = Clamp(-limit, zoomingSpeed, limit) + sign * factor;
                 }
-                findEffectiveChunkLoadingRadius();
-                makeGameBitmaps();
-                lastZoom = timeElapsed - 100;
+                if (zoomingSpeed != 0)
+                {
+                    realZoomLevel = Max(2, realZoomLevel + zoomingSpeed);
+                    zoomLevel = (int)Floor(realZoomLevel, 1);
+                    findEffectiveChunkLoadingRadius();
+                    makeGameBitmaps();
+                }
             }
             public void findEffectiveChunkLoadingRadius() { effectiveRadius = Max(chunkLoadMininumRadius, RoundUp(zoomLevel, 32) / 32); }
             public void makeGameBitmaps()
@@ -935,11 +944,11 @@ namespace Cave
                     g.FillRectangle(new SolidBrush(color), posToDraw.x, posToDraw.y, size.x, size.y);
                 }
             }
-            public void drawPixelFixed(Bitmap receiver, Color color, (int x, int y) posToDraw, int scale)
+            public void drawPixelFixed(Bitmap receiver, Color color, (int x, int y) posToDraw, (int x, int y) scaledOffset, int scale, bool fromTopRightCorner = false)
             {
                 using (var g = Graphics.FromImage(receiver))
                 {
-                    g.FillRectangle(new SolidBrush(color), posToDraw.x, posToDraw.y, scale, scale);
+                    g.FillRectangle(new SolidBrush(color), fromTopRightCorner ? receiver.Width - (1 + posToDraw.x + scaledOffset.x * scale) : posToDraw.x + scaledOffset.x * scale, fromTopRightCorner ? receiver.Width - (1 + posToDraw.y + scaledOffset.y * scale) : posToDraw.y + scaledOffset.y * scale, scale, scale);
                 }
             }
             public void drawPixel(Bitmap receiver, Color color, (int x, int y) position, (int x, int y) camPos, int PNGmultiplicator)
@@ -1210,27 +1219,27 @@ namespace Cave
 
                 if (debugMode && !isPngToBeExported) // debug shit for chunks and megachunks
                 {
-                    int xOffset = (game.loadedScreens.Count - 1)*50;
+                    int xOffset = (game.loadedScreens.Count - 1) * 100;
+                    int scaleFactor = Max(1, 30 / (game.zoomLevel + 10));
+                    Color colorToDraw;
+                    (int x, int y) playerChunkPos = (ChunkIdx(player.posX), ChunkIdx(player.posY));
                     foreach (Screen screenToDebug in game.loadedScreens.Values)
                     {
-                        int scaleFactor = Max(1, game.PNGmultiplicator / 2);
-                        Color colorToDraw;
-                        (int x, int y) cameraChunkIdx = (ChunkIdx(game.playerList[0].posX), ChunkIdx(game.playerList[0].posY));
                         foreach ((int x, int y) poso in screenToDebug.megaChunks.Keys)
                         {
                             if (player.screen == screenToDebug) { colorToDraw = Color.IndianRed; }
                             else { colorToDraw = Color.Crimson; }
-                            drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x * 16 - cameraChunkIdx.x - xOffset, 300 + poso.y * 16 - cameraChunkIdx.y), 16 * scaleFactor);
+                            drawPixelFixed(gameBitmap, colorToDraw, (100 + xOffset + playerChunkPos.x * 2, 100 + playerChunkPos.y * 2), (-poso.x, -poso.y), 32 * scaleFactor, true);
                         }
                         foreach ((int x, int y) poso in screenToDebug.activeStructureLoadedChunkIndexes.Keys)
                         {
                             colorToDraw = Color.FromArgb(100, 255, 255, 100);
-                            drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x - xOffset, 300 + poso.y - cameraChunkIdx.y), 1 * scaleFactor);
+                            drawPixelFixed(gameBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
                         }
                         foreach ((int x, int y) poso in screenToDebug.extraLoadedChunks.Keys)
                         {
                             colorToDraw = Color.Purple;
-                            drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x - xOffset, 300 + poso.y - cameraChunkIdx.y), 1 * scaleFactor);
+                            drawPixelFixed(gameBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
                         }
                         foreach ((int x, int y) poso in screenToDebug.loadedChunks.Keys)
                         {
@@ -1238,15 +1247,15 @@ namespace Cave
                             if (screenToDebug.loadedChunks[poso].unstableLiquidCount > 0) { colorToDraw = Color.DarkBlue; }
                             else if (screenToDebug.activeStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.Cyan; }
                             else if (screenToDebug.inertStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.FromArgb(130, 50, 130); }
-                            drawPixelFixed(gameBitmap, colorToDraw, (300 + poso.x - cameraChunkIdx.x - xOffset, 300 + poso.y - cameraChunkIdx.y), 1);
+                            drawPixelFixed(gameBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
                         }
-                        drawPixelFixed(gameBitmap, Color.Red, (300 + ChunkIdx(player.posX) - cameraChunkIdx.x - xOffset, 300 + ChunkIdx(player.posY) - cameraChunkIdx.y), 1 * scaleFactor);
+                        drawPixelFixed(gameBitmap, Color.Red, (100 + xOffset, 100), (0, 0), 2 * scaleFactor, true);
 
                         foreach (Chunk chunkoko in screenToDebug.loadedChunks.Values)
                         {
                             if (chunkoko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunkoko.pos.x * 32 - xOffset, chunkoko.pos.y * 32), camPos, game.PNGmultiplicator); }
                         }
-                        xOffset -= 50;
+                        xOffset -= 120;
                     }
                 }
 
