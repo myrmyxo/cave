@@ -309,20 +309,6 @@ namespace Cave
                     speedX = Sign(speedX) * (Max(0, Abs(speedX) * (0.75f) - 0.7f));
                     speedY = Sign(speedY) * (Max(0, Abs(speedY) * (0.75f) - 0.7f));
                 }
-
-                if (digPress && timeElapsed > timeAtLastDig /*+ 0.2f*/)
-                {
-                    (int x, int y) digPos;
-                    if (arrowKeysState[0] && !arrowKeysState[1]) { digPos = (posX - 1, posY); }
-                    else if (arrowKeysState[1] && !arrowKeysState[0]) { digPos = (posX + 1, posY); }
-                    else if (arrowKeysState[2] && !arrowKeysState[3]) { digPos = (posX, posY - 1); }
-                    else if (arrowKeysState[3] && !arrowKeysState[2]) { digPos = (posX, posY + 1); }
-                    else { digPos = (posX, posY); }
-
-                    (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
-                    if (currentItem == (1, 0, 4)) { TerrainDig(digPos); }
-                    if (currentItem == (4, 0, 4)) { PlantDig(digPos, currentItem); }     // Don't do scythe here cause it's done with the attacks !
-                }
                 if ((placePress[0] || placePress[1]) && ((inventoryElements[inventoryCursor].typeOfElement == 0 && timeElapsed > timeAtLastPlace + 0.01f) || (timeElapsed > timeAtLastPlace + 0.2f)))
                 {
                     (int x, int y) placePos;
@@ -492,22 +478,34 @@ namespace Cave
 
                 if (arrowKeysState[0] == arrowKeysState[1] && direction.y != 0) { direction = (0, direction.y); }
             }
+            public void tryStartAttack()
+            {
+                (int type, int subType, int megaType) currentItem = inventoryElements[inventoryCursor];
+                if (digPress && currentAttack.type == -1 && currentItem.megaType == 4)  // start an attack if a tool that can attack is selected, X is pressed, and player is not already attacking
+                {
+                    if (currentItem == (0, 0, 4)) { startAttack((0, 0)); }
+                    else if (currentItem == (1, 0, 4)) { startAttack((1, 0)); }
+                    else if (currentItem == (2, 0, 4)) { startAttack((2, 0)); }
+                    else if (currentItem == (3, 0, 4)) { startAttack((3, 0)); }
+                    else if (currentItem == (4, 0, 4)) { startAttack((4, 0)); }
+                }
+            }
+            public void startAttack((int type, int subType) attackToStart)
+            {
+                attackState = -1;
+                currentAttack = attackToStart;
+                willBeSetAsNotAttacking = false;
+            }
             public void updateAttack()
             {
                 List<((int x, int y), Color color)> posToDrawList = new List<((int x, int y), Color color)>();
                 List<((int x, int y) pos, (int type, int subType) attack)> posToAttackList = new List<((int x, int y) pos, (int type, int subType) attack)>();
-                (int type, int subType, int megaType) currentItem = inventoryElements[inventoryCursor];
 
-                if (digPress && currentAttack.type == -1 && currentItem.megaType == 4 )  // start an attack if a tool that can attack is selected, X is pressed, and player is not already attacking
-                {
-                    if (currentItem == (0, 0, 4)) { startAttack((0, 0)); }
-                    if (currentItem == (2, 0, 4)) { startAttack((2, 0)); }
-                    else if (currentItem == (3, 0, 4)) { startAttack((3, 0)); }
-                }
+                tryStartAttack();
 
+                attackState++;
                 if (currentAttack == (0, 0)) // if sword attack
                 {
-                    attackState++;
                     int sign = 1;
                     if (direction.x > 0) { sign = -1; }
                     (int x, int y) attackDirection = directionPositionArray[PosMod(directionPositionDictionary[direction] + (sign * (attackState - 2)), 8)];
@@ -520,7 +518,7 @@ namespace Cave
                     {
                         posToAttackList.Add(((posX + attackDirection.x, posY + attackDirection.y), currentAttack));
                         posToAttackList.Add(((posX + 2 * attackDirection.x, posY + attackDirection.y), currentAttack));
-                        posToAttackList.Add(((posX + attackDirection.x, posY + 2 * + attackDirection.y), currentAttack));
+                        posToAttackList.Add(((posX + attackDirection.x, posY + 2 * +attackDirection.y), currentAttack));
                         posToAttackList.Add(((posX + 2 * attackDirection.x, posY + 2 * attackDirection.y), currentAttack));
 
                     }
@@ -545,13 +543,19 @@ namespace Cave
 
                     if (attackState >= 4) { willBeSetAsNotAttacking = true; }
                 }
+                else if (currentAttack == (1, 0)) // if pickaxe attack
+                {
+                    (int x, int y) attackPos = (posX + direction.x, posY + direction.y);
+                    if (attackState == 0) { posToAttackList.Add((attackPos, currentAttack)); }
+                    posToDrawList.Add((attackPos, Color.White));
+                    if (devMode || attackState >= 3) { willBeSetAsNotAttacking = true; }
+                }
                 else if (currentAttack == (2, 0)) // if scythe attack
                 {
-                    attackState++;
                     (int x, int y) attackPos = (0, 0);
                     int sign = 1;
                     if (direction.x > 0) { sign = -1; }
-                    
+
                     if (attackState == 0) { attackPos = (posX + sign, posY + 1); }
                     else if (attackState == 1) { attackPos = (posX - sign, posY + 1); }
                     else if (attackState == 2) { attackPos = (posX - 2 * sign, posY); }
@@ -560,7 +564,7 @@ namespace Cave
 
                     posToDrawList.Add(((attackPos.x, attackPos.y), Color.White));
                     posToDrawList.Add(((attackPos.x - sign, attackPos.y), Color.White));
-                    for (int j = -1; j <= 1; j+= 1)
+                    for (int j = -1; j <= 1; j += 1)
                     {
                         posToAttackList.Add(((attackPos.x, attackPos.y + j), currentAttack));
                         posToAttackList.Add(((attackPos.x - sign, attackPos.y + j), currentAttack));
@@ -570,7 +574,6 @@ namespace Cave
                 }
                 else if (currentAttack == (3, 0))   // If magic wand attack
                 {
-                    attackState++;
                     int sign = -1;
                     if (direction.x > 0) { sign = 1; }
 
@@ -591,7 +594,14 @@ namespace Cave
 
                     if (attackState >= 10) { willBeSetAsNotAttacking = true; }
                 }
-                else { willBeSetAsNotAttacking = true; }
+                else if (currentAttack == (4, 0)) // if axe attack
+                {
+                    (int x, int y) attackPos = (posX + direction.x, posY + direction.y);
+                    if (attackState == 0) { posToAttackList.Add((attackPos, currentAttack)); }
+                    posToDrawList.Add((attackPos, Color.White));
+                    if (devMode || attackState >= 3) { willBeSetAsNotAttacking = true; }
+                }
+                else { willBeSetAsNotAttacking = true; attackState--; }
 
                 foreach (((int x, int y) pos, (int type, int subType) attack) attack in posToAttackList)
                 {
@@ -602,12 +612,6 @@ namespace Cave
                     screen.attacksToDraw.Add(pos);
                 }
                 // send to list of attacks to draw
-            }
-            public void startAttack((int type, int subType) attackToStart)
-            {
-                attackState = -1;
-                currentAttack = attackToStart;
-                willBeSetAsNotAttacking = false;
             }
             public void setAsNotAttacking()
             {
@@ -624,14 +628,20 @@ namespace Cave
                 }
 
                 Chunk chunkToTest = screen.getChunkFromPixelPos(attack.pos);
-                if (attack.attack == (2, 0))
+                if (attack.attack == (2, 0) || attack.attack == (4, 0))
                 {
-                    PlantDig(attack.pos, (attack.attack.type, attack.attack.subType, 4), chunkToTest);
+                    if (!PlantDig(attack.pos, (attack.attack.type, attack.attack.subType, 4), chunkToTest)) { willBeSetAsNotAttacking = true; }
+                }
+                else if (attack.attack == (1, 0))
+                {
+                    if (TerrainDig(attack.pos).type == 0) { willBeSetAsNotAttacking = true; }
                 }
 
                 float damage = 0;
-                if (attack.attack == (0, 0)) { damage = 1; }
-                if (attack.attack == (2, 0)) { damage = 0.5f; }
+                if (attack.attack == (0, 0)) { damage = 1; }        // sword
+                if (attack.attack == (2, 0)) { damage = 0.75f; }    // scythe
+                if (attack.attack == (1, 0) || attack.attack == (4, 0)) { damage = 0.5f; } // pickaxe & scythe
+                if (damage == 0) { return; }    // Careful prolly gonna get removed later but whatever
                 foreach (Entity entity in chunkToTest.entityList)
                 {
                     if ((entity.posX, entity.posY) == attack.pos && !entitiesAlreadyHitByCurrentAttack.ContainsKey(entity.id))

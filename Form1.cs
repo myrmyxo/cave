@@ -378,7 +378,7 @@ namespace Cave
             // The uh... menu... and uh text... and uh dialogues... and uh villages... and uhhhhhhh make an actual fucking game uhhh
             // System to DEMOTE megaChunks and chunks to ExtraLoaded. Also in the debugging put extraLoadedMegachunks as another color than the red. Ig.
             // Upgrade plants spawning : if Maxgrowth returns a growth level that is too small, it FAILS, and tries again with another position
-            // make global using thing because it's RAD
+            // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
             // Make a 1 pixel screen on UpdateScreen, then upscale it simply -> would make shit a LOT smoother for small zoom levels ig and shit. Also useful for liggt/fog ?
 
             // cool ideas for later !
