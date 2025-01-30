@@ -737,7 +737,7 @@ namespace Cave
             public override int setClassTypeInJson() { return 1; }
             public override void addEntityToStructure(Entity entity)
             {
-                if (entity.type == 3)
+                if (entity.type.type == 3)
                 {
                     adults.Add(entity);
                 }
@@ -1103,15 +1103,15 @@ namespace Cave
                 int upkeepHoneyCost = adults.Count;
                 foreach (Entity kiddo in larvae)
                 {
-                    if (kiddo.subType == 0)
+                    if (kiddo.type.subType == 0)
                     {
                         upkeepHoneyCost += 4;
                     }
-                    if (kiddo.subType == 1)
+                    if (kiddo.type.subType == 1)
                     {
                         upkeepHoneyCost += 4 - kiddo.food;
                     }
-                    if (kiddo.subType == 2)
+                    if (kiddo.type.subType == 2)
                     {
                         upkeepHoneyCost += 1;
                     }

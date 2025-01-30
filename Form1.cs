@@ -357,16 +357,13 @@ namespace Cave
             // Axe attack ?
             // Make nests not appear in certain biomes.
             // Fix plants spawning. Make megaChunks priority loading (to stop overlaps and weird generation).
-            // Make player die ! Amulet that when in inventory protects player from lava, and acid. And breathing ! And hp and food ! And the rest !!
-            // Idea : affuter blades ? Maybe they can get rusty ? Multiple species of mushroom (move mold to 0 ? or its whole thing prolly better).
             // Player fairy transfo when in fairy liquid. Craft tools. Add ICE. Auto sorting in inventory. Blood breathing ? Extract o2 from blood.
             // Optimize/functionalize lake maker function
             // EntityCemetary and PlantCemetary folders, putting the files of dead Entities/Plants there
             // Hornet nests -> search for point of interests in plants should take place with SPIRAL function
-            // Make every kind of digging an attack. Including terrain, plant, and those of entities.
+            // Make entity digging + attacks
             // Update tryGrowth stuff in plants to fix bugs and make growth more intelligently
             // Optimization of biome getting -> if all 4 corners of a chunk are Monobiome of the same biome, no need to computer all the other ones inside ! thank you noiseposti.ng 
-            // When multiple players, movePlayer them in random order. So no player gets a real advantage sorta ig.
             // Fluid dezoom, not by gigaChunks of whatever. No ChunkLength, but instead a size of forceLoading (radius in chunks). When dezoom goes over it, it takes the dezoom factor instead to forceLoad/loadCloseChunks.
             // So infinite dezoom (and zoom up to 1 pixel theoretically). Make the bitmap be created at each UpdateScreen also, not only on zoom/dezoom
             // Hornets : 3 types of attack. Warning sting (first attack, to tell to fuk off, scares creatures off the den, second attack, actual stings that deal poison, third attack, mandible slash that can cause bleeding)
@@ -378,10 +375,12 @@ namespace Cave
             // The uh... menu... and uh text... and uh dialogues... and uh villages... and uhhhhhhh make an actual fucking game uhhh
             // System to DEMOTE megaChunks and chunks to ExtraLoaded. Also in the debugging put extraLoadedMegachunks as another color than the red. Ig.
             // Upgrade plants spawning : if Maxgrowth returns a growth level that is too small, it FAILS, and tries again with another position
-            // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
-            // Make a 1 pixel screen on UpdateScreen, then upscale it simply -> would make shit a LOT smoother for small zoom levels ig and shit. Also useful for liggt/fog ?
+
+            // - - - Le Evil Bugz... - - -
+            // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
 
             // cool ideas for later !
+            // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
             // add stoplight biomes not just candelier biome. and make candles have their own biome ?
             // make it possible to visit entities/players inventories lmfao
@@ -392,6 +391,9 @@ namespace Cave
             // Add a portal that is inside lava oceans; in a structure (obsidian city ?), that needs to be turned on with maybe liquid obsidian or oil, and teleports to like hell, or an obsidian dimension made ouf of only obsidian shit ?.
             // Amnesia spell that makes u forget parts of the map lol
             // Make it so lakes that are big enough (megaLakes) have stuff similar to ocean in them. Like idk mermaids or other shite ? Since they're huge and are like mini oceans.
+            // Make player die ! Amulet that when in inventory protects player from lava, and acid. And breathing ! And hp and food ! And the rest !!
+            // Idea : affuter blades ? Maybe they can get rusty ? Multiple species of mushroom (move mold to 0 ? or its whole thing prolly better).
+            // When multiple players, movePlayer them in random order. So no player gets a real advantage sorta ig.
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful

@@ -94,8 +94,8 @@ namespace Cave
 
             public int seed;
             public int id;
-            public int type; // 0 = fairy , 1 = frog , 2 = fish, 3 = hornet, 4 = worm, 5 = waterSkipper
-            public int subType; // (0 : normal, obsidian, frost, skeleton). (1 : frog, carnal, skeletal). (2 : fish, skeleton). (3 : egg, larva, cocoon, adult). (4 : worm, nematode). ( 5 : waterSkipper) 
+            public (int type, int subType) type; // Type :     0 = fairy , 1 = frog , 2 = fish, 3 = hornet, 4 = worm, 5 = waterSkipper
+                                                 // Subtype : (0 : normal, obsidian, frost, skeleton). (1 : frog, carnal, skeletal). (2 : fish, skeleton). (3 : egg, larva, cocoon, adult). (4 : worm, nematode). ( 5 : waterSkipper) 
             public int state; // 0 = idle I guess idk
             public float realPosX = 0;
             public float realPosY = 0;
@@ -116,6 +116,13 @@ namespace Cave
 
             public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
             public List<(int index, int subType, int typeOfElement)> inventoryElements;
+
+            public (int x, int y) direction = (-1, 0);
+            public (int type, int subType) currentAttack = (-1, -1);
+            public int attackState = 0;
+            public Dictionary<int, bool> entitiesAlreadyHitByCurrentAttack = new Dictionary<int, bool>();
+            public (int x, int y) storedAttackPos;
+            public bool willBeSetAsNotAttacking = false;
 
             public float hp = 1;
             public int food = 0;
@@ -226,19 +233,19 @@ namespace Cave
             {
                 int hueVar = seed % 101 - 50;
                 int shadeVar = seed % 61 - 30;
-                if (type == 0)
+                if (type.type == 0)
                 {
-                    if (subType == 1)
+                    if (type.subType == 1)
                     {
                         return Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar);
                     }
-                    if (subType == 2)
+                    if (type.subType == 2)
                     {
                         hueVar = Abs((int)(hueVar * 0.4f));
                         shadeVar = Abs(shadeVar);
                         return Color.FromArgb(255 - hueVar - shadeVar, 255 - hueVar - shadeVar, 255 - shadeVar);
                     }
-                    if (subType == 3)
+                    if (type.subType == 3)
                     {
                         hueVar = Abs((int)(hueVar * 0.6f));
                         shadeVar = Abs(shadeVar);
@@ -246,15 +253,15 @@ namespace Cave
                     }
                     return Color.FromArgb(130 + hueVar + shadeVar, 130 - hueVar + shadeVar, 210 + shadeVar);
                 }
-                if (type == 1)
+                if (type.type == 1)
                 {
-                    if (subType == 1)
+                    if (type.subType == 1)
                     {
                         hueVar = Abs((int)(hueVar * 0.6f));
                         shadeVar = -Abs(shadeVar);
                         return Color.FromArgb(135 - shadeVar, 55 - hueVar - shadeVar, 55 - hueVar - shadeVar);
                     }
-                    if (subType == 2)
+                    if (type.subType == 2)
                     {
                         hueVar = Abs((int)(hueVar * 0.6f));
                         shadeVar = Abs(shadeVar);
@@ -262,49 +269,49 @@ namespace Cave
                     }
                     return Color.FromArgb(90 + hueVar + shadeVar, 210 + shadeVar, 110 - hueVar + shadeVar);
                 }
-                if (type == 2)
+                if (type.type == 2)
                 {
-                    if (subType == 1)
+                    if (type.subType == 1)
                     {
                         shadeVar = (int)(0.34f * shadeVar);
                         return Color.FromArgb(245 + shadeVar, 245 + shadeVar, 245 + shadeVar);
                     }
                     return Color.FromArgb(190 + shadeVar, 80 - hueVar + shadeVar, 80 + hueVar + shadeVar);
                 }
-                if (type == 3)
+                if (type.type == 3)
                 {
-                    if (subType == 0)
+                    if (type.subType == 0)
                     {
                         hueVar = Abs((int)(hueVar * 0.4f));
                         shadeVar = Abs(shadeVar);
                         return Color.FromArgb(255 - hueVar - shadeVar, 255 - hueVar - shadeVar, 255 - shadeVar);
                     }
-                    else if (subType == 1)
+                    else if (type.subType == 1)
                     {
                         hueVar = Abs((int)(hueVar * 0.4f));
                         shadeVar = Abs(shadeVar);
                         return Color.FromArgb(230 - hueVar - shadeVar, 230 - hueVar - shadeVar, 190 - shadeVar);
                     }
-                    else if (subType == 2)
+                    else if (type.subType == 2)
                     {
                         return Color.FromArgb(120 + (int)(hueVar * 0.2f) + shadeVar, 120 - (int)(hueVar * 0.2f) + shadeVar, Max(0, 10 + shadeVar));
                     }
-                    else if (subType == 3)
+                    else if (type.subType == 3)
                     {
                         return Color.FromArgb(190 + (int)(hueVar * 0.2f) + shadeVar, 190 - (int)(hueVar * 0.2f) + shadeVar, 80 + shadeVar);
                     }
                 }
-                if (type == 4)
+                if (type.type == 4)
                 {
                     shadeVar = -Abs(shadeVar);
                     hueVar = Abs((int)(hueVar * 0.4f));
-                    if (subType == 1)
+                    if (type.subType == 1)
                     {
                         return Color.FromArgb(220 - hueVar + shadeVar, 220 + hueVar + shadeVar, 220 + shadeVar);
                     }
                     return Color.FromArgb(210 + shadeVar, 140 + hueVar + shadeVar, 140 + hueVar + shadeVar);
                 }
-                if (type == 5)
+                if (type.type == 5)
                 {
                     hueVar = Abs((int)(hueVar * 0.4f));
                     return Color.FromArgb(110 + shadeVar, 110 + shadeVar, 140 + hueVar + shadeVar);
@@ -702,7 +709,7 @@ namespace Cave
             }
             public void moveEntity()
             {
-                if (type == 0) // fairy
+                if (type.type == 0) // fairy
                 {
                     if (state == 0) // idle
                     {
@@ -718,7 +725,7 @@ namespace Cave
                     }
                     else { state = 0; }
                 }
-                else if (type == 1) // frog
+                else if (type.type == 1) // frog
                 {
                     applyGravity();
                     (int type, int subType) material = screen.getTileContent((posX, posY - 1));
@@ -731,7 +738,7 @@ namespace Cave
                         }
                     }
                 }
-                else if (type == 2) // fish
+                else if (type.type == 2) // fish
                 {
                     (int type, int subType) material = screen.getTileContent((posX, posY));
                     if (material.type < 0)
@@ -785,10 +792,10 @@ namespace Cave
                         }
                     }
                 }
-                if (type == 3) // hornet
+                if (type.type == 3) // hornet
                 {
                     testOrphanage();
-                    if (subType == 0)
+                    if (type.subType == 0)
                     {
                         applyGravity();
                         if (timeElapsed - timeAtBirth > 30)
@@ -797,7 +804,7 @@ namespace Cave
                             timeAtLastStateChange = timeElapsed;
                         }
                     }
-                    else if (subType == 1)
+                    else if (type.subType == 1)
                     {
                         applyGravity();
                         if (food < 3)
@@ -826,7 +833,7 @@ namespace Cave
                             }
                         }
                     }
-                    else if (subType == 2)
+                    else if (type.subType == 2)
                     {
                         hoverIdle(0.5f, 100);
                         applyGravity();
@@ -850,7 +857,7 @@ namespace Cave
                             timeAtLastStateChange = timeElapsed;
                         }
                     }
-                    else if (subType == 3)
+                    else if (type.subType == 3)
                     {
                         if (state == 0) // idle
                         {
@@ -1098,7 +1105,7 @@ namespace Cave
                     }
                 AfterTest:;
                 }
-                else if (type == 4)
+                else if (type.type == 4)
                 {
                     (int type, int subType) material = screen.getTileContent((posX, posY));
                     if (material.type == 0)
@@ -1108,7 +1115,7 @@ namespace Cave
                     }
                     else if (material.type < 0)
                     {
-                        if (subType == 1)
+                        if (type.subType == 1)
                         {
                             changeSpeedRandom(0.1f);
                             clampSpeed(1, 1);
@@ -1125,7 +1132,7 @@ namespace Cave
                         clampSpeed(0.2f, 0.2f);
                     }
                 }
-                else if (type == 5) // water skipper
+                else if (type.type == 5) // water skipper
                 {
                     bool isFalling = false;
                     (int type, int subType) material = screen.getTileContent((posX, posY));
@@ -1142,7 +1149,7 @@ namespace Cave
                     ariGeoSlowDownY(0.15f, 0.8f);
                     ariGeoSlowDownX(0.1f, 0.9f);
                 }
-                if (type != 2 && (type, subType) != (4, 1))
+                if (type.type != 2 && type != (4, 1))
                 {
                     (int type, int subType) material = screen.getTileContent((posX, posY));
                     if (material.type < 0) { ariGeoSlowDownX(0.15f, 0.85f); }
@@ -1155,23 +1162,23 @@ namespace Cave
                 // test what happens if in special liquids (fairy lake, lava...)
                 {
                     (int type, int subType) material = screen.getTileContent((posX, posY));
-                    if (type != 0 && material == (-3, 0))
+                    if (type.type != 0 && material == (-3, 0))
                     {
                         if (rand.Next(10) == 0)
                         {
-                            if (type == 2 && subType == 1) { transformEntity(0, 3, true); }
+                            if (type.type == 2 && type.subType == 1) { transformEntity(0, 3, true); }
                             else { transformEntity(0, 0, true); }
                         }
                     }
-                    if (type == 2 && material == (-7, 0))
+                    if (type.type == 2 && material == (-7, 0))
                     {
                         if (rand.Next(10) == 0) { transformEntity(2, 1, true); }
                     }
-                    if (material == (-4, 0) && type != 2 && (type, subType) != (0, 3))
+                    if (material == (-4, 0) && type.type != 2 && type != (0, 3))
                     {
                         if (rand.Next(10) == 0) { screen.entitesToRemove[id] = this; }
                     }
-                    if (material == (-7, 0) && type != 2 && (type, subType) != (0, 3) && (type, subType) != (4, 1) && (type, subType) != (1, 1) && (type, subType) != (1, 2))
+                    if (material == (-7, 0) && type.type != 2 && type != (0, 3) && type != (4, 1) && type != (1, 1) && type != (1, 2))
                     {
                         if (rand.Next(10) == 0) { screen.entitesToRemove[id] = this; }
                     }
@@ -1179,34 +1186,32 @@ namespace Cave
             }
             public void transformEntity(int typeToPut, int subTypeToPut, bool setHp)
             {
-                type = typeToPut;
-                subType = subTypeToPut;
-                if (setHp) { hp = entityStartingHp[(type, subType)]; }
+                type = (typeToPut, subTypeToPut);
+                if (setHp) { hp = entityStartingHp[type]; }
                 findLength();
                 color = findColor();
                 findLightColor();
             }
             public void transformEntity((int type, int subType) newType, bool setHp)
             {
-                type = newType.type;
-                subType = newType.subType;
-                if (setHp) { hp = entityStartingHp[(type, subType)]; }
+                type = (newType.type, newType.subType);
+                if (setHp) { hp = entityStartingHp[type]; }
                 findLength();
                 color = findColor();
                 findLightColor();
             }
-            public void dieAndDrop(Player playerToGive)
+            public void dieAndDrop(Entity entityToGive)
             {
-                ((int type, int subType, int megaType) element, int count) entityDrop = entityDrops[(type, subType)];
-                if (type == 4) { entityDrop = (entityDrop.element, length); }
-                playerToGive.addElementToInventory(entityDrop.element, entityDrop.count);
+                ((int type, int subType, int megaType) element, int count) entityDrop = entityDrops[type];
+                if (type.type == 4) { entityDrop = (entityDrop.element, length); }
+                entityToGive.addElementToInventory(entityDrop.element, entityDrop.count);
                 screen.entitesToRemove[id] = this;
             }
             public void findLength()
             {
-                if (type == 4)
+                if (type.type == 4)
                 {
-                    if (subType == 1) { length = 2 + seed % 9; }
+                    if (type.subType == 1) { length = 2 + seed % 9; }
                     else { length = 2 + seed % 5; }
                 }
                 else { length = 0; }
@@ -1250,12 +1255,12 @@ namespace Cave
                         return;
                     }
                     material = screen.getTileContent((posX, posToTest));
-                    if (material.type <= 0 || type == 4) // if a worm or the material is not a solid tile, update positions and continue
+                    if (material.type <= 0 || type.type == 4) // if a worm or the material is not a solid tile, update positions and continue
                     {
                         realPosY = realPosToTest;
                         posY = posToTest;
                         toMoveY -= diff;
-                        if (type == 4) { updatePastPositions(previousPos); } // to make worm's tails
+                        if (type.type == 4) { updatePastPositions(previousPos); } // to make worm's tails
                         previousPos = (posX, posY);
                     }
                     else
@@ -1283,12 +1288,12 @@ namespace Cave
                         return;
                     }
                     material = screen.getTileContent((posToTest, posY));
-                    if (material.type <= 0 || type == 4) // if a worm or the material is not a solid tile, update positions and continue
+                    if (material.type <= 0 || type.type == 4) // if a worm or the material is not a solid tile, update positions and continue
                     {
                         realPosX = realPosToTest;
                         posX = posToTest;
                         toMoveX -= diff;
-                        if (type == 4) { updatePastPositions(previousPos); } // to make worm's tails
+                        if (type.type == 4) { updatePastPositions(previousPos); } // to make worm's tails
                         previousPos = (posX, posY);
                     }
                     else
@@ -1338,6 +1343,43 @@ namespace Cave
                     {
                         inventoryQuantities.Remove(elementToRemove);
                         inventoryElements.Remove(elementToRemove);
+                    }
+                }
+            }
+            public virtual void sendAttack((int x, int y) attackPos)
+            {
+                if (currentAttack == (3, 0))
+                {
+                    if (screen.type.type != 2) testForBloodAltar(screen, attackPos);
+                    return;
+                }
+
+                Chunk chunkToTest = screen.getChunkFromPixelPos(attackPos);
+                if (currentAttack == (2, 0) || currentAttack == (4, 0))
+                {
+                    if (!PlantDig(attackPos, (currentAttack.type, currentAttack.subType, 4), chunkToTest)) { willBeSetAsNotAttacking = true; }
+                }
+                else if (currentAttack == (1, 0))
+                {
+                    if (TerrainDig(attackPos).type == 0) { willBeSetAsNotAttacking = true; }
+                }
+
+                float damage = 0;
+                if (currentAttack == (0, 0)) { damage = 1; }        // sword
+                if (currentAttack == (2, 0)) { damage = 0.75f; }    // scythe
+                if (currentAttack == (1, 0) || currentAttack == (4, 0)) { damage = 0.5f; } // pickaxe & scythe
+                if (damage == 0) { return; }    // Careful prolly gonna get removed later but whatever
+                foreach (Entity entity in chunkToTest.entityList)
+                {
+                    if ((entity.posX, entity.posY) == attackPos && !entitiesAlreadyHitByCurrentAttack.ContainsKey(entity.id))
+                    {
+                        entity.hp -= damage;
+                        entitiesAlreadyHitByCurrentAttack[entity.id] = true;
+                        entity.timeAtLastGottenHit = timeElapsed;
+                        if (entity.hp <= 0)
+                        {
+                            entity.dieAndDrop(this);
+                        }
                     }
                 }
             }
@@ -1422,7 +1464,7 @@ namespace Cave
             public bool tryFeedTargetEntity()
             {
                 if (targetEntity == null) { return false; }
-                if (targetEntity.type == 3 && targetEntity.subType == 1)
+                if (targetEntity.type.type == 3 && targetEntity.type.subType == 1)
                 {
                     if (inventoryElements.Contains((-5, 0, 0)) && targetEntity.food < 3 && timeElapsed - targetEntity.timeAtBirth > 45 + 15 * food)
                     {

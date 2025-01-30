@@ -292,7 +292,7 @@ namespace Cave
                 id = entity.id;
                 if (entity.nest == null) { nstId = -1; }
                 else { nstId = entity.nest.id; }
-                type = (entity.type, entity.subType);
+                type = entity.type;
                 state = entity.state;
                 pos = (entity.realPosX, entity.realPosY);
                 tPos = entity.targetPos;

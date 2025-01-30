@@ -58,6 +58,7 @@ namespace Cave
 
             public Bitmap gameBitmap;
             public Bitmap lightBitmap;
+            public Bitmap finalBitmap;
             public bool isLight = true;
             public Game()
             {
@@ -142,7 +143,7 @@ namespace Cave
 
                     runGame(null, null);
                     makeGameBitmaps();
-                    loadedScreens[idToPut].updateScreen(gameBitmap, lightBitmap, true).Save($"{currentDirectory}\\caveMap.png");
+                    loadedScreens[idToPut].updateScreen(true).Save($"{currentDirectory}\\caveMap.png");
                     makeGameBitmaps();
                     chunkLoadMininumRadius = oldChunkLength;
                     findEffectiveChunkLoadingRadius();
@@ -224,7 +225,7 @@ namespace Cave
                     screen.entitesToAdd = new Dictionary<int, Entity>();
                     screen.particlesToRemove = new Dictionary<Particle, bool>();
                     screen.particlesToAdd = new List<Particle>();
-                    screen.attacksToDo = new List<((int x, int y) pos, (int type, int subType) attack)>();
+                    screen.attacksToDo = new List<((int x, int y) pos, Entity entity)>();
                     screen.attacksToDraw = new List<((int x, int y) pos, Color color)>();
                 }
 
@@ -307,9 +308,9 @@ namespace Cave
 
                     screen.makeBitmapsOfPlants();
                     screen.putEntitiesAndPlantsInChunks();
-                    foreach (((int x, int y) pos, (int type, int subType) attack) attack in screen.attacksToDo)
+                    foreach (((int x, int y) pos, Entity entity) attack in screen.attacksToDo)
                     {
-                        player.sendAttack(attack);
+                        attack.entity.sendAttack(attack.pos);
                     }
                     if (player.willBeSetAsNotAttacking) { player.setAsNotAttacking(); }
                     screen.removePlants();
@@ -375,7 +376,7 @@ namespace Cave
 
                 // render screen and update game image box thing
                 playerScreen = getScreen(player.dimension);
-                gamePictureBox.Image = playerScreen.updateScreen(gameBitmap, lightBitmap);
+                gamePictureBox.Image = playerScreen.updateScreen();
                 gamePictureBox.Refresh();
                 overlayPictureBox.Image = overlayBitmap;
                 Sprites.drawSpriteOnCanvas(overlayBitmap, overlayBackground.bitmap, (0, 0), 4, false);
@@ -509,8 +510,9 @@ namespace Cave
             public void makeGameBitmaps()
             {
                 PNGmultiplicator = Max(1, 320 / zoomLevel);
-                gameBitmap = new Bitmap(2 * PNGmultiplicator * zoomLevel + 1, 2 * PNGmultiplicator * zoomLevel + 1);
+                gameBitmap = new Bitmap(2 * zoomLevel + 1, 2 * zoomLevel + 1);
                 lightBitmap = new Bitmap(2 * zoomLevel + 1, 2 * zoomLevel + 1);
+                finalBitmap = PNGmultiplicator == 1 ? gameBitmap : new Bitmap(2 * PNGmultiplicator * zoomLevel + 1, 2 * PNGmultiplicator * zoomLevel + 1); ;
             }
             public void setPlayerDimension(Player player, int targetDimension)
             {
@@ -600,7 +602,7 @@ namespace Cave
 
             public Dictionary<(int x, int y), bool> megaChunksToSave = new Dictionary<(int x, int y), bool>();
 
-            public List<((int x, int y) pos, (int type, int subType) attack)> attacksToDo = new List<((int x, int y) pos, (int type, int subType) attack)>();
+            public List<((int x, int y) pos, Entity entity)> attacksToDo = new List<((int x, int y) pos, Entity entity)>();
             public List<((int x, int y) pos, Color color)> attacksToDraw = new List<((int x, int y), Color color)>();
 
             public Dictionary<(int, int), List<Plant>> outOfBoundsPlants = new Dictionary<(int, int), List<Plant>>(); // not used as of now but in some functions so can't remove LMAO
@@ -951,7 +953,7 @@ namespace Cave
                     g.FillRectangle(new SolidBrush(color), fromTopRightCorner ? receiver.Width - (1 + posToDraw.x + scaledOffset.x * scale) : posToDraw.x + scaledOffset.x * scale, fromTopRightCorner ? receiver.Width - (1 + posToDraw.y + scaledOffset.y * scale) : posToDraw.y + scaledOffset.y * scale, scale, scale);
                 }
             }
-            public void drawPixel(Bitmap receiver, Color color, (int x, int y) position, (int x, int y) camPos, int PNGmultiplicator)
+            public void drawPixel(Bitmap receiver, Color color, (int x, int y) position, (int x, int y) camPos, int PNGmultiplicator = 1)
             {
                 (int x, int y) posToDraw = (position.x - camPos.x, position.y - camPos.y);
                 if (posToDraw.x >= 0 && posToDraw.x < receiver.Width && posToDraw.y >= 0 && posToDraw.y < receiver.Height)
@@ -962,10 +964,10 @@ namespace Cave
                     }
                 }
             }
-            public void pasteImage(Bitmap receiver, Bitmap bitmapToDraw, (int x, int y) position, (int x, int y) camPos, int PNGmultiplicator)
+            public bool pasteImage(Bitmap receiver, Bitmap bitmapToDraw, (int x, int y) position, (int x, int y) camPos, int PNGmultiplicator = 1)
             {
                 (int x, int y) posToDraw = (position.x - camPos.x, position.y - camPos.y);
-                if (true || posToDraw.x >= 0 && posToDraw.x < receiver.Width && posToDraw.y >= 0 && posToDraw.y < receiver.Height)
+                if (PNGmultiplicator != 1 || posToDraw.x + bitmapToDraw.Width >= 0 && posToDraw.x - bitmapToDraw.Width < receiver.Width && posToDraw.y + bitmapToDraw.Height >= 0 && posToDraw.y - bitmapToDraw.Height < receiver.Height)
                 {
                     using (Graphics g = Graphics.FromImage(receiver))
                     {
@@ -974,6 +976,7 @@ namespace Cave
                         g.DrawImage(bitmapToDraw, posToDraw.x * PNGmultiplicator, posToDraw.y * PNGmultiplicator, bitmapToDraw.Width * PNGmultiplicator, bitmapToDraw.Height * PNGmultiplicator);
                     }
                 }
+                return true;
             }
             public unsafe void pasteImage(Bitmap receiver, Bitmap bitmapToDraw, Color colorToPaste, (int x, int y) position, (int x, int y) camPos, int PNGmultiplicator)
             {
@@ -1007,8 +1010,11 @@ namespace Cave
 
                 //bitmapToDraw.UnlockBits(bData);
             }
-            public Bitmap updateScreen(Bitmap gameBitmap, Bitmap lightBitmap, bool isPngToBeExported = false)
+            public Bitmap updateScreen(bool isPngToBeExported = false)
             {
+                Bitmap gameBitmap = game.gameBitmap;
+                Bitmap lightBitmap = game.lightBitmap;
+
                 Graphics gg = Graphics.FromImage(gameBitmap);
                 gg.Clear(Color.White);
                 gg.Dispose();
@@ -1024,29 +1030,29 @@ namespace Cave
                     for (int j = -game.effectiveRadius; j <= game.effectiveRadius; j++)
                     {
                         chunko = getChunkFromChunkPos((chunkX + i, chunkY + j), !isPngToBeExported);
-                        pasteImage(gameBitmap, chunko.bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, game.PNGmultiplicator);
-                        //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32), PNGmultiplicator); } // if want to show chunk origin
+                        pasteImage(gameBitmap, chunko.bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos);
+                        //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32)); } // if want to show chunk origin
                     }
                 }
 
                 foreach (Structure structure in activeStructures.Values)
                 {
-                    if (structure.bitmap != null) { pasteImage(gameBitmap, structure.bitmap, (structure.pos.x + structure.posOffset[0], structure.pos.y + structure.posOffset[1]), camPos, game.PNGmultiplicator); }
+                    if (structure.bitmap != null) { pasteImage(gameBitmap, structure.bitmap, (structure.pos.x + structure.posOffset[0], structure.pos.y + structure.posOffset[1]), camPos); }
                     if (structure.type.type == 3)
                     {
                         int frame = ((int)(timeElapsed * 10) + (int)(structure.seed.x) % 100) % 4;
-                        pasteImage(gameBitmap, livingPortalAnimation.frames[frame], (structure.pos.x + structure.posOffset[0], structure.pos.y + structure.posOffset[1]), camPos, game.PNGmultiplicator);
+                        pasteImage(gameBitmap, livingPortalAnimation.frames[frame], (structure.pos.x + structure.posOffset[0], structure.pos.y + structure.posOffset[1]), camPos);
                     }
                 }
 
                 foreach (Plant plant in activePlants.Values)
                 {
-                    pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos, game.PNGmultiplicator);
+                    pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos);
                     if (plant.type.type == 0 && plant.type.subType == 1 && plant.childFlowers.Count > 0)
                     {
                         Flower fireFlower = plant.childFlowers[0];
-                        int frame = ((int)(timeElapsed*20) + plant.seed % 100) % 6;
-                        pasteImage(gameBitmap, fireAnimation.frames[frame], (plant.posX + fireFlower.pos.x /*!!!!!!!!*/ - 1 /*!!!!!!!*/ + plant.posOffset[0], plant.posY + fireFlower.pos.y + plant.posOffset[1]), camPos, game.PNGmultiplicator);
+                        int frame = ((int)(timeElapsed * 20) + plant.seed % 100) % 6;
+                        pasteImage(gameBitmap, fireAnimation.frames[frame], (plant.posX + fireFlower.pos.x /*!!!!!!!!*/ - 1 /*!!!!!!!*/ + plant.posOffset[0], plant.posY + fireFlower.pos.y + plant.posOffset[1]), camPos);
                     }
                     if (game.isLight)
                     {
@@ -1070,15 +1076,15 @@ namespace Cave
                         float entityMult = 1 - redMult;
                         color = Color.FromArgb((int)(entityMult * color.R + redMult * 255), (int)(entityMult * color.G), (int)(entityMult * color.B));
                     }
-                    if (game.isLight && entity.type == 0) { lightPositions.Add((entity.posX, entity.posY, 7, entity.lightColor)); }
-                    drawPixel(gameBitmap, color, (entity.posX, entity.posY), camPos, game.PNGmultiplicator);
+                    if (game.isLight && entity.type.type == 0) { lightPositions.Add((entity.posX, entity.posY, 7, entity.lightColor)); }
+                    drawPixel(gameBitmap, color, (entity.posX, entity.posY), camPos);
                     if (entity.length > 0)
                     {
                         int county = entity.pastPositions.Count;
                         for (int i = 0; i < entity.length - 1; i++)
                         {
                             if (i >= county) { break; }
-                            drawPixel(gameBitmap, color, entity.pastPositions[i], camPos, game.PNGmultiplicator);
+                            drawPixel(gameBitmap, color, entity.pastPositions[i], camPos);
                         }
                     }
                 }
@@ -1087,24 +1093,24 @@ namespace Cave
                 {
                     Color color = particle.color;
                     //if (game.isLight && entity.type == 0) { lightPositions.Add((entity.posX, entity.posY, 7, entity.lightColor)); }
-                    drawPixel(gameBitmap, color, (particle.posX, particle.posY), camPos, game.PNGmultiplicator);
+                    drawPixel(gameBitmap, color, (particle.posX, particle.posY), camPos);
                 }
 
                 // player
                 Color playerColor = player.color;
                 if (getChunkFromPixelPos((player.posX, player.posY)).fillStates[PosMod(player.posX), PosMod(player.posY)].type > 0) { playerColor = Color.Red; }
                 if (game.isLight) { lightPositions.Add((player.posX, player.posY, 9, player.lightColor)); }
-                drawPixel(gameBitmap, playerColor, (player.posX, player.posY), camPos, game.PNGmultiplicator);
+                drawPixel(gameBitmap, playerColor, (player.posX, player.posY), camPos);
 
                 foreach (((int x, int y) pos, Color color) item in attacksToDraw)
                 {
-                    drawPixel(gameBitmap, item.color, item.pos, camPos, game.PNGmultiplicator);
+                    drawPixel(gameBitmap, item.color, item.pos, camPos);
                 }
                 if (debugMode && !isPngToBeExported)
                 {
-                    foreach (((int x, int y) pos, (int type, int subType) attack) attack in attacksToDo)
+                    foreach (((int x, int y) pos, Entity entity) attack in attacksToDo)
                     {
-                        drawPixel(gameBitmap, Color.IndianRed, attack.pos, camPos, game.PNGmultiplicator);
+                        drawPixel(gameBitmap, Color.IndianRed, attack.pos, camPos);
                     }
                 }
 
@@ -1116,7 +1122,6 @@ namespace Cave
                         {
                             chunko = getChunkFromChunkPos((chunkX + i, chunkY + j));
                             pasteImage(lightBitmap, chunko.lightBitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, 1);
-                            //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32), PNGmultiplicator); } // if want to show chunk origin
                         }
                     }
 
@@ -1156,11 +1161,11 @@ namespace Cave
                             chunko = getChunkFromChunkPos((chunkX + i, chunkY + j));
                             if (chunko.explorationLevel == 0)
                             {
-                                pasteImage(gameBitmap, black32Bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, game.PNGmultiplicator);
+                                pasteImage(gameBitmap, black32Bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos);
                             }
                             else if (chunko.explorationLevel == 1)
                             {                                           // THIS SHOULD NEVER HAPPEN ! Like actually what the fuck ! Due to switching from Debug mode to not debug it seems
-                                pasteImage(gameBitmap, chunko.fogBitmap ?? transBlue32Bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, game.PNGmultiplicator);
+                                pasteImage(gameBitmap, chunko.fogBitmap ?? transBlue32Bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos);
                             }
                         }
                     }
@@ -1174,13 +1179,13 @@ namespace Cave
                         if (nest == null) { continue; }
                         foreach ((int x, int y) posToDrawAt in nest.digErrands)
                         {
-                            drawPixel(gameBitmap, Color.FromArgb(100, 255, 0, 0), posToDrawAt, camPos, game.PNGmultiplicator);
+                            drawPixel(gameBitmap, Color.FromArgb(100, 255, 0, 0), posToDrawAt, camPos);
                         }
                         if (nest.rooms.ContainsKey(1))
                         {
                             foreach ((int x, int y) posToDrawAt in nest.rooms[1].tiles)
                             {
-                                drawPixel(gameBitmap, Color.FromArgb(100, 120, 0, 100), posToDrawAt, camPos, game.PNGmultiplicator);
+                                drawPixel(gameBitmap, Color.FromArgb(100, 120, 0, 100), posToDrawAt, camPos);
                             }
                         }
                         foreach (Room room in nest.rooms.Values)
@@ -1189,14 +1194,14 @@ namespace Cave
                             {
                                 foreach ((int x, int y) posToDrawAt in room.dropPositions)
                                 {
-                                    drawPixel(gameBitmap, Color.FromArgb(100, 0, 0, 255), posToDrawAt, camPos, game.PNGmultiplicator);
+                                    drawPixel(gameBitmap, Color.FromArgb(100, 0, 0, 255), posToDrawAt, camPos);
                                 }
                             }
                             else if (room.type == 3)
                             {
                                 foreach ((int x, int y) posToDrawAt in room.dropPositions)
                                 {
-                                    drawPixel(gameBitmap, Color.FromArgb(100, 220, 255, 150), posToDrawAt, camPos, game.PNGmultiplicator);
+                                    drawPixel(gameBitmap, Color.FromArgb(100, 220, 255, 150), posToDrawAt, camPos);
                                 }
                             }
                         }
@@ -1208,14 +1213,22 @@ namespace Cave
                     {
                         foreach ((int x, int y) posToDrawAt in entity.pathToTarget)
                         {
-                            drawPixel(gameBitmap, Color.FromArgb(100, entity.color.R, entity.color.G, entity.color.B), posToDrawAt, camPos, game.PNGmultiplicator);
+                            drawPixel(gameBitmap, Color.FromArgb(100, entity.color.R, entity.color.G, entity.color.B), posToDrawAt, camPos);
                         }
                         foreach ((int x, int y) posToDrawAt in entity.simplifiedPathToTarget)
                         {
-                            drawPixel(gameBitmap, Color.FromArgb(100, 200, 0, 100), posToDrawAt, camPos, game.PNGmultiplicator);
+                            drawPixel(gameBitmap, Color.FromArgb(100, 200, 0, 100), posToDrawAt, camPos);
                         }
                     }
+                    foreach (Chunk chunkoko in loadedChunks.Values)
+                    {
+                        if (chunkoko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunkoko.pos.x * 32, chunkoko.pos.y * 32), camPos); }
+                    }
                 }
+
+                // Upscale 1*1 bitmap into the pngmult*pngmult bitmap !
+                Bitmap finalBitmap = game.finalBitmap;
+                if (game.PNGmultiplicator > 1) { pasteImage(finalBitmap, gameBitmap, (0, 0), (0, 0), game.PNGmultiplicator); }
 
                 if (debugMode && !isPngToBeExported) // debug shit for chunks and megachunks
                 {
@@ -1229,17 +1242,17 @@ namespace Cave
                         {
                             if (player.screen == screenToDebug) { colorToDraw = Color.IndianRed; }
                             else { colorToDraw = Color.Crimson; }
-                            drawPixelFixed(gameBitmap, colorToDraw, (100 + xOffset + playerChunkPos.x * 2, 100 + playerChunkPos.y * 2), (-poso.x, -poso.y), 32 * scaleFactor, true);
+                            drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset + playerChunkPos.x * 2, 100 + playerChunkPos.y * 2), (-poso.x, -poso.y), 32 * scaleFactor, true);
                         }
                         foreach ((int x, int y) poso in screenToDebug.activeStructureLoadedChunkIndexes.Keys)
                         {
                             colorToDraw = Color.FromArgb(100, 255, 255, 100);
-                            drawPixelFixed(gameBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
+                            drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
                         }
                         foreach ((int x, int y) poso in screenToDebug.extraLoadedChunks.Keys)
                         {
                             colorToDraw = Color.Purple;
-                            drawPixelFixed(gameBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
+                            drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
                         }
                         foreach ((int x, int y) poso in screenToDebug.loadedChunks.Keys)
                         {
@@ -1247,22 +1260,15 @@ namespace Cave
                             if (screenToDebug.loadedChunks[poso].unstableLiquidCount > 0) { colorToDraw = Color.DarkBlue; }
                             else if (screenToDebug.activeStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.Cyan; }
                             else if (screenToDebug.inertStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.FromArgb(130, 50, 130); }
-                            drawPixelFixed(gameBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
+                            drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
                         }
-                        drawPixelFixed(gameBitmap, Color.Red, (100 + xOffset, 100), (0, 0), 2 * scaleFactor, true);
-
-                        foreach (Chunk chunkoko in screenToDebug.loadedChunks.Values)
-                        {
-                            if (chunkoko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunkoko.pos.x * 32 - xOffset, chunkoko.pos.y * 32), camPos, game.PNGmultiplicator); }
-                        }
+                        drawPixelFixed(finalBitmap, Color.Red, (100 + xOffset, 100), (0, 0), 2 * scaleFactor, true);
                         xOffset -= 120;
                     }
                 }
 
-
-
-                gameBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
-                return gameBitmap;
+                finalBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                return finalBitmap;
             }
             public (int type, int subType) getTileContent((int x, int y) posToTest)
             {
