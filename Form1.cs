@@ -43,7 +43,7 @@ namespace Cave
         public static bool devMode = true;
         public static bool loadStructuresYesOrNo = false;
         public static bool spawnNests = false;
-        public static bool spawnEntities = false;
+        public static bool spawnEntitiesBool = false;
         public static bool spawnPlants = false;
 
         public static int chunkLoadMininumRadius = 8;
@@ -299,6 +299,7 @@ namespace Cave
                 turnPngIntoString("Worm");
                 turnPngIntoString("Nematode");
                 turnPngIntoString("WaterSkipper");
+                turnPngIntoString("Goblin");
 
                 turnPngIntoString("Acid");
                 turnPngIntoString("DeoxygenatedBlood");
@@ -348,6 +349,14 @@ namespace Cave
                 turnPngIntoString("Axe");
                 turnPngIntoString("MagicWand");
 
+                turnPngIntoString("GoblinHand");
+                turnPngIntoString("Stinger");
+                turnPngIntoString("Mandibles");
+
+                turnPngIntoString("FairyPortrait");
+                turnPngIntoString("GoblinPortrait");
+                turnPngIntoString("HornetPortrait");
+
                 turnPngIntoString("Fire");
                 turnPngIntoString("LivingPortal");
             }
@@ -375,9 +384,12 @@ namespace Cave
             // The uh... menu... and uh text... and uh dialogues... and uh villages... and uhhhhhhh make an actual fucking game uhhh
             // System to DEMOTE megaChunks and chunks to ExtraLoaded. Also in the debugging put extraLoadedMegachunks as another color than the red. Ig.
             // Upgrade plants spawning : if Maxgrowth returns a growth level that is too small, it FAILS, and tries again with another position
+            // nornet nests disappear when they empty
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
+            // When multiple hornets dig the same tile, it can dig other than pollen
+            // 30/01/2025 Once, a broken honey storage room was made, as the tunnel that lead to it made it have a leak mid height (tunnel dug in the bordel...)
 
             // cool ideas for later !
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
@@ -394,6 +406,7 @@ namespace Cave
             // Make player die ! Amulet that when in inventory protects player from lava, and acid. And breathing ! And hp and food ! And the rest !!
             // Idea : affuter blades ? Maybe they can get rusty ? Multiple species of mushroom (move mold to 0 ? or its whole thing prolly better).
             // When multiple players, movePlayer them in random order. So no player gets a real advantage sorta ig.
+            // Different fonts for different personalities ? Or tones of speaking ?
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful

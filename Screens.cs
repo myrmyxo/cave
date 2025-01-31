@@ -24,6 +24,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Nests;
 using static Cave.Entities;
+using static Cave.Attacks;
 using static Cave.Files;
 using static Cave.Plants;
 using static Cave.Screens;
@@ -80,10 +81,10 @@ namespace Cave
 
                 loadStructuresYesOrNo = true;
                 spawnNests = true;
-                spawnEntities = true;
-                spawnPlants = true;
+                spawnEntitiesBool = false;
+                spawnPlants = false;
                 bool spawnNOTHING = false;
-                if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntities = false; spawnPlants = false; }
+                if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
 
                 if (randomSeed)
                 {
@@ -225,7 +226,7 @@ namespace Cave
                     screen.entitesToAdd = new Dictionary<int, Entity>();
                     screen.particlesToRemove = new Dictionary<Particle, bool>();
                     screen.particlesToAdd = new List<Particle>();
-                    screen.attacksToDo = new List<((int x, int y) pos, Entity entity)>();
+                    screen.attacksToDo = new List<((int x, int y) pos, Attack attack)>();
                     screen.attacksToDraw = new List<((int x, int y) pos, Color color)>();
                 }
 
@@ -297,6 +298,11 @@ namespace Cave
                     screen.addRemoveEntities();
 
                     foreach (Plant plant in screen.activePlants.Values) { plant.testPlantGrowth(false); }
+
+                    screen.attacksToRemove = new Dictionary<Attack, bool>();
+                    foreach (Attack attack in screen.activeAttacks) { attack.updateAttack(); }
+                    foreach (Attack attack in screen.attacksToRemove.Keys) { screen.activeAttacks.Remove(attack); }
+
                     foreach (Particle particle in screen.activeParticles) { particle.moveParticle(); }
                     foreach (Structure structure in screen.activeStructures.Values) { structure.moveStructure(); }
                     screen.addRemoveEntities();
@@ -308,11 +314,9 @@ namespace Cave
 
                     screen.makeBitmapsOfPlants();
                     screen.putEntitiesAndPlantsInChunks();
-                    foreach (((int x, int y) pos, Entity entity) attack in screen.attacksToDo)
-                    {
-                        attack.entity.sendAttack(attack.pos);
-                    }
-                    if (player.willBeSetAsNotAttacking) { player.setAsNotAttacking(); }
+                    screen.attacksToRemove = new Dictionary<Attack, bool>();
+                    foreach (((int x, int y) pos, Attack attack) attack in screen.attacksToDo) { attack.attack.sendAttack(attack.pos); }
+                    foreach (Attack attack in screen.attacksToRemove.Keys) { screen.activeAttacks.Remove(attack); }
                     screen.removePlants();
                     screen.makeBitmapsOfPlants();
 
@@ -516,7 +520,7 @@ namespace Cave
             }
             public void setPlayerDimension(Player player, int targetDimension)
             {
-                if (targetDimension > currentDimensionId) { targetDimension = currentDimensionId; Globals.currentTargetDimension = currentDimensionId; }
+                if (targetDimension > currentDimensionId) { targetDimension = currentDimensionId; currentTargetDimension = currentDimensionId; }
                 if (!loadedScreens.ContainsKey(targetDimension))
                 {
                     loadDimension(targetDimension);
@@ -599,10 +603,12 @@ namespace Cave
             public Dictionary<Particle, bool> particlesToRemove = new Dictionary<Particle, bool>();
             public Dictionary<int, Structure> inertStructures = new Dictionary<int, Structure>(); // structures that are just terrain and don't need to be tested for shit (lakes, cubes...)
             public Dictionary<int, Structure> activeStructures = new Dictionary<int, Structure>(); // structures that are active and can do shit to other shit (like portals)
+            public List<Attack> activeAttacks = new List<Attack>();
+            public Dictionary<Attack, bool> attacksToRemove = new Dictionary<Attack, bool>();
 
             public Dictionary<(int x, int y), bool> megaChunksToSave = new Dictionary<(int x, int y), bool>();
 
-            public List<((int x, int y) pos, Entity entity)> attacksToDo = new List<((int x, int y) pos, Entity entity)>();
+            public List<((int x, int y) pos, Attack attack)> attacksToDo = new List<((int x, int y) pos, Attack attack)>();
             public List<((int x, int y) pos, Color color)> attacksToDraw = new List<((int x, int y), Color color)>();
 
             public Dictionary<(int, int), List<Plant>> outOfBoundsPlants = new Dictionary<(int, int), List<Plant>>(); // not used as of now but in some functions so can't remove LMAO
@@ -1108,7 +1114,7 @@ namespace Cave
                 }
                 if (debugMode && !isPngToBeExported)
                 {
-                    foreach (((int x, int y) pos, Entity entity) attack in attacksToDo)
+                    foreach (((int x, int y) pos, Attack attack) attack in attacksToDo)
                     {
                         drawPixel(gameBitmap, Color.IndianRed, attack.pos, camPos);
                     }

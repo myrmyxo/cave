@@ -24,6 +24,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Nests;
 using static Cave.Entities;
+using static Cave.Attacks;
 using static Cave.Files;
 using static Cave.Plants;
 using static Cave.Screens;
@@ -127,27 +128,47 @@ namespace Cave
             public override void initializeInventory()
             {
                 bool plantsMode = true;
+                bool toolsMode = true;
                 if (!devMode)
                 {
-                    inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
+                    if (!toolsMode)
                     {
-                        {(0, 0, 4), -999 }, // tools
-                        {(4, 0, 4), -999 },
-                        {(1, 0, 4), -999 },
-                        {(2, 0, 4), -999 },
-                    };
-                    inventoryElements = new List<(int index, int subType, int typeOfElement)>
+                        inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
+                        {
+                            {(6, 0, 5), -999 }, // hand
+                        };
+                        inventoryElements = new List<(int index, int subType, int typeOfElement)>
+                        {
+                            (6, 0, 5), // hand
+                        };
+                    }
+                    else
                     {
-                        (0, 0, 4), // tools
-                        (4, 0, 4),
-                        (1, 0, 4),
-                        (2, 0, 4),
-                    };
+                        inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
+                        {
+                            {(6, 0, 5), -999 }, // hand
+                            {(0, 0, 4), -999 }, // tools
+                            {(4, 0, 4), -999 },
+                            {(1, 0, 4), -999 },
+                            {(2, 0, 4), -999 },
+                            {(3, 0, 4), -999 },
+                        };
+                        inventoryElements = new List<(int index, int subType, int typeOfElement)>
+                        {
+                            (6, 0, 5), // hand
+                            (0, 0, 4), // tools
+                            (4, 0, 4),
+                            (1, 0, 4),
+                            (2, 0, 4),
+                            (3, 0, 4),
+                        };
+                    }
                 }
                 else if (!plantsMode) // True -> Important things, False -> EVERY thing
                 {
                     inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
                     {
+                        {(6, 0, 5), -999 }, // hand
                         {(0, 0, 4), -999 }, // tools
                         {(4, 0, 4), -999 },
                         {(1, 0, 4), -999 },
@@ -173,6 +194,62 @@ namespace Cave
                     };
                     inventoryElements = new List<(int index, int subType, int typeOfElement)>
                     {
+                        (6, 0, 5), // hand
+                        (0, 0, 4), // tools
+                        (4, 0, 4),
+                        (1, 0, 4),
+                        (2, 0, 4),
+                        (3, 0, 4),
+                        (0, 0, 1), // entitititities
+                        (1, 0, 1),
+                        (2, 0, 1),
+                        (4, 0, 1),
+                        (4, 1, 1),
+                        (5, 0, 1),
+                        (0, 0, 2), // plants
+                        (0, 1, 2),
+                        (1, 0, 2),
+                        (1, 1, 2),
+                        (4, 1, 2),
+                        (5, 0, 2),
+                        (5, 1, 2),
+                        (-1, 0, 0), // materials
+                        (-4, 0, 0),
+                        (4, 0, 0),
+                        (-6, 0, 0),
+                    };
+                }
+                else if (!plantsMode) // True -> Important things, False -> EVERY thing
+                {
+                    inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
+                    {
+                        {(6, 0, 5), -999 }, // hand
+                        {(0, 0, 4), -999 }, // tools
+                        {(4, 0, 4), -999 },
+                        {(1, 0, 4), -999 },
+                        {(2, 0, 4), -999 },
+                        {(3, 0, 4), -999 },
+                        {(0, 0, 1), -999 }, // entitities
+                        {(1, 0, 1), -999 },
+                        {(2, 0, 1), -999 },
+                        {(4, 0, 1), -999 },
+                        {(4, 1, 1), -999 },
+                        {(5, 0, 1), -999 },
+                        {(0, 0, 2), -999 }, // plants
+                        {(0, 1, 2), -999 },
+                        {(1, 0, 2), -999 },
+                        {(1, 1, 2), -999 },
+                        {(4, 1, 2), -999 },
+                        {(5, 0, 2), -999 },
+                        {(5, 1, 2), -999 },
+                        {(-1, 0, 0), -999 }, // materials
+                        {(-4, 0, 0), -999 },
+                        {(4, 0, 0), -999 },
+                        {(-6, 0, 0), -999 },
+                    };
+                    inventoryElements = new List<(int index, int subType, int typeOfElement)>
+                    {
+                        (6, 0, 5), // hand
                         (0, 0, 4), // tools
                         (4, 0, 4),
                         (1, 0, 4),
@@ -201,6 +278,7 @@ namespace Cave
                 {
                     inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
                     {
+                        {(6, 0, 5), -999 }, // hand
                         {(0, 0, 4), -999 }, // tools
                         {(4, 0, 4), -999 },
                         {(1, 0, 4), -999 },
@@ -232,6 +310,7 @@ namespace Cave
                     };
                     inventoryElements = new List<(int index, int subType, int typeOfElement)>
                     {
+                        (6, 0, 5), // hand
                         (0, 0, 4), // tools
                         (4, 0, 4),
                         (1, 0, 4),
@@ -313,10 +392,7 @@ namespace Cave
                 }
             notPlace:;
 
-                if (currentAttack.type == (-1)) // only update direction for attack if player is not attacking lol
-                {
-                    updateDirectionForAttack();
-                }
+                updateDirection();
 
                 // Actually move the player
                 actuallyMoveTheEntity();
@@ -333,7 +409,7 @@ namespace Cave
                 camPosY = (int)(realCamPosY + 0.5f);
 
                 updateFogOfWar();
-                updateAttack();
+                tryStartAttack();
                 if (craftSelection && digPress && tryCraft()) { digPress = false; }
             }
             public override void actuallyMoveTheEntity()
@@ -459,8 +535,9 @@ namespace Cave
                 }   // Under this comment, important to keep the sign >= 0 ? 0 : 1 stuff !!! Else it will drift of when raycasting in negatives
                 rayCastsToContinue.Add(((values.startPos.x + currentPos.x + (signX >= 0 ? 0 : 1), values.startPos.y + currentPos.y + (signY >= 0 ? 0 : 1)), values.angle, (lives, lifeLoss)));
             }
-            public void updateDirectionForAttack()
+            public void updateDirection()
             {
+                if (arrowKeysState[0] == arrowKeysState[1] && arrowKeysState[1] == arrowKeysState[2] && arrowKeysState[2] == arrowKeysState[3]) { return; }
                 if (arrowKeysState[0] && !arrowKeysState[1]) { direction = (-1, direction.y); }
                 else if (arrowKeysState[1] && !arrowKeysState[0]) { direction = (1, direction.y); }
 
@@ -473,180 +550,15 @@ namespace Cave
             public void tryStartAttack()
             {
                 (int type, int subType, int megaType) currentItem = inventoryElements[inventoryCursor];
-                if (digPress && currentAttack.type == -1 && currentItem.megaType == 4)  // start an attack if a tool that can attack is selected, X is pressed, and player is not already attacking
+                if (currentAttack != null && currentAttack.isDone) { currentAttack = null; }
+                if (digPress && currentAttack is null && (currentItem.megaType == 4 || currentItem.megaType == 5))  // start an attack if a tool that can attack is selected, X is pressed, and player is not already attacking
                 {
-                    if (currentItem == (0, 0, 4)) { startAttack((0, 0)); }
-                    else if (currentItem == (1, 0, 4)) { startAttack((1, 0)); }
-                    else if (currentItem == (2, 0, 4)) { startAttack((2, 0)); }
-                    else if (currentItem == (3, 0, 4)) { startAttack((3, 0)); }
-                    else if (currentItem == (4, 0, 4)) { startAttack((4, 0)); }
-                }
-            }
-            public void startAttack((int type, int subType) attackToStart)
-            {
-                attackState = -1;
-                currentAttack = attackToStart;
-                willBeSetAsNotAttacking = false;
-            }
-            public void updateAttack()
-            {
-                List<((int x, int y), Color color)> posToDrawList = new List<((int x, int y), Color color)>();
-                List<((int x, int y) pos, Entity entity)> posToAttackList = new List<((int x, int y) pos, Entity entity)>();
-
-                tryStartAttack();
-
-                attackState++;
-                if (currentAttack == (0, 0)) // if sword attack
-                {
-                    int sign = 1;
-                    if (direction.x > 0) { sign = -1; }
-                    (int x, int y) attackDirection = directionPositionArray[PosMod(directionPositionDictionary[direction] + (sign * (attackState - 2)), 8)];
-
-                    // draw 2 pixels, at attack direction, attack direction*2
-                    posToDrawList.Add(((posX + attackDirection.x, posY + attackDirection.y), Color.White));
-                    posToDrawList.Add(((posX + 2 * attackDirection.x, posY + 2 * attackDirection.y), Color.White));
-
-                    if (attackDirection.x != 0 && attackDirection.y != 0) // diagonal, add 4 attack pixels (sword + sides)
-                    {
-                        posToAttackList.Add(((posX + attackDirection.x, posY + attackDirection.y), this));
-                        posToAttackList.Add(((posX + 2 * attackDirection.x, posY + attackDirection.y), this));
-                        posToAttackList.Add(((posX + attackDirection.x, posY + 2 * +attackDirection.y), this));
-                        posToAttackList.Add(((posX + 2 * attackDirection.x, posY + 2 * attackDirection.y), this));
-
-                    }
-                    else if (attackDirection.x != 0) // not diagonal, add attack pixels (sword + sides)
-                    {
-                        posToAttackList.Add(((posX + attackDirection.x, posY - 1), this));
-                        posToAttackList.Add(((posX + attackDirection.x, posY), this));
-                        posToAttackList.Add(((posX + attackDirection.x, posY + 1), this));
-                        posToAttackList.Add(((posX + 2 * attackDirection.x, posY - 1), this));
-                        posToAttackList.Add(((posX + 2 * attackDirection.x, posY), this));
-                        posToAttackList.Add(((posX + 2 * attackDirection.x, posY + 1), this));
-                    }
-                    else
-                    {
-                        posToAttackList.Add(((posX - 1, posY + attackDirection.y), this));
-                        posToAttackList.Add(((posX, posY + attackDirection.y), this));
-                        posToAttackList.Add(((posX + 1, posY + attackDirection.y), this));
-                        posToAttackList.Add(((posX - 1, posY + 2 * attackDirection.y), this));
-                        posToAttackList.Add(((posX, posY + 2 * attackDirection.y), this));
-                        posToAttackList.Add(((posX + 1, posY + 2 * attackDirection.y), this));
-                    }
-
-                    if (attackState >= 4) { willBeSetAsNotAttacking = true; }
-                }
-                else if (currentAttack == (1, 0)) // if pickaxe attack
-                {
-                    (int x, int y) attackPos = (posX + direction.x, posY + direction.y);
-                    if (attackState == 0) { posToAttackList.Add((attackPos, this)); }
-                    posToDrawList.Add((attackPos, Color.White));
-                    if (devMode || attackState >= 3) { willBeSetAsNotAttacking = true; }
-                }
-                else if (currentAttack == (2, 0)) // if scythe attack
-                {
-                    (int x, int y) attackPos = (0, 0);
-                    int sign = 1;
-                    if (direction.x > 0) { sign = -1; }
-
-                    if (attackState == 0) { attackPos = (posX + sign, posY + 1); }
-                    else if (attackState == 1) { attackPos = (posX - sign, posY + 1); }
-                    else if (attackState == 2) { attackPos = (posX - 2 * sign, posY); }
-                    else if (attackState == 3) { attackPos = (posX - sign, posY - 1); }
-                    else if (attackState == 4) { attackPos = (posX, posY - 1); }
-
-                    posToDrawList.Add(((attackPos.x, attackPos.y), Color.White));
-                    posToDrawList.Add(((attackPos.x - sign, attackPos.y), Color.White));
-                    for (int j = -1; j <= 1; j += 1)
-                    {
-                        posToAttackList.Add(((attackPos.x, attackPos.y + j), this));
-                        posToAttackList.Add(((attackPos.x - sign, attackPos.y + j), this));
-                    }
-
-                    if (attackState >= 4) { willBeSetAsNotAttacking = true; }
-                }
-                else if (currentAttack == (3, 0))   // If magic wand attack
-                {
-                    int sign = -1;
-                    if (direction.x > 0) { sign = 1; }
-
-                    // draw the wooden staff, 1 pixel, starts on top of player, then diag, then in front. If in front of player, add the "magic pixel" (lmao) that's purple
-                    (int x, int y) mod;
-                    if (attackState < 1) { mod = (0, 1); }
-                    else if (attackState == 1) { mod = (1, 1); }
-                    else
-                    {
-                        if (attackState == 2) { storedAttackPos = (posX, posY); }
-                        mod = (1, 0);
-                        int posoX = storedAttackPos.x + attackState * sign;
-                        posToDrawList.Add(((posoX, storedAttackPos.y), Color.BlueViolet));
-                        posToAttackList.Add(((posoX, storedAttackPos.y), this));
-                    }
-                    posToDrawList.Add(((posX + mod.x * sign, posY + mod.y), Color.FromArgb(140, 140, 50)));
-
-
-                    if (attackState >= 10) { willBeSetAsNotAttacking = true; }
-                }
-                else if (currentAttack == (4, 0)) // if axe attack
-                {
-                    (int x, int y) attackPos = (posX + direction.x, posY + direction.y);
-                    if (attackState == 0) { posToAttackList.Add((attackPos, this)); }
-                    posToDrawList.Add((attackPos, Color.White));
-                    if (devMode || attackState >= 3) { willBeSetAsNotAttacking = true; }
-                }
-                else { willBeSetAsNotAttacking = true; attackState--; }
-
-                foreach (((int x, int y) pos, Entity entity) attack in posToAttackList)
-                {
-                    screen.attacksToDo.Add(attack);
-                }
-                foreach (((int x, int y), Color) pos in posToDrawList)
-                {
-                    screen.attacksToDraw.Add(pos);
-                }
-                // send to list of attacks to draw
-            }
-            public void setAsNotAttacking()
-            {
-                attackState = 0;
-                currentAttack = (-1, -1);
-                entitiesAlreadyHitByCurrentAttack = new Dictionary<int, bool>();
-            }
-            public override void sendAttack((int x, int y) attackPos)
-            {
-                if (currentAttack == (3, 0))
-                {
-                    if (screen.type.type != 2) testForBloodAltar(screen, attackPos);
-                    return;
-                }
-
-                Chunk chunkToTest = screen.getChunkFromPixelPos(attackPos);
-                if (currentAttack == (2, 0) || currentAttack == (4, 0))
-                {
-                    bool success = PlantDig(attackPos, (currentAttack.type, currentAttack.subType, 4), chunkToTest);
-                    if (!success && currentAttack == (4, 0)) { willBeSetAsNotAttacking = true; }
-                }
-                else if (currentAttack == (1, 0))
-                {
-                    if (TerrainDig(attackPos).type == 0) { willBeSetAsNotAttacking = true; }
-                }
-
-                float damage = 0;
-                if (currentAttack == (0, 0)) { damage = 1; }        // sword
-                if (currentAttack == (2, 0)) { damage = 0.75f; }    // scythe
-                if (currentAttack == (1, 0) || currentAttack == (4, 0)) { damage = 0.5f; } // pickaxe & scythe
-                if (damage == 0) { return; }    // Careful prolly gonna get removed later but whatever
-                foreach (Entity entity in chunkToTest.entityList)
-                {
-                    if ((entity.posX, entity.posY) == attackPos && !entitiesAlreadyHitByCurrentAttack.ContainsKey(entity.id))
-                    {
-                        entity.hp -= damage;
-                        entitiesAlreadyHitByCurrentAttack[entity.id] = true;
-                        entity.timeAtLastGottenHit = timeElapsed;
-                        if (entity.hp <= 0)
-                        {
-                            entity.dieAndDrop(this);
-                        }
-                    }
+                    if (currentItem == (0, 0, 4)) { currentAttack = new Attack(this, (0, 0, 4), (posX, posY), direction); }
+                    else if (currentItem == (1, 0, 4)) { currentAttack = new Attack(this, (1, 0, 4), (posX, posY), direction); }
+                    else if (currentItem == (2, 0, 4)) { currentAttack = new Attack(this, (2, 0, 4), (posX, posY), direction); }
+                    else if (currentItem == (3, 0, 4)) { currentAttack = new Attack(this, (3, 0, 4), (posX, posY), direction); }
+                    else if (currentItem == (4, 0, 4)) { currentAttack = new Attack(this, (4, 0, 4), (posX, posY), direction); }
+                    else if (currentItem == (6, 0, 5)) { currentAttack = new Attack(this, (6, 0, 5), (posX, posY), direction); }
                 }
             }
             public bool Place((int x, int y) posToPlace)

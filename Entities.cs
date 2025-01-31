@@ -24,6 +24,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Nests;
 using static Cave.Entities;
+using static Cave.Attacks;
 using static Cave.Files;
 using static Cave.Plants;
 using static Cave.Screens;
@@ -54,6 +55,7 @@ namespace Cave
             { (4, 1), 3}, // Nematode
             { (5, 0), 3}, // WaterSkipper
         };
+
         public static Dictionary<(int type, int subType), ((int type, int subType, int megaType) element, int count)> entityDrops = new Dictionary<(int type, int subType), ((int type, int subType, int megaType), int count)>
         {
             { (0, 0), ((-3, 0, 0), 1)}, // Fairy          --> Fairy Liquid
@@ -103,6 +105,8 @@ namespace Cave
             public int posY = 0;
             public float speedX = 0;
             public float speedY = 0;
+            public (int x, int y) direction = (1, 0);
+
             public Color color;
             public Color lightColor;
 
@@ -117,12 +121,7 @@ namespace Cave
             public Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities;
             public List<(int index, int subType, int typeOfElement)> inventoryElements;
 
-            public (int x, int y) direction = (-1, 0);
-            public (int type, int subType) currentAttack = (-1, -1);
-            public int attackState = 0;
-            public Dictionary<int, bool> entitiesAlreadyHitByCurrentAttack = new Dictionary<int, bool>();
-            public (int x, int y) storedAttackPos;
-            public bool willBeSetAsNotAttacking = false;
+            public Attack currentAttack = null;
 
             public float hp = 1;
             public int food = 0;
@@ -147,7 +146,7 @@ namespace Cave
                 realPosY = entityJson.pos.Item2;
                 posY = (int)realPosY;
                 targetPos = entityJson.tPos;
-                seed = entityJson.seed;;
+                seed = entityJson.seed; ;
                 id = entityJson.id;
                 nestId = entityJson.nstId;
                 testOrphanage();
@@ -206,7 +205,7 @@ namespace Cave
                 (int type, int subType) material = chunk.fillStates[tileIndex.x, tileIndex.y];
                 if (screen.type.Item1 == 2)
                 {
-                    if (material.type != 0) {  transformEntity(4, 1, true); }
+                    if (material.type != 0) { transformEntity(4, 1, true); }
                     else if (biome == (10, 0) || biome == (10, 1)) { transformEntity(1, 1 + rand.Next(2), true); }
                     else if (biome == (10, 2)) { transformEntity(1, 2, true); }
                     else { transformEntity(4, 1, true); }
@@ -346,7 +345,7 @@ namespace Cave
             }
             public void findRandomDestination(int distance)
             {
-                targetPos = (posX + rand.Next(distance*2+1) - distance, posY + rand.Next(distance*2+1) - distance);
+                targetPos = (posX + rand.Next(distance * 2 + 1) - distance, posY + rand.Next(distance * 2 + 1) - distance);
             }
             public bool findPointOfInterestInPlants((int type, int subType) elementOfInterest)
             {
@@ -409,7 +408,7 @@ namespace Cave
                 int diffX = Abs(targetLocation.x - currentLocation.x);
                 int diffY = Abs(targetLocation.y - currentLocation.y);
                 int diagNumber = Min(diffX, diffY);
-                return (int)(diffX + diffY - 2*diagNumber + 1.41421356237f*diagNumber);
+                return (int)(diffX + diffY - 2 * diagNumber + 1.41421356237f * diagNumber);
             }
             public int evaluateTile((int x, int y) location, (int x, int y) targetLocation, Dictionary<(int x, int y), int> costOfTiles)
             {
@@ -473,13 +472,13 @@ namespace Cave
             {
                 //TEST IF THE TILE IS EXPOSED TO AIR/LIQUID AT LEAST NOT TO PATHFIND FOR NUTHIN LOL
                 if (
-                    screen.getTileContent((targetLocation.x+1, targetLocation.y)).type > 0
+                    screen.getTileContent((targetLocation.x + 1, targetLocation.y)).type > 0
                     &&
-                    screen.getTileContent((targetLocation.x-1, targetLocation.y)).type > 0
+                    screen.getTileContent((targetLocation.x - 1, targetLocation.y)).type > 0
                     &&
-                    screen.getTileContent((targetLocation.x, targetLocation.y+1)).type > 0
+                    screen.getTileContent((targetLocation.x, targetLocation.y + 1)).type > 0
                     &&
-                    screen.getTileContent((targetLocation.x, targetLocation.y-1)).type > 0
+                    screen.getTileContent((targetLocation.x, targetLocation.y - 1)).type > 0
                     )
                 {
                     return false;
@@ -517,7 +516,7 @@ namespace Cave
                         (int x, int y) posToAddMaybe = (tileToTest.x + neighbour.pos.x, tileToTest.y + neighbour.pos.y);
                         if (testQueueAdd(posToAddMaybe, targetLocation, costOfTiles))
                         {
-                            float costo = cumulativeCostOfTiles[tileToTest] + neighbour.cost*costOfTiles[posToAddMaybe];
+                            float costo = cumulativeCostOfTiles[tileToTest] + neighbour.cost * costOfTiles[posToAddMaybe];
                             if (!cumulativeCostOfTiles.ContainsKey(posToAddMaybe)) // if never visited
                             {
                                 cumulativeCostOfTiles[posToAddMaybe] = costo;
@@ -651,9 +650,9 @@ namespace Cave
                     while (idx >= 0)
                     {
                         posToTest = path[idx];
-                        if (posToTest.x - lastKeptPointPos.x == multCounter*direction.x && posToTest.y - lastKeptPointPos.y == multCounter*direction.y)
+                        if (posToTest.x - lastKeptPointPos.x == multCounter * direction.x && posToTest.y - lastKeptPointPos.y == multCounter * direction.y)
                         {
-                            path.RemoveAt(idx+1);
+                            path.RemoveAt(idx + 1);
                             idx--;
                             multCounter++;
                         }
@@ -673,13 +672,13 @@ namespace Cave
             }
             public void changeSpeedRandom(float range)
             {
-                speedX += range*(float)(rand.NextDouble() - 0.5);
-                speedY += range*(float)(rand.NextDouble() - 0.5);
+                speedX += range * (float)(rand.NextDouble() - 0.5);
+                speedY += range * (float)(rand.NextDouble() - 0.5);
             }
             public void jumpRandom(float rangeX, float maxY)
             {
-                speedX += rangeX*(float)(rand.NextDouble() - 0.5);
-                speedY += maxY*(float)(rand.NextDouble());
+                speedX += rangeX * (float)(rand.NextDouble() - 0.5);
+                speedY += maxY * (float)(rand.NextDouble());
             }
             public void slowDown(float slowdownSpeed)
             {
@@ -809,7 +808,7 @@ namespace Cave
                         applyGravity();
                         if (food < 3)
                         {
-                            if (timeElapsed - timeAtLastStateChange > 15 + 15*food)
+                            if (timeElapsed - timeAtLastStateChange > 15 + 15 * food)
                             {
                                 if (nest != null && !nest.hungryLarvae.Contains(this))
                                 {
@@ -952,7 +951,7 @@ namespace Cave
                             {
                                 realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
                                 realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
-                                while (Abs(realDiffX) < 0.9f && Abs(realDiffY) < 0.9f)
+                                while (Abs(realDiffX) < 0.5f && Abs(realDiffY) < 0.5f)
                                 {
                                     simplifiedPathToTarget.RemoveAt(0);
                                     if (simplifiedPathToTarget.Count == 0) { break; }
@@ -967,7 +966,7 @@ namespace Cave
                             }
 
                             int maxDist;
-                            if (state == 10005) { maxDist = 0; }
+                            if (state == 10005) { maxDist = 1; }
                             else { maxDist = 1; }
                             if (manhattanDistance(targetPos, (posX, posY)) <= maxDist)
                             {
@@ -1005,45 +1004,50 @@ namespace Cave
                                 if (rand.Next(2500) == 0) { state = 0; }
                             }
                         }
-                        else if (state == 5) // preparing to dig plant
+                        else if (state == 5 || state == 6) // preparing to dig plant OR terrain
                         {
-                            if (timeAtLastDig + 1 < timeElapsed)
+                            if (currentAttack is null)
                             {
-                                if (PlantDig(targetPos, null, null, (2, 1), false))
+                                if (timeAtLastDig + 1 < timeElapsed)
                                 {
-                                    tryManufactureElement();
+                                    currentAttack = new Attack(this, (3, 1, 5), targetPos, (0, 0)); // Mandible attack
+                                    state *= 10;
                                 }
+                            }
+                            else { state *= 10; }
+                        }
+                        else if (state == 50)   // After plant dig
+                        {
+                            if (currentAttack is null || currentAttack.isDone)
+                            {
+                                tryManufactureElement();
                                 state = 0;
                             }
                         }
-                        else if (state == 6) // preparing to dig tile
+                        else if (state == 60)   // After terrain dig
                         {
-                            if (timeAtLastDig + 1 < timeElapsed)
+                            if (currentAttack is null || nest is null) { state = 0; }
+                            else if (currentAttack.isDone)
                             {
-                                (int type, int subType) dugTile = TerrainDig(targetPos);
-                                if (nest != null)
+                                if (currentAttack.dugTile.type >= 0) { nest.digErrands.Remove(targetPos); }
+                                if (currentAttack.dugTile.type == -5 && nest.hungryLarvae.Count > 0)
                                 {
-                                    if (dugTile.type >= 0) { nest.digErrands.Remove(targetPos); }
-                                    if (dugTile.type == -5 && nest.hungryLarvae.Count > 0)
+                                    targetEntity = nest.hungryLarvae[rand.Next(nest.hungryLarvae.Count)];
+                                    targetPos = (targetEntity.posX, targetEntity.posY);
+                                    if (pathfindToLocation(targetPos))
                                     {
-                                        targetEntity = nest.hungryLarvae[rand.Next(nest.hungryLarvae.Count)];
-                                        targetPos = (targetEntity.posX, targetEntity.posY);
-                                        if (pathfindToLocation(targetPos))
-                                        {
-                                            state = 10009;
-                                        }
-                                        else
-                                        {
-                                            targetEntity = null;
-                                            pathToTarget = new List<(int x, int y)>();
-                                            simplifiedPathToTarget = new List<(int x, int y)>();
-                                            state = 0;
-                                        }
+                                        state = 10009;
                                     }
-                                    else { state = 0; }
+                                    else
+                                    {
+                                        targetEntity = null;
+                                        pathToTarget = new List<(int x, int y)>();
+                                        simplifiedPathToTarget = new List<(int x, int y)>();
+                                        state = 0;
+                                    }
                                 }
                                 else { state = 0; }
-                            }
+                            } 
                         }
                         else if (state == 7) // preparing to place honeyy
                         {
@@ -1183,6 +1187,8 @@ namespace Cave
                         if (rand.Next(10) == 0) { screen.entitesToRemove[id] = this; }
                     }
                 }
+
+                if (currentAttack != null && currentAttack.isDone) { currentAttack = null; }
             }
             public void transformEntity(int typeToPut, int subTypeToPut, bool setHp)
             {
@@ -1346,43 +1352,6 @@ namespace Cave
                     }
                 }
             }
-            public virtual void sendAttack((int x, int y) attackPos)
-            {
-                if (currentAttack == (3, 0))
-                {
-                    if (screen.type.type != 2) testForBloodAltar(screen, attackPos);
-                    return;
-                }
-
-                Chunk chunkToTest = screen.getChunkFromPixelPos(attackPos);
-                if (currentAttack == (2, 0) || currentAttack == (4, 0))
-                {
-                    if (!PlantDig(attackPos, (currentAttack.type, currentAttack.subType, 4), chunkToTest)) { willBeSetAsNotAttacking = true; }
-                }
-                else if (currentAttack == (1, 0))
-                {
-                    if (TerrainDig(attackPos).type == 0) { willBeSetAsNotAttacking = true; }
-                }
-
-                float damage = 0;
-                if (currentAttack == (0, 0)) { damage = 1; }        // sword
-                if (currentAttack == (2, 0)) { damage = 0.75f; }    // scythe
-                if (currentAttack == (1, 0) || currentAttack == (4, 0)) { damage = 0.5f; } // pickaxe & scythe
-                if (damage == 0) { return; }    // Careful prolly gonna get removed later but whatever
-                foreach (Entity entity in chunkToTest.entityList)
-                {
-                    if ((entity.posX, entity.posY) == attackPos && !entitiesAlreadyHitByCurrentAttack.ContainsKey(entity.id))
-                    {
-                        entity.hp -= damage;
-                        entitiesAlreadyHitByCurrentAttack[entity.id] = true;
-                        entity.timeAtLastGottenHit = timeElapsed;
-                        if (entity.hp <= 0)
-                        {
-                            entity.dieAndDrop(this);
-                        }
-                    }
-                }
-            }
             public bool PlantDig((int x, int y) posToDig, (int type, int subType, int typeOfElement)? currentItem = null, Chunk chunk = null, (int type, int subType)? targetMaterialNullable = null, bool toolRestrictions = true)
             {
                 (int x, int y) targetMaterial = targetMaterialNullable ?? (0, 0);
@@ -1398,10 +1367,10 @@ namespace Cave
                 }
                 return false;
             }
-            public (int type, int subType) TerrainDig((int x, int y) posToDig)
+            public ((int type, int subType) tileDug, bool success) TerrainDig((int x, int y) posToDig)
             {
                 (int, int) chunkPos = ChunkIdx(posToDig);
-                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return (0, 0); }
+                if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return ((0, 0), false); }
                 (int x, int y) tileIndex = PosMod(posToDig);
                 (int type, int subType) tileContent = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
                 if (tileContent.type != 0)
@@ -1409,8 +1378,9 @@ namespace Cave
                     addElementToInventory((tileContent.type, tileContent.subType, 0));
                     chunkToTest.tileModification(posToDig.x, posToDig.y, (0, 0));
                     timeAtLastDig = timeElapsed;
+                    return (tileContent, true);
                 }
-                return tileContent;
+                return (tileContent, false);
             }
             public bool Place((int x, int y) posToDig, (int type, int subType, int typeOfElement) elementToPlace, bool forcePlace)
             {

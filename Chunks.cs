@@ -406,7 +406,7 @@ namespace Cave
             public void spawnEntities()
             {
                 Dictionary<(int x, int y), bool> forbiddenPositions = new Dictionary<(int x, int y), bool>();
-                if (Globals.spawnEntities)
+                if (spawnEntitiesBool)
                 {
                     Entity newEntity = new Entity(this);
                     if (!newEntity.isDeadAndShouldDisappear)

@@ -42,6 +42,7 @@ namespace Cave
         public static Dictionary<(int, int), OneSprite> plantSprites;
         public static Dictionary<(int, int), OneSprite> materialSprites;
         public static Dictionary<(int, int), OneSprite> toolsSprites;
+        public static Dictionary<(int, int), OneSprite> attacksSprites;
         public static OneSprite numbersSprite;
         public static Dictionary<int, OneSprite> numberSprites;
         public static OneSprite lettersUpSprite;
@@ -121,29 +122,36 @@ namespace Cave
                 { (2, 1), new OneSprite("Pollen", false)},
                 { (3, 0), new OneSprite("MushroomStem", false)},
                 { (3, 1), new OneSprite("MushroomCap", false)},
-                { (3, 2), new OneSprite("Mold", true)},                      // TO CHANGE
-                { (8, 0), new OneSprite("Flesh", true)},                     // TO CHANGE
-                { (8, 1), new OneSprite("Bone", true )},                     // TO CHANGE
-                { (10, 0), new OneSprite("MagicRock", true)},                // TO CHANGE
-                { (11, 0), new OneSprite("Metal", true )},                   // TO CHANGE
-                { (11, 1), new OneSprite("LightBulb", true )},               // TO CHANGE
-                { (12, 0), new OneSprite("Wax", true )},                     // TO CHANGE
+                { (3, 2), new OneSprite("Mold", true)},                     // TO CHANGE
+                { (8, 0), new OneSprite("Flesh", true)},                    // TO CHANGE
+                { (8, 1), new OneSprite("Bone", true )},                    // TO CHANGE
+                { (10, 0), new OneSprite("MagicRock", true)},               // TO CHANGE
+                { (11, 0), new OneSprite("Metal", true )},                  // TO CHANGE
+                { (11, 1), new OneSprite("LightBulb", true )},              // TO CHANGE
+                { (12, 0), new OneSprite("Wax", true )},                    // TO CHANGE
             };
             toolsSprites = new Dictionary<(int, int), OneSprite>
             {
-                { (0, 0), new OneSprite("Sword", true)},                     // TO CHANGE
-                { (1, 0), new OneSprite("Pickaxe", true)},                   // TO CHANGE
-                { (2, 0), new OneSprite("Scythe", true)},                    // TO CHANGE
-                { (3, 0), new OneSprite("MagicWand", true)},                 // TO CHANGE
-                { (4, 0), new OneSprite("Axe", true)},                    // TO CHANGE
+                { (0, 0), new OneSprite("Sword", true)},                    // TO CHANGE
+                { (1, 0), new OneSprite("Pickaxe", true)},                  // TO CHANGE
+                { (2, 0), new OneSprite("Scythe", true)},                   // TO CHANGE
+                { (3, 0), new OneSprite("MagicWand", true)},                // TO CHANGE
+                { (4, 0), new OneSprite("Axe", true)},                      // TO CHANGE
+            };
+            attacksSprites = new Dictionary<(int, int), OneSprite>
+            {
+                { (3, 0), new OneSprite("HornetPortrait", true)},               // TO CHANGE
+                { (3, 1), new OneSprite("Mandibles", true)},               // TO CHANGE
+                { (3, 2), new OneSprite("Stinger", true)},               // TO CHANGE
+                { (6, 0), new OneSprite("GoblinHand", true)},               // TO CHANGE
             };
             overlayBackground = new OneSprite("OverlayBackground", false);
 
             numbersSprite = new OneSprite("Numbers", false);
-            lettersUpSprite = new OneSprite("LettersUp", true);              // TO CHANGE
-            lettersLowSprite = new OneSprite("LettersMin", true);            // TO CHANGE       // be careful also it's LettersMin and not LettersLow that are 2 different fonts ! LetterMin look better so i chose it lol
-            arrowsSprite = new OneSprite("Arrows", true);                    // TO CHANGE
-            operationSignsSprite = new OneSprite("OperationSigns", true);    // TO CHANGE
+            lettersUpSprite = new OneSprite("LettersUp", true);             // TO CHANGE
+            lettersLowSprite = new OneSprite("LettersMin", true);           // TO CHANGE       // be careful also it's LettersMin and not LettersLow that are 2 different fonts ! LetterMin look better so i chose it lol
+            arrowsSprite = new OneSprite("Arrows", true);                   // TO CHANGE
+            operationSignsSprite = new OneSprite("OperationSigns", true);   // TO CHANGE
 
             fireAnimation = new OneAnimation("Fire", false, 6);
             livingPortalAnimation = new OneAnimation("LivingPortal", true, 4);       // TO CHANGE
@@ -439,6 +447,10 @@ namespace Cave
             else if (element.megaType == 4)
             {
                 Sprites.drawSpriteOnCanvas(bigBitmap, toolsSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw);
+            }
+            else if (element.megaType == 5)
+            {
+                Sprites.drawSpriteOnCanvas(bigBitmap, attacksSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw);
             }
         }
 
