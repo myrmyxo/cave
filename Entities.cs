@@ -994,12 +994,12 @@ namespace Cave
                             }
                             else
                             {
-                                if (Abs(realDiffX) < 0.5f) { speedX = Sign(speedX) * Max(Abs(speedX) - 0.55f, 0); }
+                                if (Abs(realDiffX) < 0.25f) { speedX = Sign(speedX) * Max(Abs(speedX) - 0.55f, 0); }
                                 else if (speedX * speedX > Abs(realDiffX) && Sign(speedX) == Sign(realDiffX)) { speedX -= Sign(realDiffX) * 0.35f; }
-                                else { speedX += Sign(realDiffX) * 0.35f; }
-                                if (Abs(realDiffY) < 0.5f) { speedY = Sign(speedY) * Max(Abs(speedY) - 0.55f, 0); }
+                                else { speedX += Sign(realDiffX) * 0.335f; }
+                                if (Abs(realDiffY) < 0.25f) { speedY = Sign(speedY) * Max(Abs(speedY) - 0.55f, 0); }
                                 else if (speedY * speedY > Abs(realDiffY) && Sign(speedY) == Sign(realDiffY)) { speedY -= Sign(realDiffY) * 0.35f; }
-                                else { speedY += Sign(realDiffY) * 0.35f; }
+                                else { speedY += Sign(realDiffY) * 0.335f; }
 
                                 if (rand.Next(2500) == 0) { state = 0; }
                             }
@@ -1231,83 +1231,105 @@ namespace Cave
                     if (counto >= length) { pastPositions.RemoveAt(counto - 1); }
                 }
             }
-            public virtual void actuallyMoveTheEntity()
+            public void actuallyMoveTheEntity()
             {
-                (int x, int y) chunkPos;
-                (int x, int y) previousPos = (posX, posY);
                 (int type, int subType) material;
-                int posToTest;
+                (int x, int y) previousPos = (posX, posY);
+                (int x, int y) posToTest;
                 float realPosToTest;
-                float diff;
+
                 float toMoveX = speedX;
                 float toMoveY = speedY;
 
-                while (toMoveY != 0)
+                float xRatio = toMoveX / (Abs(toMoveY) + 0.0000001f);
+                float yRatio = toMoveY / (Abs(toMoveX) + 0.0000001f);
+                float currentSide = 0; // + go horizontal, - go vertical
+                float diff;
+
+                bool allowX = true;
+                bool allowY = true;
+                bool isDoneX = false;
+                bool isDoneY = false;
+
+                while (true)
                 {
-                    diff = Sign(toMoveY) * Min(1, Abs(toMoveY));
-                    realPosToTest = realPosY + diff;
-                    posToTest = (int)realPosToTest;
-                    if (posY == posToTest) // if movement is too small to move by one whole pixel, update realPosY, and stop
+                    if (allowX && !isDoneX && (isDoneY || !allowY || currentSide >= 0))
                     {
-                        realPosY = realPosToTest;
-                        break;
+                        diff = Clamp(-1, toMoveX, 1);
+                        realPosToTest = realPosX + diff;
+                        posToTest = ((int)Floor(realPosToTest, 1), posY);
+
+                        if (posX == posToTest.x) // if movement is too small to move by one whole pixel, update realPosY, and stop
+                        {
+                            realPosX = realPosToTest;
+                            isDoneX = true;
+                            continue;
+                        }
+
+                        Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
+                        if (chunk is null) { goto SaveEntity; }
+                        material = screen.getTileContent(posToTest);
+                        if (material.type <= 0 || type.type == 4) // if a worm or the material is not a solid tile, update positions and continue
+                        {
+                            realPosX = realPosToTest;
+                            posX = posToTest.x;
+                            toMoveX -= diff;
+                            if (type.type == 4) { updatePastPositions(previousPos); } // to make worm's tails
+                            previousPos = (posX, posY);
+                            currentSide -= yRatio;
+                            allowX = true;
+                            allowY = true;
+                        }
+                        else { allowX = false; }
                     }
-                    chunkPos = ChunkIdx(posX, posToTest);
-                    if (!screen.loadedChunks.ContainsKey(chunkPos)) // if chunk to test is outside loaded chunks, save Entity in the non-loaded chunk
+
+                    else if (allowY && !isDoneY)
                     {
-                        realPosY = realPosToTest;
-                        saveEntity(this);
-                        screen.entitesToRemove[id] = this;
-                        return;
+                        diff = Clamp(-1, toMoveY, 1);
+                        realPosToTest = realPosY + diff;
+                        posToTest = (posX, (int)Floor(realPosToTest, 1));
+
+                        if (posY == posToTest.y) // if movement is too small to move by one whole pixel, update realPosY, and stop
+                        {
+                            realPosY = realPosToTest;
+                            isDoneY = true;
+                            continue;
+                        }
+
+                        Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
+                        if (chunk is null) { goto SaveEntity; }
+                        material = screen.getTileContent(posToTest);
+                        if (material.type <= 0 || type.type == 4) // if a worm or the material is not a solid tile, update positions and continue
+                        {
+                            realPosY = realPosToTest;
+                            posY = posToTest.y;
+                            toMoveY -= diff;
+                            if (type.type == 4) { updatePastPositions(previousPos); } // to make worm's tails
+                            previousPos = (posX, posY);
+                            currentSide += xRatio;
+                            allowX = true;
+                            allowY = true;
+                        }
+                        else { allowY = false; }
                     }
-                    material = screen.getTileContent((posX, posToTest));
-                    if (material.type <= 0 || type.type == 4) // if a worm or the material is not a solid tile, update positions and continue
-                    {
-                        realPosY = realPosToTest;
-                        posY = posToTest;
-                        toMoveY -= diff;
-                        if (type.type == 4) { updatePastPositions(previousPos); } // to make worm's tails
-                        previousPos = (posX, posY);
-                    }
-                    else
-                    {
-                        speedY = 0;
-                        break;
-                    }
+
+                    if ((allowX && !isDoneX) || (allowY && !isDoneY)) { continue; }
+                    break;
                 }
-                while (toMoveX != 0)
-                {
-                    diff = Sign(toMoveX) * Min(1, Abs(toMoveX));
-                    realPosToTest = realPosX + diff;
-                    posToTest = (int)realPosToTest;
-                    if (posX == posToTest) // if movement is too small to move by one whole pixel, update realPosY, and stop
-                    {
-                        realPosX = realPosToTest;
-                        break;
-                    }
-                    chunkPos = ChunkIdx(posToTest, posY);
-                    if (!screen.loadedChunks.ContainsKey(chunkPos)) // if chunk to test is outside loaded chunks, save Entity in the non-loaded chunk
-                    {
-                        realPosX = realPosToTest;
-                        saveEntity(this);
-                        screen.entitesToRemove[id] = this;
-                        return;
-                    }
-                    material = screen.getTileContent((posToTest, posY));
-                    if (material.type <= 0 || type.type == 4) // if a worm or the material is not a solid tile, update positions and continue
-                    {
-                        realPosX = realPosToTest;
-                        posX = posToTest;
-                        toMoveX -= diff;
-                        if (type.type == 4) { updatePastPositions(previousPos); } // to make worm's tails
-                        previousPos = (posX, posY);
-                    }
-                    else
-                    {
-                        speedX = 0;
-                        break;
-                    }
-                }
+                if (!isDoneX) { speedX = 0; }
+                if (!isDoneY) { speedY = 0; }
+                return;
+
+            SaveEntity:;
+                entityExitingChunk(posToTest);
+                return;
+            }
+            public virtual void entityExitingChunk((int x, int y) posToTest)
+            {
+                posX = posToTest.x;
+                posY = posToTest.y;
+                saveEntity(this);
+                screen.entitesToRemove[id] = this;
             }
             public virtual void teleport((int x, int y) newPos, int screenIdToTeleport)
             {

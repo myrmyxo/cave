@@ -412,61 +412,10 @@ namespace Cave
                 tryStartAttack();
                 if (craftSelection && digPress && tryCraft()) { digPress = false; }
             }
-            public override void actuallyMoveTheEntity()
+            public override void entityExitingChunk((int x, int y) posToTest)
             {
-                (int type, int subType) material;
-                int posToTest;
-                float realPosToTest;
-                float diff;
-                float toMoveX = speedX;
-                float toMoveY = speedY;
-
-                while (toMoveY != 0)
-                {
-                    diff = Sign(toMoveY) * Min(1, Abs(toMoveY));
-                    realPosToTest = realPosY + diff;
-                    posToTest = (int)realPosToTest;
-                    if (posY == posToTest) // if movement is too small to move by one whole pixel, update realPosY, and stop
-                    {
-                        realPosY = realPosToTest;
-                        break;
-                    }
-                    material = screen.getTileContent((posX, posToTest));
-                    if (material.type <= 0) // if is not a solid tile, update positions and continue
-                    {
-                        realPosY = realPosToTest;
-                        posY = posToTest;
-                        toMoveY -= diff;
-                    }
-                    else
-                    {
-                        speedY = 0;
-                        break;
-                    }
-                }
-                while (toMoveX != 0)
-                {
-                    diff = Sign(toMoveX) * Min(1, Abs(toMoveX));
-                    realPosToTest = realPosX + diff;
-                    posToTest = (int)realPosToTest;
-                    if (posX == posToTest) // if movement is too small to move by one whole pixel, update realPosY, and stop
-                    {
-                        realPosX = realPosToTest;
-                        break;
-                    }
-                    material = screen.getTileContent((posToTest, posY));
-                    if (material.type <= 0) // if is not a solid tile, update positions and continue
-                    {
-                        realPosX = realPosToTest;
-                        posX = posToTest;
-                        toMoveX -= diff;
-                    }
-                    else
-                    {
-                        speedX = 0;
-                        break;
-                    }
-                }
+                posX = posToTest.x;
+                posY = posToTest.y;
             }
             public override void teleport((int x, int y) newPos, int dimensionToTeleportTo)
             {
