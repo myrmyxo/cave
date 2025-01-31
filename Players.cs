@@ -58,6 +58,8 @@ namespace Cave
             public List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)> rayCastsToContinue = new List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)>();
             public Player(SettingsJson settingsJson)
             {
+                transformEntity((6, 0), true);
+
                 if (settingsJson == null)
                 {
                     initializeInventory();
@@ -342,11 +344,7 @@ namespace Cave
                     };
                 }
             }
-            public void ariGeoSlowDown(float ari, float geo)
-            {
-                speedX = Sign(speedX) * Max(0, Abs(speedX) * geo - ari);
-                speedY = Sign(speedY) * Max(0, Abs(speedY) * geo - ari);
-            }
+            public override void findLength() { length = 15; }
             public void Jump(int direction, float jumpSpeed)
             {
                 speedX += direction;
@@ -354,31 +352,56 @@ namespace Cave
             }
             public void movePlayer()
             {
-                bool inWater = false;
-                if (screen.getChunkFromPixelPos((posX, posY)).fillStates[PosMod(posX), PosMod(posY)].type < 0) { inWater = true; }
-                bool onGround = false;
-                if (screen.getChunkFromPixelPos((posX, posY - 1)).fillStates[PosMod(posX), PosMod((posY - 1))].type > 0) { onGround = true; }
+                ((int type, int subType) entityPos, (int type, int subType) under) returnType = applyForces();
+                (int type, int subType) playerTile = returnType.entityPos;
+                (int type, int subType) tileUnder = returnType.under;
 
-                ariGeoSlowDownX(0.8f, 0.15f);
-                if (inWater) { ariGeoSlowDown(0.95f, 0.2f); }
-                int directionState = 0;
-                if (!dimensionSelection && !craftSelection)
+                if (flyingEntities.ContainsKey(type))
                 {
-                    if (arrowKeysState[0]) { speedX -= 0.5f; directionState -= 1; }
-                    if (arrowKeysState[1]) { speedX += 0.5f; directionState += 1; }
-                    if (onGround && (directionState == 0 || (directionState == 1 && speedX < 0) || (directionState == -1 && speedX > 0))) { ariGeoSlowDownX(0.7f, 0.3f); }
-                    if (arrowKeysState[2]) { speedY -= 0.5f; }
-                    if (arrowKeysState[3])
+                    if (!dimensionSelection && !craftSelection)
                     {
-                        if (onGround && !shiftPress) { Jump(directionState, 4); }
-                        else if (debugMode || inWater) { speedY += 1f; }
+                        if (arrowKeysState[0]) { speedX -= 0.25f; }
+                        if (arrowKeysState[1]) { speedX += 0.25f; }
+                        if (arrowKeysState[2]) { speedY -= 0.25f; }
+                        if (arrowKeysState[3]) { speedY += 0.25f; }
+                    }
+                    ariGeoSlowDown(0.95f, 0.1f);
+                    if (inWater)
+                    { 
+                       ariGeoSlowDownY(0.975f, 0.025f);
+                       if (arrowKeysState[3]) { speedY += 0.05f; }
                     }
                 }
-                applyGravity();
-                if (shiftPress)
+                else if (diggingEntities.ContainsKey(type))
                 {
-                    speedX = Sign(speedX) * (Max(0, Abs(speedX) * (0.75f) - 0.7f));
-                    speedY = Sign(speedY) * (Max(0, Abs(speedY) * (0.75f) - 0.7f));
+                    if (!dimensionSelection && !craftSelection)
+                    {
+                        if (arrowKeysState[0]) { speedX -= 0.5f; }
+                        if (arrowKeysState[1]) { speedX += 0.5f; }
+                        if (arrowKeysState[2]) { speedY -= 0.5f; }
+                        if (arrowKeysState[3] && (onGround || inWater)) { speedY += 0.5f; }
+                    }
+                    if (playerTile.type > 0) { ariGeoSlowDown(0.75f, 0.25f); }
+                    else if (inWater && swimmingEntities.ContainsKey(type)) { ariGeoSlowDown(0.85f, 0.15f); }
+                    else { ariGeoSlowDownGravity(0.75f, 0.25f); }
+                }
+                else
+                {
+                    if (!inWater) { ariGeoSlowDownX(0.8f, 0.15f); }
+                    int directionState = 0;
+                    if (!dimensionSelection && !craftSelection)
+                    {
+                        if (arrowKeysState[0]) { speedX -= 0.5f; directionState -= 1; }
+                        if (arrowKeysState[1]) { speedX += 0.5f; directionState += 1; }
+                        if (onGround && (directionState == 0 || (directionState == 1 && speedX < 0) || (directionState == -1 && speedX > 0))) { ariGeoSlowDownX(0.7f, 0.3f); }  // Turn fast when on ground
+                        if (arrowKeysState[2]) { speedY -= 0.5f; }
+                        if (arrowKeysState[3])
+                        {
+                            if (onGround && !shiftPress) { Jump(directionState, 4); }
+                            else if (debugMode || inWater) { speedY += 1f; }
+                        }
+                    }
+                    if (shiftPress) { ariGeoSlowDown(0.75f, 0.75f); }
                 }
                 if ((placePress[0] || placePress[1]) && ((inventoryElements[inventoryCursor].typeOfElement == 0 && timeElapsed > timeAtLastPlace + 0.01f) || (timeElapsed > timeAtLastPlace + 0.2f)))
                 {
@@ -401,8 +424,8 @@ namespace Cave
 
                 int posDiffX = posX - camPosX; //*2 is needed cause there's only *8 and not *16 before
                 int posDiffY = posY - camPosY;
-                speedCamX = Clamp(posDiffX/2, -15f, 15f);
-                speedCamY = Clamp(posDiffY/2, -15f, 15f);
+                speedCamX = posDiffX/2;
+                speedCamY = posDiffY/2;
                 realCamPosX += speedCamX;
                 realCamPosY += speedCamY;
                 camPosX = (int)(realCamPosX + 0.5f);

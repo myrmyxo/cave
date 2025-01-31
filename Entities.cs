@@ -38,42 +38,70 @@ namespace Cave
     {
         public static Dictionary<(int type, int subType), int> entityStartingHp = new Dictionary<(int type, int subType), int>
         {
-            { (0, 0), 4}, // Fairy
-            { (0, 1), 10}, // ObsidianFairy
-            { (0, 2), 4}, // FrostFairy
-            { (0, 3), 15}, // SkeletonFairy
-            { (1, 0), 2}, // Frog
-            { (1, 1), 7}, // Carnal
-            { (1, 2), 7}, // Skeletal
-            { (2, 0), 2}, // Fish
-            { (2, 1), 2}, // SkeletonFish
-            { (3, 0), 2}, // HornetEgg
-            { (3, 1), 3}, // HornetLarva
-            { (3, 2), 20}, // HornetCocoon
-            { (3, 3), 6}, // Hornet
-            { (4, 0), 7}, // Worm
-            { (4, 1), 3}, // Nematode
-            { (5, 0), 3}, // WaterSkipper
+            { (0, 0), 4 }, // Fairy
+            { (0, 1), 10 }, // ObsidianFairy
+            { (0, 2), 4 }, // FrostFairy
+            { (0, 3), 15 }, // SkeletonFairy
+            { (1, 0), 2 }, // Frog
+            { (1, 1), 7 }, // Carnal
+            { (1, 2), 7 }, // Skeletal
+            { (2, 0), 2 }, // Fish
+            { (2, 1), 2 }, // SkeletonFish
+            { (3, 0), 2 }, // HornetEgg
+            { (3, 1), 3 }, // HornetLarva
+            { (3, 2), 20 }, // HornetCocoon
+            { (3, 3), 6 }, // Hornet
+            { (4, 0), 7 }, // Worm
+            { (4, 1), 3 }, // Nematode
+            { (5, 0), 3 }, // WaterSkipper
         };
 
         public static Dictionary<(int type, int subType), ((int type, int subType, int megaType) element, int count)> entityDrops = new Dictionary<(int type, int subType), ((int type, int subType, int megaType), int count)>
         {
-            { (0, 0), ((-3, 0, 0), 1)}, // Fairy          --> Fairy Liquid
-            { (0, 1), ((-3, 0, 0), 1)}, // ObsidianFairy  --> Fairy Liquid
-            { (0, 2), ((-3, 0, 0), 1)}, // FrostFairy     --> Fairy Liquid
-            { (0, 3), ((8, 1, 3), 1)},  // SkeletonFairy  --> Bone
-            { (1, 0), ((8, 0, 3), 1)},  // Frog           --> Flesh
-            { (1, 1), ((8, 0, 3), 1)},  // Carnal         --> Flesh
-            { (1, 2), ((8, 1, 3), 1)},  // Skeletal       --> Bone
-            { (2, 0), ((8, 0, 3), 1)},  // Fish           --> Flesh
-            { (2, 1), ((8, 1, 3), 1)},  // SkeletonFish   --> Bone
-            { (3, 0), ((8, 0, 3), 1)},  // HornetEgg      --> Flesh
-            { (3, 1), ((8, 0, 3), 1)},  // HornetLarva    --> Flesh
-            { (3, 2), ((8, 0, 3), 1)},  // HornetCocoon   --> Flesh
-            { (3, 3), ((8, 0, 3), 1)},  // Hornet         --> Flesh
-            { (4, 0), ((8, 0, 3), 1)},  // Worm           --> Flesh
-            { (4, 1), ((8, 0, 3), 1)},  // Nematode       --> Flesh
-            { (5, 0), ((8, 0, 3), 1)},  // WaterSkipper   --> Flesh
+            { (0, 0), ((-3, 0, 0), 1) }, // Fairy          --> Fairy Liquid
+            { (0, 1), ((-3, 0, 0), 1) }, // ObsidianFairy  --> Fairy Liquid
+            { (0, 2), ((-3, 0, 0), 1) }, // FrostFairy     --> Fairy Liquid
+            { (0, 3), ((8, 1, 3), 1) },  // SkeletonFairy  --> Bone
+            { (1, 0), ((8, 0, 3), 1) },  // Frog           --> Flesh
+            { (1, 1), ((8, 0, 3), 1) },  // Carnal         --> Flesh
+            { (1, 2), ((8, 1, 3), 1) },  // Skeletal       --> Bone
+            { (2, 0), ((8, 0, 3), 1) },  // Fish           --> Flesh
+            { (2, 1), ((8, 1, 3), 1) },  // SkeletonFish   --> Bone
+            { (3, 0), ((8, 0, 3), 1) },  // HornetEgg      --> Flesh
+            { (3, 1), ((8, 0, 3), 1) },  // HornetLarva    --> Flesh
+            { (3, 2), ((8, 0, 3), 1) },  // HornetCocoon   --> Flesh
+            { (3, 3), ((8, 0, 3), 1) },  // Hornet         --> Flesh
+            { (4, 0), ((8, 0, 3), 1) },  // Worm           --> Flesh
+            { (4, 1), ((8, 0, 3), 1) },  // Nematode       --> Flesh
+            { (5, 0), ((8, 0, 3), 1) },  // WaterSkipper   --> Flesh
+        };
+
+        public static Dictionary<(int type, int subType), bool> flyingEntities = new Dictionary<(int type, int subType), bool>
+        {
+            { (0, 0), true },   // Fairy
+            { (0, 1), true },   // ObsidianFairy
+            { (0, 2), true },   // FrostFairy
+            { (0, 3), true },   // SkeletonFairy
+            { (3, 3), true },   // Hornet
+        };
+        
+        public static Dictionary<(int type, int subType), bool> swimmingEntities = new Dictionary<(int type, int subType), bool>
+        {
+            { (2, 0), true },   // Fish
+            { (2, 1), true },   // SkeletonFish
+            { (4, 1), true },   // Nematode
+            { (5, 0), true },   // WaterSkipper
+        };
+
+        public static Dictionary<(int type, int subType), bool> diggingEntities = new Dictionary<(int type, int subType), bool>
+        {
+            { (4, 0), true },   // Worm
+            { (4, 1), true },   // Nematode
+        };
+
+        public static Dictionary<(int type, int subType), bool> jesusEntities = new Dictionary<(int type, int subType), bool>   // cuz they walk on water lol
+        {
+            { (5, 0), true },   // WaterSkipper
         };
 
         public static Dictionary<int, int> costDict = new Dictionary<int, int>
@@ -106,6 +134,8 @@ namespace Cave
             public float speedX = 0;
             public float speedY = 0;
             public (int x, int y) direction = (1, 0);
+            public bool inWater = false;
+            public bool onGround = false;
 
             public Color color;
             public Color lightColor;
@@ -666,9 +696,40 @@ namespace Cave
                 if (path.Count > 0) { path.RemoveAt(0); }
                 if (path.Count > 0) { path.RemoveAt(path.Count - 1); }
             }
-            public void applyGravity()
+            public ((int type, int subType) entityPos, (int type, int subType) under) applyForces()
             {
-                speedY -= 0.5f;
+                (int type, int subType) tileUnder = screen.getTileContent((posX, posY - 1));
+                if (tileUnder.type > 0)         // On terrain
+                {
+                    onGround = true;
+                }
+                else if (tileUnder.type < 0)    // On water
+                {
+                    onGround = jesusEntities.ContainsKey(type) ? true : false;
+                }
+                else                            // In air
+                {
+                    onGround = false;
+                }
+
+                (int type, int subType) entityTile = screen.getTileContent((posX, posY));
+                if (entityTile.type > 0)        // In terrain
+                {
+                    inWater = false;
+                    if (!diggingEntities.ContainsKey(type)) { speedX = 0; speedY = 0; }
+                }
+                else if (entityTile.type < 0)   // In water
+                {
+                    inWater = true;
+                    if (!swimmingEntities.ContainsKey(type)) { ariGeoSlowDown(0.85f, 0.15f); speedY += 0.1f; }
+                }
+                else                            // In air
+                {
+                    inWater = false;
+                    if (!onGround && !flyingEntities.ContainsKey(type)) { speedY -= 0.5f; }
+                }
+
+                return (entityTile, tileUnder);
             }
             public void changeSpeedRandom(float range)
             {
@@ -685,11 +746,21 @@ namespace Cave
                 speedX = Sign(speedX) * Max(Abs(speedX) - slowdownSpeed, 0);
                 speedY = Sign(speedY) * Max(Abs(speedY) - slowdownSpeed, 0);
             }
+            public void ariGeoSlowDown(float geo, float ari)
+            {
+                speedX = Sign(speedX) * Max(0, Abs(speedX) * geo - ari);
+                speedY = Sign(speedY) * Max(0, Abs(speedY) * geo - ari);
+            }
+            public void ariGeoSlowDownGravity(float geo, float ari)
+            {
+                speedX = Sign(speedX) * Max(0, Abs(speedX) * geo - ari);
+                speedY = (speedY > 0 ? speedY = Sign(speedY) * Max(0, Abs(speedY) * geo - ari) : speedY);
+            }
             public void ariGeoSlowDownX(float geo, float ari)
             {
                 speedX = Sign(speedX) * Max(0, Abs(speedX) * geo - ari);
             }
-            public void ariGeoSlowDownY(float ari, float geo)
+            public void ariGeoSlowDownY(float geo, float ari)
             {
                 speedY = Sign(speedY) * Max(0, Abs(speedY) * geo - ari);
             }
@@ -708,6 +779,10 @@ namespace Cave
             }
             public void moveEntity()
             {
+                ((int type, int subType) entityPos, (int type, int subType) under) returnType = applyForces();
+                (int type, int subType) entityTile = returnType.entityPos;
+                (int type, int subType) tileUnder = returnType.under;
+
                 if (type.type == 0) // fairy
                 {
                     if (state == 0) // idle
@@ -726,21 +801,19 @@ namespace Cave
                 }
                 else if (type.type == 1) // frog
                 {
-                    applyGravity();
-                    (int type, int subType) material = screen.getTileContent((posX, posY - 1));
-                    if (material.type > 0)
+                    if (onGround)
                     {
-                        ariGeoSlowDownX(0.2f, 0.85f);
-                        if (rand.NextDouble() > 0.05f)
+                        ariGeoSlowDownX(0.85f, 0.2f);
+                        if (rand.Next(20) > 0)
                         {
                             jumpRandom(2.5f, 2.5f);
                         }
                     }
+                    else if (inWater && rand.Next(10) == 0) { jumpRandom(2.5f, 1); }
                 }
                 else if (type.type == 2) // fish
                 {
-                    (int type, int subType) material = screen.getTileContent((posX, posY));
-                    if (material.type < 0)
+                    if (inWater)
                     {
                         if (state >= 2)
                         {
@@ -763,8 +836,8 @@ namespace Cave
                     }
                     else if (state == 1) // moving in water
                     {
-                        ariGeoSlowDownX(0.12f, 0.9f);
-                        ariGeoSlowDownY(0.12f, 0.9f);
+                        ariGeoSlowDownX(0.9f, 0.12f);
+                        ariGeoSlowDownY(0.9f, 0.12f);
 
                         changeSpeedRandom(0.5f);
 
@@ -779,11 +852,9 @@ namespace Cave
                     }
                     else if (state == 2) // outside water
                     {
-                        applyGravity();
-                        (int type, int subType) material2 = screen.getTileContent((posX, posY - 1)); // +1 cause coordinates are inverted lol (no)
-                        if (material2.type > 0)
+                        if (onGround)
                         {
-                            ariGeoSlowDownX(0.12f, 0.9f);
+                            ariGeoSlowDownX(0.9f, 0.12f);
                             if (rand.Next(10) != 0)
                             {
                                 jumpRandom(1, 2);
@@ -796,7 +867,6 @@ namespace Cave
                     testOrphanage();
                     if (type.subType == 0)
                     {
-                        applyGravity();
                         if (timeElapsed - timeAtBirth > 30)
                         {
                             transformEntity(3, 1, true);
@@ -805,7 +875,6 @@ namespace Cave
                     }
                     else if (type.subType == 1)
                     {
-                        applyGravity();
                         if (food < 3)
                         {
                             if (timeElapsed - timeAtLastStateChange > 15 + 15 * food)
@@ -822,10 +891,9 @@ namespace Cave
                             timeAtLastStateChange = timeElapsed;
                             goto AfterTest;
                         }
-                        (int type, int subType) material = screen.getTileContent((posX, posY - 1));
-                        if (material.type > 0)
+                        if (onGround)
                         {
-                            ariGeoSlowDownX(0.2f, 0.85f);
+                            ariGeoSlowDownX(0.85f, 0.2f);
                             if (rand.NextDouble() < 0.05f)
                             {
                                 jumpRandom(1, 1.5f);
@@ -835,7 +903,6 @@ namespace Cave
                     else if (type.subType == 2)
                     {
                         hoverIdle(0.5f, 100);
-                        applyGravity();
                         if (timeElapsed - timeAtLastStateChange > 30)
                         {
                             if (nest != null)
@@ -1111,24 +1178,15 @@ namespace Cave
                 }
                 else if (type.type == 4)
                 {
-                    (int type, int subType) material = screen.getTileContent((posX, posY));
-                    if (material.type == 0)
-                    {
-                        applyGravity();
-                        changeSpeedRandom(0.5f);
-                    }
-                    else if (material.type < 0)
+                    if (entityTile.type == 0) { changeSpeedRandom(0.5f); }
+                    else if (entityTile.type < 0)
                     {
                         if (type.subType == 1)
                         {
                             changeSpeedRandom(0.1f);
                             clampSpeed(1, 1);
                         }
-                        else
-                        {
-                            applyGravity();
-                            changeSpeedRandom(0.5f);
-                        }
+                        else { changeSpeedRandom(0.5f); }
                     }
                     else
                     {
@@ -1138,25 +1196,21 @@ namespace Cave
                 }
                 else if (type.type == 5) // water skipper
                 {
-                    bool isFalling = false;
-                    (int type, int subType) material = screen.getTileContent((posX, posY));
-                    (int type, int subType) materialUnder = screen.getTileContent((posX, posY - 1));
-
-                    if (materialUnder.type != 0)
+                    if (onGround)   // since they're in jesusEntities, when on water onGround = true
                     {
-                        if (rand.Next(20) == 0) { jumpRandom(7, 0); }
+                        if (rand.Next(20) == 0)
+                        {
+                            jumpRandom(7, 0);
+                        }
                     }
-                    else if (materialUnder.type == 0) { isFalling = true; }
 
-                    if (material.type < 0) { speedY += 0.4f; }
-                    else if (material.type == 0 && isFalling) { applyGravity(); }
-                    ariGeoSlowDownY(0.15f, 0.8f);
-                    ariGeoSlowDownX(0.1f, 0.9f);
-                }
-                if (type.type != 2 && type != (4, 1))
-                {
-                    (int type, int subType) material = screen.getTileContent((posX, posY));
-                    if (material.type < 0) { ariGeoSlowDownX(0.15f, 0.85f); }
+                    if (inWater)
+                    {
+                        ariGeoSlowDownX(0.75f, 0.25f);
+                        speedY += 0.3f;
+                    }
+                    if (inWater || tileUnder.type < 0) { ariGeoSlowDownY(0.8f, 0.15f); }
+                    ariGeoSlowDownX(0.9f, 0.1f);
                 }
 
                 actuallyMoveTheEntity();
@@ -1165,8 +1219,7 @@ namespace Cave
 
                 // test what happens if in special liquids (fairy lake, lava...)
                 {
-                    (int type, int subType) material = screen.getTileContent((posX, posY));
-                    if (type.type != 0 && material == (-3, 0))
+                    if (type.type != 0 && entityTile == (-3, 0))
                     {
                         if (rand.Next(10) == 0)
                         {
@@ -1174,15 +1227,15 @@ namespace Cave
                             else { transformEntity(0, 0, true); }
                         }
                     }
-                    if (type.type == 2 && material == (-7, 0))
+                    if (type.type == 2 && entityTile == (-7, 0))
                     {
                         if (rand.Next(10) == 0) { transformEntity(2, 1, true); }
                     }
-                    if (material == (-4, 0) && type.type != 2 && type != (0, 3))
+                    if (entityTile == (-4, 0) && type.type != 2 && type != (0, 3))
                     {
                         if (rand.Next(10) == 0) { screen.entitesToRemove[id] = this; }
                     }
-                    if (material == (-7, 0) && type.type != 2 && type != (0, 3) && type != (4, 1) && type != (1, 1) && type != (1, 2))
+                    if (entityTile == (-7, 0) && type.type != 2 && type != (0, 3) && type != (4, 1) && type != (1, 1) && type != (1, 2))
                     {
                         if (rand.Next(10) == 0) { screen.entitesToRemove[id] = this; }
                     }
@@ -1213,7 +1266,7 @@ namespace Cave
                 entityToGive.addElementToInventory(entityDrop.element, entityDrop.count);
                 screen.entitesToRemove[id] = this;
             }
-            public void findLength()
+            public virtual void findLength()
             {
                 if (type.type == 4)
                 {
@@ -1269,7 +1322,7 @@ namespace Cave
                         Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                         if (chunk is null) { goto SaveEntity; }
                         material = screen.getTileContent(posToTest);
-                        if (material.type <= 0 || type.type == 4) // if a worm or the material is not a solid tile, update positions and continue
+                        if (material.type <= 0 || diggingEntities.ContainsKey(type)) // if a worm or the material is not a solid tile, update positions and continue
                         {
                             realPosX = realPosToTest;
                             posX = posToTest.x;
@@ -1299,7 +1352,7 @@ namespace Cave
                         Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                         if (chunk is null) { goto SaveEntity; }
                         material = screen.getTileContent(posToTest);
-                        if (material.type <= 0 || type.type == 4) // if a worm or the material is not a solid tile, update positions and continue
+                        if (material.type <= 0 || diggingEntities.ContainsKey(type)) // if a worm or the material is not a solid tile, update positions and continue
                         {
                             realPosY = realPosToTest;
                             posY = posToTest.y;

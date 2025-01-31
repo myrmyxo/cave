@@ -363,7 +363,6 @@ namespace Cave
 
             loadSpriteDictionaries();
             //      --- - TO DO LIST - ---
-            // Axe attack ?
             // Make nests not appear in certain biomes.
             // Fix plants spawning. Make megaChunks priority loading (to stop overlaps and weird generation).
             // Player fairy transfo when in fairy liquid. Craft tools. Add ICE. Auto sorting in inventory. Blood breathing ? Extract o2 from blood.
@@ -385,11 +384,13 @@ namespace Cave
             // System to DEMOTE megaChunks and chunks to ExtraLoaded. Also in the debugging put extraLoadedMegachunks as another color than the red. Ig.
             // Upgrade plants spawning : if Maxgrowth returns a growth level that is too small, it FAILS, and tries again with another position
             // nornet nests disappear when they empty
+            // Hornet larvae climbing up to the ceiling to go pupate ?
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
             // When multiple hornets dig the same tile, it can dig other than pollen
             // 30/01/2025 Once, a broken honey storage room was made, as the tunnel that lead to it made it have a leak mid height (tunnel dug in the bordel...)
+            // Nest making rooms SUPER fucking far away from spawn
 
             // cool ideas for later !
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh

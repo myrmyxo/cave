@@ -82,7 +82,7 @@ namespace Cave
                 loadStructuresYesOrNo = true;
                 spawnNests = true;
                 spawnEntitiesBool = true;
-                spawnPlants = false;
+                spawnPlants = true;
                 bool spawnNOTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
 
@@ -1104,9 +1104,18 @@ namespace Cave
 
                 // player
                 Color playerColor = player.color;
-                if (getChunkFromPixelPos((player.posX, player.posY)).fillStates[PosMod(player.posX), PosMod(player.posY)].type > 0) { playerColor = Color.Red; }
+                if (player.type.type != 4 && getChunkFromPixelPos((player.posX, player.posY)).fillStates[PosMod(player.posX), PosMod(player.posY)].type > 0) { playerColor = Color.Red; }
                 if (game.isLight) { lightPositions.Add((player.posX, player.posY, 9, player.lightColor)); }
                 drawPixel(gameBitmap, playerColor, (player.posX, player.posY), camPos);
+                if (player.length > 0)
+                {
+                    int county = player.pastPositions.Count;
+                    for (int i = 0; i < player.length - 1; i++)
+                    {
+                        if (i >= county) { break; }
+                        drawPixel(gameBitmap, player.color, player.pastPositions[i], camPos);
+                    }
+                }
 
                 foreach (((int x, int y) pos, Color color) item in attacksToDraw)
                 {
