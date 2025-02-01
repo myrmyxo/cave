@@ -24,6 +24,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Nests;
 using static Cave.Entities;
+using static Cave.EntityBehaviors;
 using static Cave.Attacks;
 using static Cave.Files;
 using static Cave.Plants;

@@ -24,12 +24,15 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Nests;
 using static Cave.Entities;
+using static Cave.EntityBehaviors;
+using static Cave.Attacks;
 using static Cave.Files;
 using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
+using static Cave.Dialogues;
 
 
 namespace Cave
@@ -362,6 +365,7 @@ namespace Cave
             }
 
             loadSpriteDictionaries();
+            makeEntityBehaviorDict();
             //      --- - TO DO LIST - ---
             // Make nests not appear in certain biomes.
             // Fix plants spawning. Make megaChunks priority loading (to stop overlaps and weird generation).

@@ -24,6 +24,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Nests;
 using static Cave.Entities;
+using static Cave.EntityBehaviors;
 using static Cave.Attacks;
 using static Cave.Files;
 using static Cave.Plants;
@@ -31,79 +32,12 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
+using static Cave.Dialogues;
 
 namespace Cave
 {
     public partial class Globals
     {
-        public static Dictionary<(int type, int subType), int> entityStartingHp = new Dictionary<(int type, int subType), int>
-        {
-            { (0, 0), 4 }, // Fairy
-            { (0, 1), 10 }, // ObsidianFairy
-            { (0, 2), 4 }, // FrostFairy
-            { (0, 3), 15 }, // SkeletonFairy
-            { (1, 0), 2 }, // Frog
-            { (1, 1), 7 }, // Carnal
-            { (1, 2), 7 }, // Skeletal
-            { (2, 0), 2 }, // Fish
-            { (2, 1), 2 }, // SkeletonFish
-            { (3, 0), 2 }, // HornetEgg
-            { (3, 1), 3 }, // HornetLarva
-            { (3, 2), 20 }, // HornetCocoon
-            { (3, 3), 6 }, // Hornet
-            { (4, 0), 7 }, // Worm
-            { (4, 1), 3 }, // Nematode
-            { (5, 0), 3 }, // WaterSkipper
-        };
-
-        public static Dictionary<(int type, int subType), ((int type, int subType, int megaType) element, int count)> entityDrops = new Dictionary<(int type, int subType), ((int type, int subType, int megaType), int count)>
-        {
-            { (0, 0), ((-3, 0, 0), 1) }, // Fairy          --> Fairy Liquid
-            { (0, 1), ((-3, 0, 0), 1) }, // ObsidianFairy  --> Fairy Liquid
-            { (0, 2), ((-3, 0, 0), 1) }, // FrostFairy     --> Fairy Liquid
-            { (0, 3), ((8, 1, 3), 1) },  // SkeletonFairy  --> Bone
-            { (1, 0), ((8, 0, 3), 1) },  // Frog           --> Flesh
-            { (1, 1), ((8, 0, 3), 1) },  // Carnal         --> Flesh
-            { (1, 2), ((8, 1, 3), 1) },  // Skeletal       --> Bone
-            { (2, 0), ((8, 0, 3), 1) },  // Fish           --> Flesh
-            { (2, 1), ((8, 1, 3), 1) },  // SkeletonFish   --> Bone
-            { (3, 0), ((8, 0, 3), 1) },  // HornetEgg      --> Flesh
-            { (3, 1), ((8, 0, 3), 1) },  // HornetLarva    --> Flesh
-            { (3, 2), ((8, 0, 3), 1) },  // HornetCocoon   --> Flesh
-            { (3, 3), ((8, 0, 3), 1) },  // Hornet         --> Flesh
-            { (4, 0), ((8, 0, 3), 1) },  // Worm           --> Flesh
-            { (4, 1), ((8, 0, 3), 1) },  // Nematode       --> Flesh
-            { (5, 0), ((8, 0, 3), 1) },  // WaterSkipper   --> Flesh
-        };
-
-        public static Dictionary<(int type, int subType), bool> flyingEntities = new Dictionary<(int type, int subType), bool>
-        {
-            { (0, 0), true },   // Fairy
-            { (0, 1), true },   // ObsidianFairy
-            { (0, 2), true },   // FrostFairy
-            { (0, 3), true },   // SkeletonFairy
-            { (3, 3), true },   // Hornet
-        };
-        
-        public static Dictionary<(int type, int subType), bool> swimmingEntities = new Dictionary<(int type, int subType), bool>
-        {
-            { (2, 0), true },   // Fish
-            { (2, 1), true },   // SkeletonFish
-            { (4, 1), true },   // Nematode
-            { (5, 0), true },   // WaterSkipper
-        };
-
-        public static Dictionary<(int type, int subType), bool> diggingEntities = new Dictionary<(int type, int subType), bool>
-        {
-            { (4, 0), true },   // Worm
-            { (4, 1), true },   // Nematode
-        };
-
-        public static Dictionary<(int type, int subType), bool> jesusEntities = new Dictionary<(int type, int subType), bool>   // cuz they walk on water lol
-        {
-            { (5, 0), true },   // WaterSkipper
-        };
-
         public static Dictionary<int, int> costDict = new Dictionary<int, int>
         {
             { 0, 1 },       // air
@@ -124,8 +58,9 @@ namespace Cave
 
             public int seed;
             public int id;
-            public (int type, int subType) type; // Type :     0 = fairy , 1 = frog , 2 = fish, 3 = hornet, 4 = worm, 5 = waterSkipper
+            public (int type, int subType) type; // Type :     0 = fairy , 1 = frog , 2 = fish, 3 = hornet, 4 = worm, 5 = waterSkipper, 6 = goblin
                                                  // Subtype : (0 : normal, obsidian, frost, skeleton). (1 : frog, carnal, skeletal). (2 : fish, skeleton). (3 : egg, larva, cocoon, adult). (4 : worm, nematode). ( 5 : waterSkipper) 
+            public EntityBehavior behavior;
             public int state; // 0 = idle I guess idk
             public float realPosX = 0;
             public float realPosY = 0;
@@ -235,117 +170,38 @@ namespace Cave
                 (int type, int subType) material = chunk.fillStates[tileIndex.x, tileIndex.y];
                 if (screen.type.Item1 == 2)
                 {
-                    if (material.type != 0) { transformEntity(4, 1, true); }
-                    else if (biome == (10, 0) || biome == (10, 1)) { transformEntity(1, 1 + rand.Next(2), true); }
-                    else if (biome == (10, 2)) { transformEntity(1, 2, true); }
-                    else { transformEntity(4, 1, true); }
+                    if (material.type != 0) { transformEntity((4, 1), true); }
+                    else if (biome == (10, 0) || biome == (10, 1)) { transformEntity((1, 1 + rand.Next(2)), true); }
+                    else if (biome == (10, 2)) { transformEntity((1, 2), true); }
+                    else { transformEntity((4, 1), true); }
                 }
                 else
                 {
                     if (material.type < 0)
                     {
-                        if (rand.Next(2) == 0) { transformEntity(2, 0, true); }
-                        else { transformEntity(5, 0, true); }
+                        if (rand.Next(2) == 0) { transformEntity((2, 0), true); }
+                        else { transformEntity((5, 0), true); }
                     }
                     else if (material.type > 0)
                     {
                         if (rand.Next(10) > 0) { isDeadAndShouldDisappear = true; }
-                        else { transformEntity(4, 0, true); }
-                    }
-                    else if (biome == (5, 0)) { transformEntity(0, 0, true); }
-                    else if (biome == (2, 2)) { transformEntity(0, 1, true); }
-                    else if (biome == (0, 1) || biome == (9, 0)) { transformEntity(0, 2, true); }
-                    else { transformEntity(1, 0, true); }
+                        else { transformEntity((4, 0), true); }
+                      }
+                    else if (biome == (5, 0)) { transformEntity((0, 0), true); }
+                    else if (biome == (2, 2)) { transformEntity((0, 1), true); }
+                    else if (biome == (0, 1) || biome == (9, 0)) { transformEntity((0, 2), true); }
+                    else { transformEntity((1, 0), true); }
                 }
             }
             public Color findColor()
             {
-                int hueVar = seed % 101 - 50;
-                int shadeVar = seed % 61 - 30;
-                if (type.type == 0)
-                {
-                    if (type.subType == 1)
-                    {
-                        return Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar);
-                    }
-                    if (type.subType == 2)
-                    {
-                        hueVar = Abs((int)(hueVar * 0.4f));
-                        shadeVar = Abs(shadeVar);
-                        return Color.FromArgb(255 - hueVar - shadeVar, 255 - hueVar - shadeVar, 255 - shadeVar);
-                    }
-                    if (type.subType == 3)
-                    {
-                        hueVar = Abs((int)(hueVar * 0.6f));
-                        shadeVar = Abs(shadeVar);
-                        return Color.FromArgb(230 - hueVar - shadeVar, 230 - hueVar - shadeVar, 230 - shadeVar);
-                    }
-                    return Color.FromArgb(130 + hueVar + shadeVar, 130 - hueVar + shadeVar, 210 + shadeVar);
-                }
-                if (type.type == 1)
-                {
-                    if (type.subType == 1)
-                    {
-                        hueVar = Abs((int)(hueVar * 0.6f));
-                        shadeVar = -Abs(shadeVar);
-                        return Color.FromArgb(135 - shadeVar, 55 - hueVar - shadeVar, 55 - hueVar - shadeVar);
-                    }
-                    if (type.subType == 2)
-                    {
-                        hueVar = Abs((int)(hueVar * 0.6f));
-                        shadeVar = Abs(shadeVar);
-                        return Color.FromArgb(230 - hueVar - shadeVar, 230 - hueVar - shadeVar, 230 - shadeVar);
-                    }
-                    return Color.FromArgb(90 + hueVar + shadeVar, 210 + shadeVar, 110 - hueVar + shadeVar);
-                }
-                if (type.type == 2)
-                {
-                    if (type.subType == 1)
-                    {
-                        shadeVar = (int)(0.34f * shadeVar);
-                        return Color.FromArgb(245 + shadeVar, 245 + shadeVar, 245 + shadeVar);
-                    }
-                    return Color.FromArgb(190 + shadeVar, 80 - hueVar + shadeVar, 80 + hueVar + shadeVar);
-                }
-                if (type.type == 3)
-                {
-                    if (type.subType == 0)
-                    {
-                        hueVar = Abs((int)(hueVar * 0.4f));
-                        shadeVar = Abs(shadeVar);
-                        return Color.FromArgb(255 - hueVar - shadeVar, 255 - hueVar - shadeVar, 255 - shadeVar);
-                    }
-                    else if (type.subType == 1)
-                    {
-                        hueVar = Abs((int)(hueVar * 0.4f));
-                        shadeVar = Abs(shadeVar);
-                        return Color.FromArgb(230 - hueVar - shadeVar, 230 - hueVar - shadeVar, 190 - shadeVar);
-                    }
-                    else if (type.subType == 2)
-                    {
-                        return Color.FromArgb(120 + (int)(hueVar * 0.2f) + shadeVar, 120 - (int)(hueVar * 0.2f) + shadeVar, Max(0, 10 + shadeVar));
-                    }
-                    else if (type.subType == 3)
-                    {
-                        return Color.FromArgb(190 + (int)(hueVar * 0.2f) + shadeVar, 190 - (int)(hueVar * 0.2f) + shadeVar, 80 + shadeVar);
-                    }
-                }
-                if (type.type == 4)
-                {
-                    shadeVar = -Abs(shadeVar);
-                    hueVar = Abs((int)(hueVar * 0.4f));
-                    if (type.subType == 1)
-                    {
-                        return Color.FromArgb(220 - hueVar + shadeVar, 220 + hueVar + shadeVar, 220 + shadeVar);
-                    }
-                    return Color.FromArgb(210 + shadeVar, 140 + hueVar + shadeVar, 140 + hueVar + shadeVar);
-                }
-                if (type.type == 5)
-                {
-                    hueVar = Abs((int)(hueVar * 0.4f));
-                    return Color.FromArgb(110 + shadeVar, 110 + shadeVar, 140 + hueVar + shadeVar);
-                }
-                return Color.Red;
+                float hueVar = (float)((seed % 10) * 0.2f - 1);
+                float shadeVar = (float)((LCGz(seed) % 10) * 0.2f - 1);
+                return Color.FromArgb(
+                    ColorClamp(behavior.r.v + (int)(hueVar * behavior.r.h) + (int)(shadeVar * behavior.r.s)),
+                    ColorClamp(behavior.g.v + (int)(hueVar * behavior.g.h) + (int)(shadeVar * behavior.g.s)),
+                    ColorClamp(behavior.b.v + (int)(hueVar * behavior.b.h) + (int)(shadeVar * behavior.b.s))
+                );
             }
             public void findLightColor()
             {
@@ -705,7 +561,7 @@ namespace Cave
                 }
                 else if (tileUnder.type < 0)    // On water
                 {
-                    onGround = jesusEntities.ContainsKey(type) ? true : false;
+                    onGround = behavior.isJesus;
                 }
                 else                            // In air
                 {
@@ -716,17 +572,17 @@ namespace Cave
                 if (entityTile.type > 0)        // In terrain
                 {
                     inWater = false;
-                    if (!diggingEntities.ContainsKey(type)) { speedX = 0; speedY = 0; }
+                    if (!behavior.isDigging) { speedX = 0; speedY = 0; }
                 }
                 else if (entityTile.type < 0)   // In water
                 {
                     inWater = true;
-                    if (!swimmingEntities.ContainsKey(type)) { ariGeoSlowDown(0.85f, 0.15f); speedY += 0.1f; }
+                    if (!behavior.isSwimming) { ariGeoSlowDown(0.85f, 0.15f); speedY += 0.1f; }
                 }
                 else                            // In air
                 {
                     inWater = false;
-                    if (!onGround && !flyingEntities.ContainsKey(type)) { speedY -= 0.5f; }
+                    if (!onGround && !behavior.isFlying) { speedY -= 0.5f; }
                 }
 
                 return (entityTile, tileUnder);
@@ -869,7 +725,7 @@ namespace Cave
                     {
                         if (timeElapsed - timeAtBirth > 30)
                         {
-                            transformEntity(3, 1, true);
+                            transformEntity((3, 1), true);
                             timeAtLastStateChange = timeElapsed;
                         }
                     }
@@ -887,7 +743,7 @@ namespace Cave
                         }
                         else if (timeElapsed - timeAtLastStateChange > 60)
                         {
-                            transformEntity(3, 2, true);
+                            transformEntity((3, 2), true);
                             timeAtLastStateChange = timeElapsed;
                             goto AfterTest;
                         }
@@ -919,7 +775,7 @@ namespace Cave
                                 }
                                 nest.adults.Add(this);
                             }
-                            transformEntity(3, 3, true);
+                            transformEntity((3, 3), true);
                             timeAtLastStateChange = timeElapsed;
                         }
                     }
@@ -1223,13 +1079,13 @@ namespace Cave
                     {
                         if (rand.Next(10) == 0)
                         {
-                            if (type.type == 2 && type.subType == 1) { transformEntity(0, 3, true); }
-                            else { transformEntity(0, 0, true); }
+                            if (type.type == 2 && type.subType == 1) { transformEntity((0, 3), true); }
+                            else { transformEntity((0, 0), true); }
                         }
                     }
                     if (type.type == 2 && entityTile == (-7, 0))
                     {
-                        if (rand.Next(10) == 0) { transformEntity(2, 1, true); }
+                        if (rand.Next(10) == 0) { transformEntity((2, 1), true); }
                     }
                     if (entityTile == (-4, 0) && type.type != 2 && type != (0, 3))
                     {
@@ -1243,25 +1099,19 @@ namespace Cave
 
                 if (currentAttack != null && currentAttack.isDone) { currentAttack = null; }
             }
-            public void transformEntity(int typeToPut, int subTypeToPut, bool setHp)
+            public void transformEntity((int type, int subType) newType, bool setHp = true)
             {
-                type = (typeToPut, subTypeToPut);
-                if (setHp) { hp = entityStartingHp[type]; }
-                findLength();
-                color = findColor();
-                findLightColor();
-            }
-            public void transformEntity((int type, int subType) newType, bool setHp)
-            {
-                type = (newType.type, newType.subType);
-                if (setHp) { hp = entityStartingHp[type]; }
+                type = newType;
+                behavior = entityBehaviorDict.ContainsKey(type) ? entityBehaviorDict[type] : entityBehaviorDict[(-1, 0)];
+
+                if (setHp) { hp = behavior.startingHp; }
                 findLength();
                 color = findColor();
                 findLightColor();
             }
             public void dieAndDrop(Entity entityToGive)
             {
-                ((int type, int subType, int megaType) element, int count) entityDrop = entityDrops[type];
+                ((int type, int subType, int megaType) element, int count) entityDrop = behavior.drops;
                 if (type.type == 4) { entityDrop = (entityDrop.element, length); }
                 entityToGive.addElementToInventory(entityDrop.element, entityDrop.count);
                 screen.entitesToRemove[id] = this;
@@ -1322,7 +1172,7 @@ namespace Cave
                         Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                         if (chunk is null) { goto SaveEntity; }
                         material = screen.getTileContent(posToTest);
-                        if (material.type <= 0 || diggingEntities.ContainsKey(type)) // if a worm or the material is not a solid tile, update positions and continue
+                        if (material.type <= 0 || behavior.isDigging) // if a worm or the material is not a solid tile, update positions and continue
                         {
                             realPosX = realPosToTest;
                             posX = posToTest.x;
@@ -1352,7 +1202,7 @@ namespace Cave
                         Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                         if (chunk is null) { goto SaveEntity; }
                         material = screen.getTileContent(posToTest);
-                        if (material.type <= 0 || diggingEntities.ContainsKey(type)) // if a worm or the material is not a solid tile, update positions and continue
+                        if (material.type <= 0 || behavior.isDigging) // if a worm or the material is not a solid tile, update positions and continue
                         {
                             realPosY = realPosToTest;
                             posY = posToTest.y;

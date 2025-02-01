@@ -24,6 +24,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Nests;
 using static Cave.Entities;
+using static Cave.EntityBehaviors;
 using static Cave.Attacks;
 using static Cave.Files;
 using static Cave.Plants;
@@ -31,6 +32,7 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
+using static Cave.Dialogues;
 
 namespace Cave
 {
@@ -82,7 +84,7 @@ namespace Cave
                 camPosY = posY;
                 realCamPosY = camPosY;
 
-                color = Color.Green;
+                findColor();
                 findLightColor();
             }
             public void placePlayer()
@@ -356,7 +358,7 @@ namespace Cave
                 (int type, int subType) playerTile = returnType.entityPos;
                 (int type, int subType) tileUnder = returnType.under;
 
-                if (flyingEntities.ContainsKey(type))
+                if (behavior.isFlying)
                 {
                     if (!dimensionSelection && !craftSelection)
                     {
@@ -372,7 +374,7 @@ namespace Cave
                        if (arrowKeysState[3]) { speedY += 0.05f; }
                     }
                 }
-                else if (diggingEntities.ContainsKey(type))
+                else if (behavior.isDigging)
                 {
                     if (!dimensionSelection && !craftSelection)
                     {
@@ -382,7 +384,7 @@ namespace Cave
                         if (arrowKeysState[3] && (onGround || inWater)) { speedY += 0.5f; }
                     }
                     if (playerTile.type > 0) { ariGeoSlowDown(0.75f, 0.25f); }
-                    else if (inWater && swimmingEntities.ContainsKey(type)) { ariGeoSlowDown(0.85f, 0.15f); }
+                    else if (inWater && behavior.isSwimming) { ariGeoSlowDown(0.85f, 0.15f); }
                     else { ariGeoSlowDownGravity(0.75f, 0.25f); }
                 }
                 else
