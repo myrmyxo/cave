@@ -24,7 +24,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Nests;
 using static Cave.Entities;
-using static Cave.EntityBehaviors;
+using static Cave.Traits;
 using static Cave.Attacks;
 using static Cave.Files;
 using static Cave.Plants;
@@ -43,7 +43,7 @@ namespace Cave
             { 0, 1 },       // air
             { -1, 3 },      // piss
             { -2, 3 },      // water
-            { -3, 10 },     // fairy liquid
+            { -3, 999 },     // fairy liquid
             { -4, 999999 }, // lava (cannot cross)
             { -5, 5 },      // honey
             { -6, 3 },      // blood
@@ -60,7 +60,7 @@ namespace Cave
             public int id;
             public (int type, int subType) type; // Type :     0 = fairy , 1 = frog , 2 = fish, 3 = hornet, 4 = worm, 5 = waterSkipper, 6 = goblin
                                                  // Subtype : (0 : normal, obsidian, frost, skeleton). (1 : frog, carnal, skeletal). (2 : fish, skeleton). (3 : egg, larva, cocoon, adult). (4 : worm, nematode). ( 5 : waterSkipper) 
-            public EntityBehavior behavior;
+            public EntityTraits traits;
             public int state; // 0 = idle I guess idk
             public float realPosX = 0;
             public float realPosY = 0;
@@ -127,26 +127,31 @@ namespace Cave
                 state = entityJson.state;
                 transformEntity(entityJson.type, false); // false to not reinitialize hp
             }
-            public Entity(Chunk chunk)
+            public Entity(Chunk chunk, (int type, int subType) typeToPut, (int x, int y) posToPut)
             {
                 screen = chunk.screen;
+                posX = posToPut.Item1;
+                realPosX = posX;
+                posY = posToPut.Item2;
+                realPosY = posY;
+                targetPos = posToPut;
                 seed = LCGint1(Abs((int)chunk.chunkSeed));
+                type = typeToPut;
                 id = currentEntityId;
-                placeEntity(chunk);
-                findType(chunk); // contains transformEntity so contains Color and LightColor finding
+                transformEntity(typeToPut); // contains transformEntity so contains Color and LightColor finding
                 initializeInventory();
                 timeAtBirth = timeElapsed;
 
                 currentEntityId++;
             }
-            public Entity(Screens.Screen screenToPut, (int, int) positionToPut, (int type, int subType) typeToPut)
+            public Entity(Screens.Screen screenToPut, (int, int) posToPut, (int type, int subType) typeToPut)
             {
                 screen = screenToPut;
-                posX = positionToPut.Item1;
+                posX = posToPut.Item1;
                 realPosX = posX;
-                posY = positionToPut.Item2;
+                posY = posToPut.Item2;
                 realPosY = posY;
-                targetPos = positionToPut;
+                targetPos = posToPut;
                 seed = rand.Next(1000000000); //                              TO CHANGE FALSE RANDOM NOT SEEDED ARGHHEHEEEE
                 id = currentEntityId;
                 transformEntity(typeToPut, true);
@@ -163,71 +168,19 @@ namespace Cave
                     screen.activeStructures[nestId].addEntityToStructure(this);
                 }
             }
-            public void findType(Chunk chunk)
-            {
-                (int x, int y) tileIndex = PosMod((posX, posY));
-                (int biome, int subBiome) biome = chunk.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
-                (int type, int subType) material = chunk.fillStates[tileIndex.x, tileIndex.y];
-                if (screen.type.Item1 == 2)
-                {
-                    if (material.type != 0) { transformEntity((4, 1), true); }
-                    else if (biome == (10, 0) || biome == (10, 1)) { transformEntity((1, 1 + rand.Next(2)), true); }
-                    else if (biome == (10, 2)) { transformEntity((1, 2), true); }
-                    else { transformEntity((4, 1), true); }
-                }
-                else
-                {
-                    if (material.type < 0)
-                    {
-                        if (rand.Next(2) == 0) { transformEntity((2, 0), true); }
-                        else { transformEntity((5, 0), true); }
-                    }
-                    else if (material.type > 0)
-                    {
-                        if (rand.Next(10) > 0) { isDeadAndShouldDisappear = true; }
-                        else { transformEntity((4, 0), true); }
-                      }
-                    else if (biome == (5, 0)) { transformEntity((0, 0), true); }
-                    else if (biome == (2, 2)) { transformEntity((0, 1), true); }
-                    else if (biome == (0, 1) || biome == (9, 0)) { transformEntity((0, 2), true); }
-                    else { transformEntity((1, 0), true); }
-                }
-            }
             public Color findColor()
             {
                 float hueVar = (float)((seed % 10) * 0.2f - 1);
                 float shadeVar = (float)((LCGz(seed) % 10) * 0.2f - 1);
                 return Color.FromArgb(
-                    ColorClamp(behavior.r.v + (int)(hueVar * behavior.r.h) + (int)(shadeVar * behavior.r.s)),
-                    ColorClamp(behavior.g.v + (int)(hueVar * behavior.g.h) + (int)(shadeVar * behavior.g.s)),
-                    ColorClamp(behavior.b.v + (int)(hueVar * behavior.b.h) + (int)(shadeVar * behavior.b.s))
+                    ColorClamp(traits.r.v + (int)(hueVar * traits.r.h) + (int)(shadeVar * traits.r.s)),
+                    ColorClamp(traits.g.v + (int)(hueVar * traits.g.h) + (int)(shadeVar * traits.g.s)),
+                    ColorClamp(traits.b.v + (int)(hueVar * traits.b.h) + (int)(shadeVar * traits.b.s))
                 );
             }
             public void findLightColor()
             {
                 lightColor = Color.FromArgb(255, (color.R + 255) / 2, (color.G + 255) / 2, (color.B + 255) / 2);
-            }
-            public void placeEntity(Chunk chunk)
-            {
-                int randX = rand.Next(32);
-                int randY = rand.Next(32);
-                int counto = 0;
-                while (counto < 5) // try 5 times to spawn entity NOT in terrain, to make more chance for frog fish fairies and shit instead of worms.
-                {
-                    if (chunk.fillStates[randX, randY].type <= 0)
-                    {
-                        break;
-                    }
-                    randX = rand.Next(32);
-                    randY = rand.Next(32);
-                    counto += 1;
-                }
-                posX = chunk.pos.Item1 * 32 + randX;
-                realPosX = posX;
-                posY = chunk.pos.Item2 * 32 + randY;
-                realPosY = posY;
-                targetPos = (posX, posY);
-                return;
             }
             public void findRandomDestination(int distance)
             {
@@ -561,7 +514,7 @@ namespace Cave
                 }
                 else if (tileUnder.type < 0)    // On water
                 {
-                    onGround = behavior.isJesus;
+                    onGround = traits.isJesus;
                 }
                 else                            // In air
                 {
@@ -572,17 +525,17 @@ namespace Cave
                 if (entityTile.type > 0)        // In terrain
                 {
                     inWater = false;
-                    if (!behavior.isDigging) { speedX = 0; speedY = 0; }
+                    if (!traits.isDigging) { speedX = 0; speedY = 0; }
                 }
                 else if (entityTile.type < 0)   // In water
                 {
                     inWater = true;
-                    if (!behavior.isSwimming) { ariGeoSlowDown(0.85f, 0.15f); speedY += 0.1f; }
+                    if (!traits.isSwimming) { ariGeoSlowDown(0.85f, 0.15f); speedY += 0.1f; }
                 }
                 else                            // In air
                 {
                     inWater = false;
-                    if (!onGround && !behavior.isFlying) { speedY -= 0.5f; }
+                    if (!onGround && !traits.isFlying) { speedY -= 0.5f; }
                 }
 
                 return (entityTile, tileUnder);
@@ -1102,16 +1055,16 @@ namespace Cave
             public void transformEntity((int type, int subType) newType, bool setHp = true)
             {
                 type = newType;
-                behavior = entityBehaviorDict.ContainsKey(type) ? entityBehaviorDict[type] : entityBehaviorDict[(-1, 0)];
+                traits = entityTraitsDict.ContainsKey(type) ? entityTraitsDict[type] : entityTraitsDict[(-1, 0)];
 
-                if (setHp) { hp = behavior.startingHp; }
+                if (setHp) { hp = traits.startingHp; }
                 findLength();
                 color = findColor();
                 findLightColor();
             }
             public void dieAndDrop(Entity entityToGive)
             {
-                ((int type, int subType, int megaType) element, int count) entityDrop = behavior.drops;
+                ((int type, int subType, int megaType) element, int count) entityDrop = traits.drops;
                 if (type.type == 4) { entityDrop = (entityDrop.element, length); }
                 entityToGive.addElementToInventory(entityDrop.element, entityDrop.count);
                 screen.entitesToRemove[id] = this;
@@ -1172,7 +1125,7 @@ namespace Cave
                         Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                         if (chunk is null) { goto SaveEntity; }
                         material = screen.getTileContent(posToTest);
-                        if (material.type <= 0 || behavior.isDigging) // if a worm or the material is not a solid tile, update positions and continue
+                        if (material.type <= 0 || traits.isDigging) // if a worm or the material is not a solid tile, update positions and continue
                         {
                             realPosX = realPosToTest;
                             posX = posToTest.x;
@@ -1202,7 +1155,7 @@ namespace Cave
                         Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                         if (chunk is null) { goto SaveEntity; }
                         material = screen.getTileContent(posToTest);
-                        if (material.type <= 0 || behavior.isDigging) // if a worm or the material is not a solid tile, update positions and continue
+                        if (material.type <= 0 || traits.isDigging) // if a worm or the material is not a solid tile, update positions and continue
                         {
                             realPosY = realPosToTest;
                             posY = posToTest.y;

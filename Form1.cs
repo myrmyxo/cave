@@ -24,7 +24,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Nests;
 using static Cave.Entities;
-using static Cave.EntityBehaviors;
+using static Cave.Traits;
 using static Cave.Attacks;
 using static Cave.Files;
 using static Cave.Plants;
@@ -102,44 +102,6 @@ namespace Cave
             { (1, -1), 5 },
             { (0, -1), 6 },
             { (-1, -1), 7 },
-        };
-
-        public static Dictionary<(int biome, int subBiome), bool> darkBiomes = new Dictionary<(int biome, int subBiome), bool>
-        {
-            { (9, 0), true }, // chandelier biome
-        };
-
-        public static Dictionary<(int biome, int subBiome), (int, int, int)> biomeDict = new Dictionary<(int biome, int subBiome), (int, int, int)>
-        {
-            { (-1, 0), (1200, -100, 1200) },                                               // undefined
-
-            { (0, 0), (Color.Blue.R,Color.Blue.G,Color.Blue.B) },                          // cold biome
-            { (0, 1), (Color.LightBlue.R,Color.LightBlue.G,Color.LightBlue.B) },           // frost biome
-
-            { (1, 0), (Color.Fuchsia.R,Color.Fuchsia.G,Color.Fuchsia.B) },                 // acid biome
-
-            { (2, 0), (Color.OrangeRed.R,Color.OrangeRed.G,Color.OrangeRed.B) },           // hot biome
-            { (2, 1), (Color.OrangeRed.R + 90,Color.OrangeRed.G + 30,Color.OrangeRed.B) }, // lava ocean biome
-            { (2, 2), (-100,-100,-100) },                                                  // obsidian biome...
-
-            { (3, 0), (Color.Green.R,Color.Green.G,Color.Green.B)},                        // forest biome
-            { (3, 1), (Color.Green.R,Color.Green.G + 40,Color.Green.B + 80)},              // flower forest biome
-                                                                                               
-            { (4, 0), (Color.GreenYellow.R,Color.GreenYellow.G,Color.GreenYellow.B) },     // toxic biome
-                                                                                               
-            { (5, 0), (Color.LightPink.R,Color.LightPink.G,Color.LightPink.B) },           // fairy biome !
-
-            { (6, 0), (Color.DarkBlue.R,Color.DarkBlue.G + 20,Color.DarkBlue.B + 40) },    // mold biome. .. . . . 
-                                                                                               
-            { (8, 0), (Color.LightBlue.R,Color.LightBlue.G+60,Color.LightBlue.B+130) },    // ocean biome !
-                                                                                               
-            { (9, 0), (Color.Gray.R,Color.Gray.G,Color.Gray.B) },                          // stoplights and chandeliers biome !?!
-                                                                                               
-            { (10, 0), (Color.Red.R,Color.Red.G,Color.Red.B) },                            // flesh biome
-            { (10, 1), (Color.Pink.R,Color.Pink.G,Color.Pink.B) },                         // flesh and bone biome
-            { (10, 2), (Color.White.R,Color.White.G,Color.White.B) },                      // Bone biome...
-            { (10, 3), (Color.DarkRed.R,Color.DarkRed.G,Color.DarkRed.B) },                // blood ocean
-            { (10, 4), (Color.YellowGreen.R,Color.YellowGreen.G,Color.YellowGreen.B) },    // acid ocean  
         };
 
         // 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
@@ -365,7 +327,10 @@ namespace Cave
             }
 
             loadSpriteDictionaries();
-            makeEntityBehaviorDict();
+            makeEntityTraitsDict();
+            makePlantTraitsDict();
+            makeBiomeTraitsDict();
+
             //      --- - TO DO LIST - ---
             // Make nests not appear in certain biomes.
             // Fix plants spawning. Make megaChunks priority loading (to stop overlaps and weird generation).
@@ -910,6 +875,18 @@ namespace Cave
         public static int Sign(float a)
         {
             if (a >= 0) { return 1; }
+            return -1;
+        }
+        public static int SignZero(int a)
+        {
+            if (a == 0) { return 0; }
+            if (a > 0) { return 1; }
+            return -1;
+        }
+        public static int SignZero(float a)
+        {
+            if (a == 0) { return 0; }
+            if (a > 0) { return 1; }
             return -1;
         }
         public static float Abs(float a)

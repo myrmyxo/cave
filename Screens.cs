@@ -24,6 +24,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Nests;
 using static Cave.Entities;
+using static Cave.Traits;
 using static Cave.Attacks;
 using static Cave.Files;
 using static Cave.Plants;
@@ -31,6 +32,7 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
+using static Cave.Dialogues;
 
 namespace Cave
 {
@@ -647,7 +649,7 @@ namespace Cave
                     {
                         if (rand.Next(2) == 0)
                         {
-                            type = biomeDict.Keys.ToArray()[rand.Next(biomeDict.Count)];
+                            type = biomeTraitsDict.Keys.ToArray()[rand.Next(biomeTraitsDict.Count)];
                             isMonoBiome = true;
                         }
                         else
@@ -665,10 +667,7 @@ namespace Cave
                 Player player = game.playerList[0];
                 chunkX = ChunkIdx(player.posX);
                 chunkY = ChunkIdx(player.posY);
-                if (player.dimension == id)
-                {
-                    forceLoadChunksForAllPoints();
-                }
+                if (player.dimension == id) { forceLoadChunksForAllPoints(); }
 
                 foreach ((int x, int y) pos in chunksToSpawnEntitiesIn.Keys)
                 {
@@ -754,7 +753,7 @@ namespace Cave
                     {
                         getChunkFromChunkPos(chunkIndex).entityList.Add(activeEntities[entity.id]);
                     }
-                    else { cringeEntities.Add(activeEntities[id]); }
+                    else { if (activeEntities.ContainsKey(id)) { cringeEntities.Add(activeEntities[id]); } }    // Cuz sometimes they disappear ?????????? what ???
                     activeEntities.Remove(entity.id);
                 }
                 foreach (Entity entito in cringeEntities)

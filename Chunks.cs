@@ -24,12 +24,15 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Nests;
 using static Cave.Entities;
+using static Cave.Traits;
+using static Cave.Attacks;
 using static Cave.Files;
 using static Cave.Plants;
 using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
+using static Cave.Dialogues;
 
 namespace Cave
 {
@@ -46,6 +49,7 @@ namespace Cave
             public int framesSinceLastExtraGetting = 0;
 
             public ((int biome, int subBiome), int)[,][] biomeIndex;
+            public BiomeTraits traits;
 
             public (int type, int subType)[,] fillStates = new (int type, int subType)[32, 32];
             public (int, int, int)[,] baseColors;
@@ -111,10 +115,7 @@ namespace Cave
                 }
                 else { fogOfWar = null; }
 
-                if (!entitiesAndPlantsSpawned)
-                {
-                    screen.chunksToSpawnEntitiesIn[pos] = true;
-                }
+                if (!entitiesAndPlantsSpawned) { screen.chunksToSpawnEntitiesIn[pos] = true; }
             }
             public void demoteToExtra()
             {
@@ -139,10 +140,8 @@ namespace Cave
                         int darkness = 0;
                         foreach (((int biome, int subBiome), int) tupel in biomeIndex[i, j])
                         {
-                            if (darkBiomes.ContainsKey(tupel.Item1))
-                            {
-                                darkness += (int)(tupel.Item2 * 0.3f);
-                            }
+                            BiomeTraits traito = biomeTraitsDict.ContainsKey(tupel.Item1) ? biomeTraitsDict[tupel.Item1] : biomeTraitsDict[(-1, 0)];
+                            if (traito.isDark) { darkness += (int)(tupel.Item2 * 0.3f); }
                         }
                         darkness = Max(0, 255 - darkness);
                         Color colorToDraw = Color.FromArgb(255, darkness, darkness, darkness);
@@ -403,142 +402,89 @@ namespace Cave
                     }
                 }
             }
+            public void spawnOneEntities(float spawnRate, ((int type, int subType) type, float percentage)[] spawnTypes, Dictionary<(int x, int y), bool> forbiddenPositions)
+            {
+                for (float i = (float)rand.NextDouble(); i < spawnRate; i++)
+                {
+                    float rando = ((float)rand.NextDouble()) * 100;
+                    foreach (((int type, int subType) type, float percentage) tupelo in spawnTypes)
+                    {
+                        if (rando > tupelo.percentage) { rando -= tupelo.percentage; continue; }
+                        EntityTraits traits = entityTraitsDict.ContainsKey(tupelo.type) ? entityTraitsDict[tupelo.type] : entityTraitsDict[(-1, 0)];
+                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, true, traits.isSwimming, false, traits.isDigging, traits.isJesus);
+                        if (!returnTuple.valid) { break; }
+                        Entity newEntity = new Entity(this, tupelo.type, returnTuple.pos);
+                        if (!newEntity.isDeadAndShouldDisappear) { screen.activeEntities[newEntity.id] = newEntity; }
+                    }
+                }
+            }
+            public void spawnOnePlants(float spawnRate, ((int type, int subType) type, float percentage)[] spawnTypes, Dictionary<(int x, int y), bool> forbiddenPositions)
+            {
+                for (float i = (float)rand.NextDouble(); i < spawnRate; i++)
+                {
+                    float rando = ((float)rand.NextDouble()) * 100;
+                    foreach (((int type, int subType) type, float percentage) tupelo in spawnTypes)
+                    {
+                        if (rando > tupelo.percentage) { rando -= tupelo.percentage; continue; }
+                        PlantTraits traits = plantTraitsDict.ContainsKey(tupelo.type) ? plantTraitsDict[tupelo.type] : plantTraitsDict[(-1, 0)];
+                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, traits.isWater, traits.isCeiling);
+                        if (!returnTuple.valid) { break; }
+                        Plant newPlant = new Plant(this, returnTuple.pos, tupelo.type);
+                        if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
+                    }
+                }
+            }
             public void spawnEntities()
             {
-                Dictionary<(int x, int y), bool> forbiddenPositions = new Dictionary<(int x, int y), bool>();
+                (int biome, int subBiome) mainBiome = biomeIndex[16, 16][0].Item1;  // Middle of chunk
+                traits = biomeTraitsDict.ContainsKey(mainBiome) ? biomeTraitsDict[mainBiome] : biomeTraitsDict[(-1, 0)];
                 if (spawnEntitiesBool)
                 {
-                    Entity newEntity = new Entity(this);
-                    if (!newEntity.isDeadAndShouldDisappear)
-                    {
-                        screen.activeEntities[newEntity.id] = newEntity;
-                    }
+                    Dictionary<(int x, int y), bool> forbiddenPositions = new Dictionary<(int x, int y), bool>();
+                    spawnOneEntities(traits.entityBaseSpawnRate, traits.entityBaseSpawnTypes, forbiddenPositions);
+                    spawnOneEntities(traits.entityGroundSpawnRate, traits.entityGroundSpawnTypes, forbiddenPositions);
+                    spawnOneEntities(traits.entityWaterSpawnRate, traits.entityWaterSpawnTypes, forbiddenPositions);
+                    spawnOneEntities(traits.entityJesusSpawnRate, traits.entityJesusSpawnTypes, forbiddenPositions);
                 }
                 if (spawnPlants)
                 {
-                    int smallPlantsToSpawn = 4;
-                    int vinesToSpawn = 1;
-                    int treesToSpawn = 0;
-                    (int biome, int subBiome) mainBiome = biomeIndex[16, 16][0].Item1;
-                    if (mainBiome == (3, 0))
-                    {
-                        smallPlantsToSpawn = 6;
-                        vinesToSpawn = 3;
-                        treesToSpawn = 2;
-                    }
-                    else if (mainBiome == (3, 1))
-                    {
-                        smallPlantsToSpawn = 16;
-                        vinesToSpawn = 2;
-                    }
-                    else if (mainBiome == (8, 0))
-                    {
-                        vinesToSpawn = 4;
-                    }
-                    else if (mainBiome == (9, 0))
-                    {
-                        treesToSpawn = 1;
-                    }
+                    Dictionary<(int x, int y), bool> forbiddenPositions = new Dictionary<(int x, int y), bool>();
+                    spawnOnePlants(traits.plantGroundSpawnRate, traits.plantGroundSpawnTypes, forbiddenPositions);
+                    spawnOnePlants(traits.plantCeilingSpawnRate, traits.plantCeilingSpawnTypes, forbiddenPositions);
+                    spawnOnePlants(traits.plantTreeSpawnRate, traits.plantTreeSpawnTypes, forbiddenPositions);
+                    spawnOnePlants(traits.plantWaterGroundSpawnRate, traits.plantWaterGroundSpawnTypes, forbiddenPositions);
+                    spawnOnePlants(traits.plantWaterCeilingSpawnRate, traits.plantWaterCeilingSpawnTypes, forbiddenPositions);
+                }
+                entitiesAndPlantsSpawned = true;
+            }
+            public ((int x, int y), bool valid) findSuitablePosition(Dictionary<(int x, int y), bool> forbiddenPositions, bool isEntity, bool isWater, bool isCeiling = false, bool isDigging = false, bool isJesus = false)
+            {
+                int counto = 0;
+                (int x, int y) posToTest;
+                (int x, int y) randPos;
+                while (counto < 100)
+                {
+                    counto++;
+                    randPos = (pos.x * 32 + rand.Next(32), pos.y * 32 + rand.Next(32));
+                    if (forbiddenPositions.ContainsKey(randPos)) { continue; }
+                    int typo = fillStates[PosMod(randPos.x), PosMod(randPos.y)].type;
+                    if (typo > 0 != isDigging) { forbiddenPositions[randPos] = true; continue; }
+                    if (typo == 0 == (isWater && !isJesus) && !isDigging) { continue; };    // If water plant and liquid tile, yay, if normal plant and empty tile, yay, else no
+                    if (isEntity && !isJesus) { goto success; }   // For entities, no need to test if ceiling or ground shit
 
-                    for (int i = 0; i < vinesToSpawn; i++)
+                    posToTest = (randPos.x, randPos.y + (isCeiling ? 1 : -1));
+                    typo = screen.getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
+                    if (isJesus)
                     {
-                        ((int x, int y), bool valid) returnTuple = findCeilingPlantPosition(forbiddenPositions);
-                        if (returnTuple.valid)
-                        {
-                            Plant newPlant = new Plant(this, 0, 1, returnTuple.Item1);
-                            if (!newPlant.isDeadAndShouldDisappear)
-                            {
-                                screen.activePlants[newPlant.id] = newPlant;
-                            }
-                        }
+                        if (typo >= 0) { continue ; }
                     }
-                    for (int i = 0; i < treesToSpawn; i++)
-                    {
-                        ((int x, int y), bool valid) returnTuple = findGroundPlantPosition(forbiddenPositions);
-                        if (returnTuple.valid)
-                        {
-                            Plant newPlant = new Plant(this, 1, 0, returnTuple.Item1);
-                            if (!newPlant.isDeadAndShouldDisappear)
-                            {
-                                screen.activePlants[newPlant.id] = newPlant;
-                            }
-                        }
-                    }
-                    for (int i = 0; i < smallPlantsToSpawn; i++)
-                    {
-                        ((int x, int y), bool valid) returnTuple = findGroundPlantPosition(forbiddenPositions);
-                        if (returnTuple.valid)
-                        {
-                            Plant newPlant = new Plant(this, 0, 0, returnTuple.Item1);
-                            if (!newPlant.isDeadAndShouldDisappear)
-                            {
-                                screen.activePlants[newPlant.id] = newPlant;
-                            }
-                        }
-                    }
-                    entitiesAndPlantsSpawned = true;
-                }
-            }
-            public ((int x, int y), bool valid) findGroundPlantPosition(Dictionary<(int x, int y), bool> forbiddenPositions)
-            {
-                int counto = 0;
-                (int x, int y) chunkPos;
-                (int x, int y) tileIndex;
-                while (counto < 1000)
-                {
-                    int randX = rand.Next(32);
-                    int randY = rand.Next(32);
-                    if (forbiddenPositions.ContainsKey((randX, randY))) { }
-                    else if (screen.loadedChunks.TryGetValue(pos, out Chunk chunkToTest))
-                    {
-                        if (chunkToTest.fillStates[randX, randY].type <= 0)
-                        {
-                            chunkPos = ChunkIdx(pos.x*32 + randX, pos.y*32 + randY - 1);
-                            if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
-                            {
-                                tileIndex = PosMod((randX, randY - 1));
-                                if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type > 0)
-                                {
-                                    forbiddenPositions[(randX, randY)] = true;
-                                    return ((pos.x*32 + randX, pos.y*32 + randY), true);
-                                }
-                            }
-                        }
-                    }
-                    counto++;
+                    else if (typo <= 0) { continue; }
+                    goto success;
                 }
                 return ((0, 0), false);
-            }
-            public ((int x, int y), bool valid) findCeilingPlantPosition(Dictionary<(int x, int y), bool> forbiddenPositions)
-            {
-                int counto = 0;
-                (int x, int y) chunkPos;
-                (int x, int y) tileIndex;
-                while (counto < 1000)
-                {
-                    int randX = rand.Next(32);
-                    int randY = rand.Next(32);
-                    if (forbiddenPositions.ContainsKey((randX, randY))) { }
-                    else if (screen.loadedChunks.TryGetValue(pos, out Chunk chunkToTest))
-                    {
-                        tileIndex = PosMod((randX, randY));
-                        if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type <= 0)
-                        {
-                            chunkPos = ChunkIdx(pos.x*32 + randX, pos.y*32 + randY + 1);
-                            if (screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTesta))
-                            {
-                                tileIndex = PosMod((randX, randY + 1));
-                                if (chunkToTesta.fillStates[tileIndex.x, tileIndex.y].type > 0)
-                                {
-                                    forbiddenPositions[(randX, randY)] = true;
-                                    return ((pos.x*32 + randX, pos.y*32 + randY), true);
-                                }
-                            }
-                        }
-                    }
-                    counto++;
-                }
-                return ((0, 0), false);
+            success:;
+                forbiddenPositions[randPos] = true; // if spawn succeeded, prevent spawning in the same tile
+                return (randPos, true);
             }
             public void moveLiquids()
             {
@@ -1316,11 +1262,10 @@ namespace Cave
             foreach (((int biome, int subBiome), int) tupel in arrayo)
             {
                 mult = tupel.Item2 * 0.001f;
-
-                (int, int, int) tupel2 = biomeDict[tupel.Item1];
-                colorArray[0] += (int)(mult * tupel2.Item1);
-                colorArray[1] += (int)(mult * tupel2.Item2);
-                colorArray[2] += (int)(mult * tupel2.Item3);
+                BiomeTraits traito = biomeTraitsDict.ContainsKey(tupel.Item1) ? biomeTraitsDict[tupel.Item1] : biomeTraitsDict[(-1, 0)];
+                colorArray[0] += (int)(mult * traito.color.r);
+                colorArray[1] += (int)(mult * traito.color.g);
+                colorArray[2] += (int)(mult * traito.color.b);
             }
             for (int k = 0; k < 3; k++)
             {

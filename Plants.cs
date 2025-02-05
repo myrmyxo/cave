@@ -30,19 +30,12 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TreeView;
+using static Cave.Traits;
 
 namespace Cave
 {
     public class Plants
     {
-        public static Dictionary<(int type, int subType), bool> upsideDownPlants = new Dictionary<(int type, int subType), bool>
-        {
-            { (2, 1), true },
-            { (5, 0), true },
-            { (5, 1), true },
-            { (6, 0), true }
-        };
         public class Branch
         {
             public Plant motherPlant;
@@ -571,6 +564,7 @@ namespace Cave
             public int seed;
             public int id;
             public (int type, int subType) type;
+            public PlantTraits traits;
             public int state;
             public int growthLevel;
             public int maxGrowthLevel;
@@ -604,7 +598,7 @@ namespace Cave
                 posX = plantJson.pos.Item1;
                 posY = plantJson.pos.Item2;
                 lastDrawPos = plantJson.lstGrPos;
-                type = plantJson.type;
+                transformPlant(plantJson.type);
                 seed = plantJson.seed;
                 id = plantJson.id;
                 growthLevel = plantJson.grLvl;
@@ -621,17 +615,16 @@ namespace Cave
                 findColors();
                 makeBitmap();
             }
-            public Plant(Chunk chunkToPut, int groupOfPlant, int attachPointToPut, (int x, int y) posToPut)
+            public Plant(Chunk chunkToPut, (int x, int y) posToPut, (int type, int subType) typeToPut)
             {
                 posX = posToPut.x;
                 posY = posToPut.y;
                 screen = chunkToPut.screen;
                 seed = LCGint1(Abs((int)chunkToPut.chunkSeed));
                 seed = Abs(seed + rand.Next(100000)); // TO CHANGE TOCHANGE cuz false randommmm
+                transformPlant(typeToPut);
                 id = currentPlantId;
                 growthLevel = -1;
-                attachPoint = attachPointToPut;
-                findType(groupOfPlant);
                 if (isDeadAndShouldDisappear) { return; }
                 findColors();
                 tryGrowToMaximum();
@@ -645,8 +638,7 @@ namespace Cave
                 screen = screenToPut;
                 posX = positionToPut.Item1;
                 posY = positionToPut.Item2;
-                type = typeToPut;
-                if (upsideDownPlants.ContainsKey(typeToPut)) { attachPoint = 1; }
+                transformPlant(typeToPut);
                 seed = rand.Next(1000000000); //                               FALSE RANDOM NOT SEEDED ARGHHEHEEEE
                 id = currentPlantId;
                 growthLevel = -1;
@@ -663,81 +655,6 @@ namespace Cave
             {
                 if (testIfPositionEmpty(testPos)) { fillStates[testPos] = typeToFill; return true; }
                 return false;
-            }
-            public void findType(int group) // 0 = small, 1 = tree
-            {
-                (int x, int y) tileIndex = PosMod((posX, posY));
-                Chunk chunkToTest = screen.getChunkFromPixelPos((posX, posY));
-
-                (int biome, int subBiome) biome = chunkToTest.biomeIndex[tileIndex.x, tileIndex.y][0].Item1;
-                if (biome == (6, 0)) // Mold
-                {
-                    type = (4, 1);
-                }
-
-                else if (attachPoint == 0)
-                {
-                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type < 0)
-                    {
-                        type = (2, 0);
-                    }
-                    else if (biome.biome == 3) // forest and flower forest
-                    {
-                        if (group == 1) { type = (1, 0); }
-                        else
-                        {
-                            int rando = rand.Next(101);
-                            if (rando < 40) { type = (0, 0); }
-                            else if (rando > 80) { type = (0, 3); }
-                            else { type = (0, 2); }
-                        }
-                    }
-                    else if (biome == (5, 0)) // fairy
-                    {
-                        type = (4, 0);
-                    }
-                    else if (biome == (2, 2)) // obsidian
-                    {
-                        if (rand.Next(100) == 0) { type = (1, 0); }
-                        else { type = (3, 0); }
-                    }
-                    else if (biome == (9, 0)) // chandelier
-                    {
-                        if (group == 0) { type = (0, 1); }
-                        else if (group == 1) { type = (1, 1); } 
-                    }
-                    else
-                    {
-                        type = (0, 0);
-                    }
-                }
-
-                else if (attachPoint == 1)
-                {
-                    if (chunkToTest.fillStates[tileIndex.x, tileIndex.y].type < 0)
-                    {
-                        type = (2, 1);
-                    }
-                    else if (biome == (2, 2)) // obsidian
-                    {
-                        type = (5, 1);
-                    }
-                    else if (biome == (9, 0)) // ???
-                    {
-                        isDeadAndShouldDisappear = true;
-                    }
-                    else
-                    {
-                        if (seed % 7 == 0 && false) // the fuck is this for ? I don't even recall ????      probably upside down trees
-                        {
-                            type = (6, 0);
-                        }
-                        else
-                        {
-                            type = (5, 0);
-                        }
-                    }
-                }
             }
             public void findColors()
             {
@@ -1281,59 +1198,11 @@ namespace Cave
                 }
                 return false;
             }
-            public void placePlant()
-            {
-                Chunk chunk = screen.getChunkFromPixelPos((posX, posY));
-                Chunk chunk2;
-                (int x, int y) posToTest;
-                int counto = 0;
-                while (counto < 1000)
-                {
-                    int randX = rand.Next(32);
-                    int randY = rand.Next(32);
-                    posToTest = (posX + randX, posY + randY);
-                    if (chunk.fillStates[randX, randY].type <= 0)
-                    {
-                        if (randY == 0) { chunk2 = screen.getChunkFromPixelPos((posToTest.x, posToTest.y - 1)); }
-                        else { chunk2 = chunk; }
-                        if (chunk2.fillStates[randX, PosMod(randY - 1)].type > 0)
-                        {
-                            attachPoint = 0;
-                            return;
-                        }
-                        if (randY == 31) { chunk2 = screen.getChunkFromPixelPos((posToTest.x, posToTest.y + 1)); }
-                        else { chunk2 = chunk; }
-                        if (chunk2.fillStates[randX, PosMod(randY + 1)].type > 0)
-                        {
-                            attachPoint = 1;
-                            return;
-                        }
-                    }
-                    posX = posToTest.x;
-                    posY = posToTest.y;
-                    counto += 1;
-                }
-                isDeadAndShouldDisappear = true;
-            }
             public void testPlantPosition()
             {
-                Chunk chunk = screen.getChunkFromPixelPos((posX, posY));
-                int modX = PosMod(posX);
-                int modY = PosMod(posY);
-                if (chunk.fillStates[modX, modY].type > 0) { goto Fail; } // Full tile -> Fail
-                Chunk chunk2;
-                if (attachPoint == 0)       // ground plant
-                {
-                    if (modY == 0) { chunk2 = screen.getChunkFromPixelPos((posX, posY - 1)); }
-                    else { chunk2 = chunk; }
-                    if (chunk2.fillStates[modX, PosMod(modY - 1)].type > 0) { return; } // tile under full -> Success
-                }
-                else if (attachPoint == 1)  // Upside down pland
-                {
-                    if (modY == 31) { chunk2 = screen.getChunkFromPixelPos((posX, posY + 1)); }
-                    else { chunk2 = chunk; }
-                    if (chunk2.fillStates[modX, PosMod(modY + 1)].type > 0) { return; } // tile on top full -> Success
-                }
+                if (screen.getChunkFromPixelPos((posX, posY)).fillStates[PosMod(posX), PosMod(posY)].type > 0) { goto Fail; } // Full tile -> Fail
+                int mod = traits.isCeiling ? 1 : -1;
+                if (screen.getChunkFromPixelPos((posX, posY + mod)).fillStates[PosMod(posX), PosMod(posY + mod)].type > 0) { return; } // tile under full -> Success
             Fail:;
                 isDeadAndShouldDisappear = true;
             }
@@ -1465,6 +1334,15 @@ namespace Cave
                 }
 
                 return (false, 0, 0);
+            }
+
+            public void transformPlant((int type, int subType) newType)
+            {
+                type = newType;
+                traits = plantTraitsDict.ContainsKey(type) ? plantTraitsDict[type] : plantTraitsDict[(-1, 0)];
+                if (traits.isCeiling) { attachPoint = 1; }
+
+                findColors();
             }
             public void testDeath(Dictionary<(int x, int y), (int type, int subType)> fillDict)
             {

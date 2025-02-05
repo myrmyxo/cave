@@ -24,7 +24,7 @@ using static Cave.Sprites;
 using static Cave.Structures;
 using static Cave.Nests;
 using static Cave.Entities;
-using static Cave.EntityBehaviors;
+using static Cave.Traits;
 using static Cave.Attacks;
 using static Cave.Files;
 using static Cave.Plants;
@@ -60,7 +60,7 @@ namespace Cave
             public List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)> rayCastsToContinue = new List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)>();
             public Player(SettingsJson settingsJson)
             {
-                transformEntity((6, 0), true);
+                transformEntity((4, 1), true);
 
                 if (settingsJson == null)
                 {
@@ -358,7 +358,7 @@ namespace Cave
                 (int type, int subType) playerTile = returnType.entityPos;
                 (int type, int subType) tileUnder = returnType.under;
 
-                if (behavior.isFlying)
+                if (traits.isFlying)
                 {
                     if (!dimensionSelection && !craftSelection)
                     {
@@ -374,7 +374,7 @@ namespace Cave
                        if (arrowKeysState[3]) { speedY += 0.05f; }
                     }
                 }
-                else if (behavior.isDigging)
+                else if (traits.isDigging)
                 {
                     if (!dimensionSelection && !craftSelection)
                     {
@@ -384,7 +384,7 @@ namespace Cave
                         if (arrowKeysState[3] && (onGround || inWater)) { speedY += 0.5f; }
                     }
                     if (playerTile.type > 0) { ariGeoSlowDown(0.75f, 0.25f); }
-                    else if (inWater && behavior.isSwimming) { ariGeoSlowDown(0.85f, 0.15f); }
+                    else if (inWater && traits.isSwimming) { ariGeoSlowDown(0.85f, 0.15f); }
                     else { ariGeoSlowDownGravity(0.75f, 0.25f); }
                 }
                 else
