@@ -40,19 +40,24 @@ namespace Cave
     {
         public class Attack
         {
-            public int state = -1;
-            public (int x, int y) direction = (0, 0);
-            public (int type, int subType, int subSubType, int typeOfElement) type = (-1, -1, -1, -1);
+            public Screens.Screen screen;
+            public Entity motherEntity;
             public AttackTraits traits;
-            public Dictionary<int, bool> entitiesAlreadyHitByCurrentAttack = new Dictionary<int, bool>();
+            public (int type, int subType, int subSubType, int typeOfElement) type = (-1, -1, -1, -1);
+
             public (int x, int y) startPos;
             public (int x, int y) pos;
-            public Entity motherEntity;
+            public (int x, int y) direction = (0, 0);
+            public int state = -1;
+
+            public Dictionary<int, bool> entitiesAlreadyHitByCurrentAttack = new Dictionary<int, bool>();
+
             public bool isDone = false;
             public bool digSuccess = false;
             public (int type, int subType) dugTile = (0, 0);
-            public Attack(Entity motherEntityToPut, (int type, int subType, int subSubType, int typeOfElement) typeToPut, (int x, int y) posToPut, (int x, int y) directionToPut)
+            public Attack(Screens.Screen screenToPut, Entity motherEntityToPut, (int type, int subType, int subSubType, int typeOfElement) typeToPut, (int x, int y) posToPut, (int x, int y) directionToPut)
             {
+                screen = screenToPut;
                 motherEntity = motherEntityToPut;
                 type = typeToPut;
                 traits = attackTraitsDict.ContainsKey(type) ? attackTraitsDict[type] : attackTraitsDict[(-1, 0, 0, 0)];
@@ -61,15 +66,15 @@ namespace Cave
                 pos = posToPut;
                 startPos = pos;
                 direction = directionToPut;
-                motherEntity.screen.activeAttacks.Add(this);
+                screen.activeAttacks.Add(this);
             }
             public void updateAttack()
             {
-                List<((int x, int y), Color color)> posToDrawList = motherEntity.screen.attacksToDraw;
-                List<((int x, int y) pos, Attack attack)> posToAttackList = motherEntity.screen.attacksToDo;
+                List<((int x, int y), Color color)> posToDrawList = screen.attacksToDraw;
+                List<((int x, int y) pos, Attack attack)> posToAttackList = screen.attacksToDo;
 
                 state++;
-                if (traits.isEntityBound) { pos = (motherEntity.posX, motherEntity.posY); }
+                if (traits.isEntityBound) { pos = (motherEntity.posX, motherEntity.posY); screen = motherEntity.screen; }
                 if (type == (0, 0, 0, 4)) // if sword attack
                 {
                     int sign = 1;
@@ -155,20 +160,61 @@ namespace Cave
                     else
                     {
                         mod = (1, 0);
-                        if (state == 2) { new Attack(motherEntity, (type.type, type.subType, 1, 4), (pos.x + 2 * sign, pos.y), direction); }
+                        if (state == 2) { new Attack(screen, motherEntity, (type.type, type.subType, 1, 4), (pos.x + 2 * sign, pos.y), direction); }
                     }
                     posToDrawList.Add(((pos.x + mod.x * sign, pos.y + mod.y), Color.FromArgb(140, 140, 50)));
 
                     if (state >= 5) { finishAttack(); }
                 }
+                else if (type == (3, 2, 2, 4))
+                {
+                    if (state > 0) { pos = (pos.x, pos.y - 1); }
+                    if (screen.getTileContent(pos).type > 0)
+                    {
+                        if (screen.getTileContent((pos.x, pos.y + 1)).type == 0)
+                        {
+                            Plant newPlant = new Plant(screen, (pos.x, pos.y + 1), (0, 2 + rand.Next(2)));
+                            if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
+                        }
+                        finishAttack();
+                        return;
+                    }
+
+                    // posToDrawList.Add((pos, Color.DarkSeaGreen));
+                    posToAttackList.Add((pos, this));
+
+                    if (state >= 150) { finishAttack(); }
+                }
+                else if (type == (3, 2, 1, 4))
+                {
+                    if (state > 0)
+                    {
+                        int modY = 0;
+                        int sign = Sign(direction.x);
+
+                        if (screen.getTileContent((pos.x + sign, pos.y + 1)).type > 0) { modY -= 3; }
+                        else if (screen.getTileContent((pos.x + sign, pos.y + 2)).type > 0) { modY -= 2; }
+                        else if (screen.getTileContent((pos.x + sign, pos.y + 3)).type > 0) { modY -= 1; }
+
+                        if (screen.getTileContent((pos.x + sign, pos.y - 1)).type > 0) { modY += 3; }
+                        else if (screen.getTileContent((pos.x + sign, pos.y - 2)).type > 0) { modY += 2; }
+                        else if (screen.getTileContent((pos.x + sign, pos.y - 3)).type > 0) { modY += 1; }
+
+                        pos = (pos.x + sign, pos.y + modY);
+                        if (rand.Next(4) == 0) { new Attack(screen, motherEntity, (type.type, type.subType, 2, 4), pos, direction); }
+                    }
+                    if (screen.getTileContent(pos).type > 0) { finishAttack(); return; }
+
+                    posToDrawList.Add((pos, Color.MediumSpringGreen));
+                    posToAttackList.Add((pos, this));
+
+                    if (state >= 150) { finishAttack(); }
+                }
                 else if (type.type == 3 && type.subSubType == 1)   // If magic wand attack THE PARTICLE
                 {
                     if (state > 0) { pos = (pos.x + Sign(direction.x), pos.y); }
 
-                    Color spellColor = Color.White;
-                    if (type.subType == 0) { spellColor = Color.BlueViolet; }
-                    else if (type.subType == 1) { spellColor = Color.Crimson; }
-                    else if (type.subType == 2) { spellColor = Color.MediumSpringGreen; }
+                    Color spellColor = type.subType != 1 ? Color.BlueViolet : Color.Crimson;
 
                     posToDrawList.Add((pos, spellColor));
                     posToAttackList.Add((pos, this));
@@ -179,7 +225,7 @@ namespace Cave
             }
             public void sendAttack((int x, int y) attackPos)
             {
-                Chunk chunkToTest = motherEntity.screen.getChunkFromPixelPos(attackPos);
+                Chunk chunkToTest = screen.getChunkFromPixelPos(attackPos);
                 int abort = 0;
                 if (traits.isTerrainDigging)
                 {
@@ -193,8 +239,8 @@ namespace Cave
                     digSuccess = motherEntity.PlantDig(attackPos, (type.type, type.subType, 4), chunkToTest);
                     if (!digSuccess) { abort++; }
                 }
-                if (type == (3, 0, 1, 4)) { if (motherEntity.screen.type.type != 2) testForBloodAltar(motherEntity.screen, attackPos); }
-                else if (type == (3, 2, 1, 4)) { testForBloodAltar(motherEntity.screen, attackPos); }
+                if (type == (3, 0, 1, 4)) { if (screen.type.type != 2) testForBloodAltar(screen, attackPos); }
+                else if (type == (3, 2, 1, 4)) { testForBloodAltar(screen, attackPos); }
 
                 if (!traits.isHitting) { return; }
                 List<Entity> hitList = getHitList(attackPos, chunkToTest);
@@ -209,7 +255,7 @@ namespace Cave
             public List<Entity> getHitList((int x, int y) attackPos, Chunk chunkToTest = null)
             {
                 List<Entity> entityList = new List<Entity>();
-                if (chunkToTest is null) { chunkToTest = motherEntity.screen.getChunkFromPixelPos(attackPos); }
+                if (chunkToTest is null) { chunkToTest = screen.getChunkFromPixelPos(attackPos); }
                 foreach (Entity entity in chunkToTest.entityList)
                 {
                     if ((entity.posX, entity.posY) == attackPos && !entitiesAlreadyHitByCurrentAttack.ContainsKey(entity.id)) { entityList.Add(entity); }
@@ -240,7 +286,7 @@ namespace Cave
             public void finishAttack()
             {
                 isDone = true;
-                motherEntity.screen.attacksToRemove[this] = true;
+                screen.attacksToRemove[this] = true;
             }
         }
     }

@@ -312,6 +312,26 @@ namespace Cave
                     else if (inWater && traits.isSwimming) { ariGeoSlowDown(0.85f, 0.15f); }
                     else { ariGeoSlowDownGravity(0.75f, 0.25f, 0f, 5f); }
                 }
+                else if (traits.isSwimming)
+                {
+                    if (inWater)
+                    {
+                        ariGeoSlowDown(0.975f, 0.05f);
+                        if (arrowKeysState[0]) { speedX -= 0.25f; }
+                        if (arrowKeysState[1]) { speedX += 0.25f; }
+                        if (arrowKeysState[2]) { speedY -= 0.25f; }
+                        if (arrowKeysState[3]) { speedY += 0.25f; }
+                    }
+                    else if (!shiftPress && arrowKeysState[3])
+                    {
+                        int directionState = 0;
+                        if (arrowKeysState[0]) { directionState -= 1; if (!onGround) { speedX -= 0.1f; } }
+                        if (arrowKeysState[1]) { directionState += 1; if (!onGround) { speedX += 0.1f; } }
+                        ariGeoSlowDownX(0.95f, 0.05f);
+                        if (onGround) { Jump(directionState, 2); }
+                    }
+                    else { ariGeoSlowDown(0.95f, 0.1f); }
+                }
                 else
                 {
                     if (!inWater) { ariGeoSlowDownX(0.8f, 0.15f); }
@@ -357,6 +377,8 @@ namespace Cave
                 realCamPosY += speedCamY;
                 camPosX = (int)(realCamPosX + 0.5f);
                 camPosY = (int)(realCamPosY + 0.5f);
+
+                mana = Min(mana + 1, 150);
 
                 updateFogOfWar();
                 tryStartAttack();
@@ -452,15 +474,26 @@ namespace Cave
                 if (currentAttack != null && currentAttack.isDone) { currentAttack = null; }
                 if (digPress && currentAttack is null && (currentItem.megaType == 4 || currentItem.megaType == 5))  // start an attack if a tool that can attack is selected, X is pressed, and player is not already attacking
                 {
-                    if (currentItem == (0, 0, 4)) { currentAttack = new Attack(this, (0, 0, 0, 4), (posX, posY), direction); }
-                    else if (currentItem == (1, 0, 4)) { currentAttack = new Attack(this, (1, 0, 0, 4), (posX, posY), direction); }
-                    else if (currentItem == (2, 0, 4)) { currentAttack = new Attack(this, (2, 0, 0, 4), (posX, posY), direction); }
-                    else if (currentItem == (3, 0, 4)) { currentAttack = new Attack(this, (3, 0, 0, 4), (posX, posY), direction); }
-                    else if (currentItem == (3, 1, 4)) { currentAttack = new Attack(this, (3, 1, 0, 4), (posX, posY), direction); }
-                    else if (currentItem == (3, 2, 4)) { currentAttack = new Attack(this, (3, 2, 0, 4), (posX, posY), direction); }
-                    else if (currentItem == (4, 0, 4)) { currentAttack = new Attack(this, (4, 0, 0, 4), (posX, posY), direction); }
-                    else if (currentItem == (6, 0, 5)) { currentAttack = new Attack(this, (6, 0, 0, 5), (posX, posY), direction); }
+                    if (currentItem == (0, 0, 4)) { currentAttack = tryLaunchSingleAttack((0, 0, 0, 4)); }
+                    else if (currentItem == (1, 0, 4)) { currentAttack = tryLaunchSingleAttack((1, 0, 0, 4)); }
+                    else if (currentItem == (2, 0, 4)) { currentAttack = tryLaunchSingleAttack((2, 0, 0, 4)); }
+                    else if (currentItem == (3, 0, 4)) { currentAttack = tryLaunchSingleAttack((3, 0, 0, 4)); }
+                    else if (currentItem == (3, 1, 4)) { currentAttack = tryLaunchSingleAttack((3, 1, 0, 4)); }
+                    else if (currentItem == (3, 2, 4)) { currentAttack = tryLaunchSingleAttack((3, 2, 0, 4)); }
+                    else if (currentItem == (4, 0, 4)) { currentAttack = tryLaunchSingleAttack((4, 0, 0, 4)); }
+                    else if (currentItem == (6, 0, 5)) { currentAttack = tryLaunchSingleAttack((6, 0, 0, 5)); }
                 }
+            }
+            public Attack tryLaunchSingleAttack((int type, int subType, int subSubType, int megaType) attackType)
+            {
+                if (attackTraitsDict.ContainsKey(attackType))
+                {
+                    AttackTraits traits = attackTraitsDict[attackType];
+                    if (mana < traits.manaCost) { return null; }
+                    mana -= traits.manaCost;
+                    return new Attack(screen, this, attackType, (posX, posY), direction);
+                }
+                return null;
             }
             public bool Place((int x, int y) posToPlace)
             {

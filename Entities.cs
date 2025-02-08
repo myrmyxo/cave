@@ -90,6 +90,7 @@ namespace Cave
 
             public float hp = 1;
             public int food = 0;
+            public float mana = 0;
 
             public float timeAtBirth = 0;
             public float timeAtLastStateChange = 0;
@@ -888,7 +889,7 @@ namespace Cave
                             {
                                 if (timeAtLastDig + 1 < timeElapsed)
                                 {
-                                    currentAttack = new Attack(this, (3, 1, 0, 5), targetPos, (0, 0)); // Mandible attack
+                                    currentAttack = new Attack(screen, this, (3, 1, 0, 5), targetPos, (0, 0)); // Mandible attack
                                     state *= 10;
                                 }
                             }

@@ -582,6 +582,7 @@ namespace Cave
         {
             public string name;
             public float damage;
+            public float manaCost;
             public bool isHitting;
             public bool isTerrainDigging;
             public bool isPlantDigging;
@@ -591,10 +592,11 @@ namespace Cave
             public (int v, int h, int s) r;
             public (int v, int h, int s) g;
             public (int v, int h, int s) b;
-            public AttackTraits(string namee, float damageToPut = 0, bool H = false, bool T = false, bool P = false, bool A = false, bool B = false)
+            public AttackTraits(string namee, float d= 0, float m = 0, bool H = false, bool T = false, bool P = false, bool A = false, bool B = false)
             {
                 name = namee;
-                damage = damageToPut;
+                damage = d;
+                manaCost = m;
                 isHitting = H;
                 isTerrainDigging = T;
                 isPlantDigging = P;
@@ -610,25 +612,26 @@ namespace Cave
             {
                 { (-1, 0, 0, 0), new AttackTraits("Error"                                                                       ) },
                                                                                                                                     
-                { (0, 0, 0, 4), new AttackTraits("Sword",              1,               H:true, B:true                          ) },
-                { (1, 0, 0, 4), new AttackTraits("Pickaxe",            0.5f,            H:true, B:true, T:true,         A:true  ) },
-                { (2, 0, 0, 4), new AttackTraits("Scythe",             0.75f,           H:true, B:true,         P:true          ) },
-                { (4, 0, 0, 4), new AttackTraits("Axe",                0.5f,            H:true, B:true,         P:true, A:true  ) },
+                { (0, 0, 0, 4), new AttackTraits("Sword",               d:1,            H:true, B:true                          ) },
+                { (1, 0, 0, 4), new AttackTraits("Pickaxe",             d:0.5f,         H:true, B:true, T:true,         A:true  ) },
+                { (2, 0, 0, 4), new AttackTraits("Scythe",              d:0.75f,        H:true, B:true,         P:true          ) },
+                { (4, 0, 0, 4), new AttackTraits("Axe",                 d:0.5f,         H:true, B:true,         P:true, A:true  ) },
                                                                                                                                     
-                { (3, 0, 0, 4), new AttackTraits("Magic Wand",                                  B:true                          ) },
+                { (3, 0, 0, 4), new AttackTraits("Magic Wand",                  m:5,            B:true                          ) },
                 { (3, 0, 1, 4), new AttackTraits("Magic Bullet"                                                                 ) },
-                { (3, 1, 0, 4), new AttackTraits("Carnal Wand",                                 B:true                          ) },
+                { (3, 1, 0, 4), new AttackTraits("Carnal Wand",                 m:25,           B:true                          ) },
                 { (3, 1, 1, 4), new AttackTraits("Carnal Bullet",                       H:true                                  ) },
-                { (3, 2, 0, 4), new AttackTraits("Floral Wand",                                 B:true                          ) },
+                { (3, 2, 0, 4), new AttackTraits("Floral Wand",                 m:100,          B:true                          ) },
                 { (3, 2, 1, 4), new AttackTraits("Floral Bullet"                                                                ) },
+                { (3, 2, 2, 4), new AttackTraits("Floral Bullet 2"                                                              ) },
+
+
+                { (6, 0, 0, 5), new AttackTraits("Goblin Hand",         d:0.25f,        H:true, B:true, T:true, P:true, A:true  ) },
                                                                                                                                     
-                                                                                                                                    
-                { (6, 0, 0, 5), new AttackTraits("Goblin Hand",        0.25f,           H:true, B:true, T:true, P:true, A:true  ) },
-                                                                                                                                    
-                { (3, 0, 0, 5), new AttackTraits("Hornet Warning",     0.05f,           H:true, B:true                          ) },
-                { (3, 1, 0, 5), new AttackTraits("Hornet Mandibles",   1,               H:true, B:true, T:true, P:true          ) },
-                { (3, 2, 0, 5), new AttackTraits("Hornet Sting",       0.65f,           H:true, B:true                          ) },
+                { (3, 0, 0, 5), new AttackTraits("Hornet Warning",      d:0.05f,        H:true, B:true                          ) },
+                { (3, 1, 0, 5), new AttackTraits("Hornet Mandibles",    d:1,            H:true, B:true, T:true, P:true          ) },
+                { (3, 2, 0, 5), new AttackTraits("Hornet Sting",        d:0.65f,        H:true, B:true                          ) },
             };
         }
     }
-}       // MaxGrowthDict of plants in PlantTraits
+}
