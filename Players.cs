@@ -223,61 +223,6 @@ namespace Cave
                         (-6, 0, 0),
                     };
                 }
-                else if (!plantsMode) // True -> Important things, False -> EVERY thing
-                {
-                    inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
-                    {
-                        {(6, 0, 5), -999 }, // hand
-                        {(0, 0, 4), -999 }, // tools
-                        {(4, 0, 4), -999 },
-                        {(1, 0, 4), -999 },
-                        {(2, 0, 4), -999 },
-                        {(3, 0, 4), -999 },
-                        {(0, 0, 1), -999 }, // entitities
-                        {(1, 0, 1), -999 },
-                        {(2, 0, 1), -999 },
-                        {(4, 0, 1), -999 },
-                        {(4, 1, 1), -999 },
-                        {(5, 0, 1), -999 },
-                        {(0, 0, 2), -999 }, // plants
-                        {(0, 1, 2), -999 },
-                        {(1, 0, 2), -999 },
-                        {(1, 1, 2), -999 },
-                        {(4, 1, 2), -999 },
-                        {(5, 0, 2), -999 },
-                        {(5, 1, 2), -999 },
-                        {(-1, 0, 0), -999 }, // materials
-                        {(-4, 0, 0), -999 },
-                        {(4, 0, 0), -999 },
-                        {(-6, 0, 0), -999 },
-                    };
-                    inventoryElements = new List<(int index, int subType, int typeOfElement)>
-                    {
-                        (6, 0, 5), // hand
-                        (0, 0, 4), // tools
-                        (4, 0, 4),
-                        (1, 0, 4),
-                        (2, 0, 4),
-                        (3, 0, 4),
-                        (0, 0, 1), // entitititities
-                        (1, 0, 1),
-                        (2, 0, 1),
-                        (4, 0, 1),
-                        (4, 1, 1),
-                        (5, 0, 1),
-                        (0, 0, 2), // plants
-                        (0, 1, 2),
-                        (1, 0, 2),
-                        (1, 1, 2),
-                        (4, 1, 2),
-                        (5, 0, 2),
-                        (5, 1, 2),
-                        (-1, 0, 0), // materials
-                        (-4, 0, 0),
-                        (4, 0, 0),
-                        (-6, 0, 0),
-                    };
-                }
                 else
                 {
                     inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
@@ -294,24 +239,12 @@ namespace Cave
                         {(4, 0, 1), -999 },
                         {(4, 1, 1), -999 },
                         {(5, 0, 1), -999 },
-                        {(0, 0, 2), -999 }, // plants
-                        {(0, 1, 2), -999 },
-                        {(0, 2, 2), -999 },
-                        {(0, 3, 2), -999 },
-                        {(1, 0, 2), -999 },
-                        {(1, 1, 2), -999 },
-                        {(2, 0, 2), -999 },
-                        {(2, 1, 2), -999 },
-                        {(3, 0, 2), -999 },
-                        {(4, 0, 2), -999 },
-                        {(4, 1, 2), -999 },
-                        {(5, 0, 2), -999 },
-                        {(5, 1, 2), -999 },
-                        {(-1, 0, 0), -999 }, // materials
-                        {(-4, 0, 0), -999 },
-                        {(4, 0, 0), -999 },
-                        {(-6, 0, 0), -999 },
                     };
+                    foreach ((int type, int subType) key in plantTraitsDict.Keys) { inventoryQuantities.Add((key.type, key.subType, 2), -999); }
+                    inventoryQuantities.Add((-1, 0, 0), -999);
+                    inventoryQuantities.Add((-4, 0, 0), -999);
+                    inventoryQuantities.Add((4, 0, 0), -999);
+                    inventoryQuantities.Add((-6, 0, 0), -999);
                     inventoryElements = new List<(int index, int subType, int typeOfElement)>
                     {
                         (6, 0, 5), // hand
@@ -326,24 +259,12 @@ namespace Cave
                         (4, 0, 1),
                         (4, 1, 1),
                         (5, 0, 1),
-                        (0, 0, 2), // plants
-                        (0, 1, 2),
-                        (0, 2, 2),
-                        (0, 3, 2),
-                        (1, 0, 2),
-                        (1, 1, 2),
-                        (2, 0, 2),
-                        (2, 1, 2),
-                        (3, 0, 2),
-                        (4, 0, 2),
-                        (4, 1, 2),
-                        (5, 0, 2),
-                        (5, 1, 2),
-                        (-1, 0, 0), // materials
-                        (-4, 0, 0),
-                        (4, 0, 0),
-                        (-6, 0, 0),
                     };
+                    foreach ((int type, int subType) key in plantTraitsDict.Keys) { inventoryElements.Add((key.type, key.subType, 2)); }
+                    inventoryElements.Add((-1, 0, 0));
+                    inventoryElements.Add((-4, 0, 0));
+                    inventoryElements.Add((4, 0, 0));
+                    inventoryElements.Add((-6, 0, 0));
                 }
             }
             public override void findLength() { length = 15; }
@@ -385,7 +306,7 @@ namespace Cave
                     }
                     if (playerTile.type > 0) { ariGeoSlowDown(0.75f, 0.25f); }
                     else if (inWater && traits.isSwimming) { ariGeoSlowDown(0.85f, 0.15f); }
-                    else { ariGeoSlowDownGravity(0.75f, 0.25f); }
+                    else { ariGeoSlowDownGravity(0.75f, 0.25f, 0f, 5f); }
                 }
                 else
                 {

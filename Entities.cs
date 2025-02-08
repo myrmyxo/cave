@@ -170,12 +170,13 @@ namespace Cave
             }
             public Color findColor()
             {
-                float hueVar = (float)((seed % 10) * 0.2f - 1);
-                float shadeVar = (float)((LCGz(seed) % 10) * 0.2f - 1);
+                float hueVar = (float)((seed % 11) * 0.2f - 1);
+                float shadeVar = (float)((LCGz(seed) % 11) * 0.2f - 1);
+                ColorRange c = traits.colorRange;
                 return Color.FromArgb(
-                    ColorClamp(traits.r.v + (int)(hueVar * traits.r.h) + (int)(shadeVar * traits.r.s)),
-                    ColorClamp(traits.g.v + (int)(hueVar * traits.g.h) + (int)(shadeVar * traits.g.s)),
-                    ColorClamp(traits.b.v + (int)(hueVar * traits.b.h) + (int)(shadeVar * traits.b.s))
+                    ColorClamp(c.r.v + (int)(hueVar * c.r.h) + (int)(shadeVar * c.r.s)),
+                    ColorClamp(c.g.v + (int)(hueVar * c.g.h) + (int)(shadeVar * c.g.s)),
+                    ColorClamp(c.b.v + (int)(hueVar * c.b.h) + (int)(shadeVar * c.b.s))
                 );
             }
             public void findLightColor()
@@ -508,6 +509,7 @@ namespace Cave
             public ((int type, int subType) entityPos, (int type, int subType) under) applyForces()
             {
                 (int type, int subType) tileUnder = screen.getTileContent((posX, posY - 1));
+                (int type, int subType) entityTile = screen.getTileContent((posX, posY));
                 if (tileUnder.type > 0)         // On terrain
                 {
                     onGround = true;
@@ -521,10 +523,10 @@ namespace Cave
                     onGround = false;
                 }
 
-                (int type, int subType) entityTile = screen.getTileContent((posX, posY));
                 if (entityTile.type > 0)        // In terrain
                 {
                     inWater = false;
+                    onGround = true;
                     if (!traits.isDigging) { speedX = 0; speedY = 0; }
                 }
                 else if (entityTile.type < 0)   // In water
@@ -560,10 +562,10 @@ namespace Cave
                 speedX = Sign(speedX) * Max(0, Abs(speedX) * geo - ari);
                 speedY = Sign(speedY) * Max(0, Abs(speedY) * geo - ari);
             }
-            public void ariGeoSlowDownGravity(float geo, float ari)
+            public void ariGeoSlowDownGravity(float geo, float ari, float capX, float capY)
             {
-                speedX = Sign(speedX) * Max(0, Abs(speedX) * geo - ari);
-                speedY = (speedY > 0 ? speedY = Sign(speedY) * Max(0, Abs(speedY) * geo - ari) : speedY);
+                speedX = Abs(speedX) > capX ? MaxAbs(Sign(speedX) * capX, Sign(speedX) * Max(0, Abs(speedX) * geo - ari)) : speedX;
+                speedY = speedY > capY ? MaxAbs(Sign(speedY) * capY, Sign(speedY) * Max(0, Abs(speedY) * geo - ari)) : speedY;
             }
             public void ariGeoSlowDownX(float geo, float ari)
             {

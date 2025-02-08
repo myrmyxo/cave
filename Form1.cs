@@ -240,6 +240,8 @@ namespace Cave
             bool makePngStrings = true;
             if (makePngStrings)
             {
+                turnPngIntoString("Error");
+
                 turnPngIntoString("OverlayBackground");
                 turnPngIntoString("Numbers");
                 turnPngIntoString("LettersUp");
@@ -327,7 +329,11 @@ namespace Cave
             }
 
             loadSpriteDictionaries();
+
+            makeAttackTraitsDict();
             makeEntityTraitsDict();
+            makePlantStructureFramesDict();
+            makePlantStructuresDict();
             makePlantTraitsDict();
             makeBiomeTraitsDict();
 
@@ -338,11 +344,8 @@ namespace Cave
             // Optimize/functionalize lake maker function
             // EntityCemetary and PlantCemetary folders, putting the files of dead Entities/Plants there
             // Hornet nests -> search for point of interests in plants should take place with SPIRAL function
-            // Make entity digging + attacks
             // Update tryGrowth stuff in plants to fix bugs and make growth more intelligently
             // Optimization of biome getting -> if all 4 corners of a chunk are Monobiome of the same biome, no need to computer all the other ones inside ! thank you noiseposti.ng 
-            // Fluid dezoom, not by gigaChunks of whatever. No ChunkLength, but instead a size of forceLoading (radius in chunks). When dezoom goes over it, it takes the dezoom factor instead to forceLoad/loadCloseChunks.
-            // So infinite dezoom (and zoom up to 1 pixel theoretically). Make the bitmap be created at each UpdateScreen also, not only on zoom/dezoom
             // Hornets : 3 types of attack. Warning sting (first attack, to tell to fuk off, scares creatures off the den, second attack, actual stings that deal poison, third attack, mandible slash that can cause bleeding)
             // Message from player character portrait (LMFAO LIKE IF THERE WAS ONE) : "I feel like i'm very much not wanted here..." to tell player that hornet did a warning attack. "I should really get out before they get angry" on the second one.
             // They a loud BUZZ and every hornet aggroes on the player
@@ -354,12 +357,15 @@ namespace Cave
             // Upgrade plants spawning : if Maxgrowth returns a growth level that is too small, it FAILS, and tries again with another position
             // nornet nests disappear when they empty
             // Hornet larvae climbing up to the ceiling to go pupate ?
+            // Bubble effects in water ?
+            // Fishing rod, and wand that shoots bullets that make flowers spawn around it
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
             // When multiple hornets dig the same tile, it can dig other than pollen
             // 30/01/2025 Once, a broken honey storage room was made, as the tunnel that lead to it made it have a leak mid height (tunnel dug in the bordel...)
             // Nest making rooms SUPER fucking far away from spawn
+            // Prevent waterSkippers for yeeting themselves out of pools where there is nothing on the sides of a lake to prevent them from doing so
 
             // cool ideas for later !
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
@@ -792,6 +798,16 @@ namespace Cave
         public static byte Min(byte a, byte b)
         {
             if (a < b) { return a; }
+            return b;
+        }
+        public static int MaxAbs(int a, int b)
+        {
+            if (Abs(a) > Abs(b)) { return a; }
+            return b;
+        }
+        public static float MaxAbs(float a, float b)
+        {
+            if (Abs(a) > Abs(b)) { return a; }
             return b;
         }
         public static float Clamp(float min, float value, float max)

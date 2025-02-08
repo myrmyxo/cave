@@ -36,44 +36,6 @@ using static Cave.Dialogues;
 
 namespace Cave
 {
-    public partial class Globals
-    {
-        public static Dictionary<(int type, int subType, int megaType), float> damageDict = new Dictionary<(int type, int subType, int megaType), float>
-        {
-            { (0, 0, 4), 1 },       // sword
-            { (1, 0, 4), 0.5f },    // pickaxe
-            { (2, 0, 4), 0.75f },   // scythe
-            { (4, 0, 4), 0.5f },    // axe
-            
-            { (6, 0, 5), 0.25f },   // Goblin Hand lol
-
-            { (3, 0, 5), 0.05f },   // Hornet warning
-            { (3, 1, 5), 1f },      // Hornet mandibles
-            { (3, 2, 5), 0.65f },   // Hornet sting
-        };
-
-        public static Dictionary<(int type, int subType, int megaType), bool> terrainDiggingAttacks = new Dictionary<(int type, int subType, int megaType), bool>
-        {
-            { (1, 0, 4), true },    // pickaxe
-            { (6, 0, 5), true },    // Goblin Hand lol
-            { (3, 1, 5), true },    // Hornet mandibles
-        };
-
-        public static Dictionary<(int type, int subType, int megaType), bool> plantDiggingAttacks = new Dictionary<(int type, int subType, int megaType), bool>
-        {
-            { (2, 0, 4), true },    // scythe
-            { (4, 0, 4), true },    // axe
-            { (6, 0, 5), true },    // Goblin Hand lol
-            { (3, 1, 5), true },    // Hornet mandibles
-        };
-
-        public static Dictionary<(int type, int subType, int megaType), bool> abortableAttacks = new Dictionary<(int type, int subType, int megaType), bool>    // false : needs 1 to abort, true, needs 2 to abort (for attacks that can dig terrain AND plant)
-        {
-            { (1, 0, 4), false },    // pickaxe
-            { (4, 0, 4), false },    // axe
-            { (6, 0, 5), true },    // Goblin Hand lol
-        };
-    }
     public class Attacks
     {
         public class Attack
@@ -81,6 +43,7 @@ namespace Cave
             public int state = -1;
             public (int x, int y) direction = (0, 0);
             public (int type, int subType, int typeOfElement) type = (-1, -1, -1);
+            public AttackTraits traits;
             public Dictionary<int, bool> entitiesAlreadyHitByCurrentAttack = new Dictionary<int, bool>();
             public (int x, int y) startPos;
             public (int x, int y) pos;
@@ -92,6 +55,7 @@ namespace Cave
             {
                 motherEntity = motherEntityToPut;
                 type = typeToPut;
+                traits = attackTraitsDict.ContainsKey(type) ? attackTraitsDict[type] : attackTraitsDict[(-1, 0, 0)];
                 state = -1;
                 isDone = false;
                 pos = posToPut;
@@ -208,27 +172,26 @@ namespace Cave
             {
                 Chunk chunkToTest = motherEntity.screen.getChunkFromPixelPos(attackPos);
                 int abort = 0;
-                if (terrainDiggingAttacks.ContainsKey(type))
+                if (traits.isTerrainDigging)
                 {
                     ((int type, int subType) dugTile, bool success) returnTuple = motherEntity.TerrainDig(attackPos);
                     if (!returnTuple.success) { abort++; }
                     digSuccess = returnTuple.success;
                     dugTile = returnTuple.dugTile;
                 }
-                if (plantDiggingAttacks.ContainsKey(type))
+                if (traits.isPlantDigging)
                 {
                     digSuccess = motherEntity.PlantDig(attackPos, (type.type, type.subType, 4), chunkToTest);
                     if (!digSuccess) { abort++; }
                 }
                 if (type == (3, 0, 4)) { if (motherEntity.screen.type.type != 2) testForBloodAltar(motherEntity.screen, attackPos); }
 
-                float damage = damageDict.ContainsKey(type) ? damageDict[type] : 0;
-                if (damage == 0) { return; }    // Careful prolly gonna get removed later but whatever
+                if (!traits.isHitting) { return; }
                 foreach (Entity entity in chunkToTest.entityList)
                 {
                     if (entity.type != motherEntity.type && (entity.posX, entity.posY) == attackPos && !entitiesAlreadyHitByCurrentAttack.ContainsKey(entity.id))
                     {
-                        entity.hp -= damage;
+                        entity.hp -= traits.damage;
                         entitiesAlreadyHitByCurrentAttack[entity.id] = true;
                         entity.timeAtLastGottenHit = timeElapsed;
                         if (entity.hp <= 0)
@@ -237,7 +200,7 @@ namespace Cave
                         }
                     }
                 }
-                if (abortableAttacks.ContainsKey(type) && (abort >= 1 + (abortableAttacks[type]? 1 : 0))) { finishAttack(); }
+                if (traits.isAbortable && (abort >= 1 + (traits.isPlantDigging && traits.isPlantDigging ? 1 : 0))) { finishAttack(); }
             }
             public void finishAttack()
             {

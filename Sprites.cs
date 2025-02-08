@@ -99,8 +99,9 @@ namespace Cave
                 { (5, 0), new OneSprite("WaterSkipper", true) },            // TO CHANGE
                 { (6, 0), new OneSprite("Goblin", true) },                  // TO CHANGE
             };                                                               
-            plantSprites = new Dictionary<(int, int), OneSprite>             
-            {                                                                
+            plantSprites = new Dictionary<(int, int), OneSprite>
+            {
+                { (-1, 0), new OneSprite("Error", true) },                  // TO CHANGE
                 { (0, 0), new OneSprite("BasePlant", false) },                
                 { (0, 1), new OneSprite("Candle", false) },                   
                 { (0, 2), new OneSprite("Tulip", false) },                    

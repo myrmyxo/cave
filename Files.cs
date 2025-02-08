@@ -354,7 +354,7 @@ namespace Cave
             public int seed;
             public (int, int) pos;
             public (int, int) lstGrPos;
-            public int type;
+            public (int, int) type;
             public int grLvl;
 
             public int[,] fS;
@@ -390,7 +390,7 @@ namespace Cave
             public int seed;
             public (int, int) pos;
             public (int, int) lstGrPos;
-            public int type;
+            public (int, int) type;
             public int grLvl;
 
             public int[,] fS;
