@@ -302,7 +302,7 @@ namespace Cave
                     foreach (Plant plant in screen.activePlants.Values) { plant.testPlantGrowth(false); }
 
                     screen.attacksToRemove = new Dictionary<Attack, bool>();
-                    foreach (Attack attack in screen.activeAttacks) { attack.updateAttack(); }
+                    for (int i = 0; i < screen.activeAttacks.Count; i++) { screen.activeAttacks[i].updateAttack(); }
                     foreach (Attack attack in screen.attacksToRemove.Keys) { screen.activeAttacks.Remove(attack); }
 
                     foreach (Particle particle in screen.activeParticles) { particle.moveParticle(); }

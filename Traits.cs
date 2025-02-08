@@ -586,11 +586,12 @@ namespace Cave
             public bool isTerrainDigging;
             public bool isPlantDigging;
             public bool isAbortable;
-            
+            public bool isEntityBound;
+
             public (int v, int h, int s) r;
             public (int v, int h, int s) g;
             public (int v, int h, int s) b;
-            public AttackTraits(string namee, float damageToPut = 0, bool H = false, bool T = false, bool P = false, bool A = false)
+            public AttackTraits(string namee, float damageToPut = 0, bool H = false, bool T = false, bool P = false, bool A = false, bool B = false)
             {
                 name = namee;
                 damage = damageToPut;
@@ -598,27 +599,35 @@ namespace Cave
                 isTerrainDigging = T;
                 isPlantDigging = P;
                 isAbortable = A;
+                isEntityBound = B;
             }
         }
 
-        public static Dictionary<(int type, int subType, int megaType), AttackTraits> attackTraitsDict;
+        public static Dictionary<(int type, int subType, int subSubType, int megaType), AttackTraits> attackTraitsDict;
         public static void makeAttackTraitsDict()
         {
-            attackTraitsDict = new Dictionary<(int type, int subType, int megaType), AttackTraits>()
+            attackTraitsDict = new Dictionary<(int type, int subType, int subSubType, int megaType), AttackTraits>()
             {
-                { (-1, 0, 0), new AttackTraits("Error"                                                              ) },
-
-                { (0, 0, 4), new AttackTraits("Sword",              1,              H:true                          ) },
-                { (1, 0, 4), new AttackTraits("Pickaxe",            0.5f,           H:true, T:true,         A:true  ) },
-                { (2, 0, 4), new AttackTraits("Scythe",             0.75f,          H:true,         P:true          ) },
-                { (3, 0, 4), new AttackTraits("Magic Wand"                                                          ) },
-                { (4, 0, 4), new AttackTraits("Axe",                0.5f,           H:true,         P:true, A:true  ) },
-
-                { (6, 0, 5), new AttackTraits("Goblin Hand",        0.25f,          H:true, T:true, P:true, A:true  ) },
-
-                { (3, 0, 5), new AttackTraits("Hornet Warning",     0.05f,          H:true                          ) },
-                { (3, 1, 5), new AttackTraits("Hornet Mandibles",   1,              H:true, T:true, P:true          ) },
-                { (3, 2, 5), new AttackTraits("Hornet Sting",       0.65f,          H:true                          ) },
+                { (-1, 0, 0, 0), new AttackTraits("Error"                                                                       ) },
+                                                                                                                                    
+                { (0, 0, 0, 4), new AttackTraits("Sword",              1,               H:true, B:true                          ) },
+                { (1, 0, 0, 4), new AttackTraits("Pickaxe",            0.5f,            H:true, B:true, T:true,         A:true  ) },
+                { (2, 0, 0, 4), new AttackTraits("Scythe",             0.75f,           H:true, B:true,         P:true          ) },
+                { (4, 0, 0, 4), new AttackTraits("Axe",                0.5f,            H:true, B:true,         P:true, A:true  ) },
+                                                                                                                                    
+                { (3, 0, 0, 4), new AttackTraits("Magic Wand",                                  B:true                          ) },
+                { (3, 0, 1, 4), new AttackTraits("Magic Bullet"                                                                 ) },
+                { (3, 1, 0, 4), new AttackTraits("Carnal Wand",                                 B:true                          ) },
+                { (3, 1, 1, 4), new AttackTraits("Carnal Bullet",                       H:true                                  ) },
+                { (3, 2, 0, 4), new AttackTraits("Floral Wand",                                 B:true                          ) },
+                { (3, 2, 1, 4), new AttackTraits("Floral Bullet"                                                                ) },
+                                                                                                                                    
+                                                                                                                                    
+                { (6, 0, 0, 5), new AttackTraits("Goblin Hand",        0.25f,           H:true, B:true, T:true, P:true, A:true  ) },
+                                                                                                                                    
+                { (3, 0, 0, 5), new AttackTraits("Hornet Warning",     0.05f,           H:true, B:true                          ) },
+                { (3, 1, 0, 5), new AttackTraits("Hornet Mandibles",   1,               H:true, B:true, T:true, P:true          ) },
+                { (3, 2, 0, 5), new AttackTraits("Hornet Sting",       0.65f,           H:true, B:true                          ) },
             };
         }
     }

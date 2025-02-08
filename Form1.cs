@@ -214,7 +214,7 @@ namespace Cave
                 ((10, 0, 3), 1)
             },
 
-            new ((int type, int subType, int megaType) material, int count)[] // Wood, MagicRock and Fairy liquid to MagicWand
+            new ((int type, int subType, int megaType) material, int count)[] // Wood, MagicRock and Fairy liquid to WandMagic
             {
                 ((1, 1, 3), -3),
                 ((10, 0, 3), -1),
@@ -314,7 +314,9 @@ namespace Cave
                 turnPngIntoString("Pickaxe");
                 turnPngIntoString("Scythe");
                 turnPngIntoString("Axe");
-                turnPngIntoString("MagicWand");
+                turnPngIntoString("WandMagic");
+                turnPngIntoString("WandCarnal");
+                turnPngIntoString("WandFloral");
 
                 turnPngIntoString("GoblinHand");
                 turnPngIntoString("Stinger");
@@ -359,6 +361,7 @@ namespace Cave
             // Hornet larvae climbing up to the ceiling to go pupate ?
             // Bubble effects in water ?
             // Fishing rod, and wand that shoots bullets that make flowers spawn around it
+            // For PlantStructure shit in traits : intruduce a variation of the maxGrowthLevel as an optional parameter directly in there, to have flowers with different max growth levels.
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf

@@ -888,7 +888,7 @@ namespace Cave
                             {
                                 if (timeAtLastDig + 1 < timeElapsed)
                                 {
-                                    currentAttack = new Attack(this, (3, 1, 5), targetPos, (0, 0)); // Mandible attack
+                                    currentAttack = new Attack(this, (3, 1, 0, 5), targetPos, (0, 0)); // Mandible attack
                                     state *= 10;
                                 }
                             }
@@ -1071,7 +1071,7 @@ namespace Cave
                 entityToGive.addElementToInventory(entityDrop.element, entityDrop.count);
                 screen.entitesToRemove[id] = this;
             }
-            public virtual void findLength()
+            public void findLength()
             {
                 if (type.type == 4)
                 {
@@ -1079,6 +1079,7 @@ namespace Cave
                     else { length = 2 + seed % 5; }
                 }
                 else { length = 0; }
+                while (pastPositions.Count > length) { pastPositions.RemoveAt(pastPositions.Count - 1); }
             }
             public void updatePastPositions((int x, int y) posToAdd)    // if lenght DECREASES it will not work anymore probably idk
             {

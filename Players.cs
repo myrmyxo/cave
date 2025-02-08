@@ -60,6 +60,7 @@ namespace Cave
             public List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)> rayCastsToContinue = new List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)>();
             public Player(SettingsJson settingsJson)
             {
+                seed = rand.Next(999999);
                 transformEntity((4, 1), true);
 
                 if (settingsJson == null)
@@ -233,6 +234,8 @@ namespace Cave
                         {(1, 0, 4), -999 },
                         {(2, 0, 4), -999 },
                         {(3, 0, 4), -999 },
+                        {(3, 1, 4), -999 },
+                        {(3, 2, 4), -999 },
                         {(0, 0, 1), -999 }, // entitities
                         {(1, 0, 1), -999 },
                         {(2, 0, 1), -999 },
@@ -253,6 +256,8 @@ namespace Cave
                         (1, 0, 4),
                         (2, 0, 4),
                         (3, 0, 4),
+                        (3, 1, 4),
+                        (3, 2, 4),
                         (0, 0, 1), // entitititities
                         (1, 0, 1),
                         (2, 0, 1),
@@ -267,7 +272,6 @@ namespace Cave
                     inventoryElements.Add((-6, 0, 0));
                 }
             }
-            public override void findLength() { length = 15; }
             public void Jump(int direction, float jumpSpeed)
             {
                 speedX += direction;
@@ -448,12 +452,14 @@ namespace Cave
                 if (currentAttack != null && currentAttack.isDone) { currentAttack = null; }
                 if (digPress && currentAttack is null && (currentItem.megaType == 4 || currentItem.megaType == 5))  // start an attack if a tool that can attack is selected, X is pressed, and player is not already attacking
                 {
-                    if (currentItem == (0, 0, 4)) { currentAttack = new Attack(this, (0, 0, 4), (posX, posY), direction); }
-                    else if (currentItem == (1, 0, 4)) { currentAttack = new Attack(this, (1, 0, 4), (posX, posY), direction); }
-                    else if (currentItem == (2, 0, 4)) { currentAttack = new Attack(this, (2, 0, 4), (posX, posY), direction); }
-                    else if (currentItem == (3, 0, 4)) { currentAttack = new Attack(this, (3, 0, 4), (posX, posY), direction); }
-                    else if (currentItem == (4, 0, 4)) { currentAttack = new Attack(this, (4, 0, 4), (posX, posY), direction); }
-                    else if (currentItem == (6, 0, 5)) { currentAttack = new Attack(this, (6, 0, 5), (posX, posY), direction); }
+                    if (currentItem == (0, 0, 4)) { currentAttack = new Attack(this, (0, 0, 0, 4), (posX, posY), direction); }
+                    else if (currentItem == (1, 0, 4)) { currentAttack = new Attack(this, (1, 0, 0, 4), (posX, posY), direction); }
+                    else if (currentItem == (2, 0, 4)) { currentAttack = new Attack(this, (2, 0, 0, 4), (posX, posY), direction); }
+                    else if (currentItem == (3, 0, 4)) { currentAttack = new Attack(this, (3, 0, 0, 4), (posX, posY), direction); }
+                    else if (currentItem == (3, 1, 4)) { currentAttack = new Attack(this, (3, 1, 0, 4), (posX, posY), direction); }
+                    else if (currentItem == (3, 2, 4)) { currentAttack = new Attack(this, (3, 2, 0, 4), (posX, posY), direction); }
+                    else if (currentItem == (4, 0, 4)) { currentAttack = new Attack(this, (4, 0, 0, 4), (posX, posY), direction); }
+                    else if (currentItem == (6, 0, 5)) { currentAttack = new Attack(this, (6, 0, 0, 5), (posX, posY), direction); }
                 }
             }
             public bool Place((int x, int y) posToPlace)
