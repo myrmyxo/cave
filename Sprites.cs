@@ -830,6 +830,19 @@ namespace Cave
 
             return bitmap;
         }
+        public static unsafe Color getPixelButFaster(Bitmap bitmap, (int x, int y) pos, Color colorToDraw)
+        {
+            BitmapData bData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadWrite, bitmap.PixelFormat);
+
+            byte bitsPerPixel = (byte)System.Drawing.Image.GetPixelFormatSize(bData.PixelFormat);
+            byte* scan0 = (byte*)bData.Scan0.ToPointer();
+
+            byte* data;
+            data = scan0 + pos.y * bData.Stride + pos.x * bitsPerPixel / 8;
+            bitmap.UnlockBits(bData);
+
+            return Color.FromArgb(data[3], data[2], data[1], data[0]);
+        }
 
 
 

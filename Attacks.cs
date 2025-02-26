@@ -169,9 +169,9 @@ namespace Cave
                 else if (type == (3, 2, 2, 4))
                 {
                     if (state > 0) { pos = (pos.x, pos.y - 1); }
-                    if (screen.getTileContent(pos).type > 0)
+                    if (screen.getTileContent(pos).isSolid)
                     {
-                        if (screen.getTileContent((pos.x, pos.y + 1)).type == 0)
+                        if (screen.getTileContent((pos.x, pos.y + 1)).isAir)
                         {
                             Plant newPlant = new Plant(screen, (pos.x, pos.y + 1), (0, 2 + rand.Next(2)));
                             if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
@@ -192,18 +192,18 @@ namespace Cave
                         int modY = 0;
                         int sign = Sign(direction.x);
 
-                        if (screen.getTileContent((pos.x + sign, pos.y + 1)).type > 0) { modY -= 3; }
-                        else if (screen.getTileContent((pos.x + sign, pos.y + 2)).type > 0) { modY -= 2; }
-                        else if (screen.getTileContent((pos.x + sign, pos.y + 3)).type > 0) { modY -= 1; }
+                        if (screen.getTileContent((pos.x + sign, pos.y + 1)).isSolid) { modY -= 3; }
+                        else if (screen.getTileContent((pos.x + sign, pos.y + 2)).isSolid) { modY -= 2; }
+                        else if (screen.getTileContent((pos.x + sign, pos.y + 3)).isSolid) { modY -= 1; }
 
-                        if (screen.getTileContent((pos.x + sign, pos.y - 1)).type > 0) { modY += 3; }
-                        else if (screen.getTileContent((pos.x + sign, pos.y - 2)).type > 0) { modY += 2; }
-                        else if (screen.getTileContent((pos.x + sign, pos.y - 3)).type > 0) { modY += 1; }
+                        if (screen.getTileContent((pos.x + sign, pos.y - 1)).isSolid) { modY += 3; }
+                        else if (screen.getTileContent((pos.x + sign, pos.y - 2)).isSolid) { modY += 2; }
+                        else if (screen.getTileContent((pos.x + sign, pos.y - 3)).isSolid) { modY += 1; }
 
                         pos = (pos.x + sign, pos.y + modY);
                         if (rand.Next(4) == 0) { new Attack(screen, motherEntity, (type.type, type.subType, 2, 4), pos, direction); }
                     }
-                    if (screen.getTileContent(pos).type > 0) { finishAttack(); return; }
+                    if (screen.getTileContent(pos).isSolid) { finishAttack(); return; }
 
                     posToDrawList.Add((pos, Color.MediumSpringGreen));
                     posToAttackList.Add((pos, this));

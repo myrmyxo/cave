@@ -258,10 +258,10 @@ namespace Cave
                     costOfTiles[location] = 0;
                     return 0;
                 }
-                int tileContent = screen.getChunkFromPixelPos(location).fillStates[PosMod(location.x), PosMod(location.y)].type;
-                if (tileContent <= 0)
+                TileTraits traits = screen.getChunkFromPixelPos(location).fillStates[PosMod(location.x), PosMod(location.y)];
+                if (!traits.isSolid)
                 {
-                    costOfTiles[location] = costDict[tileContent];
+                    costOfTiles[location] = costDict[traits.type.type];
                     return costOfTiles[location];
                 }
                 costOfTiles[location] = 1000000;
@@ -313,17 +313,15 @@ namespace Cave
             {
                 //TEST IF THE TILE IS EXPOSED TO AIR/LIQUID AT LEAST NOT TO PATHFIND FOR NUTHIN LOL
                 if (
-                    screen.getTileContent((targetLocation.x + 1, targetLocation.y)).type > 0
+                    screen.getTileContent((targetLocation.x + 1, targetLocation.y)).isSolid
                     &&
-                    screen.getTileContent((targetLocation.x - 1, targetLocation.y)).type > 0
+                    screen.getTileContent((targetLocation.x - 1, targetLocation.y)).isSolid
                     &&
-                    screen.getTileContent((targetLocation.x, targetLocation.y + 1)).type > 0
+                    screen.getTileContent((targetLocation.x, targetLocation.y + 1)).isSolid
                     &&
-                    screen.getTileContent((targetLocation.x, targetLocation.y - 1)).type > 0
+                    screen.getTileContent((targetLocation.x, targetLocation.y - 1)).isSolid
                     )
-                {
-                    return false;
-                }
+                { return false; }
 
 
                 ((int x, int y) pos, float cost)[] neighbourDict = new ((int x, int y) pos, float cost)[]
@@ -507,15 +505,15 @@ namespace Cave
                 if (path.Count > 0) { path.RemoveAt(0); }
                 if (path.Count > 0) { path.RemoveAt(path.Count - 1); }
             }
-            public ((int type, int subType) entityPos, (int type, int subType) under) applyForces()
+            public (TileTraits entityPos, TileTraits under) applyForces()
             {
-                (int type, int subType) tileUnder = screen.getTileContent((posX, posY - 1));
-                (int type, int subType) entityTile = screen.getTileContent((posX, posY));
-                if (tileUnder.type > 0)         // On terrain
+                TileTraits tileUnder = screen.getTileContent((posX, posY - 1));
+                TileTraits entityTile = screen.getTileContent((posX, posY));
+                if (tileUnder.isSolid)          // On terrain
                 {
                     onGround = true;
                 }
-                else if (tileUnder.type < 0)    // On water
+                else if (tileUnder.isLiquid)    // On water
                 {
                     onGround = traits.isJesus;
                 }
@@ -524,13 +522,13 @@ namespace Cave
                     onGround = false;
                 }
 
-                if (entityTile.type > 0)        // In terrain
+                if (entityTile.isSolid)         // In terrain
                 {
                     inWater = false;
                     onGround = true;
                     if (!traits.isDigging) { speedX = 0; speedY = 0; }
                 }
-                else if (entityTile.type < 0)   // In water
+                else if (entityTile.isLiquid)   // In water
                 {
                     inWater = true;
                     if (!traits.isSwimming) { ariGeoSlowDown(0.85f, 0.15f); speedY += 0.1f; }
@@ -591,23 +589,17 @@ namespace Cave
             }
             public void moveEntity()
             {
-                ((int type, int subType) entityPos, (int type, int subType) under) returnType = applyForces();
-                (int type, int subType) entityTile = returnType.entityPos;
-                (int type, int subType) tileUnder = returnType.under;
+                (TileTraits entityPos, TileTraits under) returnType = applyForces();
+                TileTraits entityTile = returnType.entityPos;
+                TileTraits tileUnder = returnType.under;
 
                 if (type.type == 0) // fairy
                 {
-                    if (state == 0) // idle
-                    {
-                        hoverIdle(0.5f, 100);
-                    }
+                    if (state == 0) { hoverIdle(0.5f, 100); }   // idle 
                     else if (state == 1) // moving in the air randomly
                     {
                         changeSpeedRandom(0.5f);
-                        if (rand.Next(333) == 0)
-                        {
-                            state = 0;
-                        }
+                        if (rand.Next(333) == 0) { state = 0; }
                     }
                     else { state = 0; }
                 }
@@ -616,10 +608,7 @@ namespace Cave
                     if (onGround)
                     {
                         ariGeoSlowDownX(0.85f, 0.2f);
-                        if (rand.Next(20) > 0)
-                        {
-                            jumpRandom(2.5f, 2.5f);
-                        }
+                        if (rand.Next(20) > 0) { jumpRandom(2.5f, 2.5f); }
                     }
                     else if (inWater && rand.Next(10) == 0) { jumpRandom(2.5f, 1); }
                 }
@@ -627,24 +616,15 @@ namespace Cave
                 {
                     if (inWater)
                     {
-                        if (state >= 2)
-                        {
-                            state = 1;
-                        }
+                        if (state >= 2) { state = 1; }
                     }
-                    else
-                    {
-                        state = 2;
-                    }
+                    else { state = 2; }
 
                     if (state == 0) // idle
                     {
                         slowDown(0.5f);
 
-                        if (rand.Next(50) == 0)
-                        {
-                            state = 1;
-                        }
+                        if (rand.Next(50) == 0) { state = 1; }
                     }
                     else if (state == 1) // moving in water
                     {
@@ -653,24 +633,15 @@ namespace Cave
 
                         changeSpeedRandom(0.5f);
 
-                        if (rand.Next(50) == 0)
-                        {
-                            changeSpeedRandom(2.5f); // big dash nyoooooom
-                        }
-                        else if (rand.Next(1000) == 0)
-                        {
-                            state = 0;
-                        }
+                        if (rand.Next(50) == 0) { changeSpeedRandom(2.5f); }    // big dash nyoooooom
+                        else if (rand.Next(1000) == 0) { state = 0; }
                     }
                     else if (state == 2) // outside water
                     {
                         if (onGround)
                         {
                             ariGeoSlowDownX(0.9f, 0.12f);
-                            if (rand.Next(10) != 0)
-                            {
-                                jumpRandom(1, 2);
-                            }
+                            if (rand.Next(10) != 0) { jumpRandom(1, 2); }
                         }
                     }
                 }
@@ -691,10 +662,7 @@ namespace Cave
                         {
                             if (timeElapsed - timeAtLastStateChange > 15 + 15 * food)
                             {
-                                if (nest != null && !nest.hungryLarvae.Contains(this))
-                                {
-                                    nest.hungryLarvae.Add(this);
-                                }
+                                if (nest != null && !nest.hungryLarvae.Contains(this)) { nest.hungryLarvae.Add(this); }
                             }
                         }
                         else if (timeElapsed - timeAtLastStateChange > 60)
@@ -706,10 +674,7 @@ namespace Cave
                         if (onGround)
                         {
                             ariGeoSlowDownX(0.85f, 0.2f);
-                            if (rand.NextDouble() < 0.05f)
-                            {
-                                jumpRandom(1, 1.5f);
-                            }
+                            if (rand.NextDouble() < 0.05f) { jumpRandom(1, 1.5f); }
                         }
                     }
                     else if (type.subType == 2)
@@ -719,10 +684,7 @@ namespace Cave
                         {
                             if (nest != null)
                             {
-                                if (nest.larvae.Contains(this))
-                                {
-                                    nest.larvae.Remove(this);
-                                }
+                                if (nest.larvae.Contains(this)) { nest.larvae.Remove(this); }
                                 int id = nest.getRoomId(this);
                                 if (id >= 0)
                                 {
@@ -737,27 +699,19 @@ namespace Cave
                     }
                     else if (type.subType == 3)
                     {
-                        if (state == 0) // idle
-                        {
-                            hoverIdle(0.5f, 100);
-                        }
+                        if (state == 0) { hoverIdle(0.5f, 100); }   // idle
                         else if (state == 1) // moving in the air randomly
                         {
                             changeSpeedRandom(0.5f);
-                            if (rand.Next(333) == 0)
-                            {
-                                state = 0;
-                            }
+                            if (rand.Next(333) == 0) { state = 0; }
                             else if (nest != null)
                             {
                                 if (inventoryElements.Contains((-5, 0, 0)) && nest.availableHoneyRooms.Count > 0)
                                 {
                                     Room targetRoom = nest.rooms[nest.availableHoneyRooms[rand.Next(nest.availableHoneyRooms.Count)]];
                                     targetPos = targetRoom.dropPositions[rand.Next(targetRoom.dropPositions.Count)];
-                                    if (pathfindToLocation(targetPos))
-                                    {
-                                        state = 10007;
-                                    }
+
+                                    if (pathfindToLocation(targetPos)) { state = 10007; }
                                     else
                                     {
                                         pathToTarget = new List<(int x, int y)>();
@@ -770,10 +724,8 @@ namespace Cave
                                     ((int x, int y) pos, bool found) returnTuple = roomToTest.findTileOfTypeInRoom(-5);
                                     if (!returnTuple.found) { goto AfterTest; }
                                     targetPos = returnTuple.pos;
-                                    if (pathfindToLocation(targetPos))
-                                    {
-                                        state = 10006;
-                                    }
+
+                                    if (pathfindToLocation(targetPos)) { state = 10006; }
                                     else
                                     {
                                         pathToTarget = new List<(int x, int y)>();
@@ -784,10 +736,8 @@ namespace Cave
                                 {
                                     Room targetRoom = nest.rooms[nest.availableNurseries[rand.Next(nest.availableNurseries.Count)]];
                                     targetPos = targetRoom.dropPositions[rand.Next(targetRoom.dropPositions.Count)];
-                                    if (pathfindToLocation(targetPos))
-                                    {
-                                        state = 10008;
-                                    }
+
+                                    if (pathfindToLocation(targetPos)) { state = 10008; }
                                     else
                                     {
                                         pathToTarget = new List<(int x, int y)>();
@@ -796,10 +746,7 @@ namespace Cave
                                 }
                                 else if (rand.Next(3) == 0 && findPointOfInterestInPlants((2, 1)))
                                 {
-                                    if (pathfindToLocation(targetPos))
-                                    {
-                                        state = 10005;
-                                    }
+                                    if (pathfindToLocation(targetPos)) { state = 10005; }
                                     else
                                     {
                                         pathToTarget = new List<(int x, int y)>();
@@ -809,10 +756,7 @@ namespace Cave
                                 else if (nest.digErrands.Count > 0)
                                 {
                                     targetPos = nest.digErrands[rand.Next(nest.digErrands.Count)];
-                                    if (pathfindToLocation(targetPos))
-                                    {
-                                        state = 10006;
-                                    }
+                                    if (pathfindToLocation(targetPos)) { state = 10006; }
                                     else
                                     {
                                         pathToTarget = new List<(int x, int y)>();
@@ -913,10 +857,8 @@ namespace Cave
                                 {
                                     targetEntity = nest.hungryLarvae[rand.Next(nest.hungryLarvae.Count)];
                                     targetPos = (targetEntity.posX, targetEntity.posY);
-                                    if (pathfindToLocation(targetPos))
-                                    {
-                                        state = 10009;
-                                    }
+
+                                    if (pathfindToLocation(targetPos)) { state = 10009; }
                                     else
                                     {
                                         targetEntity = null;
@@ -939,10 +881,7 @@ namespace Cave
                                     if (room.type == 2)
                                     {
                                         room.testFullness();
-                                        if (room.isFull)
-                                        {
-                                            nest.updateDropPositions();
-                                        }
+                                        if (room.isFull) { nest.updateDropPositions(); }
                                     }
                                 }
                                 state = 0;
@@ -963,25 +902,16 @@ namespace Cave
                                         nest.larvae.Add(kiddo);
                                         nest.eggsToLay--;
                                         room.testFullness();
-                                        if (room.isFull)
-                                        {
-                                            nest.updateDropPositions();
-                                        }
+                                        if (room.isFull) { nest.updateDropPositions(); }
                                     }
                                     state = 0;
                                 }
                             }
-                            else
-                            {
-                                state = 0;
-                            }
+                            else { state = 0; }
                         }
                         else if (state == 9) // feeding kiddo !
                         {
-                            if (nest != null && nest.hungryLarvae.Contains(targetEntity))
-                            {
-                                tryFeedTargetEntity();
-                            }
+                            if (nest != null && nest.hungryLarvae.Contains(targetEntity)) { tryFeedTargetEntity(); }
                             state = 0;
                         }
                         else { state = 0; }
@@ -990,8 +920,8 @@ namespace Cave
                 }
                 else if (type.type == 4)
                 {
-                    if (entityTile.type == 0) { changeSpeedRandom(0.5f); }
-                    else if (entityTile.type < 0)
+                    if (entityTile.isAir) { changeSpeedRandom(0.5f); }
+                    else if (entityTile.isLiquid)
                     {
                         if (type.subType == 1)
                         {
@@ -1010,10 +940,7 @@ namespace Cave
                 {
                     if (onGround)   // since they're in jesusEntities, when on water onGround = true
                     {
-                        if (rand.Next(20) == 0)
-                        {
-                            jumpRandom(7, 0);
-                        }
+                        if (rand.Next(20) == 0) { jumpRandom(7, 0); }
                     }
 
                     if (inWater)
@@ -1021,39 +948,38 @@ namespace Cave
                         ariGeoSlowDownX(0.75f, 0.25f);
                         speedY += 0.3f;
                     }
-                    if (inWater || tileUnder.type < 0) { ariGeoSlowDownY(0.8f, 0.15f); }
+                    if (inWater || tileUnder.isLiquid) { ariGeoSlowDownY(0.8f, 0.15f); }
                     ariGeoSlowDownX(0.9f, 0.1f);
                 }
 
                 actuallyMoveTheEntity();
 
-
-
-                // test what happens if in special liquids (fairy lake, lava...)
-                {
-                    if (type.type != 0 && entityTile == (-3, 0))
-                    {
-                        if (rand.Next(10) == 0)
-                        {
-                            if (type.type == 2 && type.subType == 1) { transformEntity((0, 3), true); }
-                            else { transformEntity((0, 0), true); }
-                        }
-                    }
-                    if (type.type == 2 && entityTile == (-7, 0))
-                    {
-                        if (rand.Next(10) == 0) { transformEntity((2, 1), true); }
-                    }
-                    if (entityTile == (-4, 0) && type.type != 2 && type != (0, 3))
-                    {
-                        if (rand.Next(10) == 0) { screen.entitesToRemove[id] = this; }
-                    }
-                    if (entityTile == (-7, 0) && type.type != 2 && type != (0, 3) && type != (4, 1) && type != (1, 1) && type != (1, 2))
-                    {
-                        if (rand.Next(10) == 0) { screen.entitesToRemove[id] = this; }
-                    }
-                }
+                testTileEffects(entityTile);  // test what happens if in special liquids (fairy lake, lava...)
 
                 if (currentAttack != null && currentAttack.isDone) { currentAttack = null; }
+            }
+            public void testTileEffects(TileTraits tile)
+            {
+                if (tile.isTransformant && type.type != 0 && tile.type == (-3, 0))
+                {
+                    if (rand.Next(10) == 0)
+                    {
+                        if (type.type == 2 && type.subType == 1) { transformEntity((0, 3), true); }
+                        else { transformEntity((0, 0), true); }
+                    }
+                }
+                if (type.type == 2 && tile.isAcidic)
+                {
+                    if (rand.Next(10) == 0) { transformEntity((2, 1), true); }
+                }
+                if (tile.isLava && type.type != 2 && type != (0, 3))
+                {
+                    if (rand.Next(10) == 0) { screen.entitesToRemove[id] = this; }
+                }
+                if (tile.isAcidic && type.type != 2 && type != (0, 3) && type != (4, 1) && type != (1, 1) && type != (1, 2))
+                {
+                    if (rand.Next(10) == 0) { screen.entitesToRemove[id] = this; }
+                }
             }
             public void transformEntity((int type, int subType) newType, bool setHp = true)
             {
@@ -1093,7 +1019,7 @@ namespace Cave
             }
             public void actuallyMoveTheEntity()
             {
-                (int type, int subType) material;
+                TileTraits tile;
                 (int x, int y) previousPos = (posX, posY);
                 (int x, int y) posToTest;
                 float realPosToTest;
@@ -1128,8 +1054,8 @@ namespace Cave
 
                         Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                         if (chunk is null) { goto SaveEntity; }
-                        material = screen.getTileContent(posToTest);
-                        if (material.type <= 0 || traits.isDigging) // if a worm or the material is not a solid tile, update positions and continue
+                        tile = screen.getTileContent(posToTest);
+                        if (!tile.isSolid || traits.isDigging) // if a worm or the material is not a solid tile, update positions and continue
                         {
                             realPosX = realPosToTest;
                             posX = posToTest.x;
@@ -1158,8 +1084,8 @@ namespace Cave
 
                         Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                         if (chunk is null) { goto SaveEntity; }
-                        material = screen.getTileContent(posToTest);
-                        if (material.type <= 0 || traits.isDigging) // if a worm or the material is not a solid tile, update positions and continue
+                        tile = screen.getTileContent(posToTest);
+                        if (!tile.isSolid || traits.isDigging) // if a worm or the material is not a solid tile, update positions and continue
                         {
                             realPosY = realPosToTest;
                             posY = posToTest.y;
@@ -1254,7 +1180,7 @@ namespace Cave
                 (int, int) chunkPos = ChunkIdx(posToDig);
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return ((0, 0), false); }
                 (int x, int y) tileIndex = PosMod(posToDig);
-                (int type, int subType) tileContent = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
+                (int type, int subType) tileContent = chunkToTest.fillStates[tileIndex.x, tileIndex.y].type;
                 if (tileContent.type != 0)
                 {
                     addElementToInventory((tileContent.type, tileContent.subType, 0));
@@ -1270,8 +1196,8 @@ namespace Cave
                 if (!screen.loadedChunks.TryGetValue(chunkPos, out Chunk chunkToTest)) { return false; }
                 if (!forcePlace && !inventoryElements.Contains(elementToPlace)) { return false; } 
                 (int x, int y) tileIndex = PosMod(posToDig);
-                int tileState = chunkToTest.fillStates[tileIndex.x, tileIndex.y].type;
-                if (tileState == 0 || tileState < 0 && elementToPlace.typeOfElement > 0)
+                TileTraits traits = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
+                if (traits.isAir || traits.isLiquid && elementToPlace.typeOfElement > 0)
                 {
                     if (elementToPlace.typeOfElement == 0)
                     {

@@ -114,7 +114,7 @@ namespace Cave
                     {
                         for (int i = 0; i < 32; i++)
                         {
-                            if (chunk.fillStates[i % 32, j % 32].type == 0)
+                            if (chunk.fillStates[i % 32, j % 32].isAir)
                             {
                                 posX = chunk.pos.x * 32 + i;
                                 realPosX = posX;
@@ -279,9 +279,9 @@ namespace Cave
             }
             public void movePlayer()
             {
-                ((int type, int subType) entityPos, (int type, int subType) under) returnType = applyForces();
-                (int type, int subType) playerTile = returnType.entityPos;
-                (int type, int subType) tileUnder = returnType.under;
+                (TileTraits entityPos, TileTraits under) returnType = applyForces();
+                TileTraits playerTile = returnType.entityPos;
+                TileTraits tileUnder = returnType.under;
 
                 if (traits.isFlying)
                 {
@@ -308,7 +308,7 @@ namespace Cave
                         if (arrowKeysState[2]) { speedY -= 0.5f; }
                         if (arrowKeysState[3] && (onGround || inWater)) { speedY += 0.5f; }
                     }
-                    if (playerTile.type > 0) { ariGeoSlowDown(0.75f, 0.25f); }
+                    if (playerTile.isSolid) { ariGeoSlowDown(0.75f, 0.25f); }
                     else if (inWater && traits.isSwimming) { ariGeoSlowDown(0.85f, 0.15f); }
                     else { ariGeoSlowDownGravity(0.75f, 0.25f, 0f, 5f); }
                 }
@@ -448,9 +448,9 @@ namespace Cave
                     (int x, int y) posToTest = (currentPosInt.x + (int)Floor(values.startPos.x, 1), currentPosInt.y + (int)Floor(values.startPos.y, 1));
                     Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                     if (chunk is null) { return; }
-                    (int type, int subType) tileValue = screen.getTileContent(posToTest);
+                    TileTraits tile = screen.getTileContent(posToTest);
                     chunk.updateFogOfWarOneTile(chunkDict, posToTest);
-                    if (tileValue.type > 0) { lifeLoss = true; }
+                    if (tile.isSolid) { lifeLoss = true; }
                     if (lifeLoss) { lives--; }
                     if (lives <= 0) { return; }
                 }   // Under this comment, important to keep the sign >= 0 ? 0 : 1 stuff !!! Else it will drift of when raycasting in negatives
@@ -499,8 +499,8 @@ namespace Cave
             {
                 Chunk chunkToTest = screen.getChunkFromPixelPos(posToPlace);
                 (int type, int subType, int typeOfElement) currentItem = inventoryElements[inventoryCursor];
-                (int type, int subType) tileState = chunkToTest.fillStates[PosMod(posToPlace.x), PosMod(posToPlace.y)];
-                if (tileState.type == 0 || tileState.type < 0 && currentItem.typeOfElement > 0)
+                TileTraits traits = chunkToTest.fillStates[PosMod(posToPlace.x), PosMod(posToPlace.y)];
+                if (traits.isAir || traits.isLiquid && currentItem.typeOfElement > 0)
                 {
                     if (currentItem.typeOfElement == 0)
                     {

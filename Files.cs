@@ -30,6 +30,7 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
+using static Cave.Traits;
 
 namespace Cave
 {
@@ -577,19 +578,19 @@ namespace Cave
             }
             return listo;
         }
-        public static (int type, int subType)[,] ChunkJsonToChunkfillStates(int[,] array1, int[,] array2)
+        public static TileTraits[,] ChunkJsonToChunkfillStates(int[,] array1, int[,] array2)                                                                                                                                                                     
         {
-            (int type, int subType)[,] arrayo = new (int type, int subType)[32, 32];
+            TileTraits[,] arrayo = new TileTraits[32, 32];
             for (int i = 0; i < 32; i++)
             {
                 for (int j = 0; j < 32; j++)
                 {
-                    arrayo[i, j] = (array1[i, j], array2[i, j]);
+                    arrayo[i, j] = getTileTraits((array1[i, j], array2[i, j]));
                 }
             }
             return arrayo;
         }
-        public static (int[,], int[,]) ChunkToChunkJsonfillStates((int type, int subType)[,] array)
+        public static (int[,], int[,]) ChunkToChunkJsonfillStates(TileTraits[,] array)
         {
             int[,] arrayo1 = new int[32, 32];
             int[,] arrayo2 = new int[32, 32];
@@ -597,8 +598,8 @@ namespace Cave
             {
                 for (int j = 0; j < 32; j++)
                 {
-                    arrayo1[i, j] = array[i, j].type;
-                    arrayo2[i, j] = array[i, j].subType;
+                    arrayo1[i, j] = array[i, j].type.type;
+                    arrayo2[i, j] = array[i, j].type.subType;
                 }
             }
             return (arrayo1, arrayo2);

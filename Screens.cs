@@ -1103,7 +1103,7 @@ namespace Cave
 
                 // player
                 Color playerColor = player.color;
-                if (player.type.type != 4 && getChunkFromPixelPos((player.posX, player.posY)).fillStates[PosMod(player.posX), PosMod(player.posY)].type > 0) { playerColor = Color.Red; }
+                if (player.type.type != 4 && getChunkFromPixelPos((player.posX, player.posY)).fillStates[PosMod(player.posX), PosMod(player.posY)].isSolid) { playerColor = Color.Red; }
                 if (game.isLight) { lightPositions.Add((player.posX, player.posY, 9, player.lightColor)); }
                 drawPixel(gameBitmap, playerColor, (player.posX, player.posY), camPos);
                 if (player.length > 0)
@@ -1284,11 +1284,11 @@ namespace Cave
                 finalBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 return finalBitmap;
             }
-            public (int type, int subType) getTileContent((int x, int y) posToTest)
+            public TileTraits getTileContent((int x, int y) posToTest)
             {
                 return getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
             }
-            public (int type, int subType) setTileContent((int x, int y) posToTest, (int type, int subType) typeToSet)
+            public TileTraits setTileContent((int x, int y) posToTest, (int type, int subType) typeToSet)
             {
                 return getChunkFromPixelPos(posToTest).tileModification(posToTest.x, posToTest.y, typeToSet);
             }

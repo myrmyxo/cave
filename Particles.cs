@@ -97,12 +97,14 @@ namespace Cave
             {
                 if (type.type == 1) // fading away
                 {
-                    (int r, int g, int b, float mult) materialColor = tileColors[(type.subType, type.subSubType)];
+                    TileTraits traits = getTileTraits((type.subType, type.subSubType));
+                    (int r, int g, int b, float mult) materialColor = (traits.colorRange.r.v, traits.colorRange.g.v, traits.colorRange.b.v, traits.biomeColorBlend);
                     return Color.FromArgb(Max(0, 255 - (int)(100 * (timeElapsed - timeAtBirth))), materialColor.r, materialColor.g, materialColor.b);
                 }
                 if (type.type == 2) // color of tile
                 {
-                    (int r, int g, int b, float mult) materialColor = tileColors[(type.subType, type.subSubType)];
+                    TileTraits traits = getTileTraits((type.subType, type.subSubType));
+                    (int r, int g, int b, float mult) materialColor = (traits.colorRange.r.v, traits.colorRange.g.v, traits.colorRange.b.v, traits.biomeColorBlend);
                     return Color.FromArgb(100, materialColor.r, materialColor.g, materialColor.b);
                 }
                 if (type.type == 3) // circular motion

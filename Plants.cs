@@ -448,7 +448,7 @@ namespace Cave
                 (int x, int y) pixelTileIndex = PosMod(pixelPos);
 
                 Chunk chunkToTest = screen.getChunkFromPixelPos(pixelPos);
-                if (chunkToTest.fillStates[pixelTileIndex.x, pixelTileIndex.y].type > 0) { return false; }
+                if (chunkToTest.fillStates[pixelTileIndex.x, pixelTileIndex.y].isSolid) { return false; }
                 return true;
             }
             public void makeBitmap()
@@ -765,7 +765,7 @@ namespace Cave
                 foreach ((int x, int y) mod in neighbourArray)
                 {
                     posToTest = (pos.x + mod.x, pos.y + mod.y);
-                    if (screen.getTileContent(getRealPos(posToTest)).type != 0) { fullTiles += 1; }
+                    if (screen.getTileContent(getRealPos(posToTest)).isAir) { fullTiles += 1; }
                     if (fillStates.ContainsKey(posToTest)) { moldyTiles += 1; }
                 }
                 if (moldyTiles + fullTiles >= 4)
@@ -824,9 +824,9 @@ namespace Cave
             }
             public void testPlantPosition()
             {
-                if (screen.getChunkFromPixelPos((posX, posY)).fillStates[PosMod(posX), PosMod(posY)].type > 0) { goto Fail; } // Full tile -> Fail
+                if (!screen.getChunkFromPixelPos((posX, posY)).fillStates[PosMod(posX), PosMod(posY)].isAir) { goto Fail; } // Full tile -> Fail
                 int mod = traits.isCeiling ? 1 : -1;
-                if (screen.getChunkFromPixelPos((posX, posY + mod)).fillStates[PosMod(posX), PosMod(posY + mod)].type > 0) { return; } // tile under full -> Success
+                if (!screen.getChunkFromPixelPos((posX, posY + mod)).fillStates[PosMod(posX), PosMod(posY + mod)].isAir) { return; } // tile under/over full -> Success
             Fail:;
                 isDeadAndShouldDisappear = true;
             }

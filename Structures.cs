@@ -18,6 +18,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 using static Cave.Form1;
+using static Cave.Traits;
 using static Cave.Globals;
 using static Cave.MathF;
 using static Cave.Sprites;
@@ -220,8 +221,8 @@ namespace Cave
             public bool drawLakeNew() // thank you papa still for base code <3
             {
                 (int x, int y) posToTest;
-                (int type, int subType) material = screen.getTileContent(pos);
-                if (material.type != 0) { return false; } // if start tile isn't empty, fail
+                TileTraits tile = screen.getTileContent(pos);
+                if (!tile.isAir) { return false; } // if start tile isn't empty, fail
 
                 (int type, int subType) forceType = (0, 0);
 
@@ -231,11 +232,11 @@ namespace Cave
                 while (true) // go down (can flow left/right) until finding a solid tile.
                 {
                     if (count > 96) { return false; } // If moved more than 96 tiles, fail
-                    material = screen.getTileContent((pos.x + modX, pos.y - modY));
-                    if (material.type < 0) { forceType = material; return false; } // for now if it bumps into already present liquid, do not try to extend the lake... might change in ze futur
-                    if (material.type == 0) { modY++; count++; }
-                    else if (screen.getTileContent((pos.x + modX - 1, pos.y - modY)).type <= 0 && screen.getTileContent((pos.x + modX - 1, pos.y - modY + 1)).type == 0) { modX--; count++; }
-                    else if (screen.getTileContent((pos.x + modX + 1, pos.y - modY)).type <= 0 && screen.getTileContent((pos.x + modX + 1, pos.y - modY + 1)).type == 0) { modX++; count++; }
+                    tile = screen.getTileContent((pos.x + modX, pos.y - modY));
+                    if (tile.isLiquid) { forceType = tile.type; return false; } // for now if it bumps into already present liquid, do not try to extend the lake... might change in ze futur
+                    if (tile.isAir) { modY++; count++; }
+                    else if (!screen.getTileContent((pos.x + modX - 1, pos.y - modY)).isSolid && screen.getTileContent((pos.x + modX - 1, pos.y - modY + 1)).isAir) { modX--; count++; }
+                    else if (!screen.getTileContent((pos.x + modX + 1, pos.y - modY)).isSolid && screen.getTileContent((pos.x + modX + 1, pos.y - modY + 1)).isAir) { modX++; count++; }
                     else { break; }
                 }
                 posToTest = (pos.x + modX, pos.y - modY + 1); // because uh this one was solid lol so need to fill the one ABOVE it
@@ -266,7 +267,7 @@ namespace Cave
                 if (tilesToFill.Count == 0) { return false; } // No laketches ?
 
 
-                material = (-2, 0); // material is now type to fill with
+                (int type, int subType) material = (-2, 0); // material is now type to fill with
                 Chunk chunkToTest = chunkDict[ChunkIdx(posToTest)];
                 (int type, int subType) biome = chunkToTest.biomeIndex[PosMod(posToTest.x), PosMod(posToTest.y)][0].Item1;
 
@@ -287,10 +288,7 @@ namespace Cave
                 if (seedo % 1000 == 0) { material = (-1, 0); }
                 else if (seedo % 1000 < 5) { material = (-3, 0); }
 
-                foreach ((int x, int y) poso in tilesToFill.Keys)
-                {
-                    structureDict[poso] = material;
-                }
+                foreach ((int x, int y) poso in tilesToFill.Keys) { structureDict[poso] = material; }
 
                 name = "";
                 int syllables = 2 + Min((int)(seedo % 13), (int)(seedo % 3));
@@ -308,10 +306,10 @@ namespace Cave
                 if (tilesFilled[0] > tilesFilled[1]) { return false; } // lake tooo biiig, ABORT ABORT
 
                 Chunk chunkToTest = screen.getChunkFromPixelPos(pos, true, false, chunkDict);
-                (int type, int subType) material = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)];
+                TileTraits traits = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)];
 
-                if (material.type < 0) { return false; } // bumped on a liquid tile, ABORT ABORT
-                if (material.type == 0)
+                if (traits.isLiquid) { return false; } // bumped on a liquid tile, ABORT ABORT
+                if (traits.isAir)
                 {
                     if (pos.y <= maxY) { newTilesToFill[pos] = true; }
                     else { newTilesToFill[pos] = false; return true; } // if too high, keep it as a test for later but don't fill it and try neighbours YET
@@ -615,7 +613,7 @@ namespace Cave
                 foreach ((int x, int y) posToTest in structureDict.Keys)
                 {
                     chunkToTest = screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
-                    chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)] = structureDict[posToTest];
+                    chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)] = getTileTraits(structureDict[posToTest]);
                     chunkToTest.modificationCount = 1;
                     chunkToTest.findTileColor(PosMod(posToTest.x), PosMod(posToTest.y));
                 }
@@ -653,14 +651,14 @@ namespace Cave
             Dictionary<(int x, int y), (int type, int subType)> dicto = new Dictionary<(int x, int y), (int type, int subType)>();
 
             (int x, int y) posToTest;
-            (int type, int subType) material = screen.getTileContent(startPos);
-            if (material != (4, 0)) { return false; } // if start tile isn't fleshTile, fail
+            TileTraits tile = screen.getTileContent(startPos);
+            if (tile.type != (4, 0)) { return false; } // if start tile isn't fleshTile, fail
             dicto[startPos] = (0, 0);
 
             foreach ((int x, int y) mod in directionPositionArray)
             {
                 posToTest = (startPos.x + mod.x, startPos.y + mod.y);
-                if (screen.getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type != 0) { return false; }
+                if (!screen.getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].isAir) { return false; }
             }
 
             int count = 1;
@@ -668,12 +666,12 @@ namespace Cave
             {
                 if (count > 12) { return false; } // If went down more than 5 tiles, fail
                 posToTest = (startPos.x, startPos.y - count);
-                material = screen.getTileContent(posToTest);
-                if (material != (0, 0))
+                tile = screen.getTileContent(posToTest);
+                if (!tile.isAir)
                 {
-                    if (material == (-6, 0)) // if bumps on blood tile, proceed
+                    if (tile.type == (-6, 0)) // if bumps on blood tile, proceed
                     {
-                        dicto[posToTest] = material;
+                        dicto[posToTest] = tile.type;
                         break;
                     }
                     else { return false; } // if bumps on a tile other than air or blood, fail
@@ -690,33 +688,33 @@ namespace Cave
             {
                 if (!validity.left)
                 {
-                    material = screen.getTileContent((posToTest.x - currentX, posToTest.y));
-                    if (material == (-6, 0)) // if blood :
+                    tile = screen.getTileContent((posToTest.x - currentX, posToTest.y));
+                    if (tile.type == (-6, 0)) // if blood :
                     {
-                        if (screen.getTileContent((posToTest.x - currentX, posToTest.y - 1)) != (1, 1)) { return false; } // test if tile under it is denseRock (if not fail)
-                        if (screen.getTileContent((posToTest.x - currentX, posToTest.y + 1)).type != 0) { return false; } // test if tile over it is air (if not fail)
+                        if (screen.getTileContent((posToTest.x - currentX, posToTest.y - 1)).type != (1, 1)) { return false; } // test if tile under it is denseRock (if not fail)
+                        if (!screen.getTileContent((posToTest.x - currentX, posToTest.y + 1)).isAir) { return false; } // test if tile over it is air (if not fail)
                         dicto.Add((posToTest.x - currentX, posToTest.y - 1), (1, 1));
                         dicto.Add((posToTest.x - currentX, posToTest.y + 1), (0, 0));
                         count++;
                     }
-                    else if (material == (1, 1)) { validity = (true, validity.right); } // if dense rock, continue and stop testing on the left (no blood so don't count it)
+                    else if (tile.type == (1, 1)) { validity = (true, validity.right); } // if dense rock, continue and stop testing on the left (no blood so don't count it)
                     else { return false; } // if other than dense rock or blood, fail
-                    dicto.Add((posToTest.x - currentX, posToTest.y), material);
+                    dicto.Add((posToTest.x - currentX, posToTest.y), tile.type);
                 }
                 if (!validity.right)
                 {
-                    material = screen.getTileContent((posToTest.x + currentX, posToTest.y));
-                    if (material == (-6, 0)) // if blood :
+                    tile = screen.getTileContent((posToTest.x + currentX, posToTest.y));
+                    if (tile.type == (-6, 0)) // if blood :
                     {
-                        if (screen.getTileContent((posToTest.x + currentX, posToTest.y - 1)) != (1, 1)) { return false; } // test if tile under it is denseRock (if not fail)
-                        if (screen.getTileContent((posToTest.x + currentX, posToTest.y + 1)).type != 0) { return false; } // test if tile over it is air (if not fail)
+                        if (screen.getTileContent((posToTest.x - currentX, posToTest.y - 1)).type != (1, 1)) { return false; } // test if tile under it is denseRock (if not fail)
+                        if (!screen.getTileContent((posToTest.x - currentX, posToTest.y + 1)).isAir) { return false; } // test if tile over it is air (if not fail)
                         dicto.Add((posToTest.x + currentX, posToTest.y - 1), (1, 1));
                         dicto.Add((posToTest.x + currentX, posToTest.y + 1), (0, 0));
                         count++;
                     }
-                    else if (material == (1, 1)) { validity = (validity.left, true); } // if dense rock, continue and stop testing on the right (no blood so don't count it)
+                    else if (tile.type == (1, 1)) { validity = (validity.left, true); } // if dense rock, continue and stop testing on the right (no blood so don't count it)
                     else { return false; } // if other than dense rock or blood, fail
-                    dicto.Add((posToTest.x + currentX, posToTest.y), material);
+                    dicto.Add((posToTest.x + currentX, posToTest.y), tile.type);
                 }
                 currentX++;
             }

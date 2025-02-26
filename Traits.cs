@@ -33,6 +33,8 @@ using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
 using static Cave.Dialogues;
+using System.Runtime.InteropServices;
+using System.Windows.Forms.VisualStyles;
 
 namespace Cave
 {
@@ -50,6 +52,183 @@ namespace Cave
                 b = blue;
             }
         }
+        public class TileTraits
+        {
+            public (int type, int subType) type;
+            public string name;
+
+            public bool isSolid;
+            public bool isAir;
+            public bool isLiquid;
+            public bool isAcidic;
+            public bool isLava; // H for hot
+            public bool isTransformant; // Fairy liquid
+
+            public int hardness;
+            public int viscosity = 0;
+
+            public ColorRange colorRange;
+            public float biomeColorBlend;
+            public bool isTextured; // For mold for now
+            public TileTraits(string namee, float biomeColorBlendToPut, ColorRange colRange, bool Air = false, bool Tex = false, bool L = false, bool H = false, bool A = false, bool T = false)
+            {
+                name = namee;
+                colorRange = colRange;
+                biomeColorBlend = biomeColorBlendToPut;
+                isTextured = Tex;
+
+                isAir = Air;
+                isLiquid = L;
+                isSolid = (isAir || isLiquid) ? false : true;
+
+                isLava = H;
+                isAcidic = A;
+                isTransformant = T;
+            }
+            public void setType((int type, int subType) typeToSet) { type = typeToSet; }
+        }
+
+        public static Dictionary<(int type, int subType), TileTraits> tileTraitsDict;
+        public static TileTraits getTileTraits((int type, int subType) tileType)
+        {
+            return tileTraitsDict.ContainsKey(tileType) ? tileTraitsDict[tileType] : tileTraitsDict[(0, 0)];
+        }
+        public static void makeTileTraitsDict()
+        {
+            tileTraitsDict = new Dictionary<(int type, int subType), TileTraits>()
+            {
+                { (0, 0), new TileTraits("Error/Air", 0.5f,
+                new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0)),      Air:true                                    ) },
+                                                                                                                            
+                                                                                                                            
+                                                                                                                            
+                { (-1, 0), new TileTraits("Piss", 0.2f,                                                      
+                new ColorRange((120, 0, 0), (120, 0, 0), (80, 0, 0)),       L:true                                      ) },
+                                                                                                                            
+                { (-2, 0), new TileTraits("Water", 0.2f,
+                new ColorRange((80, 0, 0), (80, 0, 0), (120, 0, 0)),        L:true                                      ) },
+
+                { (-3, 0), new TileTraits("Fairy Liquid", 0.2f,
+                new ColorRange((105, 0, 0), (80, 0, 0), (120, 0, 0)),       L:true, T:true                              ) },
+                                                                                                                            
+                { (-4, 0), new TileTraits("Lava", 0.05f,
+                new ColorRange((255, 0, 0), (90, 0, 0), (0, 0, 0)),         L:true, H:true                              ) },
+
+                { (-5, 0), new TileTraits("Honey", 0.2f,
+                new ColorRange((160, 0, 0), (120, 0, 0), (70, 0, 0)),       L:true                                      ) },
+
+                { (-6, 0), new TileTraits("Blood", 0.2f,
+                new ColorRange((100, 0, 0), (15, 0, 0), (25, 0, 0)),        L:true                                      ) },
+                { (-6, 1), new TileTraits("Deoxygenated Blood", 0.2f,
+                new ColorRange((65, 0, 0), (5, 0, 0), (35, 0, 0)),          L:true                                      ) },
+
+                { (-7, 0), new TileTraits("Acid", 0.2f,
+                new ColorRange((120, 0, 0), (180, 0, 0), (60, 0, 0)),       L:true, A:true                              ) },
+
+
+
+                { (1, 0), new TileTraits("Rock", 0.5f,
+                new ColorRange((30, 0, 0), (30, 0, 0), (30, 0, 0))                                                      ) },
+                { (1, 1), new TileTraits("Dense Rock", 0.2f,
+                new ColorRange((10, 0, 0), (10, 0, 0), (10, 0, 0))                                                      ) },
+
+                { (2, 0), new TileTraits("Dirt", 0.5f,
+                new ColorRange((80, 0, 0), (60, 0, 0), (20, 0, 0))                                                      ) },
+
+                { (3, 0), new TileTraits("Plant Matter", 0.35f,
+                new ColorRange((10, 0, 0), (60, 0, 0), (30, 0, 0))                                                      ) },
+
+                { (4, 0), new TileTraits("Flesh Tile", 0.2f,
+                new ColorRange((135, 0, 0), (55, 0, 0), (55, 0, 0))                                                     ) },
+                { (4, 1), new TileTraits("Bone Tile", 0.2f,
+                new ColorRange((240, 0, 0), (230, 0, 0), (245, 0, 0))                                                   ) },
+
+                { (5, 0), new TileTraits("Mold Tile", 0.1f,
+                new ColorRange((50, 0, 0), (50, 0, 0), (100, 0, 0)),        Tex:true                                    ) },
+            };
+
+            foreach ((int type, int subType) typeToSet in tileTraitsDict.Keys) { tileTraitsDict[typeToSet].setType(typeToSet); }
+        }
+
+
+
+
+
+        public class MaterialTraits
+        {
+            public string name;
+            public int hardness;
+            public bool isLiquid;
+            public int viscosity = 0;
+            public ColorRange colorRange;
+            public float biomeColorBlend;
+            public MaterialTraits(string namee, float biomeColorBlendToPut, ColorRange colRange)
+            {
+                name = namee;
+                colorRange = colRange;
+                biomeColorBlend = biomeColorBlendToPut;
+            }
+        }
+
+        public static Dictionary<(int type, int subType), MaterialTraits> materialTraitsDict;
+        public static void makeMaterialTraitsDict()
+        {
+            materialTraitsDict = new Dictionary<(int type, int subType), MaterialTraits>()
+            {
+                { (0, 0), new MaterialTraits("Error/Air", 0.5f,
+                new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                                   ) },
+
+
+
+                { (-1, 0), new MaterialTraits("Piss", 0.2f,
+                new ColorRange((120, 0, 0), (120, 0, 0), (80, 0, 0))                                                    ) },
+
+                { (-2, 0), new MaterialTraits("Water", 0.2f,
+                new ColorRange((80, 0, 0), (80, 0, 0), (120, 0, 0))                                                     ) },
+
+                { (-3, 0), new MaterialTraits("Fairy Liquid", 0.2f,
+                new ColorRange((105, 0, 0), (80, 0, 0), (120, 0, 0))                                                    ) },
+
+                { (-4, 0), new MaterialTraits("Lava", 0.05f,
+                new ColorRange((255, 0, 0), (90, 0, 0), (0, 0, 0))                                                      ) },
+
+                { (-5, 0), new MaterialTraits("Honey", 0.2f,
+                new ColorRange((160, 0, 0), (120, 0, 0), (70, 0, 0))                                                    ) },
+
+                { (-6, 0), new MaterialTraits("Blood", 0.2f,
+                new ColorRange((100, 0, 0), (15, 0, 0), (25, 0, 0))                                                     ) },
+                { (-6, 1), new MaterialTraits("Deoxygenated Blood", 0.2f,
+                new ColorRange((65, 0, 0), (5, 0, 0), (35, 0, 0))                                                       ) },
+
+                { (-7, 0), new MaterialTraits("Acid", 0.2f,
+                new ColorRange((120, 0, 0), (180, 0, 0), (60, 0, 0))                                                    ) },
+
+
+
+                { (1, 0), new MaterialTraits("Rock", 0.5f,
+                new ColorRange((30, 0, 0), (30, 0, 0), (30, 0, 0))                                                      ) },
+                { (1, 1), new MaterialTraits("Dense Rock", 0.2f,
+                new ColorRange((10, 0, 0), (10, 0, 0), (10, 0, 0))                                                      ) },
+
+                { (2, 0), new MaterialTraits("Dirt", 0.5f,
+                new ColorRange((80, 0, 0), (60, 0, 0), (20, 0, 0))                                                      ) },
+
+                { (3, 0), new MaterialTraits("Plant Matter", 0.35f,
+                new ColorRange((10, 0, 0), (60, 0, 0), (30, 0, 0))                                                      ) },
+
+                { (4, 0), new MaterialTraits("Flesh Tile", 0.2f,
+                new ColorRange((135, 0, 0), (55, 0, 0), (55, 0, 0))                                                     ) },
+                { (4, 1), new MaterialTraits("Bone Tile", 0.2f,
+                new ColorRange((240, 0, 0), (230, 0, 0), (245, 0, 0))                                                   ) },
+
+                { (5, 0), new MaterialTraits("Mold Tile", 0.1f,
+                new ColorRange((50, 0, 0), (50, 0, 0), (100, 0, 0))                                                     ) },
+            };
+        }
+
+
+
+
         public class EntityTraits
         {
             public string name;
@@ -72,55 +251,54 @@ namespace Cave
                 colorRange = colRange;
             }
         }
-
         public static Dictionary<(int type, int subType), EntityTraits> entityTraitsDict;
         public static void makeEntityTraitsDict()
         {
             entityTraitsDict = new Dictionary<(int type, int subType), EntityTraits>()
             {  // R              G               B     ->     (Color, hue, shade)
                 { (-1, 0), new EntityTraits("Error",       69420, ((11, 1, 3), 1),      //  --> Light Bulb          ERROR ! This is the missing type value. Not Fairy.
-                  new ColorRange((130, 50, 30), (130, -50, 30), (210, 50, 30))                                          ) },
+                new ColorRange((130, 50, 30), (130, -50, 30), (210, 50, 30))                                            ) },
 
                 { (0, 0), new EntityTraits("Fairy",           4,  ((-3, 0, 0), 1),      //  --> Fairy Liquid
-                  new ColorRange((130, 50, 30), (130, -50, 30), (210, 0, 30)),          F:true                          ) },
+                new ColorRange((130, 50, 30), (130, -50, 30), (210, 0, 30)),            F:true                          ) },
                 { (0, 1), new EntityTraits("ObsidianFairy",   10, ((-3, 0, 0), 1),      //  --> Fairy Liquid
-                  new ColorRange((30, 0, 30), (30, 0, 30), (30, 0, 30)),                F:true                          ) },
+                new ColorRange((30, 0, 30), (30, 0, 30), (30, 0, 30)),                  F:true                          ) },
                 { (0, 2), new EntityTraits("FrostFairy",      4 , ((-3, 0, 0), 1),      //  --> Fairy Liquid
-                  new ColorRange((200, 25, 30), (200, 25, 30), (225, 0, 30)),           F:true                          ) },
+                new ColorRange((200, 25, 30), (200, 25, 30), (225, 0, 30)),             F:true                          ) },
                 { (0, 3), new EntityTraits("SkeletonFairy",   15, ((8, 1, 3), 1),       //  --> Bone
-                  new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),            F:true                          ) },
+                new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),              F:true                          ) },
 
                 { (1, 0), new EntityTraits("Frog",            2,  ((8, 0, 3), 1),       //  --> Flesh
-                  new ColorRange((90, 50, 30), (210, 50, 30), (110, -50, 30))                                           ) },
+                new ColorRange((90, 50, 30), (210, 50, 30), (110, -50, 30))                                             ) },
                 { (1, 1), new EntityTraits("Carnal",          7,  ((8, 0, 3), 1),       //  --> Flesh
-                  new ColorRange((135, 0, 30), (55, 30, 30), (55, 30, 30))                                              ) },
+                new ColorRange((135, 0, 30), (55, 30, 30), (55, 30, 30))                                                ) },
                 { (1, 2), new EntityTraits("Skeletal",        7,  ((8, 1, 3), 1),       //  --> Bone
-                  new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20))                                             ) },
+                new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20))                                               ) },
 
                 { (2, 0), new EntityTraits("Fish",            2,  ((8, 0, 3), 1),       //  --> Flesh
-                  new ColorRange((190, 0, 30), (80, -50, 30), (80, 50, 30)),                    S:true                  ) },
+                new ColorRange((190, 0, 30), (80, -50, 30), (80, 50, 30)),                      S:true                  ) },
                 { (2, 1), new EntityTraits("SkeletonFish",    2,  ((8, 1, 3), 1),       //  --> Bone
-                  new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),                    S:true                  ) },
+                new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),                      S:true                  ) },
 
                 { (3, 0), new EntityTraits("HornetEgg",       2,  ((8, 0, 3), 1),       //  --> Flesh
-                  new ColorRange((205, 10, 30), (205, 10, 30), (235, 0, 30))                                            ) },
+                new ColorRange((205, 10, 30), (205, 10, 30), (235, 0, 30))                                              ) },
                 { (3, 1), new EntityTraits("HornetLarva",     3,  ((8, 0, 3), 1),       //  --> Flesh
-                  new ColorRange((180, 10, 30), (180, 10, 30), (160, 0, 30))                                            ) },
+                new ColorRange((180, 10, 30), (180, 10, 30), (160, 0, 30))                                              ) },
                 { (3, 2), new EntityTraits("HornetCocoon",    20, ((8, 0, 3), 1),       //  --> Flesh
-                  new ColorRange((120, 10, 30), (120, 10, 30), (20, 0, 20))                                             ) },
+                new ColorRange((120, 10, 30), (120, 10, 30), (20, 0, 20))                                               ) },
                 { (3, 3), new EntityTraits("Hornet",          6,  ((8, 0, 3), 1),       //  --> Flesh
-                  new ColorRange((190, 10, 30), (190, 10, 30), (80, 0, 30)),            F:true                          ) },
+                new ColorRange((190, 10, 30), (190, 10, 30), (80, 0, 30)),              F:true                          ) },
 
                 { (4, 0), new EntityTraits("Worm",            7,  ((8, 0, 3), 1),       //  --> Flesh
-                  new ColorRange((210, 0, 30), (140, 20, 30), (140, 20, 30)),                           D:true          ) },
+                new ColorRange((210, 0, 30), (140, 20, 30), (140, 20, 30)),                             D:true          ) },
                 { (4, 1), new EntityTraits("Nematode",        3,  ((8, 0, 3), 1),       //  --> Flesh
-                  new ColorRange((210, -20, 30), (210, 20, 30), (235, 0, 30)),                  S:true, D:true          ) },
+                new ColorRange((210, -20, 30), (210, 20, 30), (235, 0, 30)),                    S:true, D:true          ) },
 
                 { (5, 0), new EntityTraits("WaterSkipper",    3,  ((8, 0, 3), 1),       //  --> Flesh
-                  new ColorRange((110, 0, 30), (110, 0, 30), (140, 20, 30)),                    S:true,         J:true  ) },
+                new ColorRange((110, 0, 30), (110, 0, 30), (140, 20, 30)),                      S:true,         J:true  ) },
 
                 { (6, 0), new EntityTraits("Goblin",          3,  ((8, 0, 3), 1),       //  --> Flesh
-                  new ColorRange((80, 50, 30), (175, 50, 30), (80, 50, 30))                                             ) },
+                new ColorRange((80, 50, 30), (175, 50, 30), (80, 50, 30))                                               ) },
             };
         }
 
@@ -366,6 +544,7 @@ namespace Cave
             public string name;
             public int difficulty = 1;
             public (int r, int g, int b) color;
+
 
             public float entityBaseSpawnRate;
             public float entityGroundSpawnRate;

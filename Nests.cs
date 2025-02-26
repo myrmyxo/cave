@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
+using static Cave.Traits;
 using static Cave.Form1;
 using static Cave.Globals;
 using static Cave.MathF;
@@ -244,7 +245,7 @@ namespace Cave
                 foreach ((int x, int y) posToTest in tiles)
                 {
                     chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
-                    chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)] = typeToFill;
+                    chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)] = getTileTraits(typeToFill);
                     chunkToTest.modificationCount = 1;
                     chunkToTest.findTileColor(PosMod(posToTest.x), PosMod(posToTest.y));
                 }
@@ -362,8 +363,8 @@ namespace Cave
                         {
                             posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
                             Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
-                            int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
-                            if (fillState <= 0 || fillState > 1 || nest.tiles.ContainsKey(posToTest))
+                            TileTraits traits = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
+                            if (!traits.isSolid || nest.tiles.ContainsKey(posToTest))
                             {
                                 goto SkipToNextIteration;
                             }
@@ -415,13 +416,10 @@ namespace Cave
                     }
 
                     Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
-                    int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
-                    if (fillState <= 0)
+                    TileTraits tile = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
+                    if (!tile.isSolid)
                     {
-                        if (fillState != -4)
-                        {
-                            return (posToTest, true);
-                        }
+                        if (tile.type.type != -4) { return (posToTest, true); }
                         goto SkipToNextIteration;
                     }
 
@@ -478,8 +476,8 @@ namespace Cave
                         {
                             posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
                             Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
-                            int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
-                            if (((fillState <= 0 || fillState > 1) || nest.tiles.ContainsKey(posToTest)) && repeatCounter >= startPosList.Count) //cumsum yummy yum
+                            TileTraits tile = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
+                            if ((!tile.isSolid || nest.tiles.ContainsKey(posToTest)) && repeatCounter >= startPosList.Count) //cumsum yummy yum
                             {
                                 goto SkipToNextIteration;
                             }
@@ -527,11 +525,7 @@ namespace Cave
                 foreach ((int x, int y) pos in tiles)
                 {
                     Chunk chunkToTest = nest.screen.getChunkFromPixelPos(pos, true, false, chunkDict);
-                    int fillState = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)].type;
-                    if (pos.y == maxBordelLevel - 1)
-                    {
-                        dropPositions.Add(pos);
-                    }
+                    if (pos.y == maxBordelLevel - 1) { dropPositions.Add(pos); }
                 }
             }
             public void testFullness()
@@ -583,17 +577,11 @@ namespace Cave
                     foreach ((int x, int y) posToTest in tiles)
                     {
                         Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
-                        int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
+                        TileTraits tile = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
                         if (posToTest.y < maxBordelLevel)
                         {
-                            if (fillState == -5)
-                            {
-                                contentCount++;
-                            }
-                            else if (fillState != 0)
-                            {
-                                containsDebris = true;
-                            }
+                            if (tile.type.type == -5) { contentCount++; }
+                            else if (!tile.isAir) { containsDebris = true; }
                         }
                     }
                 }
@@ -615,11 +603,8 @@ namespace Cave
                     posToTest = tileList[idxToTest];
                     tileList.RemoveAt(idxToTest);
                     Chunk chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
-                    int fillState = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)].type;
-                    if (fillState == typeToFind)
-                    {
-                        return (posToTest, true);
-                    }
+                    TileTraits tile = chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
+                    if (tile.type.type == typeToFind) { return (posToTest, true); }
                 }
                 return ((0, 0), false);
             }
@@ -802,8 +787,8 @@ namespace Cave
                 {
                     currentPos = tilesToTest[repeatCounter];
                     Chunk chunkToTest = screen.getChunkFromPixelPos(pos, true, false, chunkDict);
-                    int fillState = chunkToTest.fillStates[PosMod(currentPos.x), PosMod(currentPos.y)].type;
-                    if (fillState <= 0 || fillState > 2 || tiles.ContainsKey(currentPos))
+                    TileTraits tile = chunkToTest.fillStates[PosMod(currentPos.x), PosMod(currentPos.y)];
+                    if (!tile.isSolid || tiles.ContainsKey(currentPos))
                     {
                         return false;
                     }
@@ -993,9 +978,9 @@ namespace Cave
                 foreach ((int x, int y) pos in tiles.Keys)
                 {
                     Chunk chunkToTest = screen.getChunkFromPixelPos(pos);
-                    (int type, int subType) fillState = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)];
+                    TileTraits traits = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)];
                     Room room = rooms[getRoomId(pos)];
-                    if (fillState.type == 0 || (fillState.type == -5 && room.type == 2)) { }
+                    if (traits.isAir || (traits.type.type == -5 && room.type == 2)) { }
                     else
                     {
                         digErrands.Add(pos);
