@@ -236,7 +236,7 @@ namespace Cave
                 }
                 if (traits.isPlantDigging)
                 {
-                    digSuccess = motherEntity.PlantDig(attackPos, (type.type, type.subType, 4), chunkToTest);
+                    digSuccess = motherEntity.PlantDig(attackPos, (type.type, type.subType, 4), chunkToTest, traits.targetMaterial);
                     if (!digSuccess) { abort++; }
                 }
                 if (type == (3, 0, 1, 4)) { if (screen.type.type != 2) testForBloodAltar(screen, attackPos); }

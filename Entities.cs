@@ -69,8 +69,11 @@ namespace Cave
             public float speedX = 0;
             public float speedY = 0;
             public (int x, int y) direction = (1, 0);
+
             public bool inWater = false;
+            public bool onWater = false;
             public bool onGround = false;
+            public bool inGround = false;
 
             public Color color;
             public Color lightColor;
@@ -512,31 +515,37 @@ namespace Cave
                 if (tileUnder.isSolid)          // On terrain
                 {
                     onGround = true;
+                    onWater = false;
                 }
                 else if (tileUnder.isLiquid)    // On water
                 {
-                    onGround = traits.isJesus;
+                    onGround = false;
+                    onWater = true;
                 }
                 else                            // In air
                 {
                     onGround = false;
+                    onWater = false;
                 }
 
                 if (entityTile.isSolid)         // In terrain
                 {
+                    inGround = true;
                     inWater = false;
-                    onGround = true;
                     if (!traits.isDigging) { speedX = 0; speedY = 0; }
                 }
                 else if (entityTile.isLiquid)   // In water
                 {
+                    inGround = false;
                     inWater = true;
                     if (!traits.isSwimming) { ariGeoSlowDown(0.85f, 0.15f); speedY += 0.1f; }
                 }
                 else                            // In air
                 {
+                    inGround = false;
                     inWater = false;
-                    if (!onGround && !traits.isFlying) { speedY -= 0.5f; }
+                    if (onWater && traits.isJesus) { ariGeoSlowDownY(0.8f, 0.25f); }
+                    else if (!onGround && !traits.isFlying) { speedY -= 0.5f; }
                 }
 
                 return (entityTile, tileUnder);
@@ -550,6 +559,11 @@ namespace Cave
             {
                 speedX += rangeX * (float)(rand.NextDouble() - 0.5);
                 speedY += maxY * (float)(rand.NextDouble());
+            }
+            public void Jump(int changeX, float jumpSpeed)
+            {
+                speedX += changeX;
+                speedY = Max(jumpSpeed, speedY);
             }
             public void slowDown(float slowdownSpeed)
             {
@@ -587,370 +601,353 @@ namespace Cave
                 speedX = Clamp(-clampX, speedX, clampX);
                 speedY = Clamp(-clampY, speedY, clampY);
             }
-            public void moveEntity()
+            public void clampSpeedX(float clampX)
             {
-                (TileTraits entityPos, TileTraits under) returnType = applyForces();
-                TileTraits entityTile = returnType.entityPos;
-                TileTraits tileUnder = returnType.under;
-
-                if (type.type == 0) // fairy
+                speedX = Clamp(-clampX, speedX, clampX);
+            }
+            public void clampSpeedY(float clampY)
+            {
+                speedX = Clamp(-clampY, speedY, clampY);
+            }
+            public void moveHornet()
+            {
+                testOrphanage();
+                if (type.subType == 0)
                 {
-                    if (state == 0) { hoverIdle(0.5f, 100); }   // idle 
-                    else if (state == 1) // moving in the air randomly
+                    if (timeElapsed - timeAtBirth > 30)
                     {
-                        changeSpeedRandom(0.5f);
-                        if (rand.Next(333) == 0) { state = 0; }
-                    }
-                    else { state = 0; }
-                }
-                else if (type.type == 1) // frog
-                {
-                    if (onGround)
-                    {
-                        ariGeoSlowDownX(0.85f, 0.2f);
-                        if (rand.Next(20) > 0) { jumpRandom(2.5f, 2.5f); }
-                    }
-                    else if (inWater && rand.Next(10) == 0) { jumpRandom(2.5f, 1); }
-                }
-                else if (type.type == 2) // fish
-                {
-                    if (inWater)
-                    {
-                        if (state >= 2) { state = 1; }
-                    }
-                    else { state = 2; }
-
-                    if (state == 0) // idle
-                    {
-                        slowDown(0.5f);
-
-                        if (rand.Next(50) == 0) { state = 1; }
-                    }
-                    else if (state == 1) // moving in water
-                    {
-                        ariGeoSlowDownX(0.9f, 0.12f);
-                        ariGeoSlowDownY(0.9f, 0.12f);
-
-                        changeSpeedRandom(0.5f);
-
-                        if (rand.Next(50) == 0) { changeSpeedRandom(2.5f); }    // big dash nyoooooom
-                        else if (rand.Next(1000) == 0) { state = 0; }
-                    }
-                    else if (state == 2) // outside water
-                    {
-                        if (onGround)
-                        {
-                            ariGeoSlowDownX(0.9f, 0.12f);
-                            if (rand.Next(10) != 0) { jumpRandom(1, 2); }
-                        }
+                        transformEntity((3, 1), true);
+                        timeAtLastStateChange = timeElapsed;
                     }
                 }
-                if (type.type == 3) // hornet
+                else if (type.subType == 1)
                 {
-                    testOrphanage();
-                    if (type.subType == 0)
+                    if (food < 3)
                     {
-                        if (timeElapsed - timeAtBirth > 30)
+                        if (timeElapsed - timeAtLastStateChange > 15 + 15 * food)
                         {
-                            transformEntity((3, 1), true);
-                            timeAtLastStateChange = timeElapsed;
+                            if (nest != null && !nest.hungryLarvae.Contains(this)) { nest.hungryLarvae.Add(this); }
                         }
                     }
-                    else if (type.subType == 1)
+                    else if (timeElapsed - timeAtLastStateChange > 60)
                     {
-                        if (food < 3)
-                        {
-                            if (timeElapsed - timeAtLastStateChange > 15 + 15 * food)
-                            {
-                                if (nest != null && !nest.hungryLarvae.Contains(this)) { nest.hungryLarvae.Add(this); }
-                            }
-                        }
-                        else if (timeElapsed - timeAtLastStateChange > 60)
-                        {
-                            transformEntity((3, 2), true);
-                            timeAtLastStateChange = timeElapsed;
-                            goto AfterTest;
-                        }
-                        if (onGround)
-                        {
-                            ariGeoSlowDownX(0.85f, 0.2f);
-                            if (rand.NextDouble() < 0.05f) { jumpRandom(1, 1.5f); }
-                        }
+                        transformEntity((3, 2), true);
+                        timeAtLastStateChange = timeElapsed;
+                        goto AfterTest;
                     }
-                    else if (type.subType == 2)
+                }
+                else if (type.subType == 2)
+                {
+                    if (timeElapsed - timeAtLastStateChange > 30)
                     {
-                        hoverIdle(0.5f, 100);
-                        if (timeElapsed - timeAtLastStateChange > 30)
+                        if (nest != null)
                         {
-                            if (nest != null)
+                            if (nest.larvae.Contains(this)) { nest.larvae.Remove(this); }
+                            int id = nest.getRoomId(this);
+                            if (id >= 0)
                             {
-                                if (nest.larvae.Contains(this)) { nest.larvae.Remove(this); }
-                                int id = nest.getRoomId(this);
-                                if (id >= 0)
-                                {
-                                    nest.rooms[id].assignedEntities.Remove(this);
-                                    nest.rooms[id].contentCount--;
-                                }
-                                nest.adults.Add(this);
+                                nest.rooms[id].assignedEntities.Remove(this);
+                                nest.rooms[id].contentCount--;
                             }
-                            transformEntity((3, 3), true);
-                            timeAtLastStateChange = timeElapsed;
+                            nest.adults.Add(this);
                         }
+                        transformEntity((3, 3), true);
+                        timeAtLastStateChange = timeElapsed;
                     }
-                    else if (type.subType == 3)
+                }
+                else if (type.subType == 3)
+                {
+                    moveAdultHornet();
+                }
+            AfterTest:;
+            }
+            public void moveAdultHornet()
+            {
+                if (state == 0) { hoverIdle(0.5f, 100); }   // idle
+                else if (state == 1) // moving in the air randomly
+                {
+                    changeSpeedRandom(0.5f);
+                    if (rand.Next(333) == 0) { state = 0; }
+                    else if (nest != null)
                     {
-                        if (state == 0) { hoverIdle(0.5f, 100); }   // idle
-                        else if (state == 1) // moving in the air randomly
+                        if (inventoryElements.Contains((-5, 0, 0)) && nest.availableHoneyRooms.Count > 0)
                         {
-                            changeSpeedRandom(0.5f);
-                            if (rand.Next(333) == 0) { state = 0; }
-                            else if (nest != null)
-                            {
-                                if (inventoryElements.Contains((-5, 0, 0)) && nest.availableHoneyRooms.Count > 0)
-                                {
-                                    Room targetRoom = nest.rooms[nest.availableHoneyRooms[rand.Next(nest.availableHoneyRooms.Count)]];
-                                    targetPos = targetRoom.dropPositions[rand.Next(targetRoom.dropPositions.Count)];
+                            Room targetRoom = nest.rooms[nest.availableHoneyRooms[rand.Next(nest.availableHoneyRooms.Count)]];
+                            targetPos = targetRoom.dropPositions[rand.Next(targetRoom.dropPositions.Count)];
 
-                                    if (pathfindToLocation(targetPos)) { state = 10007; }
-                                    else
-                                    {
-                                        pathToTarget = new List<(int x, int y)>();
-                                        simplifiedPathToTarget = new List<(int x, int y)>();
-                                    }
-                                }
-                                else if (rand.Next(3) == 0 && nest.hungryLarvae.Count > 0)
-                                {
-                                    Room roomToTest = nest.getRandomRoomOfType(2);
-                                    ((int x, int y) pos, bool found) returnTuple = roomToTest.findTileOfTypeInRoom(-5);
-                                    if (!returnTuple.found) { goto AfterTest; }
-                                    targetPos = returnTuple.pos;
-
-                                    if (pathfindToLocation(targetPos)) { state = 10006; }
-                                    else
-                                    {
-                                        pathToTarget = new List<(int x, int y)>();
-                                        simplifiedPathToTarget = new List<(int x, int y)>();
-                                    }
-                                }
-                                else if (rand.Next(3) > 0 && nest.eggsToLay > 0 && nest.availableNurseries.Count > 0)
-                                {
-                                    Room targetRoom = nest.rooms[nest.availableNurseries[rand.Next(nest.availableNurseries.Count)]];
-                                    targetPos = targetRoom.dropPositions[rand.Next(targetRoom.dropPositions.Count)];
-
-                                    if (pathfindToLocation(targetPos)) { state = 10008; }
-                                    else
-                                    {
-                                        pathToTarget = new List<(int x, int y)>();
-                                        simplifiedPathToTarget = new List<(int x, int y)>();
-                                    }
-                                }
-                                else if (rand.Next(3) == 0 && findPointOfInterestInPlants((2, 1)))
-                                {
-                                    if (pathfindToLocation(targetPos)) { state = 10005; }
-                                    else
-                                    {
-                                        pathToTarget = new List<(int x, int y)>();
-                                        simplifiedPathToTarget = new List<(int x, int y)>();
-                                    }
-                                }
-                                else if (nest.digErrands.Count > 0)
-                                {
-                                    targetPos = nest.digErrands[rand.Next(nest.digErrands.Count)];
-                                    if (pathfindToLocation(targetPos)) { state = 10006; }
-                                    else
-                                    {
-                                        pathToTarget = new List<(int x, int y)>();
-                                        simplifiedPathToTarget = new List<(int x, int y)>();
-                                    }
-                                }
-                            }
-                        }
-                        else if (state >= 10000) // moving in the air towards direction
-                        {
-                            // if following path
-                            float realDiffX;
-                            float realDiffY;
-                            if (simplifiedPathToTarget.Count > 0)
-                            {
-                                realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
-                                realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
-                                while (Abs(realDiffX) < 0.5f && Abs(realDiffY) < 0.5f)
-                                {
-                                    simplifiedPathToTarget.RemoveAt(0);
-                                    if (simplifiedPathToTarget.Count == 0) { break; }
-                                    realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
-                                    realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
-                                }
-                            }
+                            if (pathfindToLocation(targetPos)) { state = 10007; }
                             else
                             {
-                                realDiffX = targetPos.x + 0.5f - realPosX;
-                                realDiffY = targetPos.y + 0.5f - realPosY;
+                                pathToTarget = new List<(int x, int y)>();
+                                simplifiedPathToTarget = new List<(int x, int y)>();
                             }
+                        }
+                        else if (rand.Next(3) == 0 && nest.hungryLarvae.Count > 0)
+                        {
+                            Room roomToTest = nest.getRandomRoomOfType(2);
+                            ((int x, int y) pos, bool found) returnTuple = roomToTest.findTileOfTypeInRoom(-5);
+                            if (!returnTuple.found) { return; }
+                            targetPos = returnTuple.pos;
 
-                            int maxDist;
-                            if (state == 10005) { maxDist = 1; }
-                            else { maxDist = 1; }
-                            if (manhattanDistance(targetPos, (posX, posY)) <= maxDist)
-                            {
-                                if (state == 10009)
-                                {
-                                    if (targetEntity is null) { state = 1; }
-                                    if (manhattanDistance((targetEntity.posX, targetEntity.posY), (posX, posY)) > maxDist)
-                                    {
-                                        targetPos = (targetEntity.posX, targetEntity.posY);
-                                        if (!pathfindToLocation(targetPos))
-                                        {
-                                            targetEntity = null;
-                                            pathToTarget = new List<(int x, int y)>();
-                                            simplifiedPathToTarget = new List<(int x, int y)>();
-                                            state = 0;
-                                        }
-                                        goto AfterTest;
-                                    }
-                                }
-                                timeAtLastDig = timeElapsed;
-                                state -= 10000; // go to corresponding state, easier to to +3 lol (wait what no??)
-                                speedX = 0;
-                                speedY = 0;
-                                //goto AfterTest; // makes so it digs next frame, idk if to change idk
-                            }
+                            if (pathfindToLocation(targetPos)) { state = 10006; }
                             else
                             {
-                                if (Abs(realDiffX) < 0.25f) { speedX = Sign(speedX) * Max(Abs(speedX) - 0.55f, 0); }
-                                else if (speedX * speedX > Abs(realDiffX) && Sign(speedX) == Sign(realDiffX)) { speedX -= Sign(realDiffX) * 0.35f; }
-                                else { speedX += Sign(realDiffX) * 0.335f; }
-                                if (Abs(realDiffY) < 0.25f) { speedY = Sign(speedY) * Max(Abs(speedY) - 0.55f, 0); }
-                                else if (speedY * speedY > Abs(realDiffY) && Sign(speedY) == Sign(realDiffY)) { speedY -= Sign(realDiffY) * 0.35f; }
-                                else { speedY += Sign(realDiffY) * 0.335f; }
+                                pathToTarget = new List<(int x, int y)>();
+                                simplifiedPathToTarget = new List<(int x, int y)>();
+                            }
+                        }
+                        else if (rand.Next(3) > 0 && nest.eggsToLay > 0 && nest.availableNurseries.Count > 0)
+                        {
+                            Room targetRoom = nest.rooms[nest.availableNurseries[rand.Next(nest.availableNurseries.Count)]];
+                            targetPos = targetRoom.dropPositions[rand.Next(targetRoom.dropPositions.Count)];
 
-                                if (rand.Next(2500) == 0) { state = 0; }
+                            if (pathfindToLocation(targetPos)) { state = 10008; }
+                            else
+                            {
+                                pathToTarget = new List<(int x, int y)>();
+                                simplifiedPathToTarget = new List<(int x, int y)>();
                             }
                         }
-                        else if (state == 5 || state == 6) // preparing to dig plant OR terrain
+                        else if (rand.Next(3) == 0 && findPointOfInterestInPlants((2, 1)))
                         {
-                            if (currentAttack is null)
+                            if (pathfindToLocation(targetPos)) { state = 10005; }
+                            else
                             {
-                                if (timeAtLastDig + 1 < timeElapsed)
-                                {
-                                    currentAttack = new Attack(screen, this, (3, 1, 0, 5), targetPos, (0, 0)); // Mandible attack
-                                    state *= 10;
-                                }
-                            }
-                            else { state *= 10; }
-                        }
-                        else if (state == 50)   // After plant dig
-                        {
-                            if (currentAttack is null || currentAttack.isDone)
-                            {
-                                tryManufactureElement();
-                                state = 0;
+                                pathToTarget = new List<(int x, int y)>();
+                                simplifiedPathToTarget = new List<(int x, int y)>();
                             }
                         }
-                        else if (state == 60)   // After terrain dig
+                        else if (nest.digErrands.Count > 0)
                         {
-                            if (currentAttack is null || nest is null) { state = 0; }
-                            else if (currentAttack.isDone)
+                            targetPos = nest.digErrands[rand.Next(nest.digErrands.Count)];
+                            if (pathfindToLocation(targetPos)) { state = 10006; }
+                            else
                             {
-                                if (currentAttack.dugTile.type >= 0) { nest.digErrands.Remove(targetPos); }
-                                if (currentAttack.dugTile.type == -5 && nest.hungryLarvae.Count > 0)
-                                {
-                                    targetEntity = nest.hungryLarvae[rand.Next(nest.hungryLarvae.Count)];
-                                    targetPos = (targetEntity.posX, targetEntity.posY);
-
-                                    if (pathfindToLocation(targetPos)) { state = 10009; }
-                                    else
-                                    {
-                                        targetEntity = null;
-                                        pathToTarget = new List<(int x, int y)>();
-                                        simplifiedPathToTarget = new List<(int x, int y)>();
-                                        state = 0;
-                                    }
-                                }
-                                else { state = 0; }
-                            } 
-                        }
-                        else if (state == 7) // preparing to place honeyy
-                        {
-                            if (timeAtLastPlace + 1 < timeElapsed)
-                            {
-                                Place(targetPos, (-5, 0, 0), false);
-                                if (nest != null)
-                                {
-                                    Room room = nest.rooms[nest.getRoomId(targetPos)];
-                                    if (room.type == 2)
-                                    {
-                                        room.testFullness();
-                                        if (room.isFull) { nest.updateDropPositions(); }
-                                    }
-                                }
-                                state = 0;
+                                pathToTarget = new List<(int x, int y)>();
+                                simplifiedPathToTarget = new List<(int x, int y)>();
                             }
                         }
-                        else if (state == 8) // preparing to LAY AN EGGGGG
-                        {
-                            if (nest != null && nest.eggsToLay > 0)
-                            {
-                                if (timeAtLastPlace + 1 < timeElapsed)
-                                {
-                                    Room room = nest.rooms[nest.getRoomId(targetPos)];
-                                    if (room.type == 3 && Place(targetPos, (3, 0, 1), true))
-                                    {
-                                        Entity kiddo = screen.entitesToAdd.Values.ToArray()[screen.entitesToAdd.Count - 1];
-                                        kiddo.nest = nest;
-                                        room.assignedEntities.Add(kiddo);  // since it's the last to be added, add last entity in entity list to the room
-                                        nest.larvae.Add(kiddo);
-                                        nest.eggsToLay--;
-                                        room.testFullness();
-                                        if (room.isFull) { nest.updateDropPositions(); }
-                                    }
-                                    state = 0;
-                                }
-                            }
-                            else { state = 0; }
-                        }
-                        else if (state == 9) // feeding kiddo !
-                        {
-                            if (nest != null && nest.hungryLarvae.Contains(targetEntity)) { tryFeedTargetEntity(); }
-                            state = 0;
-                        }
-                        else { state = 0; }
                     }
-                AfterTest:;
                 }
-                else if (type.type == 4)
+                else if (state >= 10000) // moving in the air towards direction
                 {
-                    if (entityTile.isAir) { changeSpeedRandom(0.5f); }
-                    else if (entityTile.isLiquid)
+                    // if following path
+                    float realDiffX;
+                    float realDiffY;
+                    if (simplifiedPathToTarget.Count > 0)
                     {
-                        if (type.subType == 1)
+                        realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
+                        realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
+                        while (Abs(realDiffX) < 0.5f && Abs(realDiffY) < 0.5f)
                         {
-                            changeSpeedRandom(0.1f);
-                            clampSpeed(1, 1);
+                            simplifiedPathToTarget.RemoveAt(0);
+                            if (simplifiedPathToTarget.Count == 0) { break; }
+                            realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
+                            realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
                         }
-                        else { changeSpeedRandom(0.5f); }
                     }
                     else
                     {
-                        changeSpeedRandom(0.05f);
-                        clampSpeed(0.2f, 0.2f);
-                    }
-                }
-                else if (type.type == 5) // water skipper
-                {
-                    if (onGround)   // since they're in jesusEntities, when on water onGround = true
-                    {
-                        if (rand.Next(20) == 0) { jumpRandom(7, 0); }
+                        realDiffX = targetPos.x + 0.5f - realPosX;
+                        realDiffY = targetPos.y + 0.5f - realPosY;
                     }
 
-                    if (inWater)
+                    int maxDist;
+                    if (state == 10005) { maxDist = 1; }
+                    else { maxDist = 1; }
+                    if (manhattanDistance(targetPos, (posX, posY)) <= maxDist)
                     {
-                        ariGeoSlowDownX(0.75f, 0.25f);
-                        speedY += 0.3f;
+                        if (state == 10009)
+                        {
+                            if (targetEntity is null) { state = 1; }
+                            if (manhattanDistance((targetEntity.posX, targetEntity.posY), (posX, posY)) > maxDist)
+                            {
+                                targetPos = (targetEntity.posX, targetEntity.posY);
+                                if (!pathfindToLocation(targetPos))
+                                {
+                                    targetEntity = null;
+                                    pathToTarget = new List<(int x, int y)>();
+                                    simplifiedPathToTarget = new List<(int x, int y)>();
+                                    state = 0;
+                                }
+                                return;
+                            }
+                        }
+                        timeAtLastDig = timeElapsed;
+                        state -= 10000; // go to corresponding state, easier to to +3 lol (wait what no??)
+                        speedX = 0;
+                        speedY = 0;
+                        //goto AfterTest; // makes so it digs next frame, idk if to change idk
                     }
-                    if (inWater || tileUnder.isLiquid) { ariGeoSlowDownY(0.8f, 0.15f); }
-                    ariGeoSlowDownX(0.9f, 0.1f);
+                    else
+                    {
+                        if (Abs(realDiffX) < 0.25f) { speedX = Sign(speedX) * Max(Abs(speedX) - 0.55f, 0); }
+                        else if (speedX * speedX > Abs(realDiffX) && Sign(speedX) == Sign(realDiffX)) { speedX -= Sign(realDiffX) * 0.35f; }
+                        else { speedX += Sign(realDiffX) * 0.335f; }
+                        if (Abs(realDiffY) < 0.25f) { speedY = Sign(speedY) * Max(Abs(speedY) - 0.55f, 0); }
+                        else if (speedY * speedY > Abs(realDiffY) && Sign(speedY) == Sign(realDiffY)) { speedY -= Sign(realDiffY) * 0.35f; }
+                        else { speedY += Sign(realDiffY) * 0.335f; }
+
+                        if (rand.Next(2500) == 0) { state = 0; }
+                    }
                 }
+                else if (state == 5 || state == 6) // preparing to dig plant OR terrain
+                {
+                    if (currentAttack is null)
+                    {
+                        if (timeAtLastDig + 1 < timeElapsed)
+                        {
+                            currentAttack = new Attack(screen, this, (3, 1, 0, 5), targetPos, (0, 0)); // Mandible attack
+                            state *= 10;
+                        }
+                    }
+                    else { state *= 10; }
+                }
+                else if (state == 50)   // After plant dig
+                {
+                    if (currentAttack is null || currentAttack.isDone)
+                    {
+                        tryManufactureElement();
+                        state = 0;
+                    }
+                }
+                else if (state == 60)   // After terrain dig
+                {
+                    if (currentAttack is null || nest is null) { state = 0; }
+                    else if (currentAttack.isDone)
+                    {
+                        if (currentAttack.dugTile.type >= 0) { nest.digErrands.Remove(targetPos); }
+                        if (currentAttack.dugTile.type == -5 && nest.hungryLarvae.Count > 0)
+                        {
+                            targetEntity = nest.hungryLarvae[rand.Next(nest.hungryLarvae.Count)];
+                            targetPos = (targetEntity.posX, targetEntity.posY);
+
+                            if (pathfindToLocation(targetPos)) { state = 10009; }
+                            else
+                            {
+                                targetEntity = null;
+                                pathToTarget = new List<(int x, int y)>();
+                                simplifiedPathToTarget = new List<(int x, int y)>();
+                                state = 0;
+                            }
+                        }
+                        else { state = 0; }
+                    }
+                }
+                else if (state == 7) // preparing to place honeyy
+                {
+                    if (timeAtLastPlace + 1 < timeElapsed)
+                    {
+                        Place(targetPos, (-5, 0, 0), false);
+                        if (nest != null)
+                        {
+                            Room room = nest.rooms[nest.getRoomId(targetPos)];
+                            if (room.type == 2)
+                            {
+                                room.testFullness();
+                                if (room.isFull) { nest.updateDropPositions(); }
+                            }
+                        }
+                        state = 0;
+                    }
+                }
+                else if (state == 8) // preparing to LAY AN EGGGGG
+                {
+                    if (nest != null && nest.eggsToLay > 0)
+                    {
+                        if (timeAtLastPlace + 1 < timeElapsed)
+                        {
+                            Room room = nest.rooms[nest.getRoomId(targetPos)];
+                            if (room.type == 3 && Place(targetPos, (3, 0, 1), true))
+                            {
+                                Entity kiddo = screen.entitesToAdd.Values.ToArray()[screen.entitesToAdd.Count - 1];
+                                kiddo.nest = nest;
+                                room.assignedEntities.Add(kiddo);  // since it's the last to be added, add last entity in entity list to the room
+                                nest.larvae.Add(kiddo);
+                                nest.eggsToLay--;
+                                room.testFullness();
+                                if (room.isFull) { nest.updateDropPositions(); }
+                            }
+                            state = 0;
+                        }
+                    }
+                    else { state = 0; }
+                }
+                else if (state == 9) // feeding kiddo !
+                {
+                    if (nest != null && nest.hungryLarvae.Contains(targetEntity)) { tryFeedTargetEntity(); }
+                    state = 0;
+                }
+                else { state = 0; }
+            }
+            public void moveEntity()
+            {
+                (TileTraits entityPos, TileTraits under) returnType = applyForces();    // sets onGround and inWater
+                TileTraits entityTile = returnType.entityPos;
+                TileTraits tileUnder = returnType.under;
+
+
+                if (type.type == 3) // hornet moving, as they need to pathfind and shit
+                {
+                    moveHornet();
+                }
+
+                if (inGround)
+                {
+                    if (traits.inGroundBehavior == 2)   // For worms, don't care about tile under always do the same thing
+                    {
+                        changeSpeedRandom(0.05f);
+                        clampSpeed(0.2f, 0.2f);
+
+                        if (entityTile.isAir) { changeSpeedRandom(0.5f); }
+                        else if (entityTile.isLiquid)
+                        {
+                            if (type.subType == 1)
+                            {
+                                changeSpeedRandom(0.1f);
+                                clampSpeed(1, 1);
+                            }
+                            else { changeSpeedRandom(0.5f); }
+                        }
+                    } 
+                    else if (onGround) { jumpRandom(1, 1); }    // For non worms, if stuck, try jumping out, so if stuck in a tile it can escape if next to air
+                    else { speedY -= 1; }   // fall under if tile under is free (might have to change that depending on gravity)
+                }
+                else if (inWater)
+                {
+                    if (traits.inWaterBehavior == 1)    // drift upwards
+                    {
+                        changeSpeedRandom(0.5f); // worm ???????? and others ????????
+                    }
+                    else if (traits.inWaterBehavior == 2)
+                    {
+                        changeSpeedRandom(traits.swimSpeed);
+                        clampSpeed(traits.swimMaxSpeed, traits.swimMaxSpeed);
+                    }
+                }
+                else // if (inAir)
+                {
+                    if (traits.inAirBehavior == 1)  // if flying
+                    {
+                        if (type.type != 3) { changeSpeedRandom(0.5f); }
+                    }
+                    else if (onGround)
+                    {
+                        ariGeoSlowDownX(0.8f, 0.1f);
+                        if ((float)rand.NextDouble() <= traits.jumpChance) { jumpRandom(traits.jumpStrength.x, traits.jumpStrength.y); }
+                    }
+                    else if (onWater)
+                    {
+                        ariGeoSlowDownX(0.9f, 0.1f);
+                        if (traits.isJesus && (float)rand.NextDouble() <= traits.jumpChance) { jumpRandom(5, 0); }
+                    }
+                }
+
+                // inWater   -> 0: nothing, 1: float upwards, 2: move randomly in water
+                // onWater   -> 0: nothing, 1: skip, 2: drift towards land                   
+                // inAir     -> 0: nothing, 1: fly randomly, 2: random jump ?
+                // onGround  -> 0: nothing, 1: random jump, 2: move around, 3: dig down
+                // inGround  -> 0: nothing, 1: random jump, 2: dig around, 3: teleport, 4: dig tile                   
 
                 actuallyMoveTheEntity();
 
@@ -1163,7 +1160,8 @@ namespace Cave
             public bool PlantDig((int x, int y) posToDig, (int type, int subType, int typeOfElement)? currentItem = null, Chunk chunk = null, (int type, int subType)? targetMaterialNullable = null, bool toolRestrictions = true)
             {
                 (int x, int y) targetMaterial = targetMaterialNullable ?? (0, 0);
-                if (toolRestrictions && targetMaterialNullable != null && materialGatheringToolRequirement.ContainsKey(targetMaterial) && materialGatheringToolRequirement[targetMaterial] != currentItem) { return false; }   // Don't bother digging if trying to dig a particular tile without having the correct tool equipped. Should rarely happen but whatever
+                MaterialTraits traits = getMaterialTraits(targetMaterial);
+                if (toolRestrictions && targetMaterialNullable != null && traits.toolGatheringRequirement != null && traits.toolGatheringRequirement != currentItem) { return false; }   // Don't bother digging if trying to dig a particular tile without having the correct tool equipped. Should rarely happen but whatever
                 (int type, int subType) value;
                 foreach (Plant plant in chunk is null ? screen.activePlants.Values : chunk.plants.Values)
                 {

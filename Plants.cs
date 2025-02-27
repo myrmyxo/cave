@@ -765,7 +765,7 @@ namespace Cave
                 foreach ((int x, int y) mod in neighbourArray)
                 {
                     posToTest = (pos.x + mod.x, pos.y + mod.y);
-                    if (screen.getTileContent(getRealPos(posToTest)).isAir) { fullTiles += 1; }
+                    if (screen.getTileContent(getRealPos(posToTest)).isSolid) { fullTiles += 1; }
                     if (fillStates.ContainsKey(posToTest)) { moldyTiles += 1; }
                 }
                 if (moldyTiles + fullTiles >= 4)
@@ -876,7 +876,8 @@ namespace Cave
                     posToTest = (posToDig.x - posX - element.pos.x, posToDig.y - posY - element.pos.y);
                     if (element.fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value))
                     {
-                        if ((targetMaterialNullable is null ? true : targetMaterialNullable == value) && (!toolRestrictions || !materialGatheringToolRequirement.ContainsKey(value) || materialGatheringToolRequirement[value] == currentItem))
+                        MaterialTraits traits = getMaterialTraits(value);
+                        if ((targetMaterialNullable is null ? true : targetMaterialNullable == value) && (!toolRestrictions || traits.toolGatheringRequirement == null || traits.toolGatheringRequirement.Value == currentItem))
                         {
                             element.fillStates.Remove((posToTest.x, posToTest.y));
                             screen.plantsToMakeBitmapsOf[id] = this;

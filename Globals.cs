@@ -110,12 +110,6 @@ namespace Cave
             { (10, 4), (720, 600, 880, 880, 1000, 0) }, // Acid ocean biome !
         };
 
-        public static Dictionary<(int type, int subType), (int type, int subType, int typeOfElement)> materialGatheringToolRequirement = new Dictionary<(int type, int subType), (int type, int subType, int typeOfElement)>()
-        {   // For plants ! Not terrain !
-            { (1, 1), (4, 0, 4) },  // Wood -> Axe
-            { (11, 1), (4, 0, 4) }  // Metal -> Axe
-        };
-
         public static List<((int type, int subType, int megaType) material, int count)[]> craftRecipes = new List<((int type, int subType, int megaType) material, int count)[]>
         {
             new ((int type, int subType, int megaType) material, int count)[] // flesh to flesh tile

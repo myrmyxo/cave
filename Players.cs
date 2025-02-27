@@ -132,150 +132,52 @@ namespace Cave
             }
             public override void initializeInventory()
             {
-                bool plantsMode = true;
-                bool toolsMode = true;
-                if (!devMode)
+                bool allTools = true;
+                bool allEntities = true;
+                bool allPlants = true;
+                bool allTiles = true;
+
+                inventoryElements = new List<(int index, int subType, int typeOfElement)> { (6, 0, 5) };    // hand
+                if (allTools) { foreach ((int type, int subType) key in toolsSprites.Keys) { inventoryElements.Add((key.type, key.subType, 4)); } }
+
+                if (devMode)
                 {
-                    if (!toolsMode)
-                    {
-                        inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
-                        {
-                            {(6, 0, 5), -999 }, // hand
-                        };
-                        inventoryElements = new List<(int index, int subType, int typeOfElement)>
-                        {
-                            (6, 0, 5), // hand
-                        };
-                    }
+                    if (allEntities) { foreach ((int type, int subType) key in entityTraitsDict.Keys) { inventoryElements.Add((key.type, key.subType, 1)); } }
                     else
                     {
-                        inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
-                        {
-                            {(6, 0, 5), -999 }, // hand
-                            {(0, 0, 4), -999 }, // tools
-                            {(4, 0, 4), -999 },
-                            {(1, 0, 4), -999 },
-                            {(2, 0, 4), -999 },
-                            {(3, 0, 4), -999 },
-                        };
-                        inventoryElements = new List<(int index, int subType, int typeOfElement)>
-                        {
-                            (6, 0, 5), // hand
-                            (0, 0, 4), // tools
-                            (4, 0, 4),
-                            (1, 0, 4),
-                            (2, 0, 4),
-                            (3, 0, 4),
-                        };
+                        inventoryElements.Add((0, 0, 1));
+                        inventoryElements.Add((1, 0, 1));
+                        inventoryElements.Add((2, 0, 1));
+                        inventoryElements.Add((4, 0, 1));
+                        inventoryElements.Add((4, 1, 1));
+                        inventoryElements.Add((5, 0, 1));
                     }
+
+                    if (allPlants) { foreach ((int type, int subType) key in plantTraitsDict.Keys) { inventoryElements.Add((key.type, key.subType, 2)); } }
+                    else
+                    {
+                        inventoryElements.Add((0, 0, 2));
+                        inventoryElements.Add((0, 1, 2));
+                        inventoryElements.Add((1, 0, 2));
+                        inventoryElements.Add((1, 1, 2));
+                        inventoryElements.Add((4, 1, 2));
+                        inventoryElements.Add((5, 0, 2));
+                        inventoryElements.Add((5, 1, 2));
+                    }
+
+                    if (allTiles) { foreach ((int type, int subType) key in tileTraitsDict.Keys) { inventoryElements.Add((key.type, key.subType, 0)); } }
+                    else
+                    {
+                        inventoryElements.Add((-1, 0, 0));
+                        inventoryElements.Add((-4, 0, 0));
+                        inventoryElements.Add((4, 0, 0));
+                        inventoryElements.Add((-6, 0, 0));
+                    }
+
                 }
-                else if (!plantsMode) // True -> Important things, False -> EVERY thing
-                {
-                    inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
-                    {
-                        {(6, 0, 5), -999 }, // hand
-                        {(0, 0, 4), -999 }, // tools
-                        {(4, 0, 4), -999 },
-                        {(1, 0, 4), -999 },
-                        {(2, 0, 4), -999 },
-                        {(3, 0, 4), -999 },
-                        {(0, 0, 1), -999 }, // entitities
-                        {(1, 0, 1), -999 },
-                        {(2, 0, 1), -999 },
-                        {(4, 0, 1), -999 },
-                        {(4, 1, 1), -999 },
-                        {(5, 0, 1), -999 },
-                        {(0, 0, 2), -999 }, // plants
-                        {(0, 1, 2), -999 },
-                        {(1, 0, 2), -999 },
-                        {(1, 1, 2), -999 },
-                        {(4, 1, 2), -999 },
-                        {(5, 0, 2), -999 },
-                        {(5, 1, 2), -999 },
-                        {(-1, 0, 0), -999 }, // materials
-                        {(-4, 0, 0), -999 },
-                        {(4, 0, 0), -999 },
-                        {(-6, 0, 0), -999 },
-                    };
-                    inventoryElements = new List<(int index, int subType, int typeOfElement)>
-                    {
-                        (6, 0, 5), // hand
-                        (0, 0, 4), // tools
-                        (4, 0, 4),
-                        (1, 0, 4),
-                        (2, 0, 4),
-                        (3, 0, 4),
-                        (0, 0, 1), // entitititities
-                        (1, 0, 1),
-                        (2, 0, 1),
-                        (4, 0, 1),
-                        (4, 1, 1),
-                        (5, 0, 1),
-                        (0, 0, 2), // plants
-                        (0, 1, 2),
-                        (1, 0, 2),
-                        (1, 1, 2),
-                        (4, 1, 2),
-                        (5, 0, 2),
-                        (5, 1, 2),
-                        (-1, 0, 0), // materials
-                        (-4, 0, 0),
-                        (4, 0, 0),
-                        (-6, 0, 0),
-                    };
-                }
-                else
-                {
-                    inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>
-                    {
-                        {(6, 0, 5), -999 }, // hand
-                        {(0, 0, 4), -999 }, // tools
-                        {(4, 0, 4), -999 },
-                        {(1, 0, 4), -999 },
-                        {(2, 0, 4), -999 },
-                        {(3, 0, 4), -999 },
-                        {(3, 1, 4), -999 },
-                        {(3, 2, 4), -999 },
-                        {(0, 0, 1), -999 }, // entitities
-                        {(1, 0, 1), -999 },
-                        {(2, 0, 1), -999 },
-                        {(4, 0, 1), -999 },
-                        {(4, 1, 1), -999 },
-                        {(5, 0, 1), -999 },
-                    };
-                    foreach ((int type, int subType) key in plantTraitsDict.Keys) { inventoryQuantities.Add((key.type, key.subType, 2), -999); }
-                    inventoryQuantities.Add((-1, 0, 0), -999);
-                    inventoryQuantities.Add((-4, 0, 0), -999);
-                    inventoryQuantities.Add((4, 0, 0), -999);
-                    inventoryQuantities.Add((-6, 0, 0), -999);
-                    inventoryElements = new List<(int index, int subType, int typeOfElement)>
-                    {
-                        (6, 0, 5), // hand
-                        (0, 0, 4), // tools
-                        (4, 0, 4),
-                        (1, 0, 4),
-                        (2, 0, 4),
-                        (3, 0, 4),
-                        (3, 1, 4),
-                        (3, 2, 4),
-                        (0, 0, 1), // entitititities
-                        (1, 0, 1),
-                        (2, 0, 1),
-                        (4, 0, 1),
-                        (4, 1, 1),
-                        (5, 0, 1),
-                    };
-                    foreach ((int type, int subType) key in plantTraitsDict.Keys) { inventoryElements.Add((key.type, key.subType, 2)); }
-                    inventoryElements.Add((-1, 0, 0));
-                    inventoryElements.Add((-4, 0, 0));
-                    inventoryElements.Add((4, 0, 0));
-                    inventoryElements.Add((-6, 0, 0));
-                }
-            }
-            public void Jump(int direction, float jumpSpeed)
-            {
-                speedX += direction;
-                speedY = Max(0, speedY) + jumpSpeed;
+
+                inventoryQuantities = new Dictionary<(int index, int subType, int typeOfElement), int>();
+                foreach ((int index, int subType, int typeOfElement) element in inventoryElements) { inventoryQuantities[element] = -999; }
             }
             public void movePlayer()
             {
@@ -306,13 +208,13 @@ namespace Cave
                         if (arrowKeysState[0]) { speedX -= 0.5f; }
                         if (arrowKeysState[1]) { speedX += 0.5f; }
                         if (arrowKeysState[2]) { speedY -= 0.5f; }
-                        if (arrowKeysState[3] && (onGround || inWater)) { speedY += 0.5f; }
+                        if (arrowKeysState[3] && (onGround || inGround || inWater)) { speedY += 0.5f; }
                     }
-                    if (playerTile.isSolid) { ariGeoSlowDown(0.75f, 0.25f); }
+                    if (inGround) { ariGeoSlowDown(0.75f, 0.25f); }
                     else if (inWater && traits.isSwimming) { ariGeoSlowDown(0.85f, 0.15f); }
                     else { ariGeoSlowDownGravity(0.75f, 0.25f, 0f, 5f); }
                 }
-                else if (traits.isSwimming)
+                else if (traits.isSwimming || traits.isJesus)
                 {
                     if (inWater)
                     {
@@ -322,13 +224,24 @@ namespace Cave
                         if (arrowKeysState[2]) { speedY -= 0.25f; }
                         if (arrowKeysState[3]) { speedY += 0.25f; }
                     }
-                    else if (!shiftPress && arrowKeysState[3])
+                    else if (!shiftPress)
                     {
+                        ariGeoSlowDownX(0.9f, 0.1f);
+
                         int directionState = 0;
-                        if (arrowKeysState[0]) { directionState -= 1; if (!onGround) { speedX -= 0.1f; } }
-                        if (arrowKeysState[1]) { directionState += 1; if (!onGround) { speedX += 0.1f; } }
-                        ariGeoSlowDownX(0.95f, 0.05f);
-                        if (onGround) { Jump(directionState, 2); }
+                        if (arrowKeysState[0]) { directionState -= 1; if (!onGround) { speedX -= 0.15f; } }
+                        if (arrowKeysState[1]) { directionState += 1; if (!onGround) { speedX += 0.15f; } }
+
+                        if (onGround)
+                        {
+                            if (arrowKeysState[3]) { Jump(directionState, 1.5f); }
+                        }
+                        else if (onWater && traits.isJesus)
+                        {
+                            if (arrowKeysState[2]) { speedY -= 0.25f; }
+                            Jump(directionState * 3, arrowKeysState[3] ? 2 : -10);  // -10 so speedY doesn't get put at 0
+                            clampSpeedX(5);
+                        }
                     }
                     else { ariGeoSlowDown(0.95f, 0.1f); }
                 }

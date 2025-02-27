@@ -55,11 +55,13 @@ namespace Cave
         public static OneSprite operationSignsSprite;
         public static Dictionary<int, OneSprite> operationSignSprites;
         public static OneSprite overlayBackground;
+        public static OneSprite errorSprite;
 
         public static OneAnimation fireAnimation;
         public static OneAnimation livingPortalAnimation;
         public static void loadSpriteDictionaries()
         {
+            errorSprite = new OneSprite("Error", true);                     // TO CHANGE
             tileSprites = new Dictionary<(int, int), OneSprite>
             {
                 { (-7, 0), new OneSprite("Acid", true) },                   // TO CHANGE
@@ -70,6 +72,7 @@ namespace Cave
                 { (-3, 0), new OneSprite("FairyLiquid", false) },
                 { (-2, 0), new OneSprite("Water", false) },
                 { (-1, 0), new OneSprite("Piss", false) },
+                { (0, 0), errorSprite },
                 { (1, 0), new OneSprite("BasicTile", false) },
                 { (1, 1), new OneSprite("DenseRockTile", true) },           // TO CHANGE
                 { (2, 0), new OneSprite("BasicTile", false) },
@@ -79,8 +82,9 @@ namespace Cave
                 { (5, 0), new OneSprite("MoldTile", true) },                // TO CHANGE          
                 { (6, 0), new OneSprite("BasicTile", false) }
             };                                                               
-            entitySprites = new Dictionary<(int, int), OneSprite>            
+            entitySprites = new Dictionary<(int, int), OneSprite>
             {
+                { (-1, 0), errorSprite },
                 { (0, 0), new OneSprite("Fairy", false) },                    
                 { (0, 1), new OneSprite("ObsidianFairy", false) },            
                 { (0, 2), new OneSprite("FrostFairy", false) },               
@@ -101,7 +105,7 @@ namespace Cave
             };                                                               
             plantSprites = new Dictionary<(int, int), OneSprite>
             {
-                { (-1, 0), new OneSprite("Error", true) },                  // TO CHANGE
+                { (-1, 0), errorSprite },
                 { (0, 0), new OneSprite("BasePlant", false) },                
                 { (0, 1), new OneSprite("Candle", false) },                   
                 { (0, 2), new OneSprite("Tulip", false) },                    
@@ -118,6 +122,7 @@ namespace Cave
             };
             materialSprites = new Dictionary<(int, int), OneSprite>
             {
+                { (-1, 0), errorSprite },
                 { (1, 0), new OneSprite("PlantMatter", false) },
                 { (1, 1), new OneSprite("Wood", false) },
                 { (1, 2), new OneSprite("Kelp", false) },
@@ -135,6 +140,7 @@ namespace Cave
             };
             toolsSprites = new Dictionary<(int, int), OneSprite>
             {
+                { (-1, 0), errorSprite },
                 { (0, 0), new OneSprite("Sword", true) },                   // TO CHANGE
                 { (1, 0), new OneSprite("Pickaxe", true) },                 // TO CHANGE
                 { (2, 0), new OneSprite("Scythe", true) },                  // TO CHANGE
@@ -145,6 +151,7 @@ namespace Cave
             };
             attacksSprites = new Dictionary<(int, int), OneSprite>
             {
+                { (-1, 0), errorSprite },
                 { (3, 0), new OneSprite("HornetPortrait", true) },          // TO CHANGE
                 { (3, 1), new OneSprite("Mandibles", true) },               // TO CHANGE
                 { (3, 2), new OneSprite("Stinger", true) },                 // TO CHANGE
@@ -152,6 +159,7 @@ namespace Cave
             };
             portraitSprites = new Dictionary<(int, int), OneSprite>
             {
+                { (-1, 0), errorSprite },
                 { (0, 0), new OneSprite("FairyPortrait", true) },           // TO CHANGE
                 { (0, 1), new OneSprite("FairyPortrait", true) },           // TO CHANGE
                 { (0, 2), new OneSprite("FairyPortrait", true) },           // TO CHANGE

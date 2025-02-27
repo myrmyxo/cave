@@ -157,74 +157,68 @@ namespace Cave
         public class MaterialTraits
         {
             public string name;
-            public int hardness;
-            public bool isLiquid;
-            public int viscosity = 0;
+            public (int type, int subType, int megaType)? toolGatheringRequirement;
             public ColorRange colorRange;
-            public float biomeColorBlend;
-            public MaterialTraits(string namee, float biomeColorBlendToPut, ColorRange colRange)
+            //public float biomeColorBlend;
+            public MaterialTraits(string namee, (int type, int subType, int megaType)? tool = null, ColorRange col = null)
             {
                 name = namee;
-                colorRange = colRange;
-                biomeColorBlend = biomeColorBlendToPut;
+                toolGatheringRequirement = tool;
+                colorRange = col;
+                // biomeColorBlend = biomeColorBlendToPut;
             }
         }
 
         public static Dictionary<(int type, int subType), MaterialTraits> materialTraitsDict;
+        public static MaterialTraits getMaterialTraits((int type, int subType) materialType)
+        {
+            return materialTraitsDict.ContainsKey(materialType) ? materialTraitsDict[materialType] : materialTraitsDict[(0, 0)];
+        }
         public static void makeMaterialTraitsDict()
         {
             materialTraitsDict = new Dictionary<(int type, int subType), MaterialTraits>()
             {
-                { (0, 0), new MaterialTraits("Error/Air", 0.5f,
-                new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                                   ) },
+                { (0, 0), new MaterialTraits("Error/Air", 
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
 
+                { (1, 0), new MaterialTraits("Plant Matter",
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
+                { (1, 1), new MaterialTraits("Wood",                        tool:(4, 0, 4),
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
+                { (1, 2), new MaterialTraits("Kelp",
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
 
+                { (2, 0), new MaterialTraits("Petal",
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
+                { (2, 1), new MaterialTraits("Pollen",
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
 
-                { (-1, 0), new MaterialTraits("Piss", 0.2f,
-                new ColorRange((120, 0, 0), (120, 0, 0), (80, 0, 0))                                                    ) },
+                { (3, 0), new MaterialTraits("Mushroom Stem",
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
+                { (3, 1), new MaterialTraits("Mushroom Cap",
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
+                { (3, 2), new MaterialTraits("Mold",
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
 
-                { (-2, 0), new MaterialTraits("Water", 0.2f,
-                new ColorRange((80, 0, 0), (80, 0, 0), (120, 0, 0))                                                     ) },
+                { (8, 0), new MaterialTraits("Flesh",
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
+                { (8, 1), new MaterialTraits("Bone",
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
 
-                { (-3, 0), new MaterialTraits("Fairy Liquid", 0.2f,
-                new ColorRange((105, 0, 0), (80, 0, 0), (120, 0, 0))                                                    ) },
+                { (10, 0), new MaterialTraits("Magic Rock",
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
 
-                { (-4, 0), new MaterialTraits("Lava", 0.05f,
-                new ColorRange((255, 0, 0), (90, 0, 0), (0, 0, 0))                                                      ) },
+                { (11, 0), new MaterialTraits("Metal",                      tool:(4, 0, 4),
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
+                { (11, 1), new MaterialTraits("Lightbulb",
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
 
-                { (-5, 0), new MaterialTraits("Honey", 0.2f,
-                new ColorRange((160, 0, 0), (120, 0, 0), (70, 0, 0))                                                    ) },
-
-                { (-6, 0), new MaterialTraits("Blood", 0.2f,
-                new ColorRange((100, 0, 0), (15, 0, 0), (25, 0, 0))                                                     ) },
-                { (-6, 1), new MaterialTraits("Deoxygenated Blood", 0.2f,
-                new ColorRange((65, 0, 0), (5, 0, 0), (35, 0, 0))                                                       ) },
-
-                { (-7, 0), new MaterialTraits("Acid", 0.2f,
-                new ColorRange((120, 0, 0), (180, 0, 0), (60, 0, 0))                                                    ) },
-
-
-
-                { (1, 0), new MaterialTraits("Rock", 0.5f,
-                new ColorRange((30, 0, 0), (30, 0, 0), (30, 0, 0))                                                      ) },
-                { (1, 1), new MaterialTraits("Dense Rock", 0.2f,
-                new ColorRange((10, 0, 0), (10, 0, 0), (10, 0, 0))                                                      ) },
-
-                { (2, 0), new MaterialTraits("Dirt", 0.5f,
-                new ColorRange((80, 0, 0), (60, 0, 0), (20, 0, 0))                                                      ) },
-
-                { (3, 0), new MaterialTraits("Plant Matter", 0.35f,
-                new ColorRange((10, 0, 0), (60, 0, 0), (30, 0, 0))                                                      ) },
-
-                { (4, 0), new MaterialTraits("Flesh Tile", 0.2f,
-                new ColorRange((135, 0, 0), (55, 0, 0), (55, 0, 0))                                                     ) },
-                { (4, 1), new MaterialTraits("Bone Tile", 0.2f,
-                new ColorRange((240, 0, 0), (230, 0, 0), (245, 0, 0))                                                   ) },
-
-                { (5, 0), new MaterialTraits("Mold Tile", 0.1f,
-                new ColorRange((50, 0, 0), (50, 0, 0), (100, 0, 0))                                                     ) },
+                { (12, 0), new MaterialTraits("Wax",
+                col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
             };
         }
+
+
 
 
 
@@ -232,22 +226,57 @@ namespace Cave
         public class EntityTraits
         {
             public string name;
+
             public int startingHp;
+
             public ((int type, int subType, int megaType) element, int count) drops;
+
             public bool isFlying;
             public bool isSwimming;
             public bool isDigging;
             public bool isJesus;
+
+            // Behaviors
+            public int inWaterBehavior;     // -> 0: nothing, 1: float upwards, 2: move randomly in water
+            public int onWaterBehavior;     // -> 0: nothing, 1: skip, 2: drift towards land
+            public int inAirBehavior;       // -> 0: nothing, 1: fly randomly, 2: random drift
+            public int onGroundBehavior;    // -> 0: nothing, 1: random jump, 2: move around, 3: dig down
+            public int inGroundBehavior;    // -> 0: nothing, 1: random jump, 2: dig around, 3: teleport, 4: dig tile
+
+            public float swimSpeed;
+            public float swimMaxSpeed;
+
+            public (float x, float y) jumpStrength;
+            public float jumpChance;
+            public float idleChance;
+            public bool isNestEntity;
+
             public ColorRange colorRange;
-            public EntityTraits(string namee, int hp, ((int type, int subType, int megaType) element, int count) drps, ColorRange colRange, bool F = false, bool S = false, bool D = false, bool J = false)
+            public EntityTraits(string namee, int hp, ((int type, int subType, int megaType) element, int count) drps, ColorRange colRange,
+                int iW = 0, int oW = 0, int iA = 0, int oG = 0, int iG = 0,
+                float sS = 0.1f, float sMS = 0.5f, (float x, float y)? jS = null, float jC = 0)
             {
                 name = namee;
                 startingHp = hp;
                 drops = drps;
-                isFlying = F;
-                isSwimming = S;
-                isDigging = D;
-                isJesus = J;
+
+                isFlying = iA == 1 ? true : false;
+                isSwimming = iW == 2 ? true : false;
+                isDigging = iG == 2 ? true : false;
+                isJesus = oW == 1 ? true : false;
+
+                inWaterBehavior = iW;
+                onWaterBehavior = oW;
+                inAirBehavior = iA;
+                inGroundBehavior = iG;
+                onGroundBehavior = oG;
+
+                swimSpeed = sS;
+                swimMaxSpeed = sMS;
+
+                jumpStrength = jS ?? (1, 1);
+                jumpChance = jC;
+
                 colorRange = colRange;
             }
         }
@@ -257,50 +286,77 @@ namespace Cave
             entityTraitsDict = new Dictionary<(int type, int subType), EntityTraits>()
             {  // R              G               B     ->     (Color, hue, shade)
                 { (-1, 0), new EntityTraits("Error",       69420, ((11, 1, 3), 1),      //  --> Light Bulb          ERROR ! This is the missing type value. Not Fairy.
-                new ColorRange((130, 50, 30), (130, -50, 30), (210, 50, 30))                                            ) },
+                new ColorRange((130, 50, 30), (130, -50, 30), (210, 50, 30)),
+                iW:1, oG:1, iG:2) },
 
                 { (0, 0), new EntityTraits("Fairy",           4,  ((-3, 0, 0), 1),      //  --> Fairy Liquid
-                new ColorRange((130, 50, 30), (130, -50, 30), (210, 0, 30)),            F:true                          ) },
+                new ColorRange((130, 50, 30), (130, -50, 30), (210, 0, 30)),
+                iW:1, iA:1, iG:3) },                                                                        
                 { (0, 1), new EntityTraits("ObsidianFairy",   10, ((-3, 0, 0), 1),      //  --> Fairy Liquid
-                new ColorRange((30, 0, 30), (30, 0, 30), (30, 0, 30)),                  F:true                          ) },
+                new ColorRange((30, 0, 30), (30, 0, 30), (30, 0, 30)),
+                iW:1, iA:1, iG:3) },
                 { (0, 2), new EntityTraits("FrostFairy",      4 , ((-3, 0, 0), 1),      //  --> Fairy Liquid
-                new ColorRange((200, 25, 30), (200, 25, 30), (225, 0, 30)),             F:true                          ) },
+                new ColorRange((200, 25, 30), (200, 25, 30), (225, 0, 30)),
+                iW:1, iA:1, iG:3) },
                 { (0, 3), new EntityTraits("SkeletonFairy",   15, ((8, 1, 3), 1),       //  --> Bone
-                new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),              F:true                          ) },
+                new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),
+                iW:1, iA:1, iG:3) },
 
                 { (1, 0), new EntityTraits("Frog",            2,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((90, 50, 30), (210, 50, 30), (110, -50, 30))                                             ) },
+                new ColorRange((90, 50, 30), (210, 50, 30), (110, -50, 30)),
+                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(2.5f, 2.5f), jC:0.1f) },
                 { (1, 1), new EntityTraits("Carnal",          7,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((135, 0, 30), (55, 30, 30), (55, 30, 30))                                                ) },
+                new ColorRange((135, 0, 30), (55, 30, 30), (55, 30, 30)),
+                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(2.5f, 2.5f), jC:0.1f) },
                 { (1, 2), new EntityTraits("Skeletal",        7,  ((8, 1, 3), 1),       //  --> Bone
-                new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20))                                               ) },
+                new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),
+                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(2.5f, 2.5f), jC:0.1f) },
 
                 { (2, 0), new EntityTraits("Fish",            2,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((190, 0, 30), (80, -50, 30), (80, 50, 30)),                      S:true                  ) },
+                new ColorRange((190, 0, 30), (80, -50, 30), (80, 50, 30)),
+                iW:2, oG:1, iG:1, jC:0.01f) },
                 { (2, 1), new EntityTraits("SkeletonFish",    2,  ((8, 1, 3), 1),       //  --> Bone
-                new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),                      S:true                  ) },
+                new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),
+                iW:2, oG:1, iG:1, jC:0.01f) },
 
                 { (3, 0), new EntityTraits("HornetEgg",       2,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((205, 10, 30), (205, 10, 30), (235, 0, 30))                                              ) },
-                { (3, 1), new EntityTraits("HornetLarva",     3,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((180, 10, 30), (180, 10, 30), (160, 0, 30))                                              ) },
-                { (3, 2), new EntityTraits("HornetCocoon",    20, ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((120, 10, 30), (120, 10, 30), (20, 0, 20))                                               ) },
+                new ColorRange((205, 10, 30), (205, 10, 30), (235, 0, 30)),                                              
+                iW:1) },
+                { (3, 1), new EntityTraits("HornetLarva",     3,  ((8, 0, 3), 1),       //  --> Flesh   
+                new ColorRange((180, 10, 30), (180, 10, 30), (160, 0, 30)),                             
+                iW:1, oW:2, iA:2, oG:1, iG:1, jC:0.01f) },                                                              
+                { (3, 2), new EntityTraits("HornetCocoon",    20, ((8, 0, 3), 1),       //  --> Flesh   
+                new ColorRange((120, 10, 30), (120, 10, 30), (20, 0, 20)),                              
+                iW:1) },
                 { (3, 3), new EntityTraits("Hornet",          6,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((190, 10, 30), (190, 10, 30), (80, 0, 30)),              F:true                          ) },
+                new ColorRange((190, 10, 30), (190, 10, 30), (80, 0, 30)),
+                iW:1, iA:1, iG:4) },
 
                 { (4, 0), new EntityTraits("Worm",            7,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((210, 0, 30), (140, 20, 30), (140, 20, 30)),                             D:true          ) },
+                new ColorRange((210, 0, 30), (140, 20, 30), (140, 20, 30)),
+                iW:1, oW:2, iA:2, oG:3, iG:2) },
                 { (4, 1), new EntityTraits("Nematode",        3,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((210, -20, 30), (210, 20, 30), (235, 0, 30)),                    S:true, D:true          ) },
+                new ColorRange((210, -20, 30), (210, 20, 30), (235, 0, 30)),
+                iW:2, oW:2, iA:2, oG:3, iG:2) },
 
                 { (5, 0), new EntityTraits("WaterSkipper",    3,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((110, 0, 30), (110, 0, 30), (140, 20, 30)),                      S:true,         J:true  ) },
+                new ColorRange((110, 0, 30), (110, 0, 30), (140, 20, 30)),
+                iW:1, oW:1, iA:2, oG:1, iG:1, jS:(1, 1), jC:0.05f) },
 
                 { (6, 0), new EntityTraits("Goblin",          3,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((80, 50, 30), (175, 50, 30), (80, 50, 30))                                               ) },
+                new ColorRange((80, 50, 30), (175, 50, 30), (80, 50, 30)),
+                iW:1, oW:2, iA:2, oG:1, iG:1, jC:0.05f) },
             };
         }
+
+
+
+
+
+
+
+        
+
 
 
         public class PlantStructureFrame
@@ -767,11 +823,12 @@ namespace Cave
             public bool isPlantDigging;
             public bool isAbortable;
             public bool isEntityBound;
+            public (int type, int subType)? targetMaterial;
 
             public (int v, int h, int s) r;
             public (int v, int h, int s) g;
             public (int v, int h, int s) b;
-            public AttackTraits(string namee, float d= 0, float m = 0, bool H = false, bool T = false, bool P = false, bool A = false, bool B = false)
+            public AttackTraits(string namee, float d = 0, float m = 0, bool H = false, bool T = false, bool P = false, bool A = false, bool B = false, (int type, int subType)? tM = null)
             {
                 name = namee;
                 damage = d;
@@ -781,6 +838,7 @@ namespace Cave
                 isPlantDigging = P;
                 isAbortable = A;
                 isEntityBound = B;
+                targetMaterial = tM;
             }
         }
 
@@ -789,27 +847,27 @@ namespace Cave
         {
             attackTraitsDict = new Dictionary<(int type, int subType, int subSubType, int megaType), AttackTraits>()
             {
-                { (-1, 0, 0, 0), new AttackTraits("Error"                                                                       ) },
+                { (-1, 0, 0, 0), new AttackTraits("Error"                                                                               ) },
                                                                                                                                     
-                { (0, 0, 0, 4), new AttackTraits("Sword",               d:1,            H:true, B:true                          ) },
-                { (1, 0, 0, 4), new AttackTraits("Pickaxe",             d:0.5f,         H:true, B:true, T:true,         A:true  ) },
-                { (2, 0, 0, 4), new AttackTraits("Scythe",              d:0.75f,        H:true, B:true,         P:true          ) },
-                { (4, 0, 0, 4), new AttackTraits("Axe",                 d:0.5f,         H:true, B:true,         P:true, A:true  ) },
+                { (0, 0, 0, 4), new AttackTraits("Sword",               d:1,            H:true, B:true                                  ) },
+                { (1, 0, 0, 4), new AttackTraits("Pickaxe",             d:0.5f,         H:true, B:true, T:true,         A:true          ) },
+                { (2, 0, 0, 4), new AttackTraits("Scythe",              d:0.75f,        H:true, B:true,         P:true                  ) },
+                { (4, 0, 0, 4), new AttackTraits("Axe",                 d:0.5f,         H:true, B:true,         P:true, A:true          ) },
                                                                                                                                     
-                { (3, 0, 0, 4), new AttackTraits("Magic Wand",                  m:5,            B:true                          ) },
-                { (3, 0, 1, 4), new AttackTraits("Magic Bullet"                                                                 ) },
-                { (3, 1, 0, 4), new AttackTraits("Carnal Wand",                 m:25,           B:true                          ) },
-                { (3, 1, 1, 4), new AttackTraits("Carnal Bullet",                       H:true                                  ) },
-                { (3, 2, 0, 4), new AttackTraits("Floral Wand",                 m:100,          B:true                          ) },
-                { (3, 2, 1, 4), new AttackTraits("Floral Bullet"                                                                ) },
-                { (3, 2, 2, 4), new AttackTraits("Floral Bullet 2"                                                              ) },
+                { (3, 0, 0, 4), new AttackTraits("Magic Wand",                  m:5,            B:true                                  ) },
+                { (3, 0, 1, 4), new AttackTraits("Magic Bullet"                                                                         ) },
+                { (3, 1, 0, 4), new AttackTraits("Carnal Wand",                 m:25,           B:true                                  ) },
+                { (3, 1, 1, 4), new AttackTraits("Carnal Bullet",                       H:true                                          ) },
+                { (3, 2, 0, 4), new AttackTraits("Floral Wand",                 m:100,          B:true                                  ) },
+                { (3, 2, 1, 4), new AttackTraits("Floral Bullet"                                                                        ) },
+                { (3, 2, 2, 4), new AttackTraits("Floral Bullet 2"                                                                      ) },
 
 
-                { (6, 0, 0, 5), new AttackTraits("Goblin Hand",         d:0.25f,        H:true, B:true, T:true, P:true, A:true  ) },
+                { (6, 0, 0, 5), new AttackTraits("Goblin Hand",         d:0.25f,        H:true, B:true, T:true, P:true, A:true          ) },
                                                                                                                                     
-                { (3, 0, 0, 5), new AttackTraits("Hornet Warning",      d:0.05f,        H:true, B:true                          ) },
-                { (3, 1, 0, 5), new AttackTraits("Hornet Mandibles",    d:1,            H:true, B:true, T:true, P:true          ) },
-                { (3, 2, 0, 5), new AttackTraits("Hornet Sting",        d:0.65f,        H:true, B:true                          ) },
+                { (3, 0, 0, 5), new AttackTraits("Hornet Warning",      d:0.05f,        H:true, B:true                                  ) },
+                { (3, 1, 0, 5), new AttackTraits("Hornet Mandibles",    d:1,            H:true, B:true, T:true, P:true,        tM:(2, 1)) },
+                { (3, 2, 0, 5), new AttackTraits("Hornet Sting",        d:0.65f,        H:true, B:true                                  ) },
             };
         }
     }
