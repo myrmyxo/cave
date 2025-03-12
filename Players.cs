@@ -61,7 +61,8 @@ namespace Cave
             public Player(SettingsJson settingsJson)
             {
                 seed = rand.Next(999999);
-                transformEntity((4, 1), true);
+                // transformEntity((4, 1), true);      // Nematode
+                transformEntity((6, 0), true);      // Goblin
 
                 if (settingsJson == null)
                 {

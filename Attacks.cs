@@ -173,7 +173,7 @@ namespace Cave
                     {
                         if (screen.getTileContent((pos.x, pos.y + 1)).isAir)
                         {
-                            Plant newPlant = new Plant(screen, (pos.x, pos.y + 1), (0, 2 + rand.Next(2)));
+                            Plant newPlant = new Plant(screen, (pos.x, pos.y + 1), (0, 1 + rand.Next(2)));
                             if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
                         }
                         finishAttack();
@@ -240,7 +240,6 @@ namespace Cave
                     if (!digSuccess) { abort++; }
                 }
                 if (type == (3, 0, 1, 4)) { if (screen.type.type != 2) testForBloodAltar(screen, attackPos); }
-                else if (type == (3, 2, 1, 4)) { testForBloodAltar(screen, attackPos); }
 
                 if (!traits.isHitting) { return; }
                 List<Entity> hitList = getHitList(attackPos, chunkToTest);

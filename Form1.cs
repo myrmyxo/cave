@@ -109,6 +109,7 @@ namespace Cave
                 turnPngIntoString("ObsidianVines");
 
                 turnPngIntoString("PlantMatter");
+                turnPngIntoString("ObsidianPlantMatter");
                 turnPngIntoString("Wood");
                 turnPngIntoString("Kelp");
                 turnPngIntoString("FlowerPetal");
@@ -150,7 +151,7 @@ namespace Cave
             makeAttackTraitsDict();
             makeEntityTraitsDict();
             makePlantStructureFramesDict();
-            makePlantStructuresDict();
+            makePlantElementTraitsDict();
             makePlantTraitsDict();
             makeBiomeTraitsDict();
 
@@ -182,10 +183,11 @@ namespace Cave
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
-            // When multiple hornets dig the same tile, it can dig other than pollen
             // 30/01/2025 Once, a broken honey storage room was made, as the tunnel that lead to it made it have a leak mid height (tunnel dug in the bordel...)
             // Nest making rooms SUPER fucking far away from spawn
             // Prevent waterSkippers for yeeting themselves out of pools where there is nothing on the sides of a lake to prevent them from doing so
+            // When worms are on solid ground, like in air on top of a solid... they stop moving lol
+            // An ocean biome was leaking out in a slime biome ??? the fuck
 
             // cool ideas for later !
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
@@ -207,6 +209,7 @@ namespace Cave
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
             // Ocean biome -> in some patches, have the normal cave system thing get added on top, so that there are kinds of small caves and shit in the ocean biome too (but only in some parts)
+            // Salt biomes ?
 
             // Entities ideas !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ? And add LITHOPEDIONS
@@ -216,10 +219,17 @@ namespace Cave
             // ADD SPIDERS !! That can put strings and you can get stuck into them ? Webs ? And you get eARTER ? ?
             // Civilisations of undead. That are not necessarly evil or eat the player (maybe multiple kinds of zombies ? civilisations of cannibalistic zombies that eat those whose brain deteriorates too much ? Like a second death ?)
             // Bat/Pterosaur like creatures that can dive in lake to catch fish (or just surface and they catch water skippers) like they glide and shit. But like they're big.
+            // Special worms that pollinate obsidian plants in obsidian biomes
+            // Vulture bees ??
 
             // Plants ideas !
             // Tendril shits in living diomension
             // bone trees and shrubs... like ribs.
+            // Orchidée like plants ?
+            // Ephemerophytes
+            // Rice ? In salt biomes ?
+            // Roots for trees, that can grow out the soil under the plant and be exposed if there's a cave under them
+            // Branching wax plants ?
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.
@@ -262,145 +272,43 @@ namespace Cave
         }
         private void KeyIsDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Left)
-            {
-                arrowKeysState[0] = true;
-            }
-            if (e.KeyCode == Keys.Right)
-            {
-                arrowKeysState[1] = true;
-            }
-            if (e.KeyCode == Keys.Down)
-            {
-                arrowKeysState[2] = true;
-            }
-            if (e.KeyCode == Keys.Up)
-            {
-                arrowKeysState[3] = true;
-            }
-            if (e.KeyCode == Keys.X)
-            {
-                digPress = true;
-            }
-            if (e.KeyCode == Keys.Z)
-            {
-                placePress[0] = true;
-            }
-            if (e.KeyCode == Keys.W)
-            {
-                placePress[1] = true;
-            }
-            if (e.KeyCode == Keys.S)
-            {
-                zoomPress[0] = true;
-            }
-            if (e.KeyCode == Keys.D)
-            {
-                zoomPress[1] = true;
-            }
-            if (e.KeyCode == Keys.C)
-            {
-                inventoryChangePress[0] = true;
-            }
-            if (e.KeyCode == Keys.V)
-            {
-                inventoryChangePress[1] = true;
-            }
-            if (e.KeyCode == Keys.P)
-            {
-                pausePress = true;
-            }
-            if (e.KeyCode == Keys.F)
-            {
-                fastForward = true;
-            }
-            if (e.KeyCode == Keys.K && !dimensionChangePress)
-            {
-                craftPress = true;
-            }
-            if (e.KeyCode == Keys.M)
-            {
-                debugMode = !debugMode;
-            }
-            if (e.KeyCode == Keys.L && !craftPress)
-            {
-                dimensionChangePress = true;
-            }
-            if ((Control.ModifierKeys & Keys.Shift) != 0)
-            {
-                shiftPress = true;
-            }
+            if (e.KeyCode == Keys.Left) { arrowKeysState[0] = true; }
+            if (e.KeyCode == Keys.Right) { arrowKeysState[1] = true; }
+            if (e.KeyCode == Keys.Down) { arrowKeysState[2] = true; }
+            if (e.KeyCode == Keys.Up) { arrowKeysState[3] = true; }
+            if (e.KeyCode == Keys.X) { digPress = true; }
+            if (e.KeyCode == Keys.Z) { placePress[0] = true; }
+            if (e.KeyCode == Keys.W) { placePress[1] = true; }
+            if (e.KeyCode == Keys.S) { zoomPress[0] = true; }
+            if (e.KeyCode == Keys.D) { zoomPress[1] = true; }
+            if (e.KeyCode == Keys.C) { inventoryChangePress[0] = true; }
+            if (e.KeyCode == Keys.V) { inventoryChangePress[1] = true; }
+            if (e.KeyCode == Keys.P) { pausePress = true; }
+            if (e.KeyCode == Keys.F) { fastForward = true; }
+            if (e.KeyCode == Keys.K && !dimensionChangePress) { craftPress = true; }
+            if (e.KeyCode == Keys.M) { debugMode = !debugMode; }
+            if (e.KeyCode == Keys.L && !craftPress) { dimensionChangePress = true; }
+            if ((Control.ModifierKeys & Keys.Shift) != 0) { shiftPress = true; }
         }
         private void KeyIsUp(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Left)
-            {
-                arrowKeysState[0] = false;
-            }
-            if (e.KeyCode == Keys.Right)
-            {
-                arrowKeysState[1] = false;
-            }
-            if (e.KeyCode == Keys.Down)
-            {
-                arrowKeysState[2] = false;
-            }
-            if (e.KeyCode == Keys.Up)
-            {
-                arrowKeysState[3] = false;
-            }
-            if (e.KeyCode == Keys.X)
-            {
-                digPress = false;
-            }
-            if (e.KeyCode == Keys.Z)
-            {
-                placePress[0] = false;
-            }
-            if (e.KeyCode == Keys.W)
-            {
-                placePress[1] = false;
-            }
-            if (e.KeyCode == Keys.S)
-            {
-                zoomPress[0] = false;
-            }
-            if (e.KeyCode == Keys.D)
-            {
-                zoomPress[1] = false;
-            }
-            if (e.KeyCode == Keys.C)
-            {
-                inventoryChangePress[0] = false;
-            }
-            if (e.KeyCode == Keys.V)
-            {
-                inventoryChangePress[1] = false;
-            }
-            if (e.KeyCode == Keys.P)
-            {
-                pausePress = false;
-            }
-            if (e.KeyCode == Keys.F)
-            {
-                fastForward = false;
-            }
-            if (e.KeyCode == Keys.K)
-            {
-
-            }
-            if (e.KeyCode == Keys.M)
-            {
-
-            }
-            if (e.KeyCode == Keys.L)
-            {
-
-            }
-            if ((Control.ModifierKeys & Keys.Shift) == 0)
-            {
-                shiftPress = false;
-            }
+            if (e.KeyCode == Keys.Left) { arrowKeysState[0] = false; }
+            if (e.KeyCode == Keys.Right) { arrowKeysState[1] = false; }
+            if (e.KeyCode == Keys.Down) { arrowKeysState[2] = false; }
+            if (e.KeyCode == Keys.Up) { arrowKeysState[3] = false; }
+            if (e.KeyCode == Keys.X) { digPress = false; }
+            if (e.KeyCode == Keys.Z) { placePress[0] = false; }
+            if (e.KeyCode == Keys.W) { placePress[1] = false; }
+            if (e.KeyCode == Keys.S) { zoomPress[0] = false; }
+            if (e.KeyCode == Keys.D) { zoomPress[1] = false; }
+            if (e.KeyCode == Keys.C) { inventoryChangePress[0] = false; }
+            if (e.KeyCode == Keys.V) { inventoryChangePress[1] = false; }
+            if (e.KeyCode == Keys.P) { pausePress = false; }
+            if (e.KeyCode == Keys.F) { fastForward = false; }
+            if (e.KeyCode == Keys.K) { }
+            if (e.KeyCode == Keys.M) { }
+            if (e.KeyCode == Keys.L) { }
+            if ((Control.ModifierKeys & Keys.Shift) == 0) { shiftPress = false; }
         }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -471,7 +379,13 @@ namespace Cave
         {
             long h = seed + pos.x * 374761393 + pos.y * 668265263 + pos.z * 39079; // all constants are prime
             h = (h ^ (h >> 13)) * 1274126177;
-            return h ^ (h >> 16);
+            return Abs(h ^ (h >> 16));
+        }
+        public static long cashInt((int x, int y, int z) pos, long seed)  // cash stands for chaos hash :D. Thank you soooo much bakkaa on stackoverflow
+        {
+            long h = seed + pos.x * 374761393 + pos.y * 668265263 + pos.z * 39079; // all constants are prime
+            h = (h ^ (h >> 13)) * 1274126177;
+            return Abs((int)(h ^ (h >> 16)));
         }
         public static long XorShift(long seed)      // Doesn't work...
         {
@@ -583,6 +497,25 @@ namespace Cave
                 idx = Max(0, idx + 1);
             }
         }
+        public static T getRandomItem<T>(List<T> collection)
+        {
+            return collection[rand.Next(collection.Count)];
+        }
+        public static T getRandomKey<T>(Dictionary<T, T> collection)
+        {
+            return collection.Keys.ToList()[rand.Next(collection.Count)];
+        }
+        public static T getRandomValue<T>(Dictionary<T, T> collection)
+        {
+            return collection.Values.ToList()[rand.Next(collection.Count)];
+        }
+        public static void insertIntoListSorted<T>(List<(T t, int cost)> l, (T t, int cost) e, bool priorityToSmallerValues = true)
+        {
+            for (int i = 0; i < l.Count; i++) { if (priorityToSmallerValues ? (e.cost < l[i].cost) : (e.cost > l[i].cost)) { l.Insert(i, e); return; } }
+            l.Add(e);
+        }
+
+
 
         public static float Max(float a, float b)
         {

@@ -1053,21 +1053,23 @@ namespace Cave
                 foreach (Plant plant in activePlants.Values)
                 {
                     pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos);
-                    if (plant.type.type == 0 && plant.type.subType == 1 && plant.childFlowers.Count > 0)
+                    if (plant.type == (6, 1) && plant.plantElement.childPlantElements.Count > 0)
                     {
-                        Flower fireFlower = plant.childFlowers[0];
+                        PlantElement fireFlower = plant.plantElement.childPlantElements[0];
                         int frame = ((int)(timeElapsed * 20) + plant.seed % 100) % 6;
                         pasteImage(gameBitmap, fireAnimation.frames[frame], (plant.posX + fireFlower.pos.x /*!!!!!!!!*/ - 1 /*!!!!!!!*/ + plant.posOffset[0], plant.posY + fireFlower.pos.y + plant.posOffset[1]), camPos);
                     }
                     if (game.isLight)
                     {
-                        int radius = 3;
-                        if (plant.type.type == 0 && plant.type.subType == 1) { radius = 5; }
-                        else if (plant.type.type == 1 && plant.type.subType == 1) { radius = 11; }
-
-                        foreach ((int x, int y) pos in plant.lightPositions)
+                        if (plant.type.type == 6)
                         {
-                            lightPositions.Add((pos.x, pos.y, radius, plant.lightColor));
+                            int radius = 3;
+                            if (plant.type == (6, 0)) { radius = 13; }
+                            else if (plant.type == (6, 1)) { radius = 9; }
+                            foreach ((int x, int y) pos in plant.lightPositions)
+                            {
+                                lightPositions.Add((pos.x, pos.y, radius, plant.lightColor));
+                            }
                         }
                     }
                 }

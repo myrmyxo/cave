@@ -122,6 +122,7 @@ namespace Cave
                     if (screen.activePlants.ContainsKey(refId))
                     {
                         Plant motherPlant = screen.activePlants[refId];
+                        if (motherPlant.type != (3, 2)) { return getRandomItem(motherPlant.colorDict.Values.ToList()); }
                         return motherPlant.colorDict[(type.subType, type.subSubType)];
                     }
                 }

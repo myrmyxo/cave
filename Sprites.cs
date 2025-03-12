@@ -107,18 +107,18 @@ namespace Cave
             {
                 { (-1, 0), errorSprite },
                 { (0, 0), new OneSprite("BasePlant", false) },                
-                { (0, 1), new OneSprite("Candle", false) },                   
-                { (0, 2), new OneSprite("Tulip", false) },                    
-                { (0, 3), new OneSprite("Allium", false) },                   
+                { (0, 1), new OneSprite("Tulip", false) },                    
+                { (0, 2), new OneSprite("Allium", false) },                   
                 { (1, 0), new OneSprite("Tree", false) },                     
-                { (1, 1), new OneSprite("ChandelierTree", false) },           
                 { (2, 0), new OneSprite("KelpUpwards", false) },              
                 { (2, 1), new OneSprite("KelpDownwards", false) },            
                 { (3, 0), new OneSprite("ObsidianPlant", false) },
                 { (4, 0), new OneSprite("Mushroom", false) },
                 { (4, 1), new OneSprite("Mold", true) },                    // TO CHANGE
                 { (5, 0), new OneSprite("Vines", false) },
-                { (5, 1), new OneSprite("ObsidianVines", false )}
+                { (5, 1), new OneSprite("ObsidianVines", false ) },
+                { (6, 0), new OneSprite("ChandelierTree", false) },
+                { (6, 1), new OneSprite("Candle", false) },
             };
             materialSprites = new Dictionary<(int, int), OneSprite>
             {
@@ -126,6 +126,7 @@ namespace Cave
                 { (1, 0), new OneSprite("PlantMatter", false) },
                 { (1, 1), new OneSprite("Wood", false) },
                 { (1, 2), new OneSprite("Kelp", false) },
+                { (1, 3), new OneSprite("ObsidianPlantMatter", true) },     // TO CHANGE
                 { (2, 0), new OneSprite("FlowerPetal", false) },
                 { (2, 1), new OneSprite("Pollen", false) },
                 { (3, 0), new OneSprite("MushroomStem", false) },

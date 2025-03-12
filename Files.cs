@@ -55,10 +55,7 @@ namespace Cave
                 structureId = currentStructureId;
                 player = new PlayerJson(game.playerList[0]);
             }
-            public SettingsJson()
-            {
-
-            }
+            public SettingsJson() { }
         }
         public class DimensionJson
         {
@@ -73,10 +70,7 @@ namespace Cave
                 type = screen.type;
                 isMono = screen.isMonoBiome;
             }
-            public DimensionJson()
-            {
-
-            }
+            public DimensionJson() { }
         }
         public class MegaChunk
         {
@@ -246,10 +240,7 @@ namespace Cave
                 }
                 else { fog = null; }
             }
-            public ChunkJson()
-            {
-
-            }
+            public ChunkJson() { }
         }
         public class PlayerJson
         {
@@ -266,10 +257,7 @@ namespace Cave
                 inv = inventoryToArray(player.inventoryQuantities, player.inventoryElements);
                 lastDP = (player.timeAtLastDig, player.timeAtLastPlace);
             }
-            public PlayerJson()
-            {
-
-            }
+            public PlayerJson() { }
         }
         public class EntityJson
         {
@@ -305,109 +293,60 @@ namespace Cave
                 sttCh = entity.timeAtLastStateChange;
                 tp = entity.timeAtLastTeleportation;
             }
-            public EntityJson()
-            {
-
-            }
+            public EntityJson() { }
         }
         public class PlantJson
         {
             public int seed;
+            public int rand;
             public int id;
             public (int, int) type;
             public (int, int) pos;
-            public (int, int) lstGrPos;
             public int grLvl;
             public float lastGr;
 
-            public int[,] fS;
-
-            public List<BranchJson> branches;
-            public List<FlowerJson> flowers;
+            public PlantElementJson pE;
             public PlantJson(Plant plant)
             {
                 seed = plant.seed;
+                rand = plant.randValue;
                 id = plant.id;
                 type = plant.type;
                 pos = (plant.posX, plant.posY);
-                lstGrPos = plant.lastDrawPos;
                 grLvl = plant.growthLevel;
                 lastGr = plant.timeAtLastGrowth;
-                fS = fillstatesToArray(plant.fillStates);
-                branches = new List<BranchJson>();
-                foreach (Branch childBranch in plant.childBranches)
-                {
-                    branches.Add(new BranchJson(childBranch));
-                }
-                flowers = new List<FlowerJson>();
-                foreach (Flower flower in plant.childFlowers)
-                {
-                    flowers.Add(new FlowerJson(flower));
-                }
+                pE = new PlantElementJson(plant.plantElement);
             }
-            public PlantJson()
-            {
-
-            }
+            public PlantJson() { }
         }
-        public class BranchJson
+        public class PlantElementJson
         {
             public int seed;
             public (int, int) pos;
             public (int, int) lstGrPos;
-            public (int, int) type;
+            public (int, int) bD;
+            public (int, int, int) type;
             public int grLvl;
 
             public int[,] fS;
 
-            public List<BranchJson> branches;
-            public List<FlowerJson> flowers;
-            public BranchJson(Branch branch)
+            public List<PlantElementJson> pEs;
+            public PlantElementJson(PlantElement plantElement)
             {
-                seed = branch.seed;
-                type = branch.type;
-                pos = branch.pos;
-                lstGrPos = branch.lastDrawPos;
-                grLvl = branch.growthLevel;
-                fS = fillstatesToArray(branch.fillStates);
-                branches = new List<BranchJson>();
-                foreach (Branch childBranch in branch.childBranches)
+                seed = plantElement.seed;
+                type = plantElement.type;
+                pos = plantElement.pos;
+                lstGrPos = plantElement.lastDrawPos;
+                bD = plantElement.baseDirection;
+                grLvl = plantElement.growthLevel;
+                fS = fillstatesToArray(plantElement.fillStates);
+                pEs = new List<PlantElementJson>();
+                foreach (PlantElement childPlantElement in plantElement.childPlantElements)
                 {
-                    branches.Add(new BranchJson(childBranch));
-                }
-                flowers = new List<FlowerJson>();
-                foreach (Flower flower in branch.childFlowers)
-                {
-                    flowers.Add(new FlowerJson(flower));
+                    pEs.Add(new PlantElementJson(childPlantElement));
                 }
             }
-            public BranchJson()
-            {
-
-            }
-        }
-        public class FlowerJson
-        {
-            public int seed;
-            public (int, int) pos;
-            public (int, int) lstGrPos;
-            public (int, int) type;
-            public int grLvl;
-
-            public int[,] fS;
-            public FlowerJson(Flower flower)
-            {
-                seed = flower.seed;
-                type = flower.type;
-                pos = flower.pos;
-                lstGrPos = flower.lastDrawPos;
-                grLvl = flower.growthLevel;
-                fS = fillstatesToArray(flower.fillStates);
-            }
-            public FlowerJson()
-            {
-
-            }
+            public PlantElementJson() { }
         }
         public class RoomJson
         {
@@ -432,10 +371,7 @@ namespace Cave
                     ent[i] = room.assignedEntities[i].id;
                 }
             }
-            public RoomJson()
-            {
-
-            }
+            public RoomJson() { }
         }
         public class StructureJson
         {
@@ -476,10 +412,7 @@ namespace Cave
                 else { sis = -1; }
                 fS = fillstatesToArray(structure.structureDict);
             }
-            public StructureJson()
-            {
-
-            }
+            public StructureJson() { }
         }
         public class NestJson : StructureJson
         {
@@ -517,10 +450,7 @@ namespace Cave
                     idx++;
                 }
             }
-            public NestJson()
-            {
-
-            }
+            public NestJson() { }
         }
         public static int[,] tileListToArray(List<(int x, int y)> listo)
         {

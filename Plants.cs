@@ -37,245 +37,21 @@ namespace Cave
 {
     public class Plants
     {
-        public class PlantElement
-        {
-            public PlantStructure plantStructure;
-            public int seed;
-            public (int type, int subType) type;
-            public int growthLevel;
-            public int maxGrowthLevel;
-            public (int x, int y) pos;
-            public (int x, int y) lastDrawPos = (0, 0);
-            public Dictionary<(int x, int y), (int type, int subType)> fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
-            public (int x, int y) absolutePos((int x, int y) position)
-            {
-                return (pos.x + position.x, pos.y + position.y);
-            }
-        }
-        public class Branch : PlantElement
-        {
-            public Plant motherPlant;
-
-            public List<Branch> childBranches = new List<Branch>();
-            public List<Flower> childFlowers = new List<Flower>();
-            public Branch(Plant motherPlantToPut, BranchJson branchJson)
-            {
-                motherPlant = motherPlantToPut;
-                pos = branchJson.pos;
-                lastDrawPos = branchJson.lstGrPos;
-                type = branchJson.type;
-                seed = branchJson.seed;
-                fillStates = arrayToFillstates(branchJson.fS);
-                foreach (BranchJson baby in branchJson.branches) { childBranches.Add(new Branch(motherPlant, baby)); }
-                foreach (FlowerJson flowerJson in branchJson.flowers) { childFlowers.Add(new Flower(motherPlant, flowerJson)); }
-                growthLevel = branchJson.grLvl;
-            }
-            public Branch(Plant motherPlantToPut, (int x, int y) posToPut, (int type, int subType) typeToPut, int seedToPut)
-            {
-                motherPlant = motherPlantToPut;
-                pos = posToPut;
-                type = typeToPut;
-                seed = seedToPut;
-                fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
-                growthLevel = -1;
-                tryGrowth();
-            }
-            public void updatePos((int x, int y) mod)
-            {
-                foreach (Branch branch in childBranches)
-                {
-                    branch.pos = (branch.pos.x + mod.x, branch.pos.y + mod.y);
-                    branch.updatePos(mod);
-                }
-                foreach (Flower flower in childFlowers) { flower.pos = (flower.pos.x + mod.x, flower.pos.y + mod.y); }
-                pos = (pos.x + mod.x, pos.y + mod.y);
-            }
-            public void updatePosSet((int x, int y) posToSet)
-            {
-                (int x, int y) mod = (posToSet.x - pos.x, posToSet.y - pos.y);
-                foreach (Branch branch in childBranches)
-                {
-                    branch.pos = (branch.pos.x + mod.x, branch.pos.y + mod.y);
-                    branch.updatePos(mod);
-                }
-                foreach (Flower flower in childFlowers) { flower.pos = (flower.pos.x + mod.x, flower.pos.y + mod.y); }
-                pos = posToSet;
-            }
-            public bool tryFill((int x, int y) testPos, (int type, int subType) typeToFill)
-            {
-                if (motherPlant.testIfPositionEmpty(absolutePos(testPos))) { fillStates[testPos] = typeToFill; return true; }
-                return false;
-            }
-            public bool tryGrowth() // 0 = nothing, 1 = plantMatter, 2 = wood, 3 = aquaticPlantMatter, 4 = mushroomStem, 5 = mushroomCap, 6 = petal, 7 = flowerPollen
-            {
-                (int x, int y) drawPos = lastDrawPos;
-                int growthLevelToTest = growthLevel + 1;
-                if (growthLevelToTest == 0) { goto Success; }
-
-                if (motherPlant.type.type == 1) // woody tree
-                {
-                    if (motherPlant.type.subType == 0)
-                    {
-                        maxGrowthLevel = Min(motherPlant.maxGrowthLevel - pos.y, seed % motherPlant.maxGrowthLevel);
-                        if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
-
-                        int direction; // -1 = left, 1 = right
-                        direction = (seed % 2) * 2 - 1;
-
-                        drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
-
-                        if (LCGint1(seed + growthLevelToTest) % Max(1, (int)(growthLevelToTest * 0.5f)) == 0 || growthLevelToTest < 3)
-                        {
-                            drawPos = (drawPos.x + direction, drawPos.y);
-                        }
-
-                        if (tryFill(drawPos, (1, 1)))
-                        {
-                            if (growthLevel == 1 + seed % 2)
-                            {
-                                Flower baby = new Flower(motherPlant, absolutePos(drawPos), (0, 0), LCGint1(seed + 3 * growthLevelToTest));
-                                childFlowers.Add(baby);
-                            }
-                            else
-                            {
-                                foreach (Flower flower in childFlowers) { flower.pos = absolutePos(drawPos); }
-                            }
-                            goto Success;
-                        }
-                        goto Fail;
-                    }
-                    else if (motherPlant.type.subType == 1)
-                    {
-                        drawPos = lastDrawPos;
-
-                        int direction; // -1 = left, 1 = right
-                        direction = (seed % 2) * 2 - 1;
-
-                        int turningAge = 2 + seed % 10;
-                        int diagoLengto = 1 + seed % 2;
-
-                        maxGrowthLevel = Min(turningAge + diagoLengto + motherPlant.maxGrowthLevel - pos.y, turningAge + diagoLengto + seed % motherPlant.maxGrowthLevel);
-                        if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
-
-
-                        if (growthLevelToTest >= turningAge)
-                        {
-                            if (growthLevelToTest >= turningAge + diagoLengto) { drawPos = (drawPos.x, drawPos.y + 1); }
-                            else { drawPos = (drawPos.x + direction, drawPos.y + 1); }
-                        }
-                        else { drawPos = (drawPos.x + direction, drawPos.y); }
-
-                        if (tryFill(drawPos, (11, 0)))
-                        {
-                            if (growthLevel == 1 + seed % 2)
-                            {
-                                Flower baby = new Flower(motherPlant, absolutePos(drawPos), (0, 0), LCGint1(seed + 3 * growthLevelToTest));
-                                childFlowers.Add(baby);
-                            }
-                            else
-                            {
-                                foreach (Flower flower in childFlowers) { flower.pos = absolutePos(drawPos); }
-                            }
-                            goto Success;
-                        }
-                        goto Fail;
-                    }
-                }
-
-
-            SuccessButStop:;
-                lastDrawPos = drawPos;
-                growthLevel = growthLevelToTest;
-
-            Fail:;
-                return false;
-
-            Success:;
-                lastDrawPos = drawPos;
-                growthLevel = growthLevelToTest;
-                return true;
-            }
-        }
-        public class Flower : PlantElement
-        {
-            public Plant motherPlant;
-            public Flower(Plant motherPlantToPut, FlowerJson flowerJson)
-            {
-                motherPlant = motherPlantToPut;
-                pos = flowerJson.pos;
-                lastDrawPos = flowerJson.lstGrPos;
-                type = flowerJson.type;
-                seed = flowerJson.seed;
-                (int type, int subType, int subSubType) tupelo = (motherPlant.type.type, motherPlant.type.subType, type.type);
-                plantStructure = plantStructuresDict.ContainsKey(tupelo) ? plantStructuresDict[tupelo] : plantStructuresDict[(-1, 0, 0)];
-                fillStates = arrayToFillstates(flowerJson.fS);
-                growthLevel = flowerJson.grLvl;
-                maxGrowthLevel = findMinScoreMaxGrowthLevel();
-            }
-            public Flower(Plant motherPlantToPut, (int x, int y) posToPut, (int type, int subType) typeToPut, int seedToPut)
-            {
-                motherPlant = motherPlantToPut;
-                pos = posToPut;
-                type = typeToPut;
-                seed = seedToPut;
-                (int type, int subType, int subSubType) tupelo = (motherPlant.type.type, motherPlant.type.subType, type.type);
-                plantStructure = plantStructuresDict.ContainsKey(tupelo) ? plantStructuresDict[tupelo] : plantStructuresDict[(-1, 0, 0)];
-                fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
-                growthLevel = -1;
-                maxGrowthLevel = findMinScoreMaxGrowthLevel();
-            }
-            public int findMinScoreMaxGrowthLevel() // Called when MinScore system is used (when minscore is not null)
-            {
-                if (plantStructure.minimumScores is null || plantStructure.minimumScores.Length == 0) { return plantStructure.maxGrowth; }
-                for (int i = 0; i < plantStructure.minimumScores.Length; i++)
-                {
-                    if (motherPlant.maxGrowthLevel < plantStructure.minimumScores[i].value + rand.Next(plantStructure.minimumScores[i].range)) { return i; }
-                }
-                return plantStructure.minimumScores.Length;
-            }
-            public int findMinScoresCurrentGrowthLevel(int growthLevelToTest)
-            {
-                if (plantStructure.minimumScores is null || plantStructure.minimumScores.Length == 0) { return growthLevelToTest; }
-                for (int i = 0; i < plantStructure.minimumScores.Length; i++)
-                {
-                    if (growthLevelToTest < plantStructure.minimumScores[i].value + rand.Next(plantStructure.minimumScores[i].range)) { return i; }
-                }
-                return plantStructure.minimumScores.Length;
-            }
-            public bool tryFill((int x, int y) testPos, (int type, int subType) typeToFill)
-            {
-                if (motherPlant.testIfPositionEmpty(absolutePos(testPos))) { fillStates[testPos] = typeToFill; return true; }
-                return false;
-            }
-            public bool setMaxGrowthAndTestIfOverAndReinitFillStates(int growthLevelToTest)
-            {
-                if (growthLevelToTest > maxGrowthLevel) { return true; }
-                fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
-                return false;
-            }
-            public bool tryGrowth()
-            {
-                if (growthLevel == -1) { growthLevel++; return true; }
-                int frameGrowthLevel = findMinScoresCurrentGrowthLevel(growthLevel + 1);
-                if (setMaxGrowthAndTestIfOverAndReinitFillStates(frameGrowthLevel)) { return false; }
-                PlantStructureFrame frame = plantStructure.frames[frameGrowthLevel - 1];   // -1 important ! ig... might put a default 0 at start in Traits but waste of space
-                foreach ((int x, int y) pos in frame.elementDict.Keys) { tryFill(pos, frame.elementDict[pos]); }
-                growthLevel++;
-                if (frameGrowthLevel >= maxGrowthLevel) { return false; }    // If was final growth
-                return true;
-            }
-        }
-        public class Plant : PlantElement
+        public class Plant
         {
             public Screens.Screen screen;
+            public PlantElement plantElement;
+            public PlantTraits traits;
 
             public int id;
-            public PlantTraits traits;
-            public int state;
+            public (int type, int subType) type;
+            public int seed;
+            public int randValue;
+            public int growthLevel;
             public int posX = 0;
             public int posY = 0;
             public int attachPoint; // 0 ground, 1 leftWall, 2 rightWall, 3 ceiling
-            public Dictionary<(int type, int subType), Color> colorDict;
+            public Dictionary<(int type, int subType), Color> colorDict = new Dictionary<(int type, int subType), Color>();
 
             public float timeAtLastGrowth = timeElapsed;
 
@@ -287,9 +63,6 @@ namespace Cave
             public int[] posOffset = new int[3];
             public int[] bounds = new int[4];
 
-            public List<Branch> childBranches = new List<Branch>();
-            public List<Flower> childFlowers = new List<Flower>();
-
             public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>();
 
             public bool isDeadAndShouldDisappear = false;
@@ -299,16 +72,13 @@ namespace Cave
                 screen = screenToPut;
                 posX = plantJson.pos.Item1;
                 posY = plantJson.pos.Item2;
-                lastDrawPos = plantJson.lstGrPos;
-                transformPlant(plantJson.type);
                 seed = plantJson.seed;
+                randValue = plantJson.rand;
                 id = plantJson.id;
                 growthLevel = plantJson.grLvl;
                 timeAtLastGrowth = plantJson.lastGr;
-                fillStates = arrayToFillstates(plantJson.fS);
-                foreach (BranchJson branchJson in plantJson.branches) { childBranches.Add(new Branch(this, branchJson)); }
-                foreach (FlowerJson flowerJson in plantJson.flowers) { childFlowers.Add(new Flower(this, flowerJson)); }
-                findColors();
+                transformPlant(plantJson.type);
+                plantElement = new PlantElement(this, plantJson.pE);
                 makeBitmap();
             }
             public Plant(Chunk chunkToPut, (int x, int y) posToPut, (int type, int subType) typeToPut)
@@ -318,138 +88,56 @@ namespace Cave
                 screen = chunkToPut.screen;
                 seed = LCGint1(Abs((int)chunkToPut.chunkSeed));
                 seed = Abs(seed + rand.Next(100000)); // TO CHANGE TOCHANGE cuz false randommmm
-                transformPlant(typeToPut);
+                randValue = seed;
                 id = currentPlantId;
                 growthLevel = -1;
+                transformPlant(typeToPut);
+                plantElement = new PlantElement(this, (0, 0), traits.plantElementType, seed);
                 if (isDeadAndShouldDisappear) { return; }
-                findColors();
                 tryGrowToMaximum();
                 makeBitmap();
                 timeAtLastGrowth = timeElapsed;
 
                 currentPlantId++;
             }
-            public Plant(Screens.Screen screenToPut, (int, int) positionToPut, (int type, int subType) typeToPut)
+            public Plant(Screens.Screen screenToPut, (int, int) posToPut, (int type, int subType) typeToPut)
             {
                 screen = screenToPut;
-                posX = positionToPut.Item1;
-                posY = positionToPut.Item2;
-                transformPlant(typeToPut);
+                posX = posToPut.Item1;
+                posY = posToPut.Item2;
                 seed = rand.Next(1000000000); //                               FALSE RANDOM NOT SEEDED ARGHHEHEEEE
+                randValue = seed;
                 id = currentPlantId;
                 growthLevel = -1;
+                transformPlant(typeToPut);
                 testPlantPosition();
                 if (isDeadAndShouldDisappear) { return; }
-                findColors();
-                tryGrowth();
+                plantElement = new PlantElement(this, (0, 0), traits.plantElementType, seed);
+                testPlantGrowth(true);
                 makeBitmap();
                 timeAtLastGrowth = timeElapsed;
 
                 currentPlantId++;
             }
-            public bool tryFill((int x, int y) testPos, (int type, int subType) typeToFill)
+            public int getplantRandValue(int mod = -1)
             {
-                if (testIfPositionEmpty(testPos)) { fillStates[testPos] = typeToFill; return true; }
-                return false;
-            }
-            public void findColors()
-            {
-                colorDict = new Dictionary<(int type, int subType), Color>();
-                int seedo = LCGint1(seed);
-                int hueVar = (int)(seedo % 101) - 50;
-                seedo = LCGint1(seed);
-                int shadeVar = (int)(seedo % 61) - 30;
-                if (type.type == 0) // normal
-                {
-                    if (type.subType == 1)
-                    {
-                        shadeVar = (int)(shadeVar * 0.3f);
-                        colorDict.Add((12, 0), Color.FromArgb(210 - shadeVar, 210 - shadeVar, 200 - shadeVar)); // wax
-                        colorDict.Add((11, 1), Color.FromArgb(200 - shadeVar, 120 - shadeVar, 40 - shadeVar)); // lightBulb (used for the color of the light only)
-                    }
-                    else if (type.subType == 2)
-                    {
-                        colorDict.Add((1, 0), Color.FromArgb(50 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
-                        colorDict.Add((2, 0), Color.FromArgb(220 - shadeVar, 110 - hueVar - shadeVar, 130 + hueVar - shadeVar));
-                    }
-                    else if (type.subType == 3)
-                    {
-                        colorDict.Add((1, 0), Color.FromArgb(50 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
-                        colorDict.Add((2, 0), Color.FromArgb(140 - shadeVar, 80 - hueVar - shadeVar, 220 - shadeVar));
-                    }
-                    else
-                    {
-                        colorDict.Add((1, 0), Color.FromArgb(50 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
-                    }
-                    return;
-                }
-                else if (type.type == 1) // woody
-                {
-                    if (type.subType == 1) // chandelier
-                    {
-                        shadeVar = (int)(shadeVar*0.3f);
-                        colorDict.Add((11, 0), Color.FromArgb(40 - shadeVar, 40 - shadeVar, 60 - shadeVar));
-                        colorDict.Add((11, 1), Color.FromArgb(230 - shadeVar, 230 - shadeVar, 120 - shadeVar));
-                    }
-                    else // normal
-                    {
-                        colorDict.Add((1, 0), Color.FromArgb(50 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
-                        colorDict.Add((1, 1), Color.FromArgb(140 + (int)(hueVar * 0.3f) - shadeVar, 140 - (int)(hueVar * 0.3f) - shadeVar, 50 - shadeVar));
-                        colorDict.Add((2, 0), Color.FromArgb(170 - shadeVar, 120 - hueVar - shadeVar, 150 - shadeVar));
-                        colorDict.Add((2, 1), Color.FromArgb(170 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
-                    }
-                }
-                else if (type.type == 2) // kelp
-                {
-                    colorDict.Add((1, 2), Color.FromArgb(30 - shadeVar, 90 - shadeVar + hueVar, 140 - shadeVar - hueVar));
-                }
-                else if (type.type == 3) // obsidian
-                {
-                    colorDict.Add((1, 0), Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar));
-                }
-                else if (type.type == 4) // mushroom
-                {
-                    if (type.subType == 0)
-                    {
-                        colorDict.Add((3, 0), Color.FromArgb(180 + shadeVar, 160 + shadeVar, 165 + shadeVar));
-                        colorDict.Add((3, 1), Color.FromArgb(140 - shadeVar, 120 + hueVar, 170 - hueVar));
-                    }
-                    else if (type.subType == 1)
-                    {
-                        hueVar = (int)(hueVar * 0.3f);
-                        colorDict.Add((3, 2), Color.FromArgb(50 - shadeVar, 50 - shadeVar, 100 - shadeVar));
-                    }
-                }
-                else if (type.type == 5) // vine
-                {
-                    if (type.subType == 0)
-                    {
-                        colorDict.Add((1, 0), Color.FromArgb(50 - shadeVar, 120 - hueVar - shadeVar, 50 - shadeVar));
-                        colorDict.Add((2, 0), Color.FromArgb(170 - shadeVar, 120 - hueVar - shadeVar, 150 - shadeVar));
-                        colorDict.Add((2, 1), Color.FromArgb(170 - shadeVar, 170 - hueVar - shadeVar, 50 - shadeVar));
-                    }
-                    else if (type.subType == 1)
-                    {
-                        colorDict.Add((1, 0), Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar));
-                        colorDict.Add((2, 0), Color.FromArgb(30 + shadeVar, 30 + shadeVar, 30 + shadeVar));
-                        colorDict.Add((2, 1), Color.FromArgb(220 + shadeVar, 220 + shadeVar, 220 + shadeVar));
-                    }
-                }
-                else if (type.type == 2) // kelp
-                {
-                    colorDict.Add((1, 2), Color.FromArgb(30 - shadeVar, 90 - shadeVar + hueVar, 140 - shadeVar - hueVar));
-                }
+                randValue = (int)cashInt((seed, 7, 13), 0);
+                if (mod == 0) { return 0; }
+                return mod > 0 ? randValue % mod : randValue;
             }
             public (int x, int y) getRealPos((int x, int y) pos) { return (posX + pos.x, posY + pos.y); }
             public (int x, int y) getRelativePos((int x, int y) pos) { return (pos.x - posX, pos.y - posY); }
-            public bool testIfPositionEmpty((int x, int y) mod) // Improve for water (returns true for water, should only do that for plants)
+            public void tryAddMaterialColor((int type, int subType) materialToAdd, ColorRange forceColorRange = null)
             {
-                (int x, int y) pixelPos = getRealPos(mod);
-                (int x, int y) pixelTileIndex = PosMod(pixelPos);
-
-                Chunk chunkToTest = screen.getChunkFromPixelPos(pixelPos);
-                if (chunkToTest.fillStates[pixelTileIndex.x, pixelTileIndex.y].isSolid) { return false; }
-                return true;
+                if (colorDict.ContainsKey(materialToAdd)) { return; }
+                ColorRange c = forceColorRange ?? getMaterialTraits(materialToAdd).colorRange;
+                float hueVar = (float)((seed % 11) * 0.2f - 1);
+                float shadeVar = (float)((LCGz(seed) % 11) * 0.2f - 1);
+                colorDict[materialToAdd] = Color.FromArgb(
+                    ColorClamp(c.r.v + (int)(hueVar * c.r.h) + (int)(shadeVar * c.r.s)),
+                    ColorClamp(c.g.v + (int)(hueVar * c.g.h) + (int)(shadeVar * c.g.s)),
+                    ColorClamp(c.b.v + (int)(hueVar * c.b.h) + (int)(shadeVar * c.b.s))
+                );
             }
             public void makeBitmap()
             {
@@ -515,20 +203,12 @@ namespace Cave
             {
                 lightPositions = new List<(int x, int y)>();
 
-                if (type == (0, 1))
-                {
-                    lightMaterial = (11, 1);
-                    if (childFlowers.Count > 0)
-                    {
-                        Flower fireFlower = childFlowers[0];
-                        lightPositions.Add((fireFlower.pos.x + posX, fireFlower.pos.y + posY + 2)); // !!!!!!!!!! the +1 !!!
-                    }
-                }
-                else if (type == (1, 1)) { lightMaterial = (11, 1); }
-                else { lightMaterial = (0, 0); }
+                if (traits.lightElements is null || traits.lightElements.Length == 0) { lightMaterial = (0, 0); return; }
+                else { lightMaterial = traits.lightElements[0]; }
 
                 foreach (PlantElement element in plantElements)
                 {
+                    if (element.traits.forceLightAtPos) { lightPositions.Add((element.pos.x + posX, element.pos.y + posY)); }
                     foreach ((int x, int y) keyo in element.fillStates.Keys)
                     {
                         if (element.fillStates[keyo] == lightMaterial)
@@ -541,7 +221,7 @@ namespace Cave
                 if (colorDict.ContainsKey(lightMaterial))
                 {
                     Color col = colorDict[lightMaterial];
-                    lightColor = Color.FromArgb(255, (col.R+255)/2,(col.G+255)/2, (col.B+255)/2);
+                    lightColor = Color.FromArgb(255, (col.R + 255) / 2, (col.G + 255) / 2, (col.B + 255) / 2);
                 }
                 else { lightColor = Color.Black; }
             }
@@ -557,270 +237,39 @@ namespace Cave
                     i++;
                 }
             }
-            public bool tryGrowth() // 0 = nothing, 1 = plantMatter, 2 = wood, 3 = aquaticPlantMatter, 4 = mushroomStem, 5 = mushroomCap, 6 = petal, 7 = flowerPollen... NO LOL ITS NOT
-            {
-                int seedo = seed;
-                int growthLevelToTest = growthLevel + 1;
-                (int x, int y) drawPos = lastDrawPos;
-
-                if (growthLevelToTest == 0)
-                {
-                    if (type == (4, 1)) {  }
-                    else if (type.type == 5 || type == (3, 1)) { drawPos = (0, 1); }
-                    else { drawPos = (0, -1); }
-                    goto Success;
-                }
-
-                if (traits.maxGrowth.min != -1 && growthLevelToTest > traits.maxGrowth.min + seed % traits.maxGrowth.range) { goto Fail; }
-                if (type.type == 0) // normal plant
-                {
-                    drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
-                    if (type.subType == 1 || type.subType == 2 || type.subType == 3) // straight growing flowers
-                    {
-                        if (testIfPositionEmpty((drawPos.x, drawPos.y+2)))
-                        {
-                            (int type, int subType) typeToFill = (1, 0);
-                            if (type.subType == 1) { typeToFill = (12, 0); }
-
-                            if (tryFill(drawPos, typeToFill))
-                            {
-                                if (growthLevel == seed % 2)
-                                {
-                                    Flower baby = new Flower(this, drawPos, (0, 0), LCGint1(seed + 3 * growthLevelToTest));
-                                    childFlowers.Add(baby);
-                                }
-                                foreach (Flower flower in childFlowers) { flower.pos = (drawPos.x, drawPos.y+1); }
-                                goto Success;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        seedo = LCGint1(seed + growthLevelToTest * (seed % 7 + 1));
-                        int resulto = seedo % 3;
-                        if (resulto == 0 && growthLevel % 2 == 1) { drawPos = (drawPos.x - 1, drawPos.y); }
-                        else if (resulto == 2 && growthLevel % 2 == 1) { drawPos = (drawPos.x + 1, drawPos.y); }
-
-                        if (tryFill(drawPos, (1, 0))) { goto Success; }
-                    }
-                }
-                else if (type.type == 1) // tree
-                {
-                    maxGrowthLevel = 10 + seed % 40;
-                    if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
-                    if (growthLevelToTest == 0) { }
-
-                    drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
-                    (int type, int subType) typeToFill = (1, 1);
-
-                    int spacing = 3 + seed % 3;
-                    seedo = LCGint1(seed + growthLevelToTest * (seed % 7 + 1));
-                    if (type.subType != 1)
-                    {
-                        int resulto = seedo % 3;
-                        if (resulto == 0 && growthLevel == 2) { drawPos = (drawPos.x - 1, drawPos.y); }
-                        else if (resulto == 2 && growthLevel == 2) { drawPos = (drawPos.x + 1, drawPos.y); }
-                    }
-                    else { spacing += 2; typeToFill = (11, 0); }
-
-                    if (tryFill(drawPos, typeToFill))
-                    {
-                        lastDrawPos = drawPos;
-
-                        if (growthLevelToTest % spacing == 2)
-                        {
-                            Branch branch = new Branch(this, drawPos, (0, 0), LCGint2(seed + growthLevelToTest));
-                            childBranches.Add(branch);
-                        }
-
-                        if (growthLevel == 1 + seed % 2)
-                        {
-                            Flower baby = new Flower(this, drawPos, (0, 0), LCGint1(seed + 3 * growthLevelToTest));
-                            childFlowers.Add(baby);
-                        }
-                        else
-                        {
-                            foreach (Flower flower in childFlowers) { flower.pos = drawPos; }
-                        }
-                        goto Success;
-                    }
-                }
-                else if (type.type == 2) // kelp
-                {
-                    if (type.subType == 0)
-                    {
-                        maxGrowthLevel = 1 + seed % 10;
-                        if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
-
-                        int multo = 2 * (seed % 2) - 1;
-                        drawPos = (((growthLevelToTest - 1) % 2) * multo, growthLevelToTest - 1);
-
-                        if (tryFill(drawPos, (1, 2))) { goto Success; }
-                    }
-                    else if (type.subType == 1)
-                    {
-                        maxGrowthLevel = 1 + seed % 10;
-                        if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
-
-                        int multo = 2 * (seed % 2) - 1;
-                        drawPos = (((growthLevelToTest - 1) % 2) * multo, -(growthLevelToTest - 1));
-
-                        if (tryFill(drawPos, (1, 2))) { goto Success; }
-                    }
-                }
-                else if (type.type == 3) // obsidian plant
-                {
-                    maxGrowthLevel = 1 + seed % 3;
-                    if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
-
-                    drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
-
-                    if (tryFill(drawPos, (1, 0))) { goto Success; }
-                }
-                else if (type.type == 4) // Fungi
-                {
-                    if (type.subType == 0) // Mushroom
-                    {
-                        maxGrowthLevel = 1 + seed % 7;
-                        if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
-
-                        drawPos = (lastDrawPos.x, lastDrawPos.y + 1);
-
-                        if (tryFill(drawPos, (3, 0)))
-                        {
-                            if (growthLevel == 1)
-                            {
-                                Flower baby = new Flower(this, drawPos, (0, 0), LCGint1(seed + 3 * growthLevelToTest));
-                                childFlowers.Add(baby);
-                            }
-                            else
-                            {
-                                foreach (Flower flower in childFlowers) { flower.pos = drawPos; }
-                            }
-                            goto Success;
-                        }
-                    }
-                    else if (type.subType == 1) // Mold
-                    {
-                        bool success = false;
-                        int maxRep = 1 + (int)(fillStates.Count * 0.2f);
-                        int count = 0;
-                        while (count < maxRep)
-                        {
-                            if (fillStates.Count == 0) { drawPos = lastDrawPos; }
-                            else
-                            {
-                                drawPos = fillStates.Keys.ToArray()[rand.Next(fillStates.Count)];
-                                int rando = rand.Next(5);
-                                if (rando < 4) { drawPos = (drawPos.x + neighbourArray[rando].Item1, drawPos.y + neighbourArray[rando].Item2); }
-                            }
-                            if (tryMoldConversion(drawPos)) { success = true; }
-                            if (!fillStates.ContainsKey(drawPos) && tryFill(drawPos, (3, 2))) { success = true; }
-                            count++;
-                        }
-                        if (success) { goto Success; }
-                        goto FailButContinue;
-                    }
-                }
-                else if (type.type == 5) // vine
-                {
-                    maxGrowthLevel = 4 + seed % 60;
-                    if (growthLevelToTest > maxGrowthLevel) { goto Fail; }
-
-                    int multo = 2 * (seed % 2) - 1;
-                    drawPos = (((int)((growthLevelToTest - 1) * 0.5f) % 2) * multo, -(growthLevelToTest - 1));
-
-                    if (tryFill(drawPos, (1, 0)))
-                    {
-                        int spacingOfFlowers = 4 + seedo % 4;
-                        if (growthLevel % spacingOfFlowers == 2)
-                        {
-                            int typet = (LCGint2(seed + growthLevel) % 2 + 2) % 2;
-                            Flower flower = new Flower(this, drawPos, (typet, 0), seed + growthLevel);
-                            childFlowers.Add(flower);
-                        }
-                        goto Success;
-                    }
-                }
-
-            SuccessButStop:;
-                lastDrawPos = drawPos;
-                growthLevel = growthLevelToTest;
-
-            Fail:;
-                return false;
-
-            Success:;
-                growthLevel = growthLevelToTest;
-                lastDrawPos = drawPos;
-            FailButContinue:;
-                return true;
-            }
-            public bool tryMoldConversion((int x, int y) pos)
-            {
-                if (!fillStates.ContainsKey(pos)) { return false; }
-                int moldyTiles = 0;
-                int fullTiles = 0;
-                (int x, int y) posToTest;
-                foreach ((int x, int y) mod in neighbourArray)
-                {
-                    posToTest = (pos.x + mod.x, pos.y + mod.y);
-                    if (screen.getTileContent(getRealPos(posToTest)).isSolid) { fullTiles += 1; }
-                    if (fillStates.ContainsKey(posToTest)) { moldyTiles += 1; }
-                }
-                if (moldyTiles + fullTiles >= 4)
-                {
-                    screen.setTileContent(getRealPos(pos), (5, 0));
-                    fillStates.Remove(pos);
-                    return true;
-                }
-                return false;
-            }
-            public bool tryToMakeParticle()
-            {
-                if (type == (4, 1) && fillStates.Count > 0)
-                {
-                    if (rand.Next(10) == 0)
-                    {
-                        (int x, int y) pos = getRealPos(fillStates.Keys.ToArray()[rand.Next(fillStates.Count)]);
-                        new Particle(screen, pos, pos, (5, 3, 2), id);  // mold particle
-                        return true;
-                    }
-                }
-                return false;
-            }
             public bool testPlantGrowth(bool forceGrowth)
             {
-                tryToMakeParticle();
+                // plantElement.tryToMakeParticle();
                 if (forceGrowth || (!isStable && timeElapsed >= 0.2f + timeAtLastGrowth))
                 {
                     isStable = true;
 
-                    if (tryGrowth()) { isStable = false; }
-
-                    List<Branch> branchesToGrow = new List<Branch>(childBranches);
-                    for (int i = 0; i < branchesToGrow.Count; i++)
+                    List<PlantElement> plantElementsToGrow = new List<PlantElement> { plantElement };
+                    for (int i = 0; i < plantElementsToGrow.Count; i++)
                     {
-                        if (branchesToGrow[i].tryGrowth()) { isStable = false; }
-                        foreach (Branch branch in branchesToGrow[i].childBranches)
+                        PlantElement currentPlant = plantElementsToGrow[i];
+                        if (currentPlant.tryGrowth()) { isStable = false; }
+                        foreach (PlantElement plantElementToAdd in currentPlant.childPlantElements)
                         {
-                            branchesToGrow.Add(branch);
+                            plantElementsToGrow.Add(plantElementToAdd);
                         }
-                        foreach (Flower flower in branchesToGrow[i].childFlowers)
-                        {
-                            if (flower.tryGrowth()) { isStable = false; }
-                        }
-                    }
-                    foreach (Flower flower in childFlowers)
-                    {
-                        if (flower.tryGrowth()) { isStable = false; }
                     }
                     if (!forceGrowth) { makeBitmap(); }   // not to make bitmap when it's not needed (growing to max)
                     timeAtLastGrowth = timeElapsed;
 
+                    if (!isStable) { growthLevel++; }
                     return !isStable;
                 }
                 return false;
+            }
+            public bool testIfPositionEmpty((int x, int y) mod) // Improve for water (returns true for water, should only do that for plants)
+            {
+                (int x, int y) pixelPos = getRealPos(mod);
+                (int x, int y) pixelTileIndex = PosMod(pixelPos);
+
+                Chunk chunkToTest = screen.getChunkFromPixelPos(pixelPos);
+                if (chunkToTest.fillStates[pixelTileIndex.x, pixelTileIndex.y].isSolid) { return false; }
+                return true;
             }
             public void testPlantPosition()
             {
@@ -840,29 +289,12 @@ namespace Cave
                 }
                 return fillDict;
             }
-            public (List<Branch>, List<Flower>) returnAllBranchesAndFlowers()
-            {
-                List<Branch> branchesToTest = new List<Branch>();
-                List<Flower> flowersToTest = new List<Flower>();
-                foreach (Branch branch in childBranches) { branchesToTest.Add(branch); }
-                foreach (Flower flower in childFlowers) { flowersToTest.Add(flower); }
-                for (int i = 0; i < branchesToTest.Count; i++)
-                {
-                    foreach (Branch branch in branchesToTest[i].childBranches) { branchesToTest.Add(branch); }
-                    foreach (Flower flower in branchesToTest[i].childFlowers) { flowersToTest.Add(flower); }
-                }
-                return (branchesToTest, flowersToTest);
-            }
             public List<PlantElement> returnAllPlantElements()
             {
-                List<PlantElement> plantElements = new List<PlantElement> { this };
-                List<Branch> branchesToTest = new List<Branch>();
-                foreach (Branch branch in childBranches) { branchesToTest.Add(branch); plantElements.Add(branch); }
-                foreach (Flower flower in childFlowers) { plantElements.Add(flower); }
-                for (int i = 0; i < branchesToTest.Count; i++)
+                List<PlantElement> plantElements = new List<PlantElement> { plantElement };
+                for (int i = 0; i < plantElements.Count; i++)
                 {
-                    foreach (Branch branch in branchesToTest[i].childBranches) { branchesToTest.Add(branch); plantElements.Add(branch); }
-                    foreach (Flower flower in branchesToTest[i].childFlowers) { plantElements.Add(flower); }
+                    foreach (PlantElement plantElement in plantElements[i].childPlantElements) { plantElements.Add(plantElement); }
                 }
                 return plantElements;
             }
@@ -907,14 +339,18 @@ namespace Cave
 
                 return (false, 0, 0);
             }
-
             public void transformPlant((int type, int subType) newType)
             {
                 type = newType;
                 traits = plantTraitsDict.ContainsKey(type) ? plantTraitsDict[type] : plantTraitsDict[(-1, 0)];
                 if (traits.isCeiling) { attachPoint = 1; }
-
-                findColors();
+                if (traits.colorOverrideArray != null)
+                {
+                    foreach (((int type, int subType) type, ColorRange colorRange) item in traits.colorOverrideArray)
+                    {
+                        tryAddMaterialColor(item.type, item.colorRange);
+                    }
+                }
             }
             public void testDeath(Dictionary<(int x, int y), (int type, int subType)> fillDict)
             {
@@ -923,10 +359,295 @@ namespace Cave
                     dieAndDrop();
                 }
             }
-
             public void dieAndDrop()
             {
                 screen.plantsToRemove[id] = this;
+            }
+        }
+
+
+
+
+        public class PlantElement
+        {
+            public Plant motherPlant;
+            public PlantElementTraits traits;
+
+            public List<PlantElement> childPlantElements = new List<PlantElement>();
+
+            public int seed;
+            public (int type, int subType, int subSubType) type;
+            
+            public int maxGrowthLevel;
+            
+            public (int x, int y) pos;
+
+            public int growthLevel;
+            public (int x, int y) lastDrawPos = (0, 0);
+            public (int x, int y) growthDirection = (0, 0);
+            public (int x, int y) baseDirection = (0, 0);
+
+            public int currentFrameArrayIdx = -1;
+            public int frameArrayOffset = 0;
+
+            public int currentChildArrayIdx = -1;
+            public int childArrayOffset = 1;
+            public int currentDirectionArrayIdx = -1;
+            public int directionArrayOffset = 1;
+            public int currentModArrayIdx = -1;
+            public int modArrayOffset = 1;
+
+            public Dictionary<(int type, int subType), Color> colorOverrideDict = null;
+            public Dictionary<(int x, int y), (int type, int subType)> fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
+            public PlantElement(Plant motherPlantToPut, PlantElementJson plantElementJson)
+            {
+                motherPlant = motherPlantToPut;
+                pos = plantElementJson.pos;
+                lastDrawPos = plantElementJson.lstGrPos;
+                type = plantElementJson.type;
+                baseDirection = plantElementJson.bD;
+                getTraitAndAddColors();
+                seed = plantElementJson.seed;
+                fillStates = arrayToFillstates(plantElementJson.fS);
+                foreach (PlantElementJson baby in plantElementJson.pEs) { childPlantElements.Add(new PlantElement(motherPlant, baby)); }
+                growthLevel = plantElementJson.grLvl;
+            }
+            public PlantElement(Plant motherPlantToPut, (int x, int y) posToPut, (int type, int subType, int subSubType) typeToPut, int seedToPut)
+            {
+                motherPlant = motherPlantToPut;
+                pos = posToPut;
+                type = typeToPut;
+                seed = seedToPut;
+                getTraitAndAddColors();
+                fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
+                growthLevel = -1;
+                tryGrowth();
+            }
+            public int getRandValue(int valueModifier, int modulo = -1)
+            {
+                int randy = (int)cashInt((valueModifier, 7, 13), seed);
+                if (modulo == 0) { return 0; }
+                return modulo > 0 ? randy % modulo : randy;
+            }
+            public void getTraitAndAddColors()
+            {
+                traits = getPlantElementTraits(type);
+                maxGrowthLevel = traits.maxGrowth.maxLevel + seed % (traits.maxGrowth.range + 1);  // will put variation in growth levels here
+                foreach ((int type, int subType) material in traits.materialsPresent)
+                {
+                    motherPlant.tryAddMaterialColor(material);
+                }
+            }
+            public (int x, int y) absolutePos((int x, int y) position) {
+                return (pos.x + position.x, pos.y + position.y);
+            }
+            public bool tryFill((int x, int y) testPos, (int type, int subType) typeToFill)
+            {
+                if (motherPlant.testIfPositionEmpty(absolutePos(testPos))) { fillStates[testPos] = typeToFill; return true; }
+                return false;
+            }
+            public bool tryGrowth()
+            {
+                if (traits.frames != null)  // for traits, first growth level at which the plantElement start to develop is at 0. for plantGrowthRules, it is at 1. Be careful
+                {
+                    growthLevel++;
+                    if (traits.frames is null || traits.frames.Length == 0 || (/*!traits.frames.loopFrames*/true && currentFrameArrayIdx + 1 >= traits.frames.Length)) { }
+                    else
+                    {
+                        ((int frame, int range) changeFrame, PlantStructureFrame frame) frame = traits.frames[(currentFrameArrayIdx + 1) % traits.frames.Length];
+
+                        int cost = frame.changeFrame.frame + rand.Next(frame.changeFrame.range);
+                        if (growthLevel - frameArrayOffset >= cost)
+                        {
+                            frameArrayOffset += cost;
+                            currentFrameArrayIdx++;
+
+                            fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
+                            foreach ((int x, int y) pos in frame.frame.elementDict.Keys) { tryFill(pos, frame.frame.elementDict[pos]); }
+                            // maybe make it so the growth only succceeds if > half of the newly filled fillStates have been successfully filled ? If not it cancels the growth, keep old fillStates, and doesn't increase growthLevel
+                        }
+                    }
+                    if (growthLevel >= maxGrowthLevel) { return false; }    // If was final growth
+                    return true;
+                }
+                else if (traits.plantGrowthRules != null)
+                {
+                    (int x, int y) drawPos = lastDrawPos;
+                    int growthLevelToTest = growthLevel + 1;
+                    if (growthLevelToTest == 0)
+                    {   // drawPos set to the place it would've grown at if it was at state "-1" -> offset so first growth starts at correct position
+                        if (type == (4, 1, 0)) { baseDirection = (0, 0); }  // temp, so mold doesn't get moved lol
+                        else if (traits.plantGrowthRules.startDirection != null)
+                        {
+                            ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped) dir = traits.plantGrowthRules.startDirection.Value;
+                            baseDirection = (dir.direction.x * (dir.canBeFlipped.x ? (rand.Next(2) * 2 - 1) : 1), dir.direction.y * (dir.canBeFlipped.y ? (rand.Next(2) * 2 - 1) : 1)); 
+                        }
+                        else if (motherPlant.traits.isCeiling) { drawPos = (0, 1); baseDirection = (0, -1); }
+                        else { drawPos = (0, -1); baseDirection = (0, 1); }
+                        growthDirection = baseDirection;
+                        baseDirection = (baseDirection.x == 0 ? getRandValue(seed + 7, 2) * 2 - 1 : baseDirection.x, baseDirection.y == 0 ? getRandValue(seed + 13, 2) * 2 - 1 : baseDirection.y);
+                        if (traits.plantGrowthRules.childrenOnGrowthStart != null && traits.plantGrowthRules.childrenOnGrowthStart.Length > 0)
+                        {
+                            foreach (((int type, int subType, int subSubType) child, (int x, int y) mod) item in traits.plantGrowthRules.childrenOnGrowthStart)
+                            {
+                                PlantElement baby = new PlantElement(motherPlant, absolutePos((drawPos.x + item.mod.x, drawPos.y + item.mod.y)), item.child, getRandValue(seed + 3 * growthLevelToTest));
+                                childPlantElements.Add(baby);
+                            }
+                        }
+                        goto Success;
+                    }
+                    if (growthLevelToTest > maxGrowthLevel + (traits.plantGrowthRules.childrenOnGrowthEnd is null ? 0 : 1)) { goto Fail; }
+
+                    if (traits.plantGrowthRules.directionGrowthArray is null || traits.plantGrowthRules.directionGrowthArray.Length == 0 || (!traits.plantGrowthRules.loopDG && currentDirectionArrayIdx + 1 >= traits.plantGrowthRules.directionGrowthArray.Length)) { }
+                    else
+                    {
+                        ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame) item = traits.plantGrowthRules.directionGrowthArray[(currentDirectionArrayIdx + 1) % traits.plantGrowthRules.directionGrowthArray.Length];
+
+                        int cost = item.changeFrame.frame + getRandValue(directionArrayOffset + 10000, item.changeFrame.range + 1);
+                        if (growthLevelToTest - directionArrayOffset >= cost)
+                        {
+                            directionArrayOffset += cost;
+                            currentDirectionArrayIdx++;
+
+                            growthDirection = (item.direction.x * (item.canBeFlipped.x ? (item.canBeFlipped.independant ? (rand.Next(2) * 2 - 1) : baseDirection.x) : 1), item.direction.y * (item.canBeFlipped.y ? (item.canBeFlipped.independant ? (rand.Next(2) * 2 - 1) : baseDirection.y) : 1));
+                        }
+                    }   
+
+                    drawPos = (lastDrawPos.x + growthDirection.x, lastDrawPos.y + growthDirection.y);
+
+                    if (traits.plantGrowthRules.growthPosModArray is null || traits.plantGrowthRules.growthPosModArray.Length == 0 || (!traits.plantGrowthRules.loopPM && currentModArrayIdx + 1 >= traits.plantGrowthRules.growthPosModArray.Length)) { }
+                    else
+                    {
+                        ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame) item = traits.plantGrowthRules.growthPosModArray[(currentModArrayIdx + 1) % traits.plantGrowthRules.growthPosModArray.Length];
+
+                        int cost = item.changeFrame.frame + getRandValue(modArrayOffset + 20000, item.changeFrame.range + 1);
+                        if (growthLevelToTest - modArrayOffset >= cost)
+                        {
+                            modArrayOffset += cost;
+                            currentModArrayIdx++;
+
+                            drawPos = (drawPos.x + item.mod.x * (item.canBeFlipped.x ? (item.canBeFlipped.independant ? (rand.Next(2) * 2 - 1) : baseDirection.x) : 1), drawPos.y + item.mod.y * (item.canBeFlipped.y ? (item.canBeFlipped.independant ? (rand.Next(2) * 2 - 1) : baseDirection.y) : 1));
+                        }
+                    }
+
+                    if (traits.plantGrowthRules.childArray is null || traits.plantGrowthRules.childArray.Length == 0 || (!traits.plantGrowthRules.loopChild && currentChildArrayIdx + 1 >= traits.plantGrowthRules.childArray.Length)) { }
+                    else
+                    {
+                        ((int type, int subType, int subSubType) child, (int frame, int range) birthFrame) item = traits.plantGrowthRules.childArray[(currentChildArrayIdx + 1) % traits.plantGrowthRules.childArray.Length];
+
+                        int cost = item.birthFrame.frame + getRandValue(childArrayOffset + 30000, item.birthFrame.range + 1);
+                        if (growthLevelToTest - childArrayOffset >= cost)
+                        {
+                            childArrayOffset += cost;
+                            currentChildArrayIdx++;
+
+                            PlantElement baby = new PlantElement(motherPlant, absolutePos(drawPos), item.child, getRandValue(seed + 3 * growthLevelToTest));
+                            childPlantElements.Add(baby);
+                        }
+                    }
+
+                    foreach (PlantElement child in childPlantElements) { if (child.traits.stickToLastDrawPosOfParent) { child.pos = absolutePos(drawPos); } }
+
+                    if (growthLevelToTest > maxGrowthLevel)
+                    {
+                        drawPos = lastDrawPos;
+                        if (traits.plantGrowthRules.childrenOnGrowthEnd != null && traits.plantGrowthRules.childrenOnGrowthEnd.Length > 0)
+                        {
+                            foreach (((int type, int subType, int subSubType) child, (int x, int y) mod) item in traits.plantGrowthRules.childrenOnGrowthEnd)
+                            {
+                                PlantElement baby = new PlantElement(motherPlant, absolutePos((drawPos.x + item.mod.x, drawPos.y + item.mod.y)), item.child, getRandValue(seed + 3 * growthLevelToTest));
+                                childPlantElements.Add(baby);
+                            }
+                        }
+                        goto SuccessButStop;
+                    }
+
+                    if (traits.plantGrowthRules.isMold)
+                    {
+                        if (growthLevel >= maxGrowthLevel) { return false; }    // If overgrown
+
+                        for (int i = 0; i < 1 + (int)(fillStates.Count * 0.2f); i++)
+                        {
+                            if (fillStates.Count == 0) { drawPos = lastDrawPos; }
+                            else
+                            {
+                                drawPos = getRandomItem(fillStates.Keys.ToList());
+                                int rando = rand.Next(5);
+                                if (rando != 4) { drawPos = (drawPos.x + neighbourArray[rando].Item1, drawPos.y + neighbourArray[rando].Item2); }
+                            }
+                            if (tryMoldConversion(drawPos)) { goto Success; }
+                            if (!fillStates.ContainsKey(drawPos) && tryFill(drawPos, traits.plantGrowthRules.materalToFillWith)) { goto Success; }
+                        }
+                        goto FailButContinue;
+                    }
+                    if (tryFill(drawPos, traits.plantGrowthRules.materalToFillWith)) { goto Success; }
+                    goto Fail;
+
+                SuccessButStop:;
+                    lastDrawPos = drawPos;
+                    growthLevel = growthLevelToTest;
+                Fail:;
+                    return false;
+
+                Success:;
+                    lastDrawPos = drawPos;
+                    growthLevel = growthLevelToTest;
+                FailButContinue:;
+                    return true;
+                }
+                return false;
+            }
+            public bool tryMoldConversion((int x, int y) pos)
+            {
+                if (!fillStates.ContainsKey(pos)) { return false; }
+                int moldyTiles = 0;
+                int fullTiles = 0;
+                (int x, int y) posToTest;
+                foreach ((int x, int y) mod in neighbourArray)
+                {
+                    posToTest = (pos.x + mod.x, pos.y + mod.y);
+                    if (motherPlant.screen.getTileContent(motherPlant.getRealPos(posToTest)).isSolid) { fullTiles += 1; }
+                    if (fillStates.ContainsKey(posToTest)) { moldyTiles += 1; }
+                }
+                if (moldyTiles + fullTiles >= 4)
+                {
+                    motherPlant.screen.setTileContent(motherPlant.getRealPos(pos), (5, 0));
+                    fillStates.Remove(pos);
+                    return true;
+                }
+                return false;
+            }
+            public bool tryToMakeParticle()
+            {
+                if ((type == (4, 1, 0) || true) && fillStates.Count > 0)
+                {
+                    if (rand.Next(10) == 0)
+                    {
+                        (int x, int y) pos = motherPlant.getRealPos(fillStates.Keys.ToArray()[rand.Next(fillStates.Count)]);
+                        new Particle(motherPlant.screen, pos, pos, (5, 3, 2), motherPlant.id);  // mold particle
+                        return true;
+                    }
+                }
+                return false;
+            }
+            public void updatePos((int x, int y) mod)
+            {
+                foreach (PlantElement plantElement in childPlantElements)
+                {
+                    plantElement.pos = (plantElement.pos.x + mod.x, plantElement.pos.y + mod.y);
+                    plantElement.updatePos(mod);
+                }
+                pos = (pos.x + mod.x, pos.y + mod.y);
+            }
+            public void updatePosSet((int x, int y) posToSet)
+            {
+                (int x, int y) mod = (posToSet.x - pos.x, posToSet.y - pos.y);
+                foreach (PlantElement plantElement in childPlantElements)
+                {
+                    plantElement.pos = (plantElement.pos.x + mod.x, plantElement.pos.y + mod.y);
+                    plantElement.updatePos(mod);
+                }
+                pos = posToSet;
             }
         }
     }
