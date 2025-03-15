@@ -180,6 +180,7 @@ namespace Cave
             // Bubble effects in water ?
             // Fishing rod
             // For PlantStructure shit in traits : intruduce a variation of the maxGrowthLevel as an optional parameter directly in there, to have flowers with different max growth levels.
+            // Make certain plants only able to spawn on certain terrain -> not hardrock for all plants, only flesh for flesh vines/tendrils... etc
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
@@ -188,6 +189,7 @@ namespace Cave
             // Prevent waterSkippers for yeeting themselves out of pools where there is nothing on the sides of a lake to prevent them from doing so
             // When worms are on solid ground, like in air on top of a solid... they stop moving lol
             // An ocean biome was leaking out in a slime biome ??? the fuck
+            // When making portal, it FUCKING EATS THE PLANTS AROUND IT ????????? LIKE DUDE ??? STOP ???
 
             // cool ideas for later !
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
@@ -221,6 +223,7 @@ namespace Cave
             // Bat/Pterosaur like creatures that can dive in lake to catch fish (or just surface and they catch water skippers) like they glide and shit. But like they're big.
             // Special worms that pollinate obsidian plants in obsidian biomes
             // Vulture bees ??
+            // Add rats with a tail ? Rat swarms ?
 
             // Plants ideas !
             // Tendril shits in living diomension
