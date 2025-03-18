@@ -439,7 +439,7 @@ namespace Cave
                     {
                         if (rando > tupelo.percentage) { rando -= tupelo.percentage; continue; }
                         PlantTraits traits = plantTraitsDict.ContainsKey(tupelo.type) ? plantTraitsDict[tupelo.type] : plantTraitsDict[(-1, 0)];
-                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, traits.isWater, traits.isCeiling);
+                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, traits.isWater, traits.isCeiling, soilType:traits.soilType);
                         if (!returnTuple.valid) { break; }
                         Plant newPlant = new Plant(this, returnTuple.pos, tupelo.type);
                         if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
@@ -469,7 +469,7 @@ namespace Cave
                 }
                 entitiesAndPlantsSpawned = true;
             }
-            public ((int x, int y), bool valid) findSuitablePosition(Dictionary<(int x, int y), bool> forbiddenPositions, bool isEntity, bool isWater, bool isCeiling = false, bool isDigging = false, bool isJesus = false)
+            public ((int x, int y), bool valid) findSuitablePosition(Dictionary<(int x, int y), bool> forbiddenPositions, bool isEntity, bool isWater, bool isCeiling = false, bool isDigging = false, bool isJesus = false, (int type, int subType)? soilType = null)
             {
                 int counto = 0;
                 (int x, int y) posToTest;
@@ -486,6 +486,7 @@ namespace Cave
 
                     posToTest = (randPos.x, randPos.y + (isCeiling ? 1 : -1));
                     tileTraits = screen.getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
+                    if (soilType != null && tileTraits.type != soilType.Value) { continue; }
                     if (isJesus)
                     {
                         if (!tileTraits.isLiquid) { continue ; }

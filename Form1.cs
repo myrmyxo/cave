@@ -242,6 +242,7 @@ namespace Cave
             // Star people who have left star structures such as : "star" "big star" "bigbigstar" "bi gbigbigbi g star". Like maybe nests and shite made out of starz.
             // Day and night cycle (that... doesn't exist yet lmfao) due to huge influx of light from another dimension. Like in all points of the dimension photons just happen to be transferred during the day, but it stops during the nigh
             // Same reason for the seasons(?) and shit, but over a long period of time
+            // In living dimension, bone plants are acutally bone tumors ? And flesh plants parasitic ?? idk
 
             //
             // cool seeds !!!! DO NOT DELETE      yeah actually since world gen keeps on changing they're fucking useless LMFAO
