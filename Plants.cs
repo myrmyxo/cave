@@ -90,7 +90,7 @@ namespace Cave
                 seed = Abs(seed + rand.Next(100000)); // TO CHANGE TOCHANGE cuz false randommmm
                 randValue = seed;
                 id = currentPlantId;
-                growthLevel = -1;
+                growthLevel = 0;
                 transformPlant(typeToPut);
                 plantElement = new PlantElement(this, (0, 0), traits.plantElementType, seed);
                 if (isDeadAndShouldDisappear) { return; }
@@ -108,7 +108,7 @@ namespace Cave
                 seed = rand.Next(1000000000); //                               FALSE RANDOM NOT SEEDED ARGHHEHEEEE
                 randValue = seed;
                 id = currentPlantId;
-                growthLevel = -1;
+                growthLevel = 0;
                 transformPlant(typeToPut);
                 testPlantPosition();
                 if (isDeadAndShouldDisappear) { return; }
@@ -229,26 +229,27 @@ namespace Cave
             {
                 isStable = false;
                 int maxIterations = -1;
-                if (type == (4, 1)) { maxIterations = 2 + rand.Next(100); }
+                if (plantElement.traits.plantGrowthRules != null && plantElement.traits.plantGrowthRules.isMold) { maxIterations = 2 + rand.Next(100); }
                 int i = 0;
                 while (!isStable && (maxIterations == -1 || i < maxIterations))
                 {
                     isStable = !testPlantGrowth(true);
                     i++;
                 }
+                if (growthLevel < traits.minGrowthForValidity) { isDeadAndShouldDisappear = true; }
             }
             public bool testPlantGrowth(bool forceGrowth)
             {
                 // plantElement.tryToMakeParticle();
                 if (forceGrowth || (!isStable && timeElapsed >= 0.2f + timeAtLastGrowth))
                 {
-                    isStable = true;
+                    int growthIncreaseInt = 0;
 
                     List<PlantElement> plantElementsToGrow = new List<PlantElement> { plantElement };
                     for (int i = 0; i < plantElementsToGrow.Count; i++)
                     {
                         PlantElement currentPlant = plantElementsToGrow[i];
-                        if (currentPlant.tryGrowth()) { isStable = false; }
+                        growthIncreaseInt = Max(growthIncreaseInt, currentPlant.tryGrowth());
                         foreach (PlantElement plantElementToAdd in currentPlant.childPlantElements)
                         {
                             plantElementsToGrow.Add(plantElementToAdd);
@@ -257,8 +258,9 @@ namespace Cave
                     if (!forceGrowth) { makeBitmap(); }   // not to make bitmap when it's not needed (growing to max)
                     timeAtLastGrowth = timeElapsed;
 
-                    if (!isStable) { growthLevel++; }
-                    return !isStable;
+                    if (growthIncreaseInt == 0) { isStable = true; return false; }
+                    if (growthIncreaseInt == 1) { growthLevel++; isStable = true; return false; }
+                    if (growthIncreaseInt == 2) { growthLevel++; isStable = false; return true; }
                 }
                 return false;
             }
@@ -446,7 +448,7 @@ namespace Cave
                 if (motherPlant.testIfPositionEmpty(absolutePos(testPos))) { fillStates[testPos] = typeToFill; return true; }
                 return false;
             }
-            public bool tryGrowth()
+            public int tryGrowth()  // 0 -> Growth Failed and ABORT, 1 -> Final growth, won't grow anymore after but SUCCESS, 2 -> Normal growth, SUCCESS and continue after
             {
                 if (traits.frames != null)  // for traits, first growth level at which the plantElement start to develop is at 0. for plantGrowthRules, it is at 1. Be careful
                 {
@@ -467,8 +469,8 @@ namespace Cave
                             // maybe make it so the growth only succceeds if > half of the newly filled fillStates have been successfully filled ? If not it cancels the growth, keep old fillStates, and doesn't increase growthLevel
                         }
                     }
-                    if (growthLevel >= maxGrowthLevel) { return false; }    // If was final growth
-                    return true;
+                    if (growthLevel >= maxGrowthLevel) { return 1; }    // If was final growth
+                    return 2;
                 }
                 else if (traits.plantGrowthRules != null)
                 {
@@ -496,7 +498,6 @@ namespace Cave
                         }
                         goto Success;
                     }
-                    if (growthLevelToTest > maxGrowthLevel + (traits.plantGrowthRules.childrenOnGrowthEnd is null ? 0 : 1)) { goto Fail; }
 
                     if (traits.plantGrowthRules.directionGrowthArray is null || traits.plantGrowthRules.directionGrowthArray.Length == 0 || (!traits.plantGrowthRules.loopDG && currentDirectionArrayIdx + 1 >= traits.plantGrowthRules.directionGrowthArray.Length)) { }
                     else
@@ -545,26 +546,26 @@ namespace Cave
                             childPlantElements.Add(baby);
                         }
                     }
-
+                    // prolly gonna have to move this down
                     foreach (PlantElement child in childPlantElements) { if (child.traits.stickToLastDrawPosOfParent) { child.pos = absolutePos(drawPos); } }
 
-                    if (growthLevelToTest > maxGrowthLevel)
+                    if (growthLevelToTest == maxGrowthLevel + 1) // Should only happen when plants has childrenOnGrowthEnd and has done its last growth already
                     {
-                        drawPos = lastDrawPos;
-                        if (traits.plantGrowthRules.childrenOnGrowthEnd != null && traits.plantGrowthRules.childrenOnGrowthEnd.Length > 0)
+                        if (traits.plantGrowthRules.childrenOnGrowthEnd != null && traits.plantGrowthRules.childrenOnGrowthEnd.Length > 0 && growthLevelToTest == maxGrowthLevel + 1)
                         {
+                            drawPos = lastDrawPos;
                             foreach (((int type, int subType, int subSubType) child, (int x, int y) mod) item in traits.plantGrowthRules.childrenOnGrowthEnd)
                             {
                                 PlantElement baby = new PlantElement(motherPlant, absolutePos((drawPos.x + item.mod.x, drawPos.y + item.mod.y)), item.child, getRandValue(seed + 3 * growthLevelToTest));
                                 childPlantElements.Add(baby);
                             }
                         }
-                        goto SuccessButStop;
+                        goto SuccessButStop;  // Necessary else might make children again when getting loaded
                     }
 
                     if (traits.plantGrowthRules.isMold)
                     {
-                        if (growthLevel >= maxGrowthLevel) { return false; }    // If overgrown
+                        if (growthLevel >= maxGrowthLevel) { goto Fail; }    // If overgrown
 
                         for (int i = 0; i < 1 + (int)(fillStates.Count * 0.2f); i++)
                         {
@@ -580,22 +581,28 @@ namespace Cave
                         }
                         goto FailButContinue;
                     }
-                    if (tryFill(drawPos, traits.plantGrowthRules.materalToFillWith)) { goto Success; }
+                    if (tryFill(drawPos, traits.plantGrowthRules.materalToFillWith))
+                    {
+                        if (growthLevelToTest >= maxGrowthLevel + (traits.plantGrowthRules.childrenOnGrowthEnd is null ? 0 : 1)) { goto SuccessButStop; }
+                        goto Success;
+                    }
                     goto Fail;
+
+                Fail:;
+                    return 0;
 
                 SuccessButStop:;
                     lastDrawPos = drawPos;
                     growthLevel = growthLevelToTest;
-                Fail:;
-                    return false;
+                    return 1;
 
                 Success:;
                     lastDrawPos = drawPos;
                     growthLevel = growthLevelToTest;
                 FailButContinue:;
-                    return true;
+                    return 2;
                 }
-                return false;
+                return 0;
             }
             public bool tryMoldConversion((int x, int y) pos)
             {

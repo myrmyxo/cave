@@ -119,10 +119,10 @@ namespace Cave
                 { (5, 1), new OneSprite("ObsidianVines", false ) },
                 { (6, 0), new OneSprite("ChandelierTree", false) },
                 { (6, 1), new OneSprite("Candle", false) },
-                { (7, 0), new OneSprite("Vines", false ) },
-                { (7, 1), new OneSprite("ObsidianVines", false ) },
-                { (8, 0), new OneSprite("Vines", false ) },
-                { (8, 1), new OneSprite("ObsidianVines", false ) },
+                { (7, 0), new OneSprite("FleshVine", true) },              // TO CHANGE
+                { (7, 1), new OneSprite("FleshTendril", true) },            // TO CHANGE
+                { (8, 0), new OneSprite("BoneStalactite", true) },          // TO CHANGE
+                { (8, 1), new OneSprite("BoneStalagmite", true) },          // TO CHANGE
             };
             materialSprites = new Dictionary<(int, int), OneSprite>
             {
@@ -264,7 +264,7 @@ namespace Cave
             }
             public OneSprite(string contentString, bool isFileName)
             {
-                if (isFileName)
+                if (isFileName || true)
                 {
                     contentString = findSpritesPath() + $"\\{contentString}.txt";
                     using (StreamReader f = new StreamReader(contentString))

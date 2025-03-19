@@ -107,6 +107,10 @@ namespace Cave
                 turnPngIntoString("Mushroom");
                 turnPngIntoString("Vines");
                 turnPngIntoString("ObsidianVines");
+                turnPngIntoString("FleshVine");
+                turnPngIntoString("FleshTendril");
+                turnPngIntoString("BoneStalactite");
+                turnPngIntoString("BoneStalagmite");
 
                 turnPngIntoString("PlantMatter");
                 turnPngIntoString("ObsidianPlantMatter");
@@ -179,9 +183,8 @@ namespace Cave
             // Hornet larvae climbing up to the ceiling to go pupate ?
             // Bubble effects in water ?
             // Fishing rod
-            // For PlantStructure shit in traits : intruduce a variation of the maxGrowthLevel as an optional parameter directly in there, to have flowers with different max growth levels.
-            // Make certain plants only able to spawn on certain terrain -> not hardrock for all plants, only flesh for flesh vines/tendrils... etc
-
+            // Flower that is a 8 star, with petals being ortho + diag of length of 2
+            
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
             // 30/01/2025 Once, a broken honey storage room was made, as the tunnel that lead to it made it have a leak mid height (tunnel dug in the bordel...)

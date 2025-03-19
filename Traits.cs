@@ -762,10 +762,11 @@ namespace Cave
             public (int type, int subType, int subSubType) plantElementType;
 
             public (int type, int subType)? soilType;
+            public int minGrowthForValidity;
 
             public ((int type, int subType) type, ColorRange colorRange)[] colorOverrideArray;
             public (int type, int subType)[] lightElements;
-            public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? sT = null, ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, (int type, int subType)[] lE = null, bool T = false, bool C = false, bool W = false)
+            public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? sT = null, int mGFV = 1, ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, (int type, int subType)[] lE = null, bool T = false, bool C = false, bool W = false)
             {
                 name = namee;
                 isTree = T;
@@ -774,6 +775,7 @@ namespace Cave
                 soilType = sT;
                 colorOverrideArray = cOverride;
                 lightElements = lE;
+                minGrowthForValidity = mGFV;
                 plantElementType = t ?? (-1, 0, 0);
             }
         }
@@ -820,14 +822,14 @@ namespace Cave
                 t:(6, 1, 0), lE:new (int type, int subType)[]{ (11, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
 
                 { (7, 0), new PlantTraits("FleshVine",                              C:true,
-                t:(7, 0, 0), sT:(4, 0)) },
+                t:(7, 0, 0), mGFV:4, sT:(4, 0)) },
                 { (7, 1), new PlantTraits("FleshTendril",
-                t:(7, 1, 0), sT:(4, 0)) },
+                t:(7, 1, 0), mGFV:4, sT:(4, 0)) },
 
                 { (8, 0), new PlantTraits("BoneStalactite",                         C:true,
-                t:(8, 0, 0), sT:(4, 1)) },
+                t:(8, 0, 0), mGFV:4, sT:(4, 1)) },
                 { (8, 1), new PlantTraits("BoneStalagmite",
-                t:(8, 1, 0), sT:(4, 1)) },
+                t:(8, 1, 0), mGFV:4, sT:(4, 1)) },
             };
         }
 
