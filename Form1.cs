@@ -183,7 +183,6 @@ namespace Cave
             // Hornet larvae climbing up to the ceiling to go pupate ?
             // Bubble effects in water ?
             // Fishing rod
-            // Flower that is a 8 star, with petals being ortho + diag of length of 2
             
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
@@ -210,6 +209,8 @@ namespace Cave
             // Idea : affuter blades ? Maybe they can get rusty ? Multiple species of mushroom (move mold to 0 ? or its whole thing prolly better).
             // When multiple players, movePlayer them in random order. So no player gets a real advantage sorta ig.
             // Different fonts for different personalities ? Or tones of speaking ?
+            // Unidirectional teleporters. Some abilities can temporarly open a unidirectional one both ways ?
+            // Have living dimension plants flower in specific seasons (don't happen often). All flesh plants flower at the same time, and all bone plants flower at the same time, but these 2 flowering seasons are separate (bone and flesh don't flower at the same time).
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful

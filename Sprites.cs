@@ -108,7 +108,8 @@ namespace Cave
                 { (-1, 0), errorSprite },
                 { (0, 0), new OneSprite("BasePlant", false) },                
                 { (0, 1), new OneSprite("Tulip", false) },                    
-                { (0, 2), new OneSprite("Allium", false) },                   
+                { (0, 2), new OneSprite("Allium", false) },
+                { (0, 3), new OneSprite("Tulip", false) },
                 { (1, 0), new OneSprite("Tree", false) },                     
                 { (2, 0), new OneSprite("KelpUpwards", false) },              
                 { (2, 1), new OneSprite("KelpDownwards", false) },            
@@ -121,6 +122,7 @@ namespace Cave
                 { (6, 1), new OneSprite("Candle", false) },
                 { (7, 0), new OneSprite("FleshVine", true) },              // TO CHANGE
                 { (7, 1), new OneSprite("FleshTendril", true) },            // TO CHANGE
+                { (7, 2), new OneSprite("FleshVine", true) },              // TO CHANGE
                 { (8, 0), new OneSprite("BoneStalactite", true) },          // TO CHANGE
                 { (8, 1), new OneSprite("BoneStalagmite", true) },          // TO CHANGE
             };

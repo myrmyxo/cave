@@ -140,7 +140,7 @@ namespace Cave
                         int darkness = 0;
                         foreach (((int biome, int subBiome), int) tupel in biomeIndex[i, j])
                         {
-                            BiomeTraits traito = biomeTraitsDict.ContainsKey(tupel.Item1) ? biomeTraitsDict[tupel.Item1] : biomeTraitsDict[(-1, 0)];
+                            BiomeTraits traito = getBiomeTraits(tupel.Item1);
                             if (traito.isDark) { darkness += (int)(tupel.Item2 * 0.3f); }
                         }
                         darkness = Max(0, 255 - darkness);
@@ -227,8 +227,8 @@ namespace Cave
                         int value2 = terrainValues[i, j, 2] + (int)(0.25 * terrainValues[i, j, 3]) - 32;
                         // value2 = terrainValues[i, j, 3];
                         // value2 = 128;
-                        int temperature = tileValuesArray[i, j].temp;
-                        int mod1 = (int)(tileValuesArray[i, j].mod1 * 0.25);
+                        // int temperature = tileValuesArray[i, j].temp;
+                        // int mod1 = (int)(tileValuesArray[i, j].mod1 * 0.25);
                         int mod2 = (int)(tileValuesArray[i, j].mod2 * 0.25);
 
                         int plateauPos = (int)(chunkSeed % 32);
@@ -240,21 +240,20 @@ namespace Cave
                         float mod2divider = 1;
                         float foresto = 1;
                         float oceano = 0;
-                        float oceanoSeeSaw = 0;
+
+                        BiomeTraits mainBiomeTraits = getBiomeTraits(biomeIndex[i, j][0].Item1);
 
                         float mult;
+                        BiomeTraits biomeTraits;
                         foreach (((int biome, int subBiome), int) tupel in biomeIndex[i, j])
                         {
+                            biomeTraits = getBiomeTraits(tupel.Item1);
+
                             mult = tupel.Item2 * 0.001f;
-                            if (tupel.Item1 == (1, 0))  // acid biome
-                            {
-                                value2modifier += -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11));
-                            }
-                            else if (tupel.Item1 == (3, 0) || tupel.Item1 == (9, 0))    // forest and chandelier biomes
-                            {
-                                foresto += mult;
-                            }
-                            else if (tupel.Item1 == (4, 0)) // toxic biome
+                            if (biomeTraits.fillType != (0, 0)) { oceano = Max(oceano, mult * 10); }    // To make separation between OCEAN biomes (like acid and blood). CHANGE THIS to make ocean biomes that can merge with one another (like idk cool water ocean and temperate water ocean idk)
+                            if (biomeTraits.isDegraded) { value2modifier += -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11)); }
+                            if (biomeTraits.isForesty) { foresto += mult; }
+                            if (biomeTraits.isSlimy) // toxic biome
                             {
                                 float see1 = Sin(i + mod2 * 0.3f + 0.5f, 16);
                                 float see2 = Sin(j + mod2 * 0.3f + 0.5f, 16);
@@ -262,30 +261,20 @@ namespace Cave
                                 value2modifier += valueToBeAdded;
                                 value1modifier += valueToBeAdded + 2;
                             }
-                            else if (tupel.Item1 == (2, 2)) // obsidian biome
+                            if (biomeTraits.isObsidianny) // obsidian biome
                             {
                                 float see1 = Obs((pos.Item1 * 32) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
                                 float see2 = Obs((pos.Item2 * 32) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
-                                if (false && (value2 < 50 || value2 > 200))
-                                {
-                                    value2PREmodifier = 300;
-                                }
-                                else
-                                {
-                                    value2PREmodifier = (Min(0, -40 * (see1 + see2) + 20) * 10 + value2 - 200);
-                                }
+                                if (false && (value2 < 50 || value2 > 200)) { value2PREmodifier = 300; }
+                                else { value2PREmodifier = (Min(0, -40 * (see1 + see2) + 20) * 10 + value2 - 200); }
                                 value1modifier += 5 * mult;
                                 value2modifier += mult * value2PREmodifier;
                                 mod2divider += mult * 1.5f;
                             }
-                            else if (tupel.Item1 == (8, 0) || tupel.Item1 == (2, 1) || tupel.Item1 == (10, 3) || tupel.Item1 == (10, 4))    // ocean biomes
-                            {
-                                oceano = Max(oceano, mult * 10); // To make separation between OCEAN biomes (like acid and blood). CHANGE THIS to make ocean biomes that can merge with one another (like idk cool water ocean and temperate water ocean idk)
-                            }
                             else { value2modifier += mult * ((2 * value1) % 32); }
                         }
 
-                        oceanoSeeSaw = Min(Seesaw((int)oceano, 8), 8 - oceano);
+                        float oceanoSeeSaw = Min(Seesaw((int)oceano, 8), 8 - oceano);
                         if (oceanoSeeSaw < 0)
                         {
                             oceanoSeeSaw = oceanoSeeSaw * oceanoSeeSaw * oceanoSeeSaw;
@@ -296,13 +285,6 @@ namespace Cave
 
                         mod2 = (int)(mod2 / mod2divider);
 
-                        (int type, int subType) elementToFillVoidWith;
-                        if (biomeIndex[i, j][0].Item1 == (8, 0)) { elementToFillVoidWith = (-2, 0); } // ocean
-                        else if (biomeIndex[i, j][0].Item1 == (2, 1)) { elementToFillVoidWith = (-4, 0); } // lava ocean
-                        else if (biomeIndex[i, j][0].Item1 == (10, 3)) { elementToFillVoidWith = (-6, 0); } // blood ocean
-                        else if (biomeIndex[i, j][0].Item1 == (10, 4)) { elementToFillVoidWith = (-7, 0); } // acid ocean
-                        else { elementToFillVoidWith = (0, 0); }
-
                         float score1 = Min(value1 - (122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw * 0.1f)), -value1 + (133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw));
                         bool fillTest1 = score1 > 0;
                         float score2 = Max(value2 - (200 + value2modifier + oceano), -value2 + ((foresto - 1) * 75f - oceano));
@@ -311,47 +293,44 @@ namespace Cave
                         //if (fillTest1 && fillTest2) { fillStates[i, j] = 4; }
                         //else if (fillTest1) { fillStates[i, j] = 3; }
                         //else if (fillTest2) { fillStates[i, j] = 2; }
-                        if (((fillTest1 || fillTest2) && true) || (false && plateauScore >= 0)) { fillStates[i, j] = getTileTraits(elementToFillVoidWith); }
-                        else
-                        {
-                            Dictionary<(int type, int subType), float> dicto = findTransitions(biomeIndex[i, j], tileValuesArray[i, j]);
-                            fillStates[i, j] = getTileTraits(findMaterialToFillWith((terrainValues[i, j, 4], terrainValues[i, j, 5]), biomeIndex[i, j][0].Item1, dicto));
-                        }
+                        if (((fillTest1 || fillTest2) && true) || (false && plateauScore >= 0)) { fillStates[i, j] = getTileTraits(mainBiomeTraits.fillType); }
+                        else { fillStates[i, j] = getTileTraits(findMaterialToFillWith(tileValuesArray[i, j], (terrainValues[i, j, 4], terrainValues[i, j, 5]), mainBiomeTraits)); }
                         //if (rand.Next(500) != 0){ fillStates[i, j] = 1; }
                     }
                 }
             }
-            public (int type, int subType) findMaterialToFillWith((int, int) values, (int type, int subType) biome, Dictionary<(int type, int subType), float> dicto)
+            public (int type, int subType) findMaterialToFillWith((int temp, int humi, int acid, int toxi, int mod1, int mod2) biomeValues, (int, int) values, BiomeTraits mainBiomeTraits)
             {
-                int value = (int)((values.Item1 + values.Item2) * 0.5f);
-                if (biome == (10, 0)) // flesh
+                if (mainBiomeTraits.tileType == (1, 0))
                 {
-                    return (4, 0);
+                    int value = (int)((values.Item1 + values.Item2) * 0.5f);
+                    if (value % 256 - (512 - (int)(value * 0.25f)) > 0 && Abs(values.Item1 - values.Item2) < 512 - (512 - (int)(value * 0.25f))) { return (1, 1); }
                 }
-                else if (biome == (10, 1) || biome == (10, 3) || biome == (10, 4)) // flesh and bone (for acid and blood oceans too since they can have the transition)
+                if (mainBiomeTraits.transitionType is null) { return mainBiomeTraits.tileType; }
+
+                if (mainBiomeTraits.transitionType.Value == (4, 1)) // flesh and bone (for acid and blood oceans too since they can have the transition)
                 {
-                    if (Max(0, (int)(Abs(Abs(values.Item1 - 1024) * 0.49f) + values.Item2 % 256)) >= 512 - dicto[biome] * 513)
-                    {
-                        return (4, 1);
-                    }
-                    return (4, 0);
+                    if (Max(0, (int)(Abs(Abs(values.Item1 - 1024) * 0.49f) + values.Item2 % 256)) >= 512 - findTransition((10, 1), biomeValues) * 513) { return mainBiomeTraits.transitionType.Value; }
                 }
-                else if (biome == (10, 2)) // bone
+                else if (mainBiomeTraits.transitionType.Value == (5, 0)) // mold
                 {
-                    return (4, 1);
+                    if (Max(0, (int)(Abs(Abs(values.Item1 - 1024) * 0.49f))) >= 1024 - findTransition((6, 0), biomeValues) * 1024) { return mainBiomeTraits.transitionType.Value; }
                 }
 
-                if (value % 256 - (512 - (int)(value * 0.25f)) > 0 && Abs(values.Item1 - values.Item2) < 512 - (512 - (int)(value * 0.25f)))
+                return mainBiomeTraits.tileType;
+            }
+            public static float findTransition((int type, int subType) biome, (int temp, int humi, int acid, int toxi, int mod1, int mod2) values)
+            {
+                if (biome == (10, 1) || biome == (10, 3) || biome == (10, 4))
                 {
-                    return (1, 1);
+                    return Clamp(0, (660 - values.humi) / 320f, 1);
+                }
+                else if (biome == (6, 0))
+                {
+                    return Clamp(0, Min(500 - values.temp, values.humi - 500, values.acid - 500) / 320f, 1);
                 }
 
-                if (biome == (6, 0)) // mold
-                {
-                    if (Max(0, (int)(Abs(Abs(values.Item1 - 1024) * 0.49f))) >= 1024 - dicto[biome] * 1024) { return (5, 0); }
-                }
-
-                return (1, 0);
+                return 0;
             }
             public void findTileColor(int i, int j)
             {
@@ -449,7 +428,7 @@ namespace Cave
             public void spawnEntities()
             {
                 (int biome, int subBiome) mainBiome = biomeIndex[16, 16][0].Item1;  // Middle of chunk
-                traits = biomeTraitsDict.ContainsKey(mainBiome) ? biomeTraitsDict[mainBiome] : biomeTraitsDict[(-1, 0)];
+                traits = getBiomeTraits(mainBiome);
                 if (spawnEntitiesBool)
                 {
                     Dictionary<(int x, int y), bool> forbiddenPositions = new Dictionary<(int x, int y), bool>();
@@ -1025,41 +1004,13 @@ namespace Cave
                 }
             }
         }
-        public static Dictionary<(int type, int subType), float> findTransitions(((int biome, int subBiome), int)[] biomeArray, (int temp, int humi, int acid, int toxi, int mod1, int mod2) values)
-        {
-            Dictionary<(int type, int subType), float> dicto = new Dictionary<(int type, int subType), float>();
-            foreach (((int type, int subType), int) key in biomeArray)
-            {
-                if (key.Item1 == (10, 1) || key.Item1 == (10, 3) || key.Item1 == (10, 4))
-                {
-                    dicto[key.Item1] = findTransition((10, 1), values);
-                }
-                else if (key.Item1 == (6, 0))
-                {
-                    dicto[key.Item1] = findTransition((6, 0), values);
-                }
-            }
-            return dicto;
-        }
-        public static float findTransition((int type, int subType) biome, (int temp, int humi, int acid, int toxi, int mod1, int mod2) values)
-        {
-            if (biome == (10, 1) || biome == (10, 3) || biome == (10, 4))
-            {
-                return Clamp(0, (660 - values.humi) / 320f, 1);
-            }
-            else if (biome == (6, 0))
-            {
-                return Clamp(0, Min(500 - values.temp, values.humi - 500, values.acid - 500) / 320f, 1);
-            }
-
-            return 0;
-        }
         public static (int temp, int humi, int acid, int toxi, int mod1, int mod2) makeTileBiomeValueArrayMonoBiome((int type, int subType) biome)
         {
-            int temperature = biomeTypicalValues[biome].temp;
-            int humidity = biomeTypicalValues[biome].humi;
-            int acidity = biomeTypicalValues[biome].acid;
-            int toxicity = biomeTypicalValues[biome].toxi;
+            (int temp, int humi, int acid, int toxi, int range, int prio) values = biomeTypicalValues.ContainsKey(biome) ? biomeTypicalValues[biome] : biomeTypicalValues[(-1, 0)];
+            int temperature = values.temp;
+            int humidity = values.humi;
+            int acidity = values.acid;
+            int toxicity = values.toxi;
             int mod1 = 0;
             int mod2 = 0;
             return (temperature, humidity, acidity, toxicity, mod1, mod2);
@@ -1247,11 +1198,18 @@ namespace Cave
                 }
                 else if (dimensionType == (2, 0)) // type == 2, living dimension
                 {
-                    percentageFree -= calculateAndAddBiome(listo, (10, 4), percentageFree, acidity, (700, 999999)); // acid ocean
-                    percentageFree -= calculateAndAddBiome(listo, (10, 3), percentageFree, temperature, (-999999, 400)); // blood ocean
-                    percentageFree -= calculateAndAddBiome(listo, (10, 0), percentageFree, humidity, (660, 999999)); // flesh
-                    percentageFree -= calculateAndAddBiome(listo, (10, 2), percentageFree, humidity, (-999999, 340)); // bone
-                    testAddBiome(listo, (10, 1), percentageFree); // flesh and bone
+                    percentageFree -= calculateAndAddBiome(listo, (12, 1), percentageFree, acidity, (750, 999999)); // acid ocean
+                    percentageFree -= calculateAndAddBiome(listo, (12, 0), percentageFree, temperature, (-999999, 350)); // blood ocean
+                    if (humidity > 700)
+                    {
+                        int fleshiness = calculateBiome(percentageFree, humidity, (700, 999999));
+                        int forestness = calculateAndAddBiome(listo, (10, 1), fleshiness, toxicity, (-999999, 500)); // flesh forest
+                        percentageFree -= forestness;
+                        fleshiness -= forestness;
+                        percentageFree -= testAddBiome(listo, (10, 0), fleshiness); // add what's remaining as normal flesh
+                    }
+                    percentageFree -= calculateAndAddBiome(listo, (11, 0), percentageFree, humidity, (-999999, 300)); // bone
+                    testAddBiome(listo, (10, 2), percentageFree); // flesh and bone
                 }
             }
 
@@ -1274,7 +1232,7 @@ namespace Cave
             foreach (((int biome, int subBiome), int) tupel in arrayo)
             {
                 mult = tupel.Item2 * 0.001f;
-                BiomeTraits traito = biomeTraitsDict.ContainsKey(tupel.Item1) ? biomeTraitsDict[tupel.Item1] : biomeTraitsDict[(-1, 0)];
+                BiomeTraits traito = getBiomeTraits(tupel.Item1);
                 colorArray[0] += (int)(mult * traito.color.r);
                 colorArray[1] += (int)(mult * traito.color.g);
                 colorArray[2] += (int)(mult * traito.color.b);

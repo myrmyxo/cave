@@ -266,27 +266,13 @@ namespace Cave
                 }
                 if (tilesToFill.Count == 0) { return false; } // No laketches ?
 
-
-                (int type, int subType) material = (-2, 0); // material is now type to fill with
                 Chunk chunkToTest = chunkDict[ChunkIdx(posToTest)];
-                (int type, int subType) biome = chunkToTest.biomeIndex[PosMod(posToTest.x), PosMod(posToTest.y)][0].Item1;
+                BiomeTraits biomeTraits = getBiomeTraits(chunkToTest.biomeIndex[PosMod(posToTest.x), PosMod(posToTest.y)][0].Item1);
+                (int type, int subType) material = biomeTraits.lakeType;
 
-                if (biome == (5, 0)) { material = (-3, 0); } // if fairy biome : put fairy liquid
-                else if (biome == (2, 0)) // if hot biome : put lava
-                {
-                    material = (-4, 0);
-                    /*if (THIS WAS PUT THERE TO ADD MORE LAVA LAKES THE HIGHER THE TEMPERATURE !!!But fuck it myb i'll use the mean or center tile saved this costs loads of memory    chunkToTest.secondaryBiomeValues[testPos32.Item1, testPos32.Item2, 0] + chunkToTest.secondaryBigBiomeValues[testPos32.Item1, testPos32.Item2, 0] - 128 + rand.Next(200) - 200 > 100)
-                    {
-                        liquidTypeToFill = -4;
-                    }*/
-                }
-                else if (biome == (10, 1) || biome == (10, 2) || biome == (10, 3)) { material = (-6, 0); }// if bone or flesh and bone or blood ocean : put blood
-                else if (biome == (10, 0) || biome == (10, 4)) { material = (-7, 0); } // if flesh or acid ocean : put acid
-                
                 seedo = LCGyNeg(LCGxNeg(seedo));
-
                 if (seedo % 1000 == 0) { material = (-1, 0); }
-                else if (seedo % 1000 < 5) { material = (-3, 0); }
+                else if (seedo % 1000 < 4) { material = (-3, 0); }
 
                 foreach ((int x, int y) poso in tilesToFill.Keys) { structureDict[poso] = material; }
 
