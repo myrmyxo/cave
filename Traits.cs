@@ -33,6 +33,7 @@ using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
 using static Cave.Dialogues;
+using System.Diagnostics;
 
 namespace Cave
 {
@@ -889,16 +890,40 @@ namespace Cave
         public class TileTransitionTraits
         {
             public (int type, int subType) tileType;
-            public TileTransitionTraits()
-            {
 
+            public int transitionRules;
+            public bool meanBasedValueRequired;
+
+            public int baseThreshold;
+
+            public (int threshold, bool reverse)? temperature;
+            public (int threshold, bool reverse)? humidity;
+            public (int threshold, bool reverse)? acidity;
+            public (int threshold, bool reverse)? toxicity;
+            public int biomeValuesScale;
+            public TileTransitionTraits((int type, int subType) tT, int tR, bool mBVR = false, int bT = 512, (int threshold, bool reverse)? T = null, (int threshold, bool reverse)? H = null, (int threshold, bool reverse)? A = null, (int threshold, bool reverse)? TX = null, int bVS = 512)
+            {
+                tileType = tT;
+
+                transitionRules = tR;
+                meanBasedValueRequired = mBVR;
+
+                baseThreshold = bT;
+
+                temperature = T;
+                humidity = H;
+                acidity = A;
+                toxicity = TX;
+                biomeValuesScale = bVS;
             }
         }
-        public static Dictionary<string, TileTransitionTraits> famousTileTransitionTraits = new Dictionary<string, TileTransitionTraits>
-        {
-            { "", new TileTransitionTraits() }
-        };
 
+        public static Dictionary<string, TileTransitionTraits> famousTTT = new Dictionary<string, TileTransitionTraits>
+        {
+            { "HardRock", new TileTransitionTraits((1, 1), 0, mBVR:true, bT:0) },    // This one is particular but uuuuuuuuuhHHHHHHHHHH
+            { "Bone", new TileTransitionTraits((4, 1), 1, bT:512, H:(660, false), bVS:512) },
+            { "Mold", new TileTransitionTraits((5, 0), 2, bT:1024, T:(500, false), H:(500, true), A:(500, true), bVS:1024) },
+        };
 
 
 
@@ -911,8 +936,9 @@ namespace Cave
 
             public (int type, int subType) fillType;
             public (int type, int subType) tileType;
-            public (int type, int subType)? transitionType;
             public (int type, int subType) lakeType;
+
+            public TileTransitionTraits tileTransitionTraits;
 
             public bool isDark;
             public bool isSlimy;        // temp
@@ -940,7 +966,7 @@ namespace Cave
             public ((int type, int subType) type, float percentage)[] plantWaterGroundSpawnTypes;
             public ((int type, int subType) type, float percentage)[] plantWaterCeilingSpawnTypes;
 
-            public BiomeTraits(string namee, (int r, int g, int b) colorToPut, float[] spawnRates, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes, (int type, int subType)? fT = null, (int type, int subType)? tT = null, (int type, int subType)? trT = null, (int type, int subType)? lT = null, bool S = false, bool F = false, bool Dg = false, bool O = false, bool Da = false)
+            public BiomeTraits(string namee, (int r, int g, int b) colorToPut, float[] spawnRates, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes, TileTransitionTraits tTT = null, (int type, int subType)? fT = null, (int type, int subType)? tT = null, (int type, int subType)? lT = null, bool S = false, bool F = false, bool Dg = false, bool O = false, bool Da = false)
             {
                 name = namee;
                 color = colorToPut;
@@ -953,8 +979,9 @@ namespace Cave
 
                 fillType = fT ?? (0, 0);
                 tileType = tT ?? (1, 0);
-                transitionType = trT;
-                lakeType = lT ?? (-2, 0); 
+                lakeType = lT ?? (-2, 0);
+
+                tileTransitionTraits = tTT;
 
                 EntityTraits entityTraits;
                 List<((int type, int subType) type, float percentage)> entityBaseSpawnTypesList = new List<((int type, int subType) type, float percentage)>();
@@ -1088,7 +1115,7 @@ namespace Cave
                 new float[]{1, 0.25f, 2, 2,     4, 1, 2, 4, 4},
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((4, 1), 100), },
-                trT:(5, 0)) },                                       // Mold
+                tTT:famousTTT["Mold"]) },                            // Mold
 
                 { (8, 0),  new BiomeTraits("Ocean",                 (Color.LightBlue.R, Color.LightBlue.G + 60, Color.LightBlue.B + 130),
                 new float[]{1, 0.25f, 3, 6,     4, 1, 2, 8, 8},
@@ -1120,7 +1147,7 @@ namespace Cave
                 new float[]{1, 1, 2, 1,         4, 1, 4, 4, 4},
                 new ((int type, int subType) type, float percentage)[]{ ((1, 1), 50),  ((1, 2), 50),  ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((7, 0), 75),  ((7, 1), 75),  ((8, 0), 25),  ((8, 1), 25) },
-                lT:(-6, 0), tT:(4, 0), trT:(4, 1)) },                // Flesh Vine     Flesh Tendril  Bone Stalagmi  Bone Stalactite
+                lT:(-6, 0), tT:(4, 0), tTT:famousTTT["Bone"]) },     // Flesh Vine     Flesh Tendril  Bone Stalagmi  Bone Stalactite
 
                 { (11, 0), new BiomeTraits("Bone",                  (Color.White.R, Color.White.G, Color.White.B),
                 new float[]{1, 1, 2, 1,         1, 1, 1, 4, 4},
@@ -1132,13 +1159,19 @@ namespace Cave
                 new float[]{1, 1, 2, 1,         4, 1, 2, 4, 4},
                 new ((int type, int subType) type, float percentage)[]{ ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ },
-                tT:(4, 0), trT:(4, 1), fT:(-6, 0)) },
+                tT:(4, 0), tTT:famousTTT["Bone"], fT:(-6, 0)) },
                 { (12, 1), new BiomeTraits("Acid Ocean",            (Color.YellowGreen.R, Color.YellowGreen.G, Color.YellowGreen.B),
                 new float[]{1, 1, 1, 1,         4, 1, 2, 4, 4},
                 new ((int type, int subType) type, float percentage)[]{ ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ },
-                tT:(4, 0), trT:(4, 1), fT:(-7, 0)) },
+                tT:(4, 0), tTT:famousTTT["Bone"], fT:(-7, 0)) },
             };
+
+            foreach ((int type, int subType) key in biomeTraitsDict.Keys)
+            {
+                BiomeTraits bT = biomeTraitsDict[key];
+                if (bT.tileType == (1, 0) && bT.tileTransitionTraits is null) { bT.tileTransitionTraits = famousTTT["HardRock"]; }
+            }
         }
 
 

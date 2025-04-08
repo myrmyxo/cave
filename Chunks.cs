@@ -301,36 +301,40 @@ namespace Cave
             }
             public (int type, int subType) findMaterialToFillWith((int temp, int humi, int acid, int toxi, int mod1, int mod2) biomeValues, (int, int) values, BiomeTraits mainBiomeTraits)
             {
-                if (mainBiomeTraits.tileType == (1, 0))
-                {
-                    int value = (int)((values.Item1 + values.Item2) * 0.5f);
-                    if (value % 256 - (512 - (int)(value * 0.25f)) > 0 && Abs(values.Item1 - values.Item2) < 512 - (512 - (int)(value * 0.25f))) { return (1, 1); }
-                }
-                if (mainBiomeTraits.transitionType is null) { return mainBiomeTraits.tileType; }
+                if (mainBiomeTraits.tileTransitionTraits is null) { return mainBiomeTraits.tileType; }
 
-                if (mainBiomeTraits.transitionType.Value == (4, 1)) // flesh and bone (for acid and blood oceans too since they can have the transition)
-                {
-                    if (Max(0, (int)(Abs(Abs(values.Item1 - 1024) * 0.49f) + values.Item2 % 256)) >= 512 - findTransition((10, 1), biomeValues) * 513) { return mainBiomeTraits.transitionType.Value; }
-                }
-                else if (mainBiomeTraits.transitionType.Value == (5, 0)) // mold
-                {
-                    if (Max(0, (int)(Abs(Abs(values.Item1 - 1024) * 0.49f))) >= 1024 - findTransition((6, 0), biomeValues) * 1024) { return mainBiomeTraits.transitionType.Value; }
+                TileTransitionTraits tTT = mainBiomeTraits.tileTransitionTraits;
+
+                float meanValue = (values.Item1 + values.Item2) * 0.5f;
+                float valueRequired;
+                if (tTT.meanBasedValueRequired) { valueRequired = meanValue * 0.25f; }
+                else { 
+                    valueRequired = tTT.baseThreshold - Clamp(0, Min(
+                    tTT.temperature is null ? 100000 : (tTT.temperature.Value.reverse ? -1 : 1) * (tTT.temperature.Value.threshold - biomeValues.temp),
+                    tTT.humidity is null ? 100000 : (tTT.humidity.Value.reverse ? -1 : 1) * (tTT.humidity.Value.threshold - biomeValues.humi),
+                    tTT.acidity is null ? 100000 : (tTT.acidity.Value.reverse ? -1 : 1) * (tTT.acidity.Value.threshold - biomeValues.acid),
+                    tTT.toxicity is null ? 100000 : (tTT.toxicity.Value.reverse ? -1 : 1) * (tTT.toxicity.Value.threshold - biomeValues.toxi)
+                    ) / 320f, 1) * tTT.biomeValuesScale;
                 }
 
+                int noiseValue;
+                if (tTT.transitionRules == 0)
+                {    // Temp !!!!
+                    if (tTT.baseThreshold + meanValue % 256 + meanValue * 0.25f - 512 <= 0) { noiseValue = -999999; }
+                    else { noiseValue = Abs(values.Item1 - values.Item2); }
+                }
+                else if (tTT.transitionRules == 1) // flesh and bone (for acid and blood oceans too since they can have the transition)
+                {
+                    noiseValue = Max(0, (int)(Abs(Abs(values.Item1 - 1024) * 0.49f) + values.Item2 % 256));
+                }
+                else if (tTT.transitionRules == 2) // mold
+                {
+                    noiseValue = Max(0, (int)(Abs(Abs(values.Item1 - 1024) * 0.49f)));
+                }
+                else { noiseValue = -999999; }
+
+                if (noiseValue >= valueRequired) { return tTT.tileType; }
                 return mainBiomeTraits.tileType;
-            }
-            public static float findTransition((int type, int subType) biome, (int temp, int humi, int acid, int toxi, int mod1, int mod2) values)
-            {
-                if (biome == (10, 1) || biome == (10, 3) || biome == (10, 4))
-                {
-                    return Clamp(0, (660 - values.humi) / 320f, 1);
-                }
-                else if (biome == (6, 0))
-                {
-                    return Clamp(0, Min(500 - values.temp, values.humi - 500, values.acid - 500) / 320f, 1);
-                }
-
-                return 0;
             }
             public void findTileColor(int i, int j)
             {
