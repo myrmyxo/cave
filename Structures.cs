@@ -267,7 +267,7 @@ namespace Cave
                 if (tilesToFill.Count == 0) { return false; } // No laketches ?
 
                 Chunk chunkToTest = chunkDict[ChunkIdx(posToTest)];
-                BiomeTraits biomeTraits = getBiomeTraits(chunkToTest.biomeIndex[PosMod(posToTest.x), PosMod(posToTest.y)][0].Item1);
+                BiomeTraits biomeTraits = chunkToTest.biomeIndex[PosMod(posToTest.x), PosMod(posToTest.y)][0].traits;
                 (int type, int subType) material = biomeTraits.lakeType;
 
                 seedo = LCGyNeg(LCGxNeg(seedo));

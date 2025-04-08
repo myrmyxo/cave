@@ -370,9 +370,9 @@ namespace Cave
                 for (int j = -64; j < 192; j++)
                 {
                     values[variablesToTest.Item2] = j*8;
-                    ((int biome, int subBiome), int)[] biomeArray = findBiome(dimensionType, values);
+                    (BiomeTraits traits, int percentage)[] biomeArray = findBiome(dimensionType, values);
                     //(int temp, int humi, int acid, int toxi) tileValues = makeTileBiomeValueArray(values, i, j);
-                    if (biomeArray[0].Item1 == (-1, 0) && ((i/4)+(j/4))%2 == 1){ setPixelButFaster(bitmap, (i, 255 - j), Color.Black); continue; }
+                    if (biomeArray[0].traits.name == "Error" && ((i/4)+(j/4))%2 == 1){ setPixelButFaster(bitmap, (i, 255 - j), Color.Black); continue; }
                     int[] colorArray = findBiomeColor(biomeArray);
                     colorToPut = Color.FromArgb(colorArray[0], colorArray[1], colorArray[2]);
                     setPixelButFaster(bitmap, (i+64, 191-j), colorToPut);
@@ -841,6 +841,13 @@ namespace Cave
                 listo[posToSwitch] = elementHeld;
             } // do it twice because yes ! So element can be at its original position maybe ?
             return listo;
+        }
+        public static Dictionary<T, int> addOrIncrementDict<T>(Dictionary<T, int> dicto, (T key, int value) tupel)
+        {
+            if (dicto.ContainsKey(tupel.key)) { dicto[tupel.key] += tupel.value; }
+            else { dicto[tupel.key] = tupel.value; }
+
+            return dicto;
         }
     }
 }
