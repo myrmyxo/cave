@@ -109,6 +109,8 @@ namespace Cave
                 turnPngIntoString("ObsidianVines");
                 turnPngIntoString("FleshVine");
                 turnPngIntoString("FleshTendril");
+                turnPngIntoString("FleshTree1");
+                turnPngIntoString("FleshTree2");
                 turnPngIntoString("BoneStalactite");
                 turnPngIntoString("BoneStalagmite");
 
@@ -230,13 +232,13 @@ namespace Cave
             // Add rats with a tail ? Rat swarms ?
 
             // Plants ideas !
-            // Tendril shits in living diomension
             // bone trees and shrubs... like ribs.
             // Orchidée like plants ?
             // Ephemerophytes
             // Rice ? In salt biomes ?
             // Roots for trees, that can grow out the soil under the plant and be exposed if there's a cave under them
             // Branching wax plants ?
+            // Weeping willows !
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.

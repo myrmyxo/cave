@@ -393,11 +393,11 @@ namespace Cave
             public int frameArrayOffset = 0;
 
             public int currentChildArrayIdx = -1;
-            public int childArrayOffset = 1;
+            public int childArrayOffset;
             public int currentDirectionArrayIdx = -1;
-            public int directionArrayOffset = 1;
+            public int directionArrayOffset;
             public int currentModArrayIdx = -1;
-            public int modArrayOffset = 1;
+            public int modArrayOffset;
 
             public Dictionary<(int type, int subType), Color> colorOverrideDict = null;
             public Dictionary<(int x, int y), (int type, int subType)> fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
@@ -468,15 +468,25 @@ namespace Cave
             }
             public int init((int x, int y)? forceDirection = null)
             {
+                childArrayOffset = 1;
+                directionArrayOffset = 1;
+                modArrayOffset = 1;
+
                 fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
                 if (traits.plantGrowthRules != null)
                 {
-                    if (forceDirection != null) { baseDirection = forceDirection.Value; }
-                    else if (traits.plantGrowthRules.startDirection != null)
+                    childArrayOffset += traits.plantGrowthRules.childOffset;
+                    directionArrayOffset += traits.plantGrowthRules.dGOffset;
+                    modArrayOffset += traits.plantGrowthRules.pMOffset;
+
+                    if (traits.plantGrowthRules.startDirection != null)
                     {
                         ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped) dir = traits.plantGrowthRules.startDirection.Value;
                         baseDirection = (dir.direction.x * (dir.canBeFlipped.x ? (rand.Next(2) * 2 - 1) : 1), dir.direction.y * (dir.canBeFlipped.y ? (rand.Next(2) * 2 - 1) : 1));
+
+                        if (forceDirection != null) { baseDirection = (baseDirection.x == 0 ? forceDirection.Value.x : baseDirection.x, baseDirection.y == 0 ? forceDirection.Value.y : baseDirection.y); }
                     }
+                    else if (forceDirection != null) { baseDirection = forceDirection.Value; }
                     else if (type == (4, 1, 0)) { baseDirection = (0, 0); }  // temp, so mold doesn't get moved lol
                     else if (motherPlant.traits.isCeiling) { lastDrawPos = (0, 1); baseDirection = (0, -1); }
                     else { lastDrawPos = (0, -1); baseDirection = (0, 1); }

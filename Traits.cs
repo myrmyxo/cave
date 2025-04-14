@@ -508,19 +508,22 @@ namespace Cave
             public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] childrenOnGrowthStart;
             public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] childrenOnGrowthEnd;
             public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] childArray;
+            public int childOffset;
             public bool loopChild;
             public ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped)? startDirection;
             public ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] directionGrowthArray;
+            public int dGOffset;
             public bool loopDG;
             public ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] growthPosModArray;
+            public int pMOffset;
             public bool loopPM;
             public PlantGrowthRules((int type, int subType) t, (int frame, int range)? mG = null, bool M = false,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] cOGS = null,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] cOGE = null,
-                ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] C = null, bool lC = false,
+                ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] C = null, int cO = 0, bool lC = false,
                 ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped)? sD = null,
-                ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] DG = null, bool lDG = false,
-                ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] PM = null, bool lPM = false)
+                ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] DG = null, int dGO = 0, bool lDG = false,
+                ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] PM = null, int pMO = 0, bool lPM = false)
             {
                 isMold = M;
                 maxGrowth = mG ?? (5, 0);
@@ -528,11 +531,14 @@ namespace Cave
                 childrenOnGrowthStart = cOGS;
                 childrenOnGrowthEnd = cOGE;
                 childArray = C;
+                childOffset = cO;
                 loopChild = lC;
                 startDirection = sD;
                 directionGrowthArray = DG;
+                dGOffset = dGO;
                 loopDG = lDG;
                 growthPosModArray = PM;
+                pMOffset = pMO;
                 loopPM = lPM;
             }
         }
@@ -687,9 +693,13 @@ namespace Cave
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 0), (true, false, false), (2, 0)), ((-1, 0), (true, false, false), (2, 0)) },
                     lPM:true
                 )) },
-                { (7, 2, 0), new PlantElementTraits("FleshTrunk",
+                { (7, 2, 0), new PlantElementTraits("FleshTrunk1",
                 pGR:new PlantGrowthRules(t:(8, 0), mG:(2, 3),
                     cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] { ((7, 2, -1), (-1, 1), 1), ((7, 2, -1), (1, 1), 1) }
+                )) },
+                { (7, 3, 0), new PlantElementTraits("FleshTrunk2",
+                pGR:new PlantGrowthRules(t:(8, 0), mG:(2, 3),
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] { ((7, 3, -1), (-1, 1), 1), ((7, 3, -1), (1, 1), 1) }
                 )) },
 
                 { (8, 0, 0), new PlantElementTraits("BoneStalactite",
@@ -728,7 +738,7 @@ namespace Cave
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 1), (true, false, false), (3, 7)), ((0, 1), (false, false, false), (1, 1)) }
                 )) },
 
-                { (7, 2, -1), new PlantElementTraits("FleshBranch",
+                { (7, 2, -1), new PlantElementTraits("FleshBranch1-1",
                 pGR:new PlantGrowthRules(t:(8, 0), mG:(7, 10),
                     cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] { ((7, 2, -2), (0, 0), 2) },
                     C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((7, 2, -2), (0, 0), 2, (2, 1)) },
@@ -737,9 +747,22 @@ namespace Cave
                     lPM:true,
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 0), (true, false, false), (1, 1)) }
                 )) },
-                { (7, 2, -2), new PlantElementTraits("FleshBranch2",
-                pGR:new PlantGrowthRules(t:(8, 0), mG:(6, 4), sD:((1, 1), (false, false, false)),
+                { (7, 2, -2), new PlantElementTraits("FleshBranch1-2",
+                pGR:new PlantGrowthRules(t:(8, 0), mG:(6, 4),
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((0, 1), (true, false, false), (2, 0)) }
+                )) },
+
+                { (7, 3, -1), new PlantElementTraits("FleshBranch2-1",
+                pGR:new PlantGrowthRules(t:(8, 0), mG:(11, 10),
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] { ((7, 3, -2), (0, 0), 2) },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((7, 3, -2), (0, 0), 2, (2, 1)) },
+                    cO:8, lC:true,
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 0), (true, false, false), (3, 2)),       ((0, 1), (true, false, false), (5, 2)),   ((0, -1), (true, false, false), (4, 2)), ((0, -1), (true, false, false), (2, 2)) },
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((0, 1), (true, false, false), (1, 0)), ((1, 1), (true, false, false), (5, 2)), ((1, 0), (true, false, false), (1, 1)) }
+                )) },
+                { (7, 3, -2), new PlantElementTraits("FleshBranch2-2",
+                pGR:new PlantGrowthRules(t:(8, 0), mG:(4, 2), sD:((0, -1), (false, false, false)),
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((0, -1), (true, false, false), (2, 0)) }
                 )) },
 
                 { (8, 0, -1), new PlantElementTraits("BoneBranch",
@@ -874,8 +897,10 @@ namespace Cave
                 t:(7, 0, 0), mGFV:4, sT:(4, 0)) },
                 { (7, 1), new PlantTraits("FleshTendril",
                 t:(7, 1, 0), mGFV:4, sT:(4, 0)) },
-                { (7, 2), new PlantTraits("FleshTree",                              T:true,
+                { (7, 2), new PlantTraits("FleshTree1",                             T:true,
                 t:(7, 2, 0), mGFV:1, sT:(4, 0)) },
+                { (7, 3), new PlantTraits("FleshTree2",                             T:true,
+                t:(7, 3, 0), mGFV:1, sT:(4, 0)) },
 
                 { (8, 0), new PlantTraits("BoneStalactite",                         C:true,
                 t:(8, 0, 0), mGFV:4, sT:(4, 1)) },
@@ -1143,8 +1168,8 @@ namespace Cave
                 { (10, 1), new BiomeTraits("FleshForest",           (Color.DarkRed.R + 20, Color.DarkRed.G - 20, Color.DarkRed.B - 20),
                 new float[]{1, 1, 2, 1,         3, 1, 3, 4, 4},
                 new ((int type, int subType) type, float percentage)[]{ ((1, 1), 100), ((4, 1), 100), },
-                new ((int type, int subType) type, float percentage)[]{ ((7, 0), 100), ((7, 1), 100), ((7, 2), 100) },
-                lT:(-7, 0), tT:(4, 0), F:true) },                    // Flesh Vine     Flesh Tendril  Flesh Tree
+                new ((int type, int subType) type, float percentage)[]{ ((7, 0), 100), ((7, 1), 100), ((7, 2), 50), ((7, 3), 50) },
+                lT:(-7, 0), tT:(4, 0), F:true) },                    // Flesh Vine     Flesh Tendril  Flesh Tree 1   Flesh Tree 2
                 { (10, 2), new BiomeTraits("Flesh and Bone",        (Color.Pink.R, Color.Pink.G, Color.Pink.B),
                 new float[]{1, 1, 2, 1,         4, 1, 4, 4, 4},
                 new ((int type, int subType) type, float percentage)[]{ ((1, 1), 50),  ((1, 2), 50),  ((4, 1), 100), },
