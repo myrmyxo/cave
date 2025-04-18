@@ -585,8 +585,12 @@ namespace Cave
                             makeBaby(item, growthLevelToTest);
                         }
                     }
-                    // prolly gonna have to move this down
-                    foreach (PlantElement child in childPlantElements) { if (child.traits.stickToLastDrawPosOfParent) { child.pos = absolutePos(drawPos); } }
+
+                    if (traits.plantGrowthRules.preventGaps)
+                    {
+                        if (Abs(drawPos.x - lastDrawPos.x) > 1) { drawPos = (lastDrawPos.x + Sign(drawPos.x - lastDrawPos.x), drawPos.y); }
+                        if (Abs(drawPos.y - lastDrawPos.y) > 1) { drawPos = (drawPos.x, lastDrawPos.y + Sign(drawPos.y - lastDrawPos.y)); }
+                    }
 
                     if (growthLevelToTest == maxGrowthLevel + 1) // Should only happen when plants has childrenOnGrowthEnd and has done its last growth already
                     {
@@ -624,6 +628,7 @@ namespace Cave
 
                     if (tryFill(drawPos, traits.plantGrowthRules.materalToFillWith))
                     {
+                        foreach (PlantElement child in childPlantElements) { if (child.traits.stickToLastDrawPosOfParent) { child.pos = absolutePos(drawPos); } }
                         if (growthLevelToTest >= maxGrowthLevel + (traits.plantGrowthRules.childrenOnGrowthEnd is null ? 0 : 1)) { goto SuccessButStop; }
                         goto Success;
                     }

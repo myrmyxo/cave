@@ -510,20 +510,24 @@ namespace Cave
             public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] childArray;
             public int childOffset;
             public bool loopChild;
+
             public ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped)? startDirection;
             public ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] directionGrowthArray;
             public int dGOffset;
             public bool loopDG;
+
             public ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] growthPosModArray;
             public int pMOffset;
             public bool loopPM;
+
+            public bool preventGaps;
             public PlantGrowthRules((int type, int subType) t, (int frame, int range)? mG = null, bool M = false,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] cOGS = null,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] cOGE = null,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] C = null, int cO = 0, bool lC = false,
                 ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped)? sD = null,
                 ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] DG = null, int dGO = 0, bool lDG = false,
-                ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] PM = null, int pMO = 0, bool lPM = false)
+                ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] PM = null, int pMO = 0, bool lPM = false, bool pG = true)
             {
                 isMold = M;
                 maxGrowth = mG ?? (5, 0);
@@ -540,6 +544,7 @@ namespace Cave
                 growthPosModArray = PM;
                 pMOffset = pMO;
                 loopPM = lPM;
+                preventGaps = pG;
             }
         }
         public class PlantElementTraits
