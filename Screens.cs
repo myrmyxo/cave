@@ -43,6 +43,8 @@ namespace Cave
             public List<string> structureGenerationLogs = new List<string>();
             public Dictionary<(int dim, int x, int y), int> structureGenerationLogsStructureUpdateCount = new Dictionary<(int dim, int x, int y), int>();
 
+            public List<((int x, int y) pos, Color col)> miscDebugList = new List<((int x, int y) pos, Color col)>();
+
             public Dictionary<int, Screen> loadedScreens = new Dictionary<int, Screen>();
             public List<Player> playerList = new List<Player>();
 
@@ -70,7 +72,7 @@ namespace Cave
                 seed = 123456;
 
                 int idToPut = 0;
-                (int type, int subType) forceBiome = (2, 0);
+                (int type, int subType) forceBiome = (0, 0);
                 int PNGsize = 150;
                 PNGsize = 100;
 
@@ -81,7 +83,7 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                loadStructuresYesOrNo = true;
+                loadStructuresYesOrNo = false;
                 spawnNests = true;
                 spawnEntitiesBool = true;
                 spawnPlants = true;
@@ -1239,6 +1241,31 @@ namespace Cave
                     foreach (Chunk chunkoko in loadedChunks.Values)
                     {
                         if (chunkoko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunkoko.pos.x * 32, chunkoko.pos.y * 32), camPos); }
+                    }
+                }
+                if (debugMode && !isPngToBeExported) // debug misc
+                {
+                    if (true)
+                    {
+                        game.miscDebugList = new List<((int x, int y) pos, Color col)>();
+                        List<PlantElement> listo = new List<PlantElement>();
+                        foreach (Plant plant in activePlants.Values)
+                        {
+                            listo.Add(plant.plantElement);
+                            if (rand.Next(5) == 0) { game.miscDebugList.Add(((plant.posX, plant.posY), Color.Crimson)); }
+                        }
+                        while (listo.Count > 0)
+                        {
+                            PlantElement current = listo[0];
+                            listo.RemoveAt(0);
+                            foreach (PlantElement baby in current.childPlantElements) { listo.Add(baby); }
+                            game.miscDebugList.Insert(0, (current.motherPlant.getRealPos(current.pos), Color.MediumPurple));
+                        }
+
+                        foreach (((int x, int y) pos, Color col) item in game.miscDebugList)
+                        {
+                            drawPixel(gameBitmap, item.col, item.pos, camPos);
+                        }
                     }
                 }
 

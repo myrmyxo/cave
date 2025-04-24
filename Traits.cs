@@ -505,9 +505,9 @@ namespace Cave
             public (int type, int subType) materalToFillWith;
             public bool isMold;
 
-            public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] childrenOnGrowthStart;
-            public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] childrenOnGrowthEnd;
-            public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] childArray;
+            public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] childrenOnGrowthStart;
+            public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] childrenOnGrowthEnd;
+            public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] childArray;
             public int childOffset;
             public bool loopChild;
 
@@ -522,9 +522,9 @@ namespace Cave
 
             public bool preventGaps;
             public PlantGrowthRules((int type, int subType) t, (int frame, int range)? mG = null, bool M = false,
-                ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] cOGS = null,
-                ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] cOGE = null,
-                ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] C = null, int cO = 0, bool lC = false,
+                ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] cOGS = null,
+                ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] cOGE = null,
+                ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] C = null, int cO = 0, bool lC = false,
                 ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped)? sD = null,
                 ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] DG = null, int dGO = 0, bool lDG = false,
                 ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] PM = null, int pMO = 0, bool lPM = false, bool pG = true)
@@ -557,10 +557,13 @@ namespace Cave
             public ((int frame, int range) changeFrame, PlantStructureFrame frame)[] frames;
             public PlantGrowthRules plantGrowthRules;
 
+            public ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[] requiredEmptyTiles;
+
             public bool forceLightAtPos;
             public (int type, int subType)[] colorOverrideArray;    // not used YET (will be used if individual plantElements of the same plant need to have different colors (like idk a flower is blue, another is yellow... or different leaf colors in the same tree...)
+            
             public HashSet<(int type, int subType)> materialsPresent;
-            public PlantElementTraits(string namee, bool stick = false, (int maxLevel, int range)? fMG = null, ((int frame, int range) changeFrame, PlantStructureFrame frame)[] framez = null, PlantGrowthRules pGR = null, (int type, int subType)[] cOverride = null, bool isReg = false, bool fLAP = false)
+            public PlantElementTraits(string namee, bool stick = false, (int maxLevel, int range)? fMG = null, ((int frame, int range) changeFrame, PlantStructureFrame frame)[] framez = null, PlantGrowthRules pGR = null, ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[] rET = null, (int type, int subType)[] cOverride = null, bool isReg = false, bool fLAP = false)
             {
                 name = namee;
                 isRegenerative = isReg;
@@ -569,6 +572,7 @@ namespace Cave
                 colorOverrideArray = cOverride;
                 plantGrowthRules = pGR;
                 forceLightAtPos = fLAP;
+                requiredEmptyTiles = rET;
 
                 materialsPresent = new HashSet<(int type, int subType)>();
                 if (plantGrowthRules != null)
@@ -618,21 +622,21 @@ namespace Cave
                 )) },
                 { (0, 1, 0), new PlantElementTraits("TulipStem",
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(2, 3),
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((0, 1, 1), (0, 0), 0, (1, 1)) }
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((0, 1, 1), (0, 0), 0, 0, (1, 1)) }
                 )) },
                 { (0, 2, 0), new PlantElementTraits("AlliumStem",
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(3, 2),
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((0, 2, 1), (0, 0), 0, (1, 1)) }
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((0, 2, 1), (0, 0), 0, 0, (1, 1)) }
                 )) },
                 { (0, 3, 0), new PlantElementTraits("BigFlowerStem",
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(8, 4),
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((0, 3, 1), (0, 0), 0, (1, 1)) }
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((0, 3, 1), (0, 0), 0, 0, (1, 1)) }
                 )) },
 
                 { (1, 0, 0), new PlantElementTraits("BaseTrunk",
                 pGR:new PlantGrowthRules(t:(1, 1), mG:(15, 35),
-                    cOGS:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] { ((1, 0, 1), (0, 0), 0) },
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((1, 0, -1), (0, 0), 0, (3, 6))},
+                    cOGS:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((1, 0, 1), (0, 0), 0, 0) },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((1, 0, -1), (0, 0), 0, 0, (3, 6))},
                     lC:true,
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 0), (true, false, true), (4, 8)) },
                     lPM:true
@@ -651,12 +655,12 @@ namespace Cave
 
                 { (3, 0, 0), new PlantElementTraits("ObsidianStem",
                 pGR:new PlantGrowthRules(t:(1, 3), mG:(1, 3),
-                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] { ((3, 0, -1), (-1, 1), 0), ((3, 0, -1), (1, 1), 0) }
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((3, 0, -1), (-1, 0), 0, 0), ((3, 0, -1), (1, 0), 0, 0) }
                 )) },
 
                 { (4, 0, 0), new PlantElementTraits("MushroomStem",
                 pGR:new PlantGrowthRules(t:(3, 0), mG:(2, 4),
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((4, 0, 1), (0, 0), 0, (1, 1)) }
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((4, 0, 1), (0, 0), 0, 0, (1, 1)) }
                 )) },
                 { (4, 1, 0), new PlantElementTraits("Mold",
                 pGR:new PlantGrowthRules(t:(3, 2), mG:(50,950), M:true
@@ -664,14 +668,14 @@ namespace Cave
 
                 { (5, 0, 0), new PlantElementTraits("Vine",
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(10, 50),
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((0, 0, 1), (0, 0), 0, (3, 4))},
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((0, 0, 1), (0, 0), 0, 0, (3, 4))},
                     lC:true,
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 0), (true, false, false), (2, 0)), ((-1, 0), (true, false, false), (2, 0)) },
                     lPM:true
                 )) },
                 { (5, 1, 0), new PlantElementTraits("ObsidianVine",
                 pGR:new PlantGrowthRules(t:(1, 3), mG:(6, 14),
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((0, 0, 1), (0, 0), 0, (3, 3))},
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((0, 0, 1), (0, 0), 0, 0, (3, 3))},
                     lC:true,
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 0), (true, false, false), (2, 0)), ((-1, 0), (true, false, false), (2, 0)) },
                     lPM:true
@@ -679,13 +683,13 @@ namespace Cave
 
                 { (6, 0, 0), new PlantElementTraits("MetalTrunk",
                 pGR:new PlantGrowthRules(t:(11, 0), mG:(20, 30),
-                    cOGS:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] { ((6, 0, 1), (0, 0), 0) },
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((6, 0, -1), (0, 0), 0, (2, 5))},
+                    cOGS:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((6, 0, 1), (0, 0), 0, 0) },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((6, 0, -1), (0, 0), 0, 0, (2, 5))},
                     lC:true
                 )) },
                 { (6, 1, 0), new PlantElementTraits("WaxStem",
                 pGR:new PlantGrowthRules(t:(12, 0), mG:(2, 4),
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((6, 1, 1), (0, 0), 0, (1, 1)) }
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((6, 1, 1), (0, 0), 0, 0, (1, 1)) }
                 )) },
 
                 { (7, 0, 0), new PlantElementTraits("FleshVine",
@@ -700,20 +704,20 @@ namespace Cave
                 )) },
                 { (7, 2, 0), new PlantElementTraits("FleshTrunk1",
                 pGR:new PlantGrowthRules(t:(8, 0), mG:(2, 3),
-                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] { ((7, 2, -1), (-1, 1), 1), ((7, 2, -1), (1, 1), 1) }
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((7, 2, -1), (-1, 1), 1, 0), ((7, 2, -1), (1, 1), 1, 0) }
                 )) },
                 { (7, 3, 0), new PlantElementTraits("FleshTrunk2",
                 pGR:new PlantGrowthRules(t:(8, 0), mG:(2, 3),
-                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] { ((7, 3, -1), (-1, 1), 1), ((7, 3, -1), (1, 1), 1) }
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((7, 3, -1), (-1, 1), 1, 0), ((7, 3, -1), (1, 1), 1, 0) }
                 )) },
 
                 { (8, 0, 0), new PlantElementTraits("BoneStalactite",
                 pGR:new PlantGrowthRules(t:(8, 1), mG:(2, 4),
-                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] { ((8, 0, -1), (-1, -1), 0), ((8, 0, -1), (1, -1), 0) }
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((8, 0, -1), (-1, 0), 0, 0), ((8, 0, -1), (1, 0), 0, 0) }
                 )) },
                 { (8, 1, 0), new PlantElementTraits("BoneStalagmite",
                 pGR:new PlantGrowthRules(t:(8, 1), mG:(2, 4),
-                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] { ((8, 0, -1), (-1, 1), 0), ((8, 0, -1), (1, 1), 0) }
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((8, 0, -1), (-1, 0), 0, 0), ((8, 0, -1), (1, 0), 0, 0) }
                 )) },
                 
 
@@ -727,7 +731,7 @@ namespace Cave
 
                 { (1, 0, -1), new PlantElementTraits("BaseBranch",
                 pGR:new PlantGrowthRules(t:(1, 1), mG:(5, 10), sD:((1, 1), (true, false, true)),
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((1, 0, 1), (0, 0), 0, (1, 1)) },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((1, 0, 1), (0, 0), 0, 0, (1, 1)) },
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((0, 1), (true, false, true), (2, 2)) },
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 0), (true, false, true), (4, 4)) },
                     lPM:true
@@ -739,34 +743,34 @@ namespace Cave
 
                 { (6, 0, -1), new PlantElementTraits("MetalBranch",
                 pGR:new PlantGrowthRules(t:(11, 0), mG:(8, 8), sD:((1, 0), (true, false, true)),
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((6, 0, 1), (0, 0), 0, (1, 1)) },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((6, 0, 1), (0, 0), 0, 0, (1, 1)) },
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 1), (true, false, false), (3, 7)), ((0, 1), (false, false, false), (1, 1)) }
                 )) },
 
                 { (7, 2, -1), new PlantElementTraits("FleshBranch1-1",
                 pGR:new PlantGrowthRules(t:(8, 0), mG:(7, 10),
-                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] { ((7, 2, -2), (0, 0), 2) },
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((7, 2, -2), (0, 0), 2, (2, 1)) },
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((7, 2, -2), (0, 0), 2, 0) },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((7, 2, -2), (0, 0), 2, 0.5f, (2, 1)) },
                     lC:true,
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((0, 1), (false, false, false), (2, 4)) },
                     lPM:true,
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 0), (true, false, false), (1, 1)) }
                 )) },
-                { (7, 2, -2), new PlantElementTraits("FleshBranch1-2",
-                pGR:new PlantGrowthRules(t:(8, 0), mG:(6, 4),
+                { (7, 2, -2), new PlantElementTraits("FleshBranch1-2", rET:new ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[]{ ((1, 1), (true, false)), ((1, 2), (true, false)), ((1, 3), (true, false)), ((1, 4), (true, false)), ((1, 5), (true, false)), ((1, 6), (true, false)), ((1, 7), (true, false)), ((1, 8), (true, false)), ((1, 9), (true, false)), },
+                pGR:new PlantGrowthRules(t:(8, 0), mG:(6, 4), sD:((0, 1), (false, false, false)),
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((0, 1), (true, false, false), (2, 0)) }
                 )) },
 
                 { (7, 3, -1), new PlantElementTraits("FleshBranch2-1",
                 pGR:new PlantGrowthRules(t:(8, 0), mG:(11, 10),
-                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType)[] { ((7, 3, -2), (0, 0), 2) },
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, (int frame, int range) birthFrame)[] { ((7, 3, -2), (0, 0), 2, (2, 1)) },
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((7, 3, -2), (0, 0), 2, 0) },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((7, 3, -2), (0, 0), 2, 0, (2, 1)) },
                     cO:8, lC:true,
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 0), (true, false, false), (3, 2)),       ((0, 1), (true, false, false), (5, 2)),   ((0, -1), (true, false, false), (4, 2)), ((0, -1), (true, false, false), (2, 2)) },
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((0, 1), (true, false, false), (1, 0)), ((1, 1), (true, false, false), (5, 2)), ((1, 0), (true, false, false), (1, 1)) }
                 )) },
-                { (7, 3, -2), new PlantElementTraits("FleshBranch2-2",
-                pGR:new PlantGrowthRules(t:(8, 0), mG:(4, 2), sD:((0, -1), (false, false, false)),
+                { (7, 3, -2), new PlantElementTraits("FleshBranch2-2", rET:new ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[]{ ((1, -1), (true, false)), ((1, -2), (true, false)) },
+                pGR:new PlantGrowthRules(t:(8, 0), mG:(5, 3), sD:((0, -1), (false, false, false)),
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((0, -1), (true, false, false), (2, 0)) }
                 )) },
 

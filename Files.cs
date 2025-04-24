@@ -322,6 +322,7 @@ namespace Cave
         public class PlantElementJson
         {
             public int seed;
+            public float mG;
             public (int, int) pos;
             public (int, int) lstGrPos;
             public (int, int) bD;
@@ -338,6 +339,7 @@ namespace Cave
                 pos = plantElement.pos;
                 lstGrPos = plantElement.lastDrawPos;
                 bD = plantElement.baseDirection;
+                mG = plantElement.maxGrowthLevel;
                 grLvl = plantElement.growthLevel;
                 fS = fillstatesToArray(plantElement.fillStates);
                 pEs = new List<PlantElementJson>();
