@@ -72,7 +72,7 @@ namespace Cave
                 seed = 123456;
 
                 int idToPut = 0;
-                (int type, int subType) forceBiome = (0, 0);
+                (int type, int subType) forceBiome = (1, 0);
                 int PNGsize = 150;
                 PNGsize = 100;
 
@@ -1055,11 +1055,14 @@ namespace Cave
                 foreach (Plant plant in activePlants.Values)
                 {
                     pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos);
-                    if (plant.type == (6, 1) && plant.plantElement.childPlantElements.Count > 0)
+                    if (plant.animatedPlantElements != null)
                     {
-                        PlantElement fireFlower = plant.plantElement.childPlantElements[0];
-                        int frame = ((int)(timeElapsed * 20) + plant.seed % 100) % 6;
-                        pasteImage(gameBitmap, fireAnimation.frames[frame], (plant.posX + fireFlower.pos.x /*!!!!!!!!*/ - 1 /*!!!!!!!*/ + plant.posOffset[0], plant.posY + fireFlower.pos.y + plant.posOffset[1]), camPos);
+                        foreach (PlantElement plantElement in plant.animatedPlantElements)
+                        {
+                            int frame = ((int)(timeElapsed * 20) + plant.seed % 100) % 6;
+                            (int x, int y) posToDraw = plantElement.motherPlant.getRealPos(plantElement.pos);
+                            pasteImage(gameBitmap, plantElement.traits.animation.frames[frame], (posToDraw.x - 1, posToDraw.y), camPos);
+                        }
                     }
                     if (game.isLight)
                     {
@@ -1068,6 +1071,7 @@ namespace Cave
                             int radius = 3;
                             if (plant.type == (6, 0)) { radius = 13; }
                             else if (plant.type == (6, 1)) { radius = 9; }
+                            else if (plant.type == (6, 2)) { radius = 9; }
                             foreach ((int x, int y) pos in plant.lightPositions)
                             {
                                 lightPositions.Add((pos.x, pos.y, radius, plant.lightColor));

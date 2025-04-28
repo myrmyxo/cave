@@ -100,7 +100,7 @@ namespace Cave
                 turnPngIntoString("Tulip");
                 turnPngIntoString("Allium");
                 turnPngIntoString("Tree");
-                turnPngIntoString("ChandelierTree");
+                turnPngIntoString("LanternTree");
                 turnPngIntoString("KelpUpwards");
                 turnPngIntoString("KelpDownwards");
                 turnPngIntoString("ObsidianPlant");

@@ -118,8 +118,9 @@ namespace Cave
                 { (4, 1), new OneSprite("Mold", true) },                    // TO CHANGE
                 { (5, 0), new OneSprite("Vines", false) },
                 { (5, 1), new OneSprite("ObsidianVines", false ) },
-                { (6, 0), new OneSprite("ChandelierTree", false) },
+                { (6, 0), new OneSprite("LanternTree", false) },
                 { (6, 1), new OneSprite("Candle", false) },
+                { (6, 2), new OneSprite("LanternTree", false) },
                 { (7, 0), new OneSprite("FleshVine", true) },              // TO CHANGE
                 { (7, 1), new OneSprite("FleshTendril", true) },            // TO CHANGE
                 { (7, 2), new OneSprite("FleshTree1", true) },              // TO CHANGE

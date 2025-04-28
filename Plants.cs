@@ -55,6 +55,8 @@ namespace Cave
 
             public float timeAtLastGrowth = timeElapsed;
 
+            public PlantElement[] animatedPlantElements = null;
+
             public Bitmap bitmap = new Bitmap(1, 1);
             public Bitmap secondaryBitmap = new Bitmap(1, 1);
             public List<(int x, int y)> lightPositions = new List<(int x, int y)>();
@@ -143,6 +145,7 @@ namespace Cave
             {
                 List<PlantElement> plantElements = returnAllPlantElements();
                 Dictionary<(int x, int y), (int type, int subType)> fillDict = returnFullPlantFillDict(plantElements);
+                animatedPlantElements = returnAnimatedPlantElements(plantElements);
 
                 int minX = 0;
                 int maxX = 0;
@@ -280,6 +283,17 @@ namespace Cave
                 if (!screen.getChunkFromPixelPos((posX, posY + mod)).fillStates[PosMod(posX), PosMod(posY + mod)].isAir) { return; } // tile under/over full -> Success
             Fail:;
                 isDeadAndShouldDisappear = true;
+            }
+            public PlantElement[] returnAnimatedPlantElements(List<PlantElement> plantElements = null)
+            {
+                if (plantElements is null) { plantElements = returnAllPlantElements(); }
+                foreach (PlantElement element in plantElements) { if (element.traits.animation != null) { goto animatedPEFound; } }
+                return null;
+            animatedPEFound:;
+                List<PlantElement> animatedPlantElementList = new List<PlantElement>();
+                foreach (PlantElement element in plantElements) { if (element.traits.animation != null) { animatedPlantElementList.Add(element); } }
+                return animatedPlantElementList.ToArray();
+
             }
             public Dictionary<(int x, int y), (int type, int subType)> returnFullPlantFillDict(List<PlantElement> plantElements = null)
             {
@@ -675,7 +689,7 @@ namespace Cave
 
                     if (tryFill(drawPos, traits.plantGrowthRules.materalToFillWith))
                     {
-                        foreach (PlantElement child in childPlantElements) { if (child.traits.stickToLastDrawPosOfParent) { child.pos = absolutePos(drawPos); } }
+                        foreach (PlantElement child in childPlantElements) { if (child.traits.stickToLastDrawPosOfParent) { child.pos = absolutePos(drawPos); child.updateStickyChildren(); } }
                         if (growthLevelToTest >= maxGrowthLevel + (traits.plantGrowthRules.childrenOnGrowthEnd is null ? 0 : 1)) { goto SuccessButStop; }
                         goto Success;
                     }
@@ -696,6 +710,10 @@ namespace Cave
                     return 2;
                 }
                 return 0;
+            }
+            public void updateStickyChildren()
+            {
+                foreach (PlantElement child in childPlantElements) { if (child.traits.stickToLastDrawPosOfParent) { child.pos = absolutePos(lastDrawPos); child.updateStickyChildren(); } }
             }
             public bool tryMoldConversion((int x, int y) pos)
             {
