@@ -87,7 +87,7 @@ namespace Cave
                 spawnNests = true;
                 spawnEntitiesBool = true;
                 spawnPlants = true;
-                bool spawnNOTHING = true;
+                bool spawnNOTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
 
                 if (randomSeed)
@@ -1052,9 +1052,14 @@ namespace Cave
                     }
                 }
 
+                int plantsTested = 0;
                 foreach (Plant plant in activePlants.Values)
                 {
-                    pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos);
+                    if ((plant.bounds.x.max + plant.outOfBoundsVisibility < camPos.x || plant.bounds.x.min - plant.outOfBoundsVisibility > camPos.x + game.zoomLevel * 2 + 1 || plant.bounds.y.max + plant.outOfBoundsVisibility < camPos.y || plant.bounds.y.min - plant.outOfBoundsVisibility > camPos.y + game.zoomLevel * 2 + 1)) { continue; }
+
+                    plantsTested++;
+
+                    pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset.x, plant.posY + plant.posOffset.y), camPos);
                     if (plant.animatedPlantElements != null && !debugMode)
                     {
                         foreach (PlantElement plantElement in plant.animatedPlantElements)
@@ -1066,17 +1071,7 @@ namespace Cave
                     }
                     if (game.isLight)
                     {
-                        if (plant.type.type == 6)
-                        {
-                            int radius = 3;
-                            if (plant.type == (6, 0)) { radius = 13; }
-                            else if (plant.type == (6, 1)) { radius = 9; }
-                            else if (plant.type == (6, 2)) { radius = 9; }
-                            foreach ((int x, int y) pos in plant.lightPositions)
-                            {
-                                lightPositions.Add((pos.x, pos.y, radius, plant.lightColor));
-                            }
-                        }
+                        if (plant.lightPositions != null) { foreach ((int x, int y, int radius, Color color) item in plant.lightPositions) { lightPositions.Add(item); } }
                     }
                 }
 
@@ -1249,7 +1244,7 @@ namespace Cave
                 }
                 if (debugMode && !isPngToBeExported) // debug misc
                 {
-                    if (true)
+                    if (false)  // Debug for plants exact Plant and PlantElement's positions
                     {
                         game.miscDebugList = new List<((int x, int y) pos, Color col)>();
                         List<PlantElement> listo = new List<PlantElement>();

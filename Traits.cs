@@ -561,10 +561,12 @@ namespace Cave
             public ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[] requiredEmptyTiles;
 
             public bool forceLightAtPos;
+            public int lightRadius;
+            public (int type, int subType) lightElement;
             public (int type, int subType)[] colorOverrideArray;    // not used YET (will be used if individual plantElements of the same plant need to have different colors (like idk a flower is blue, another is yellow... or different leaf colors in the same tree...)
             
             public HashSet<(int type, int subType)> materialsPresent;
-            public PlantElementTraits(string namee, ((int x, int y) pos, (bool x, bool y) flip)? stick = null, (int maxLevel, int range)? fMG = null, OneAnimation anm = null, ((int frame, int range) changeFrame, PlantStructureFrame frame)[] framez = null, PlantGrowthRules pGR = null, ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[] rET = null, (int type, int subType)[] cOverride = null, bool isReg = false, bool fLAP = false)
+            public PlantElementTraits(string namee, ((int x, int y) pos, (bool x, bool y) flip)? stick = null, (int maxLevel, int range)? fMG = null, OneAnimation anm = null, ((int frame, int range) changeFrame, PlantStructureFrame frame)[] framez = null, PlantGrowthRules pGR = null, ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[] rET = null, (int type, int subType)[] cOverride = null, bool isReg = false, bool fLAP = false, int lR = 0, (int type, int subType)? lE = null)
             {
                 name = namee;
                 isRegenerative = isReg;
@@ -574,6 +576,8 @@ namespace Cave
                 colorOverrideArray = cOverride;
                 plantGrowthRules = pGR;
                 forceLightAtPos = fLAP;
+                lightElement = lE ?? (0, 0);
+                lightRadius = lR;
                 requiredEmptyTiles = rET;
 
                 materialsPresent = new HashSet<(int type, int subType)>();
@@ -824,15 +828,15 @@ namespace Cave
                 { (1, 0, 1), new PlantElementTraits("TreeLeaves", stick:((0, 0), (false, false)),
                 framez:makeStructureFrameArray(null, "TreeLeaves1", "TreeLeaves2", "TreeLeaves3", "TreeLeaves4")
                 ) },
-                { (6, 0, 1), new PlantElementTraits("Lantern", stick:((0, 0), (true, false)),
+                { (6, 0, 1), new PlantElementTraits("Lantern", stick:((0, 0), (true, false)), lE:(11, 1), lR:13,
                 framez:makeStructureFrameArray(null, "Lantern1", "Lantern2", "Lantern3", "Lantern4", "Lantern5")
                 ) },
 
-                { (4, 0, 1), new PlantElementTraits("MushroomCap", stick:((0, 0), (false, false)),// forceMaxGrowth:(),
+                { (4, 0, 1), new PlantElementTraits("MushroomCap", stick:((0, 0), (false, false)),
                 framez:makeStructureFrameArray(new (int value, int range)[]{ (1, 0), (2, 3), (1, 3) }, "MushroomCap1", "MushroomCap2", "MushroomCap3")
                 ) },
 
-                { (6, 1, 1), new PlantElementTraits("CandleFlower", stick:((0, 1), (false, false)), fLAP:true, anm:fireAnimation) },
+                { (6, 1, 1), new PlantElementTraits("CandleFlower", stick:((0, 1), (false, false)), fLAP:true, anm:fireAnimation, lE:(11, 1), lR:9) },
             };
         }
 
@@ -855,22 +859,22 @@ namespace Cave
             public bool isTree;
             public bool isCeiling;
             public bool isWater;
+            public bool isLuminous;
             public (int type, int subType, int subSubType) plantElementType;
 
             public (int type, int subType)? soilType;
             public int minGrowthForValidity;
 
             public ((int type, int subType) type, ColorRange colorRange)[] colorOverrideArray;
-            public (int type, int subType)[] lightElements;
-            public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? sT = null, int mGFV = 1, ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, (int type, int subType)[] lE = null, bool T = false, bool C = false, bool W = false)
+            public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? sT = null, int mGFV = 1, ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, bool T = false, bool C = false, bool W = false, bool lum = false)
             {
                 name = namee;
                 isTree = T;
                 isCeiling = C;
                 isWater = W;
                 soilType = sT;
+                isLuminous = lum;
                 colorOverrideArray = cOverride;
-                lightElements = lE;
                 minGrowthForValidity = mGFV;
                 plantElementType = t ?? (-1, 0, 0);
             }
@@ -914,12 +918,12 @@ namespace Cave
                 { (5, 1), new PlantTraits("ObsidianVine",                           C:true,
                 t:(5, 1, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), famousColorRanges["Obsidian"]), ((2, 1), famousColorRanges["ObsidianPollen"]) } ) },
 
-                { (6, 0), new PlantTraits("LanternTree",                            T:true,
-                t:(6, 0, 0), lE:new (int type, int subType)[]{ (11, 1) }) },
-                { (6, 1), new PlantTraits("Candle",
-                t:(6, 1, 0), lE:new (int type, int subType)[]{ (11, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
-                { (6, 2), new PlantTraits("Candelabra",                             T:true,
-                t:(6, 2, 0), lE:new (int type, int subType)[]{ (11, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
+                { (6, 0), new PlantTraits("LanternTree",                            T:true, lum:true,
+                t:(6, 0, 0)) },
+                { (6, 1), new PlantTraits("Candle",                                         lum:true,
+                t:(6, 1, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
+                { (6, 2), new PlantTraits("Candelabra",                             T:true, lum:true,
+                t:(6, 2, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
 
                 { (7, 0), new PlantTraits("FleshVine",                              C:true,
                 t:(7, 0, 0), mGFV:4, sT:(4, 0)) },
@@ -936,6 +940,9 @@ namespace Cave
                 t:(8, 1, 0), mGFV:4, sT:(4, 1)) },
             };
         }
+
+
+
 
 
 

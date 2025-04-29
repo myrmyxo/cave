@@ -537,6 +537,12 @@ namespace Cave
             if (a > b) { return a; }
             return b;
         }
+        public static int Max(params int[] values)
+        {
+            int maxi = values[0];
+            foreach (int value in values) { if (value > maxi) { maxi = value; } }
+            return maxi;
+        }
         public static byte Max(byte a, byte b)
         {
             if (a > b) { return a; }

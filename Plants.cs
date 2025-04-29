@@ -56,14 +56,14 @@ namespace Cave
             public float timeAtLastGrowth = timeElapsed;
 
             public PlantElement[] animatedPlantElements = null;
+            public List<(int x, int y, int radius, Color color)> lightPositions = null;
+            public int outOfBoundsVisibility = 0;
 
             public Bitmap bitmap = new Bitmap(1, 1);
             public Bitmap secondaryBitmap = new Bitmap(1, 1);
-            public List<(int x, int y)> lightPositions = new List<(int x, int y)>();
-            public Color lightColor = Color.Black;
-            public (int type, int subType) lightMaterial = (0, 0);
-            public int[] posOffset = new int[3];
-            public int[] bounds = new int[4];
+
+            public (int x, int y) posOffset = (0, 0);
+            public ((int min, int max) x, (int min, int max) y) bounds = ((0, 0), (0, 0));
 
             public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>();
 
@@ -147,6 +147,9 @@ namespace Cave
                 Dictionary<(int x, int y), (int type, int subType)> fillDict = returnFullPlantFillDict(plantElements);
                 animatedPlantElements = returnAnimatedPlantElements(plantElements);
 
+                outOfBoundsVisibility = 0;
+                if (animatedPlantElements != null) { foreach (PlantElement plantElement in animatedPlantElements) { outOfBoundsVisibility = Max(outOfBoundsVisibility, plantElement.traits.animation.frames[0].Width, plantElement.traits.animation.frames[0].Height); } }
+
                 int minX = 0;
                 int maxX = 0;
                 int minY = 0;
@@ -163,6 +166,8 @@ namespace Cave
                 int width = maxX - minX + 1;
                 int height = maxY - minY + 1;
 
+                bounds = ((posX + minX, posX + maxX), (posY + minY, posY + maxY));
+
                 Bitmap bitmapToMake;
                 bitmap = new Bitmap(width, height);
                 bitmapToMake = bitmap;
@@ -172,24 +177,11 @@ namespace Cave
                     setPixelButFaster(bitmapToMake, (drawPos.x - minX, drawPos.y - minY), colorDict[fillDict[drawPos]]);
                 }
 
-                posOffset[0] = minX;
-                posOffset[1] = minY;
-
-                int one = posX - posOffset[0];
-                int two = posX + width - posOffset[0] - 1;
-                int three = posY - posOffset[1];
-                int four = posY + height - posOffset[1] - 1;
-
-                (int, int) tupelo = ChunkIdx(one, three);
-                (int, int) tupela = ChunkIdx(two, four);
-
-                bounds[0] = tupelo.Item1;
-                bounds[1] = tupelo.Item2;
-                bounds[2] = tupela.Item1;
-                bounds[3] = tupela.Item2;
+                posOffset = (minX, minY);
 
                 findChunkPresence(fillDict);
                 findLightPositions(plantElements);
+                if (lightPositions != null) { foreach((int x, int y, int radius, Color color) item in lightPositions) { outOfBoundsVisibility = Max(outOfBoundsVisibility, item.radius); } }
 
                 testDeath(fillDict);
             }
@@ -204,29 +196,26 @@ namespace Cave
             }
             public void findLightPositions(List<PlantElement> plantElements)
             {
-                lightPositions = new List<(int x, int y)>();
+                if (!traits.isLuminous) { lightPositions = null; return; }
 
-                if (traits.lightElements is null || traits.lightElements.Length == 0) { lightMaterial = (0, 0); return; }
-                else { lightMaterial = traits.lightElements[0]; }
+                lightPositions = new List<(int x, int y, int radius, Color color)>();
 
                 foreach (PlantElement element in plantElements)
                 {
-                    if (element.traits.forceLightAtPos) { lightPositions.Add((element.pos.x + posX, element.pos.y + posY)); }
+                    if (element.traits.lightRadius == 0 || !colorDict.ContainsKey(element.traits.lightElement)) { continue; }
+
+                    Color col = colorDict[element.traits.lightElement];
+                    Color lightColor = Color.FromArgb(255, (col.R + 255) / 2, (col.G + 255) / 2, (col.B + 255) / 2);
+
+                    if (element.traits.forceLightAtPos) { lightPositions.Add((element.pos.x + posX, element.pos.y + posY, element.traits.lightRadius, lightColor)); }
                     foreach ((int x, int y) keyo in element.fillStates.Keys)
                     {
-                        if (element.fillStates[keyo] == lightMaterial)
+                        if (element.fillStates[keyo] == element.traits.lightElement)
                         {
-                            lightPositions.Add((keyo.x + element.pos.x + posX, keyo.y + element.pos.y + posY));
+                            lightPositions.Add((element.pos.x + posX, element.pos.y + posY, element.traits.lightRadius, lightColor));
                         }
                     }
                 }
-
-                if (colorDict.ContainsKey(lightMaterial))
-                {
-                    Color col = colorDict[lightMaterial];
-                    lightColor = Color.FromArgb(255, (col.R + 255) / 2, (col.G + 255) / 2, (col.B + 255) / 2);
-                }
-                else { lightColor = Color.Black; }
             }
             public void tryGrowToMaximum()
             {
@@ -293,7 +282,16 @@ namespace Cave
                 List<PlantElement> animatedPlantElementList = new List<PlantElement>();
                 foreach (PlantElement element in plantElements) { if (element.traits.animation != null) { animatedPlantElementList.Add(element); } }
                 return animatedPlantElementList.ToArray();
-
+            }
+            public PlantElement[] returnLightPlantElements(List<PlantElement> plantElements = null)
+            {
+                if (plantElements is null) { plantElements = returnAllPlantElements(); }
+                foreach (PlantElement element in plantElements) { if (element.traits.lightRadius > 0) { goto lightPEFound; } }
+                return null;
+            lightPEFound:;
+                List<PlantElement> lightPlantElementList = new List<PlantElement>();
+                foreach (PlantElement element in plantElements) { if (element.traits.lightRadius > 0) { lightPlantElementList.Add(element); } }
+                return lightPlantElementList.ToArray();
             }
             public Dictionary<(int x, int y), (int type, int subType)> returnFullPlantFillDict(List<PlantElement> plantElements = null)
             {
@@ -362,10 +360,7 @@ namespace Cave
                 if (traits.isCeiling) { attachPoint = 1; }
                 if (traits.colorOverrideArray != null)
                 {
-                    foreach (((int type, int subType) type, ColorRange colorRange) item in traits.colorOverrideArray)
-                    {
-                        tryAddMaterialColor(item.type, item.colorRange);
-                    }
+                    foreach (((int type, int subType) type, ColorRange colorRange) item in traits.colorOverrideArray) { tryAddMaterialColor(item.type, item.colorRange); }
                 }
             }
             public void testDeath(Dictionary<(int x, int y), (int type, int subType)> fillDict)
@@ -451,19 +446,15 @@ namespace Cave
             public void getTraitAndAddColors()
             {
                 traits = getPlantElementTraits(type);
-                foreach ((int type, int subType) material in traits.materialsPresent)
-                {
-                    motherPlant.tryAddMaterialColor(material);
-                }
+                foreach ((int type, int subType) material in traits.materialsPresent) { motherPlant.tryAddMaterialColor(material); }
+                if (traits.lightRadius > 0) { motherPlant.tryAddMaterialColor(traits.lightElement); }
             }
             public void getTraitAndAddColorsAndFindMaxGrowth()
             {
                 traits = getPlantElementTraits(type);
                 maxGrowthLevel = traits.maxGrowth.maxLevel + seed % (traits.maxGrowth.range + 1);  // will put variation in growth levels here
-                foreach ((int type, int subType) material in traits.materialsPresent)
-                {
-                    motherPlant.tryAddMaterialColor(material);
-                }
+                foreach ((int type, int subType) material in traits.materialsPresent) { motherPlant.tryAddMaterialColor(material); }
+                if (traits.lightRadius > 0) { motherPlant.tryAddMaterialColor(traits.lightElement); }
             }
             public (int x, int y) absolutePos((int x, int y) position)
             {
