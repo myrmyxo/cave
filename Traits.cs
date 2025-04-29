@@ -552,7 +552,7 @@ namespace Cave
             public string name;
             public bool isRegenerative;
             public (int maxLevel, int range) maxGrowth;
-            public bool stickToLastDrawPosOfParent;
+            public ((int x, int y) pos, (bool x, bool y) flip)? isSticky;
 
             public OneAnimation animation;
             public ((int frame, int range) changeFrame, PlantStructureFrame frame)[] frames;
@@ -564,11 +564,11 @@ namespace Cave
             public (int type, int subType)[] colorOverrideArray;    // not used YET (will be used if individual plantElements of the same plant need to have different colors (like idk a flower is blue, another is yellow... or different leaf colors in the same tree...)
             
             public HashSet<(int type, int subType)> materialsPresent;
-            public PlantElementTraits(string namee, bool stick = false, (int maxLevel, int range)? fMG = null, OneAnimation anm = null, ((int frame, int range) changeFrame, PlantStructureFrame frame)[] framez = null, PlantGrowthRules pGR = null, ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[] rET = null, (int type, int subType)[] cOverride = null, bool isReg = false, bool fLAP = false)
+            public PlantElementTraits(string namee, ((int x, int y) pos, (bool x, bool y) flip)? stick = null, (int maxLevel, int range)? fMG = null, OneAnimation anm = null, ((int frame, int range) changeFrame, PlantStructureFrame frame)[] framez = null, PlantGrowthRules pGR = null, ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[] rET = null, (int type, int subType)[] cOverride = null, bool isReg = false, bool fLAP = false)
             {
                 name = namee;
                 isRegenerative = isReg;
-                stickToLastDrawPosOfParent = stick;
+                isSticky = stick;
                 animation = anm;
                 frames = framez;
                 colorOverrideArray = cOverride;
@@ -754,7 +754,7 @@ namespace Cave
                     C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((6, 0, 1), (0, 0), 0, 0, (1, 1)) },
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 1), (true, false, false), (3, 7)), ((0, 1), (false, false, false), (1, 1)) }
                 )) },
-                { (6, 1, -1), new PlantElementTraits("WaxFruitShit", stick:true,    // Same as WaxStem except that it sticks (so acts as a fruit/branch ??)
+                { (6, 1, -1), new PlantElementTraits("WaxFruitShit", stick:((0, 1), (false, false)),    // Same as WaxStem except that it sticks (so acts as a fruit/branch ??)
                 pGR:new PlantGrowthRules(t:(12, 0), mG:(2, 4),
                     C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((6, 1, 1), (0, 0), 0, 0, (1, 0)) }
                 )) },
@@ -811,28 +811,28 @@ namespace Cave
                 framez:makeStructureFrameArray(null, "CrossFlower1", "CrossFlower2", "CrossFlower3")
                 ) },
 
-                { (0, 1, 1), new PlantElementTraits("TulipFlower", stick:true,
+                { (0, 1, 1), new PlantElementTraits("TulipFlower", stick:((0, 0), (false, false)),
                 framez:makeStructureFrameArray(null, "TulipFlower1", "TulipFlower2", "TulipFlower3", "TulipFlower4", "TulipFlower5")
                 ) },
-                { (0, 2, 1), new PlantElementTraits("AlliumFlower", stick:true,
+                { (0, 2, 1), new PlantElementTraits("AlliumFlower", stick:((0, 0), (false, false)),
                 framez:makeStructureFrameArray(null, "AlliumFlower1", "AlliumFlower2", "AlliumFlower3", "AlliumFlower4")
                 ) },
-                { (0, 3, 1), new PlantElementTraits("BigFlower", stick:true,
+                { (0, 3, 1), new PlantElementTraits("BigFlower", stick:((0, 0), (false, false)),
                 framez:makeStructureFrameArray(null, "BigFlower1", "BigFlower2", "BigFlower3", "BigFlower4", "BigFlower5")
                 ) },
 
-                { (1, 0, 1), new PlantElementTraits("TreeLeaves", stick:true,
+                { (1, 0, 1), new PlantElementTraits("TreeLeaves", stick:((0, 0), (false, false)),
                 framez:makeStructureFrameArray(null, "TreeLeaves1", "TreeLeaves2", "TreeLeaves3", "TreeLeaves4")
                 ) },
-                { (6, 0, 1), new PlantElementTraits("Lantern", stick:true,
+                { (6, 0, 1), new PlantElementTraits("Lantern", stick:((0, 0), (true, false)),
                 framez:makeStructureFrameArray(null, "Lantern1", "Lantern2", "Lantern3", "Lantern4", "Lantern5")
                 ) },
 
-                { (4, 0, 1), new PlantElementTraits("MushroomCap", stick:true,// forceMaxGrowth:(),
+                { (4, 0, 1), new PlantElementTraits("MushroomCap", stick:((0, 0), (false, false)),// forceMaxGrowth:(),
                 framez:makeStructureFrameArray(new (int value, int range)[]{ (1, 0), (2, 3), (1, 3) }, "MushroomCap1", "MushroomCap2", "MushroomCap3")
                 ) },
 
-                { (6, 1, 1), new PlantElementTraits("CandleFlower", stick:true, fLAP:true, anm:fireAnimation) },
+                { (6, 1, 1), new PlantElementTraits("CandleFlower", stick:((0, 1), (false, false)), fLAP:true, anm:fireAnimation) },
             };
         }
 

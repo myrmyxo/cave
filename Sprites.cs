@@ -196,7 +196,7 @@ namespace Cave
             arrowsSprite = new OneSprite("Arrows", true);                   // TO CHANGE
             operationSignsSprite = new OneSprite("OperationSigns", true);   // TO CHANGE
 
-            fireAnimation = new OneAnimation("Fire", false, 6);
+            fireAnimation = new OneAnimation("Fire", false, 6, (-1, 0));
             livingPortalAnimation = new OneAnimation("LivingPortal", true, 4);       // TO CHANGE
 
             Bitmap[] numberBitmapArray = slice(numbersSprite.bitmap, 11, 1);
@@ -288,15 +288,16 @@ namespace Cave
         {
             public Bitmap[] frames;
             public int frameCount;
-            public OneAnimation(Bitmap[] framesToPut)
+            public (int x, int y) offset;
+            public OneAnimation(Bitmap[] framesToPut, (int x, int y)? offsetToPut = null)
             {
                 frames = framesToPut;
-                //(int, int) dimensions = (frames[0].Width, frames[0].Height);
                 frameCount = frames.Length;
+                offset = offsetToPut ?? (0, 0);
             }
-            public OneAnimation(string contentString, bool isFileName, int amoountOfFrames)
+            public OneAnimation(string contentString, bool isFileName, int amountOfFrames, (int x, int y)? offsetToPut = null)
             {
-                frameCount = amoountOfFrames;
+                frameCount = amountOfFrames;
                 if (isFileName)
                 {
                     contentString = findSpritesPath() + $"\\{contentString}.txt";
@@ -314,6 +315,8 @@ namespace Cave
                 {
                     bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 }
+
+                offset = offsetToPut ?? (- ((frames[0].Width - 1) / 2), - ((frames[0].Height - 1) / 2));
             }
         }
 

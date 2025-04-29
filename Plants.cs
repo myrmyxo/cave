@@ -689,7 +689,7 @@ namespace Cave
 
                     if (tryFill(drawPos, traits.plantGrowthRules.materalToFillWith))
                     {
-                        foreach (PlantElement child in childPlantElements) { if (child.traits.stickToLastDrawPosOfParent) { child.pos = absolutePos(drawPos); child.updateStickyChildren(); } }
+                        updateStickyChildren(drawPos);
                         if (growthLevelToTest >= maxGrowthLevel + (traits.plantGrowthRules.childrenOnGrowthEnd is null ? 0 : 1)) { goto SuccessButStop; }
                         goto Success;
                     }
@@ -711,9 +711,17 @@ namespace Cave
                 }
                 return 0;
             }
-            public void updateStickyChildren()
+            public void updateStickyChildren((int x, int y) newPos)
             {
-                foreach (PlantElement child in childPlantElements) { if (child.traits.stickToLastDrawPosOfParent) { child.pos = absolutePos(lastDrawPos); child.updateStickyChildren(); } }
+                foreach (PlantElement child in childPlantElements)
+                {
+                    if (child.traits.isSticky != null)
+                    {
+                        child.pos = absolutePos(newPos);
+                        child.pos = (child.pos.x + child.traits.isSticky.Value.pos.x * (child.traits.isSticky.Value.flip.x && baseDirection.x < 0 ? -1 : 1), child.pos.y + child.traits.isSticky.Value.pos.y * (child.traits.isSticky.Value.flip.y && baseDirection.y < 0 ? -1 : 1));
+                        child.updateStickyChildren(child.lastDrawPos);
+                    }
+                }
             }
             public bool tryMoldConversion((int x, int y) pos)
             {

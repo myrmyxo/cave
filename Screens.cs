@@ -87,7 +87,7 @@ namespace Cave
                 spawnNests = true;
                 spawnEntitiesBool = true;
                 spawnPlants = true;
-                bool spawnNOTHING = false;
+                bool spawnNOTHING = true;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
 
                 if (randomSeed)
@@ -1044,24 +1044,24 @@ namespace Cave
 
                 foreach (Structure structure in activeStructures.Values)
                 {
-                    if (structure.bitmap != null) { pasteImage(gameBitmap, structure.bitmap, (structure.pos.x + structure.posOffset[0], structure.pos.y + structure.posOffset[1]), camPos); }
-                    if (structure.type.type == 3)
+                    // NOT USED AND WAS NEVER USED but keep in case idk // if (structure.bitmap != null) { pasteImage(gameBitmap, structure.bitmap, (structure.pos.x + structure.posOffset.x, structure.pos.y + structure.posOffset.y), camPos); }
+                    if (structure.animation != null)
                     {
                         int frame = ((int)(timeElapsed * 10) + (int)(structure.seed.x) % 100) % 4;
-                        pasteImage(gameBitmap, livingPortalAnimation.frames[frame], (structure.pos.x + structure.posOffset[0], structure.pos.y + structure.posOffset[1]), camPos);
+                        pasteImage(gameBitmap, structure.animation.frames[frame], (structure.pos.x + structure.animation.offset.x, structure.pos.y + structure.animation.offset.y), camPos);
                     }
                 }
 
                 foreach (Plant plant in activePlants.Values)
                 {
                     pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset[0], plant.posY + plant.posOffset[1]), camPos);
-                    if (plant.animatedPlantElements != null)
+                    if (plant.animatedPlantElements != null && !debugMode)
                     {
                         foreach (PlantElement plantElement in plant.animatedPlantElements)
                         {
-                            int frame = ((int)(timeElapsed * 20) + plant.seed % 100) % 6;
+                            int frame = ((int)(timeElapsed * 20) + plantElement.seed % 100) % 6;
                             (int x, int y) posToDraw = plantElement.motherPlant.getRealPos(plantElement.pos);
-                            pasteImage(gameBitmap, plantElement.traits.animation.frames[frame], (posToDraw.x - 1, posToDraw.y), camPos);
+                            pasteImage(gameBitmap, plantElement.traits.animation.frames[frame], (posToDraw.x + plantElement.traits.animation.offset.x, posToDraw.y + plantElement.traits.animation.offset.y), camPos);
                         }
                     }
                     if (game.isLight)
@@ -1263,7 +1263,7 @@ namespace Cave
                             PlantElement current = listo[0];
                             listo.RemoveAt(0);
                             foreach (PlantElement baby in current.childPlantElements) { listo.Add(baby); }
-                            game.miscDebugList.Insert(0, (current.motherPlant.getRealPos(current.pos), Color.MediumPurple));
+                            if (rand.Next(5) != 0) { game.miscDebugList.Insert(0, (current.motherPlant.getRealPos(current.pos), Color.MediumPurple)); }
                         }
 
                         foreach (((int x, int y) pos, Color col) item in game.miscDebugList)

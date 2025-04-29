@@ -98,10 +98,9 @@ namespace Cave
             public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), bool> megaChunkPresence = new Dictionary<(int x, int y), bool>();
 
-            public Bitmap bitmap = null;
-            public int[] posOffset = null;
-
             public float timeAtBirth = -999;
+
+            public OneAnimation animation = null;
 
             // loading and unloading management
             public bool isImmuneToUnloading = false;
@@ -623,13 +622,10 @@ namespace Cave
                 saveStructure();
                 if (sisterStructure != null) { sisterStructure.EraseFromTheWorld(); }
             }
-            public void makeBitmap()
+            public void makeBitmap()    // not actually makebitmap but whatever
             {
-                if (type.type == 3)
-                {
-                    posOffset = new int[] { -2, -2 };
-                }
-                else { bitmap = null; posOffset = null; }
+                if (type.type == 3) { animation = livingPortalAnimation; }
+                else { animation = null; }
             }
         }
         public static bool testForBloodAltar(Screens.Screen screen, (int x, int y) startPos)
