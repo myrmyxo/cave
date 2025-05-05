@@ -55,6 +55,7 @@ namespace Cave
             {
                 turnPngIntoString("Error");
 
+
                 turnPngIntoString("OverlayBackground");
                 turnPngIntoString("Numbers");
                 turnPngIntoString("LettersUp");
@@ -62,6 +63,7 @@ namespace Cave
                 turnPngIntoString("LettersMin");
                 turnPngIntoString("Arrows");
                 turnPngIntoString("OperationSigns");
+
 
                 turnPngIntoString("Fairy");
                 turnPngIntoString("ObsidianFairy");
@@ -81,6 +83,7 @@ namespace Cave
                 turnPngIntoString("WaterSkipper");
                 turnPngIntoString("Goblin");
 
+
                 turnPngIntoString("Acid");
                 turnPngIntoString("DeoxygenatedBlood");
                 turnPngIntoString("Blood");
@@ -95,24 +98,32 @@ namespace Cave
                 turnPngIntoString("BoneTile");
                 turnPngIntoString("MoldTile");
 
+
                 turnPngIntoString("BasePlant");
-                turnPngIntoString("Candle");
                 turnPngIntoString("Tulip");
                 turnPngIntoString("Allium");
                 turnPngIntoString("Tree");
-                turnPngIntoString("LanternTree");
                 turnPngIntoString("KelpUpwards");
                 turnPngIntoString("KelpDownwards");
                 turnPngIntoString("ObsidianPlant");
                 turnPngIntoString("Mushroom");
                 turnPngIntoString("Vines");
                 turnPngIntoString("ObsidianVines");
+
                 turnPngIntoString("FleshVine");
                 turnPngIntoString("FleshTendril");
                 turnPngIntoString("FleshTree1");
                 turnPngIntoString("FleshTree2");
                 turnPngIntoString("BoneStalactite");
                 turnPngIntoString("BoneStalagmite");
+
+                turnPngIntoString("LanternTree");
+                turnPngIntoString("LanternVine");
+                turnPngIntoString("LanternSide");
+                turnPngIntoString("Candle");
+                turnPngIntoString("Chandelier");
+                turnPngIntoString("Candelabrum");
+
 
                 turnPngIntoString("PlantMatter");
                 turnPngIntoString("ObsidianPlantMatter");
@@ -130,6 +141,7 @@ namespace Cave
                 turnPngIntoString("LightBulb");
                 turnPngIntoString("Wax");
 
+
                 turnPngIntoString("Sword");
                 turnPngIntoString("Pickaxe");
                 turnPngIntoString("Scythe");
@@ -138,13 +150,16 @@ namespace Cave
                 turnPngIntoString("WandCarnal");
                 turnPngIntoString("WandFloral");
 
+
                 turnPngIntoString("GoblinHand");
                 turnPngIntoString("Stinger");
                 turnPngIntoString("Mandibles");
 
+
                 turnPngIntoString("FairyPortrait");
                 turnPngIntoString("GoblinPortrait");
                 turnPngIntoString("HornetPortrait");
+
 
                 turnPngIntoString("Fire");
                 turnPngIntoString("LivingPortal");
@@ -170,7 +185,6 @@ namespace Cave
             // Optimize/functionalize lake maker function
             // EntityCemetary and PlantCemetary folders, putting the files of dead Entities/Plants there
             // Hornet nests -> search for point of interests in plants should take place with SPIRAL function
-            // Update tryGrowth stuff in plants to fix bugs and make growth more intelligently
             // Optimization of biome getting -> if all 4 corners of a chunk are Monobiome of the same biome, no need to computer all the other ones inside ! thank you noiseposti.ng 
             // Hornets : 3 types of attack. Warning sting (first attack, to tell to fuk off, scares creatures off the den, second attack, actual stings that deal poison, third attack, mandible slash that can cause bleeding)
             // Message from player character portrait (LMFAO LIKE IF THERE WAS ONE) : "I feel like i'm very much not wanted here..." to tell player that hornet did a warning attack. "I should really get out before they get angry" on the second one.
@@ -185,6 +199,7 @@ namespace Cave
             // Hornet larvae climbing up to the ceiling to go pupate ?
             // Bubble effects in water ?
             // Fishing rod
+            // PlantElement side ponderation factor -> prevent all branches of a tree from spawning on the same size (like a left facing decrease directionScore by 1, if < -2 if will force right facing for next child, same for the opposite. Allows to have more equilibrated trees and shite).
             
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
@@ -198,7 +213,6 @@ namespace Cave
             // cool ideas for later !
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
-            // add stoplight biomes not just candelier biome. and make candles have their own biome ?
             // make it possible to visit entities/players inventories lmfao
             // looping dimensions ???? Could be cool. And serve as TELEPORT HUBS ???
             // maybe depending on a parameter of the dimension, some living world dimensions would be more dead or not dead at all.
@@ -213,6 +227,10 @@ namespace Cave
             // Different fonts for different personalities ? Or tones of speaking ?
             // Unidirectional teleporters. Some abilities can temporarly open a unidirectional one both ways ?
             // Have living dimension plants flower in specific seasons (don't happen often). All flesh plants flower at the same time, and all bone plants flower at the same time, but these 2 flowering seasons are separate (bone and flesh don't flower at the same time).
+            // Salinity noise ?
+            // -> sweat/salt glands structures in living dimension, that spawn more and more as salinity increases.
+            // -> Make Mold biomes dependant on Salinity too to make their spawning better.
+            // Params in the findBiome functions ? To make them serializable yes yes
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
@@ -230,6 +248,8 @@ namespace Cave
             // Special worms that pollinate obsidian plants in obsidian biomes
             // Vulture bees ??
             // Add rats with a tail ? Rat swarms ?
+            // Jellyfish
+            // TERMINTES ??? Making exploratory tubes and shit ?
 
             // Plants ideas !
             // bone trees and shrubs... like ribs.
@@ -239,6 +259,7 @@ namespace Cave
             // Roots for trees, that can grow out the soil under the plant and be exposed if there's a cave under them
             // Branching wax plants ?
             // Weeping willows !
+            // Snowflake plants ??
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.

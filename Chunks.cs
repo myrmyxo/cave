@@ -422,14 +422,22 @@ namespace Cave
                 for (float i = (float)rand.NextDouble(); i < spawnRate; i++)
                 {
                     float rando = ((float)rand.NextDouble()) * 100;
+                    int tries = 0;
                     foreach (((int type, int subType) type, float percentage) tupelo in spawnTypes)
                     {
                         if (rando > tupelo.percentage) { rando -= tupelo.percentage; continue; }
                         PlantTraits traits = plantTraitsDict.ContainsKey(tupelo.type) ? plantTraitsDict[tupelo.type] : plantTraitsDict[(-1, 0)];
-                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, traits.isWater, traits.isCeiling, soilType:traits.soilType);
+                    plantInvalidTryAgain:;
+                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, traits.isWater, traits.isCeiling, traits.isSide, soilType:traits.soilType);
                         if (!returnTuple.valid) { break; }
                         Plant newPlant = new Plant(this, returnTuple.pos, tupelo.type);
-                        if (!newPlant.isDeadAndShouldDisappear) { screen.activePlants[newPlant.id] = newPlant; }
+                        if (newPlant.isDeadAndShouldDisappear)
+                        {
+                            if (tries > 10) { break; }
+                            tries++;
+                            goto plantInvalidTryAgain;
+                        }
+                        screen.activePlants[newPlant.id] = newPlant;
                     }
                 }
             }
@@ -449,13 +457,18 @@ namespace Cave
                     Dictionary<(int x, int y), bool> forbiddenPositions = new Dictionary<(int x, int y), bool>();
                     spawnOnePlants(traits.plantGroundSpawnRate, traits.plantGroundSpawnTypes, forbiddenPositions);
                     spawnOnePlants(traits.plantCeilingSpawnRate, traits.plantCeilingSpawnTypes, forbiddenPositions);
+                    if (traits.plantSideSpawnRate > 0)
+                    {
+                        spawnOnePlants(traits.plantSideSpawnRate, traits.plantSideSpawnTypes, forbiddenPositions);
+                    }
                     spawnOnePlants(traits.plantTreeSpawnRate, traits.plantTreeSpawnTypes, forbiddenPositions);
                     spawnOnePlants(traits.plantWaterGroundSpawnRate, traits.plantWaterGroundSpawnTypes, forbiddenPositions);
                     spawnOnePlants(traits.plantWaterCeilingSpawnRate, traits.plantWaterCeilingSpawnTypes, forbiddenPositions);
+                    spawnOnePlants(traits.plantWaterSideSpawnRate, traits.plantWaterSideSpawnTypes, forbiddenPositions);
                 }
                 entitiesAndPlantsSpawned = true;
             }
-            public ((int x, int y), bool valid) findSuitablePosition(Dictionary<(int x, int y), bool> forbiddenPositions, bool isEntity, bool isWater, bool isCeiling = false, bool isDigging = false, bool isJesus = false, (int type, int subType)? soilType = null)
+            public ((int x, int y), bool valid) findSuitablePosition(Dictionary<(int x, int y), bool> forbiddenPositions, bool isEntity, bool isWater, bool isCeiling = false, bool isSide = false, bool isDigging = false, bool isJesus = false, (int type, int subType)? soilType = null)
             {
                 int counto = 0;
                 (int x, int y) posToTest;
@@ -470,8 +483,16 @@ namespace Cave
                     if (tileTraits.isAir == (isWater && !isJesus) && !isDigging) { continue; };    // If water plant and liquid tile, yay, if normal plant and empty tile, yay, else no
                     if (isEntity && !isJesus) { goto success; }   // For entities, no need to test if ceiling or ground shit
 
-                    posToTest = (randPos.x, randPos.y + (isCeiling ? 1 : -1));
-                    tileTraits = screen.getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
+                    if (isSide)
+                    {
+                        posToTest = (randPos.x + (isSide && !isCeiling ? (counto % 2) * 2 - 1 : 0), randPos.y);
+                        tileTraits = screen.getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
+                    }
+                    else
+                    {
+                        posToTest = (randPos.x, randPos.y + (isCeiling ? 1 : -1));
+                        tileTraits = screen.getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
+                    }
                     if (soilType != null && tileTraits.type != soilType.Value) { continue; }
                     if (isJesus)
                     {
@@ -1201,7 +1222,9 @@ namespace Cave
                 }
                 else if (dimensionType == (1, 0)) // type == 1, chandelier dimension
                 {
-                    testAddBiome(listo, (9, 0), percentageFree);
+                    percentageFree -= calculateAndAddBiome(listo, (9, 0), percentageFree, humidity, (700, 999999)); // Lantern
+                    percentageFree -= calculateAndAddBiome(listo, (9, 2), percentageFree, humidity, (-999999, 300)); // Chandelier
+                    testAddBiome(listo, (9, 1), percentageFree); // MixedLuminous
                 }
                 else if (dimensionType == (2, 0)) // type == 2, living dimension
                 {

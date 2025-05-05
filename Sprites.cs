@@ -118,15 +118,18 @@ namespace Cave
                 { (4, 1), new OneSprite("Mold", true) },                    // TO CHANGE
                 { (5, 0), new OneSprite("Vines", false) },
                 { (5, 1), new OneSprite("ObsidianVines", false ) },
-                { (6, 0), new OneSprite("LanternTree", false) },
-                { (6, 1), new OneSprite("Candle", false) },
-                { (6, 2), new OneSprite("LanternTree", false) },
-                { (7, 0), new OneSprite("FleshVine", true) },              // TO CHANGE
+                { (7, 0), new OneSprite("FleshVine", true) },               // TO CHANGE
                 { (7, 1), new OneSprite("FleshTendril", true) },            // TO CHANGE
                 { (7, 2), new OneSprite("FleshTree1", true) },              // TO CHANGE
                 { (7, 3), new OneSprite("FleshTree2", true) },              // TO CHANGE
                 { (8, 0), new OneSprite("BoneStalactite", true) },          // TO CHANGE
                 { (8, 1), new OneSprite("BoneStalagmite", true) },          // TO CHANGE
+                { (20, 0), new OneSprite("LanternTree", false) },
+                { (20, 1), new OneSprite("LanternVine", false) },
+                { (20, 2), new OneSprite("LanternSide", false) },
+                { (21, 0), new OneSprite("Candle", false) },
+                { (21, 1), new OneSprite("Chandelier", false) },
+                { (21, 2), new OneSprite("Candelabrum", false) },
             };
             materialSprites = new Dictionary<(int, int), OneSprite>
             {
