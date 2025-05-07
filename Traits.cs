@@ -500,6 +500,16 @@ namespace Cave
                 { "BigFlower5", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -3), (0, -2), (0, -1), (-3, 0), (-2, 0), (-1, 0), (3, 0), (2, 0), (1, 0), (0, 3), (0, 2), (0, 1),     (2, 2), (1, 1), (-2, 2), (-1, 1), (2, -2), (1, -1), (-2, -2), (-1, -1), } }, { (2, 1), new (int x, int y)[] { (0, 0) } } }
                 ) },
+
+                { "ReedFlower1", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0) } } }
+                ) },
+                { "ReedFlower2", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0), (0, 1) } } }
+                ) },
+                { "ReedFlower3", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0), (0, 1) } }, { (2, 1), new (int x, int y)[] { (0, 2) } } }
+                ) },
             };
         }
 
@@ -510,6 +520,7 @@ namespace Cave
             public (int maxLevel, int range) maxGrowth;
             public bool offsetMaxGrowthVariation;
             public (int type, int subType) materalToFillWith;
+            public (int type, int subType)? tileContentNeededToGrow;
             public bool isMold;
 
             public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] childrenOnGrowthStart;
@@ -529,7 +540,7 @@ namespace Cave
             public bool loopPM;
 
             public bool preventGaps;
-            public PlantGrowthRules((int type, int subType) t, (int frame, int range)? mG = null, bool oMGV = false, bool M = false,
+            public PlantGrowthRules((int type, int subType) t, (int type, int subType)? tCNTG = null, (int frame, int range)? mG = null, bool oMGV = false, bool M = false,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] cOGS = null,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] cOGE = null,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] C = null, int cO = 0, bool lC = false, bool mTC = false,    // O O OOOO I. WANT A HEN-
@@ -541,6 +552,7 @@ namespace Cave
                 maxGrowth = mG ?? (5, 0);
                 offsetMaxGrowthVariation = oMGV;
                 materalToFillWith = t;
+                tileContentNeededToGrow = tCNTG;
                 childrenOnGrowthStart = cOGS;
                 childrenOnGrowthEnd = cOGE;
                 childArray = C;
@@ -570,6 +582,7 @@ namespace Cave
             public PlantGrowthRules plantGrowthRules;
 
             public ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[] requiredEmptyTiles;
+            public ((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip)[] specificRequiredEmptyTiles;
 
             public bool forceLightAtPos;
             public int lightRadius;
@@ -577,7 +590,7 @@ namespace Cave
             public (int type, int subType)[] colorOverrideArray;    // not used YET (will be used if individual plantElements of the same plant need to have different colors (like idk a flower is blue, another is yellow... or different leaf colors in the same tree...)
             
             public HashSet<(int type, int subType)> materialsPresent;
-            public PlantElementTraits(string namee, ((int x, int y) pos, (bool x, bool y) flip)? stick = null, (int maxLevel, int range)? fMG = null, OneAnimation anm = null, ((int frame, int range) changeFrame, PlantStructureFrame frame)[] framez = null, ((int type, int subType, int subSubType) plantElement, (int x, int y) offset)? dC = null, PlantGrowthRules pGR = null, ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[] rET = null, (int type, int subType)[] cOverride = null, bool isReg = false, bool fLAP = false, int lR = 0, (int type, int subType)? lE = null)
+            public PlantElementTraits(string namee, ((int x, int y) pos, (bool x, bool y) flip)? stick = null, (int maxLevel, int range)? fMG = null, OneAnimation anm = null, ((int frame, int range) changeFrame, PlantStructureFrame frame)[] framez = null, ((int type, int subType, int subSubType) plantElement, (int x, int y) offset)? dC = null, PlantGrowthRules pGR = null, ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[] rET = null, ((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip)[] sRET = null, (int type, int subType)[] cOverride = null, bool isReg = false, bool fLAP = false, int lR = 0, (int type, int subType)? lE = null)
             {
                 name = namee;
                 isRegenerative = isReg;
@@ -591,6 +604,7 @@ namespace Cave
                 lightElement = lE ?? (0, 0);
                 lightRadius = lR;
                 requiredEmptyTiles = rET;
+                specificRequiredEmptyTiles = sRET;
 
                 materialsPresent = new HashSet<(int type, int subType)>();
                 if (plantGrowthRules != null)
@@ -640,7 +654,7 @@ namespace Cave
                 )) },
                 { (0, 1, 0), new PlantElementTraits("TulipStem",
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(2, 3),
-                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((0, 1, 1), (0, 0), 0, 0, (1, 1)) }
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((0, 1, 1), (0, 0), 0, 0, (1, 0)) }
                 )) },
                 { (0, 2, 0), new PlantElementTraits("AlliumStem",
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(3, 2),
@@ -660,15 +674,20 @@ namespace Cave
                     lPM:true
                 )) },
 
-                { (2, 0, 0), new PlantElementTraits("Kelp",
-                pGR:new PlantGrowthRules(t:(1, 2), mG:(3, 8),
+                { (2, 0, 0), new PlantElementTraits("Kelp", rET:(from number in Enumerable.Range(0, 5) select ((number % 2, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 2), mG:(3, 8), tCNTG:(-2, 0),
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 0), (true, false, false), (1, 0)), ((-1, 0), (true, false, false), (1, 0)) },
                     lPM:true
                 )) },
-                { (2, 1, 0), new PlantElementTraits("KelpCeiling",
-                pGR:new PlantGrowthRules(t:(1, 2), mG:(3, 8),
+                { (2, 1, 0), new PlantElementTraits("KelpCeiling", rET:(from number in Enumerable.Range(0, 5) select ((number % 2, -number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 2), mG:(3, 8), tCNTG:(-2, 0),
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 0), (true, false, false), (1, 0)), ((-1, 0), (true, false, false), (1, 0)) },
                     lPM:true
+                )) },
+                { (2, 2, 0), new PlantElementTraits("ReedStem", rET:(from number in Enumerable.Range(0, 5) select ((0, number), (true, false))).ToArray(), sRET:new ((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip)[] { ((0, 3), (0, 0), (true, false)) },
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(4, 4),
+                    // PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 0), (true, false, false), (1, 0)), ((-1, 0), (true, false, false), (1, 0)) }
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((2, 2, 1), (0, 0), 0, 0, (1, 1)) }
                 )) },
 
                 { (3, 0, 0), new PlantElementTraits("ObsidianStem",
@@ -731,32 +750,32 @@ namespace Cave
 
 
 
-                { (20, 0, 0), new PlantElementTraits("LanternTreeTrunk", rET:(from number in Enumerable.Range(0, 25) select ((0, number), (false, false))).ToArray(),
+                { (20, 0, 0), new PlantElementTraits("LanternTreeTrunk", rET:(from number in Enumerable.Range(0, 25) select ((0, number), (true, false))).ToArray(),
                 pGR:new PlantGrowthRules(t:(11, 0), mG:(20, 30),
                     cOGS:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((20, 0, 1), (0, 0), 0, 0) },
                     C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((20, 0, -1), (0, 0), 0, 0, (2, 5))},
                     lC:true
                 )) },
-                { (20, 1, 0), new PlantElementTraits("LanternVine", rET:(from number in Enumerable.Range(0, 10) select ((0, -number), (false, false))).ToArray(),
+                { (20, 1, 0), new PlantElementTraits("LanternVine", rET:(from number in Enumerable.Range(0, 10) select ((0, -number), (true, false))).ToArray(),
                 pGR:new PlantGrowthRules(t:(11, 0), mG:(3, 5), mTC:true,
                     cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((20, 1, -1), (-1, -1), 1, 0), ((20, 1, -1), (1, -1), 1, 0) }
                 )) },
-                { (20, 2, 0), new PlantElementTraits("SideLantern", rET:(from number in Enumerable.Range(0, 5) select ((0, number - 2), (false, false))).ToArray(),
+                { (20, 2, 0), new PlantElementTraits("SideLantern", rET:(from number in Enumerable.Range(0, 5) select ((0, number - 2), (true, false))).ToArray(),
                 pGR:new PlantGrowthRules(t:(11, 0), mG:(8, 10), oMGV:true,
                     cOGS:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((20, 0, 1), (-1, -1), 1, 0) },
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame)[] { ((1, 1), (true, true, false), (2, 2)), ((0, 1), (true, true, false), (1, 1)) }
                 )) },
 
-                { (21, 0, 0), new PlantElementTraits("WaxStem", rET:(from number in Enumerable.Range(0, 6) select ((0, number), (false, false))).ToArray(),
+                { (21, 0, 0), new PlantElementTraits("WaxStem", rET:(from number in Enumerable.Range(0, 6) select ((0, number), (true, false))).ToArray(),
                 pGR:new PlantGrowthRules(t:(12, 0), mG:(2, 4),
                     C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((21, 0, 1), (0, 0), 0, 0, (1, 0)) }
                 )) },
-                { (21, 1, 0), new PlantElementTraits("ChandelierStem", rET:(from number in Enumerable.Range(0, 10) select ((0, number), (false, false))).ToArray(),
+                { (21, 1, 0), new PlantElementTraits("ChandelierStem", rET:(from number in Enumerable.Range(0, 10) select ((0, number), (true, false))).ToArray(),
                 pGR:new PlantGrowthRules(t:(11, 0), mG:(2, 2),
                     cOGS:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((21, 1, 1), (0, 0), 0, 0) },
                     lC:true
                 )) },
-                { (21, 2, 0), new PlantElementTraits("CandelabrumTrunk", rET:(from number in Enumerable.Range(0, 25) select ((0, number), (false, false))).ToArray(),
+                { (21, 2, 0), new PlantElementTraits("CandelabrumTrunk", rET:(from number in Enumerable.Range(0, 25) select ((0, number), (true, false))).ToArray(),
                 pGR:new PlantGrowthRules(t:(11, 0), mG:(20, 30),
                     cOGS:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease)[] { ((21, 1, 1), (0, 0), 0, 0) },
                     C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame)[] { ((21, 2, -1), (0, 0), 0, 0, (2, 5))},
@@ -852,13 +871,13 @@ namespace Cave
                 framez:makeStructureFrameArray(null, "CrossFlower1", "CrossFlower2", "CrossFlower3")
                 ) },
 
-                { (0, 1, 1), new PlantElementTraits("TulipFlower", stick:((0, 0), (false, false)),
+                { (0, 1, 1), new PlantElementTraits("TulipFlower", stick:((0, 1), (false, false)),
                 framez:makeStructureFrameArray(null, "TulipFlower1", "TulipFlower2", "TulipFlower3", "TulipFlower4", "TulipFlower5")
                 ) },
-                { (0, 2, 1), new PlantElementTraits("AlliumFlower", stick:((0, 0), (false, false)),
+                { (0, 2, 1), new PlantElementTraits("AlliumFlower", stick:((0, 1), (false, false)),
                 framez:makeStructureFrameArray(null, "AlliumFlower1", "AlliumFlower2", "AlliumFlower3", "AlliumFlower4")
                 ) },
-                { (0, 3, 1), new PlantElementTraits("BigFlower", stick:((0, 0), (false, false)),
+                { (0, 3, 1), new PlantElementTraits("BigFlower", stick:((0, 1), (false, false)),
                 framez:makeStructureFrameArray(null, "BigFlower1", "BigFlower2", "BigFlower3", "BigFlower4", "BigFlower5")
                 ) },
 
@@ -866,7 +885,11 @@ namespace Cave
                 framez:makeStructureFrameArray(null, "TreeLeaves1", "TreeLeaves2", "TreeLeaves3", "TreeLeaves4")
                 ) },
 
-                { (4, 0, 1), new PlantElementTraits("MushroomCap", stick:((0, 0), (false, false)),
+                { (2, 2, 1), new PlantElementTraits("ReedFlower", stick:((0, 1), (false, false)),
+                framez:makeStructureFrameArray(null, "ReedFlower1", "ReedFlower2", "ReedFlower3")
+                ) },
+
+                { (4, 0, 1), new PlantElementTraits("MushroomCap", stick:((0, 1), (false, false)),
                 framez:makeStructureFrameArray(new (int value, int range)[]{ (1, 0), (2, 3), (1, 3) }, "MushroomCap1", "MushroomCap2", "MushroomCap3")
                 ) },
 
@@ -897,18 +920,21 @@ namespace Cave
         public class PlantTraits
         {
             public string name;
+
             public bool isTree;
             public bool isCeiling;
             public bool isSide;
             public bool isWater;
             public bool isLuminous;
+
             public (int type, int subType, int subSubType) plantElementType;
+            public (int type, int subType)? initFailType;
 
             public (int type, int subType)? soilType;
             public int minGrowthForValidity;
 
             public ((int type, int subType) type, ColorRange colorRange)[] colorOverrideArray;
-            public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? sT = null, int mGFV = 1, ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, bool T = false, bool C = false, bool S = false, bool W = false, bool lum = false)
+            public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? iFT = null, (int type, int subType)? sT = null, int mGFV = 1, ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, bool T = false, bool C = false, bool S = false, bool W = false, bool lum = false)
             {
                 name = namee;
                 isTree = T;
@@ -920,6 +946,7 @@ namespace Cave
                 colorOverrideArray = cOverride;
                 minGrowthForValidity = mGFV;
                 plantElementType = t ?? (-1, 0, 0);
+                initFailType = iFT;
             }
         }
 
@@ -944,9 +971,11 @@ namespace Cave
                 t:(1, 0, 0)) },
 
                 { (2, 0), new PlantTraits("KelpUpwards",                                    W:true,
-                t:(2, 0, 0)) },
+                t:(2, 0, 0), iFT:(2, 2)) },
                 { (2, 1), new PlantTraits("KelpDownwards",                          C:true, W:true,
                 t:(2, 1, 0)) },
+                { (2, 2), new PlantTraits("Reed",                                   W:true,
+                t:(2, 2, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), new ColorRange((120, 30, 30), (40, 0, 20), (20, -10, 10))), ((2, 1), new ColorRange((235, 0, 10), (225, 5, 10), (190, 15, 10))) }) },
 
                 { (3, 0), new PlantTraits("ObsidianPlant",
                 t:(3, 0, 0)) },
@@ -975,17 +1004,17 @@ namespace Cave
                 { (8, 1), new PlantTraits("BoneStalagmite",
                 t:(8, 1, 0), mGFV:4, sT:(4, 1)) },
 
-                { (20, 0), new PlantTraits("LanternTree",                            T:true, lum:true,
+                { (20, 0), new PlantTraits("LanternTree",                           T:true, lum:true,
                 t:(20, 0, 0)) },
-                { (20, 1), new PlantTraits("LanternVine",                            C:true, lum:true,
+                { (20, 1), new PlantTraits("LanternVine",                           C:true, lum:true,
                 t:(20, 1, 0)) },
-                { (20, 2), new PlantTraits("SideLantern",                            S:true, lum:true,
+                { (20, 2), new PlantTraits("SideLantern",                           S:true, lum:true,
                 t:(20, 2, 0)) },
                 { (21, 0), new PlantTraits("Candle",                                         lum:true,
                 t:(21, 0, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
                 { (21, 1), new PlantTraits("Chandelier",                                     lum:true,
                 t:(21, 1, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
-                { (21, 2), new PlantTraits("Candelabrum",                            T:true, lum:true,
+                { (21, 2), new PlantTraits("Candelabrum",                           T:true, lum:true,
                 t:(21, 2, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
             };
         }
@@ -1048,6 +1077,8 @@ namespace Cave
             public (int type, int subType) tileType;
             public (int type, int subType) lakeType;
 
+            public (int one, int two) caveType;
+
             public TileTransitionTraits[] tileTransitionTraitsArray;
 
             public bool isDark;
@@ -1082,7 +1113,7 @@ namespace Cave
             public ((int type, int subType) type, float percentage)[] plantWaterCeilingSpawnTypes;
             public ((int type, int subType) type, float percentage)[] plantWaterSideSpawnTypes;
 
-            public BiomeTraits(string namee, (int r, int g, int b) colorToPut, float[] spawnRates, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes, TileTransitionTraits[] tTT = null, (int type, int subType)? fT = null, (int type, int subType)? tT = null, (int type, int subType)? lT = null, bool S = false, bool F = false, bool Dg = false, bool O = false, bool Da = false)
+            public BiomeTraits(string namee, (int r, int g, int b) colorToPut, float[] spawnRates, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes, (int one, int two)? cT = null, TileTransitionTraits[] tTT = null, (int type, int subType)? fT = null, (int type, int subType)? tT = null, (int type, int subType)? lT = null, bool S = false, bool F = false, bool Dg = false, bool O = false, bool Da = false)
             {
                 name = namee;
                 color = colorToPut;
@@ -1096,6 +1127,8 @@ namespace Cave
                 fillType = fT ?? (0, 0);
                 tileType = tT ?? (1, 0);
                 lakeType = lT ?? (-2, 0);
+
+                caveType = cT ?? (1, 2);
 
                 tileTransitionTraitsArray = tTT;
 

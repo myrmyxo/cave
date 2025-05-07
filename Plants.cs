@@ -95,9 +95,9 @@ namespace Cave
                 growthLevel = 0;
                 transformPlant(typeToPut);
                 plantElement = new PlantElement(this, (0, 0), traits.plantElementType, seed, true);
-                if (isDeadAndShouldDisappear || plantElement.isDeadAndShouldDisappear) { return; }
+                if (isDeadAndShouldDisappear) { return; }
                 tryGrowToMaximum();
-                if (isDeadAndShouldDisappear || plantElement.isDeadAndShouldDisappear) { return; }
+                if (isDeadAndShouldDisappear) { return; }
                 makeBitmap();
                 timeAtLastGrowth = timeElapsed;
 
@@ -113,11 +113,11 @@ namespace Cave
                 id = currentPlantId;
                 growthLevel = 0;
                 transformPlant(typeToPut);
-                testPlantPosition();
+                if (testIfPlantPositionInvalid()) { isDeadAndShouldDisappear = true; return; }
                 plantElement = new PlantElement(this, (0, 0), traits.plantElementType, seed, true);
-                if (isDeadAndShouldDisappear || plantElement.isDeadAndShouldDisappear) { return; }
+                if (isDeadAndShouldDisappear) { return; }
                 testPlantGrowth(true);
-                if (isDeadAndShouldDisappear || plantElement.isDeadAndShouldDisappear) { return; }
+                if (isDeadAndShouldDisappear) { return; }
                 makeBitmap();
                 timeAtLastGrowth = timeElapsed;
 
@@ -267,14 +267,12 @@ namespace Cave
                 if (chunkToTest.fillStates[pixelTileIndex.x, pixelTileIndex.y].isSolid) { return false; }
                 return true;
             }
-            public void testPlantPosition()
+            public bool testIfPlantPositionInvalid()
             {
-                if (!screen.getChunkFromPixelPos((posX, posY)).fillStates[PosMod(posX), PosMod(posY)].isAir) { goto Fail; } // Full tile -> Fail
-                int mod = traits.isCeiling ? 1 : -1;
-                if (traits.isSide) { if (!screen.getChunkFromPixelPos((posX - 1, posY)).fillStates[PosMod(posX - 1), PosMod(posY)].isAir || !screen.getChunkFromPixelPos((posX + 1, posY)).fillStates[PosMod(posX + 1), PosMod(posY)].isAir) { return; } } // tile under/over full -> Success
-                else if (!screen.getChunkFromPixelPos((posX, posY + mod)).fillStates[PosMod(posX), PosMod(posY + mod)].isAir) { return; } // tile under/over full -> Success
-            Fail:;
-                isDeadAndShouldDisappear = true;
+                if (screen.getChunkFromPixelPos((posX, posY)).fillStates[PosMod(posX), PosMod(posY)].isSolid) { return true; } // Full tile -> Fail
+                if (traits.isSide) { if (!screen.getChunkFromPixelPos((posX - 1, posY)).fillStates[PosMod(posX - 1), PosMod(posY)].isAir || !screen.getChunkFromPixelPos((posX + 1, posY)).fillStates[PosMod(posX + 1), PosMod(posY)].isAir) { return false; } }   // tile left XOR right full -> Success
+                else if (screen.getChunkFromPixelPos((posX, posY + (traits.isCeiling ? 1 : -1))).fillStates[PosMod(posX), PosMod(posY + (traits.isCeiling ? 1 : -1))].isSolid) { return false; }    // tile under/over full -> Success
+                return true;
             }
             public PlantElement[] returnAnimatedPlantElements(List<PlantElement> plantElements = null)
             {
@@ -429,6 +427,7 @@ namespace Cave
                 fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
                 growthLevel = -1;
                 isDeadAndShouldDisappear = init(isMainPlantElement, forceDirection) == 0;
+                motherPlant.isDeadAndShouldDisappear = isMainPlantElement ? isDeadAndShouldDisappear : motherPlant.isDeadAndShouldDisappear;
             }
             public int getRandValue(int valueModifier, int modulo = -1)
             {
@@ -460,6 +459,14 @@ namespace Cave
             public (int x, int y) absolutePos((int x, int y) position)
             {
                 return (pos.x + position.x, pos.y + position.y);
+            }
+            public (int x, int y) worldPos((int x, int y) position)
+            {
+                return (pos.x + position.x + motherPlant.posX, pos.y + position.y + motherPlant.posY);
+            }
+            public TileTraits getTileFromRelPos((int x, int y) testPos)
+            {
+                return motherPlant.screen.getTileContent(worldPos(testPos));
             }
             public bool testPositionEmpty((int x, int y) testPos)
             {
@@ -552,9 +559,34 @@ namespace Cave
 
                 if (traits.requiredEmptyTiles != null)
                 {
-                    foreach (((int x, int y) pos, (bool x, bool y) baseDirectionFlip) item in traits.requiredEmptyTiles)
+                    if (traits.plantGrowthRules is null || traits.plantGrowthRules.tileContentNeededToGrow is null)
                     {
-                        if (!testPositionEmpty((item.pos.x * (item.baseDirectionFlip.x && baseDirection.x < 0 ? -1 : 1), item.pos.y * (item.baseDirectionFlip.y && baseDirection.y < 0 ? -1 : 1))))
+                        foreach (((int x, int y) pos, (bool x, bool y) baseDirectionFlip) item in traits.requiredEmptyTiles)
+                        {
+                            if (!testPositionEmpty((item.pos.x * (item.baseDirectionFlip.x && baseDirection.x < 0 ? -1 : 1), item.pos.y * (item.baseDirectionFlip.y && baseDirection.y < 0 ? -1 : 1))))
+                            {
+                                growthLevel = -1;
+                                return 0;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (((int x, int y) pos, (bool x, bool y) baseDirectionFlip) item in traits.requiredEmptyTiles)
+                        {
+                            if (getTileFromRelPos((item.pos.x * (item.baseDirectionFlip.x && baseDirection.x < 0 ? -1 : 1), item.pos.y * (item.baseDirectionFlip.y && baseDirection.y < 0 ? -1 : 1))).type != traits.plantGrowthRules.tileContentNeededToGrow.Value)
+                            {
+                                growthLevel = -1;
+                                return 0;
+                            }
+                        }
+                    }
+                }
+                if (traits.specificRequiredEmptyTiles != null)
+                {
+                    foreach (((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip) item in traits.specificRequiredEmptyTiles)
+                    {
+                        if (getTileFromRelPos((item.pos.x * (item.baseDirectionFlip.x && baseDirection.x < 0 ? -1 : 1), item.pos.y * (item.baseDirectionFlip.y && baseDirection.y < 0 ? -1 : 1))).type != item.type)
                         {
                             growthLevel = -1;
                             return 0;
@@ -689,7 +721,7 @@ namespace Cave
                         goto FailButContinue;
                     }
 
-                    if (tryFill(drawPos, traits.plantGrowthRules.materalToFillWith))
+                    if ((traits.plantGrowthRules.tileContentNeededToGrow is null || traits.plantGrowthRules.tileContentNeededToGrow.Value == motherPlant.screen.getTileContent(motherPlant.getRealPos(drawPos)).type) && tryFill(drawPos, traits.plantGrowthRules.materalToFillWith))
                     {
                         updateStickyChildren(drawPos);
                         if (growthLevelToTest >= maxGrowthLevel + (traits.plantGrowthRules.childrenOnGrowthEnd is null ? 0 : 1)) { goto SuccessButStop; }

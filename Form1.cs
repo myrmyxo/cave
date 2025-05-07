@@ -105,6 +105,7 @@ namespace Cave
                 turnPngIntoString("Tree");
                 turnPngIntoString("KelpUpwards");
                 turnPngIntoString("KelpDownwards");
+                turnPngIntoString("Reed");
                 turnPngIntoString("ObsidianPlant");
                 turnPngIntoString("Mushroom");
                 turnPngIntoString("Vines");
@@ -200,7 +201,9 @@ namespace Cave
             // Bubble effects in water ?
             // Fishing rod
             // PlantElement side ponderation factor -> prevent all branches of a tree from spawning on the same size (like a left facing decrease directionScore by 1, if < -2 if will force right facing for next child, same for the opposite. Allows to have more equilibrated trees and shite).
-            
+            // Wings for fairies (and hornets and flies and all)
+            // Traits behaviors of entities ? idk.
+
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
             // 30/01/2025 Once, a broken honey storage room was made, as the tunnel that lead to it made it have a leak mid height (tunnel dug in the bordel...)
@@ -250,6 +253,7 @@ namespace Cave
             // Add rats with a tail ? Rat swarms ?
             // Jellyfish
             // TERMINTES ??? Making exploratory tubes and shit ?
+            // Flies that hover over lakes
 
             // Plants ideas !
             // bone trees and shrubs... like ribs.
@@ -260,6 +264,8 @@ namespace Cave
             // Branching wax plants ?
             // Weeping willows !
             // Snowflake plants ??
+            // Glycine
+            // algae (floatting ?)
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.

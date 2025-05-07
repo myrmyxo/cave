@@ -112,7 +112,8 @@ namespace Cave
                 { (0, 3), new OneSprite("Tulip", false) },
                 { (1, 0), new OneSprite("Tree", false) },                     
                 { (2, 0), new OneSprite("KelpUpwards", false) },              
-                { (2, 1), new OneSprite("KelpDownwards", false) },            
+                { (2, 1), new OneSprite("KelpDownwards", false) },
+                { (2, 2), new OneSprite("Reed", false) },
                 { (3, 0), new OneSprite("ObsidianPlant", false) },
                 { (4, 0), new OneSprite("Mushroom", false) },
                 { (4, 1), new OneSprite("Mold", true) },                    // TO CHANGE

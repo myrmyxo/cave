@@ -247,7 +247,12 @@ namespace Cave
                         {
                             mult = tupel.percentage* 0.001f;
                             if (tupel.traits.fillType != (0, 0)) { oceano = Max(oceano, mult * 10); }    // To make separation between OCEAN biomes (like acid and blood). CHANGE THIS to make ocean biomes that can merge with one another (like idk cool water ocean and temperate water ocean idk)
-                            if (tupel.traits.isDegraded) { value2modifier += -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11)); }
+                            if (tupel.traits.isDegraded)
+                            {
+                                valueToBeAdded = -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11));
+                                value1modifier += valueToBeAdded;
+                                value2modifier += valueToBeAdded;
+                                }
                             if (tupel.traits.isForesty) { foresto += mult; }
                             if (tupel.traits.isSlimy) // toxic biome
                             {
@@ -281,6 +286,7 @@ namespace Cave
 
                         mod2 = (int)(mod2 / mod2divider);
 
+
                         float score1 = Min(value1 - (122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw * 0.1f)), -value1 + (133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw));
                         bool fillTest1 = score1 > 0;
                         float score2 = Max(value2 - (200 + value2modifier + oceano), -value2 + ((foresto - 1) * 75f - oceano));
@@ -294,6 +300,27 @@ namespace Cave
                         //if (rand.Next(500) != 0){ fillStates[i, j] = 1; }
                     }
                 }
+            }
+            public float findFillScore(int type, int value, int valueModifier, int mod, int foresto, int oceano)
+            {
+                float oceanoSeeSaw = 0;
+                if (oceano != 0)
+                {
+                    Min(Seesaw((int)oceano, 8), 8 - oceano);
+                    if (oceanoSeeSaw < 0)
+                    {
+                        oceanoSeeSaw = oceanoSeeSaw * oceanoSeeSaw * oceanoSeeSaw;
+                    }
+                    else { oceanoSeeSaw = oceanoSeeSaw * Abs(oceanoSeeSaw); }
+                    oceano *= 10;
+                    oceanoSeeSaw *= 10;
+                }
+
+                if (type == 1) { return -10; }
+                if (type == 2) { return -10; }
+
+
+                return -10;
             }
             public (int type, int subType) findMaterialToFillWith((int temp, int humi, int acid, int toxi, int mod1, int mod2) biomeValues, (int, int) values, (BiomeTraits traits, int percentage)[] biomeTraits)
             {
@@ -431,13 +458,15 @@ namespace Cave
                         ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, traits.isWater, traits.isCeiling, traits.isSide, soilType:traits.soilType);
                         if (!returnTuple.valid) { break; }
                         Plant newPlant = new Plant(this, returnTuple.pos, tupelo.type);
-                        if (newPlant.isDeadAndShouldDisappear)
+                        while (newPlant.isDeadAndShouldDisappear)
                         {
-                            if (tries > 10) { break; }
+                            if (tries > 10) { goto finalFail; }
                             tries++;
-                            goto plantInvalidTryAgain;
+                            if (newPlant.traits.initFailType != null) { newPlant = new Plant(this, returnTuple.pos, newPlant.traits.initFailType.Value); }
+                            else { goto plantInvalidTryAgain; }
                         }
                         screen.activePlants[newPlant.id] = newPlant;
+                    finalFail:;
                     }
                 }
             }
