@@ -83,7 +83,7 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                loadStructuresYesOrNo = false;
+                loadStructuresYesOrNo = true;
                 spawnNests = true;
                 spawnEntitiesBool = true;
                 spawnPlants = true;
@@ -1246,7 +1246,6 @@ namespace Cave
                 {
                     if (false)  // Debug for plants exact Plant and PlantElement's positions
                     {
-                        game.miscDebugList = new List<((int x, int y) pos, Color col)>();
                         List<PlantElement> listo = new List<PlantElement>();
                         foreach (Plant plant in activePlants.Values)
                         {
@@ -1260,12 +1259,12 @@ namespace Cave
                             foreach (PlantElement baby in current.childPlantElements) { listo.Add(baby); }
                             if (rand.Next(5) != 0) { game.miscDebugList.Insert(0, (current.motherPlant.getRealPos(current.pos), Color.MediumPurple)); }
                         }
-
-                        foreach (((int x, int y) pos, Color col) item in game.miscDebugList)
-                        {
-                            drawPixel(gameBitmap, item.col, item.pos, camPos);
-                        }
                     }
+                    foreach (((int x, int y) pos, Color col) item in game.miscDebugList)
+                    {
+                        drawPixel(gameBitmap, item.col, item.pos, camPos);
+                    }
+                    game.miscDebugList = new List<((int x, int y) pos, Color col)>();
                 }
 
                 // Upscale 1*1 bitmap into the pngmult*pngmult bitmap !

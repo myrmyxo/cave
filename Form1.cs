@@ -209,6 +209,7 @@ namespace Cave
             // 30/01/2025 Once, a broken honey storage room was made, as the tunnel that lead to it made it have a leak mid height (tunnel dug in the bordel...)
             // Nest making rooms SUPER fucking far away from spawn
             // Prevent waterSkippers for yeeting themselves out of pools where there is nothing on the sides of a lake to prevent them from doing so
+            // -> Waterskippers fly 1 tile above ground also ???????????? They don't fall (bug with jesus)
             // When worms are on solid ground, like in air on top of a solid... they stop moving lol
             // An ocean biome was leaking out in a slime biome ??? the fuck
             // When making portal, it FUCKING EATS THE PLANTS AROUND IT ????????? LIKE DUDE ??? STOP ???

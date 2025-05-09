@@ -460,13 +460,13 @@ namespace Cave
             {
                 return (pos.x + position.x, pos.y + position.y);
             }
-            public (int x, int y) worldPos((int x, int y) position)
+            public (int x, int y) getWorldPos((int x, int y) position)
             {
                 return (pos.x + position.x + motherPlant.posX, pos.y + position.y + motherPlant.posY);
             }
             public TileTraits getTileFromRelPos((int x, int y) testPos)
             {
-                return motherPlant.screen.getTileContent(worldPos(testPos));
+                return motherPlant.screen.getTileContent(getWorldPos(testPos));
             }
             public bool testPositionEmpty((int x, int y) testPos)
             {
@@ -666,6 +666,69 @@ namespace Cave
                         }
                     }
 
+                    if (traits.plantGrowthRules.preventGaps)
+                    {
+                        if (Abs(drawPos.x - lastDrawPos.x) > 1) { drawPos = (lastDrawPos.x + Sign(drawPos.x - lastDrawPos.x), drawPos.y); }
+                        if (Abs(drawPos.y - lastDrawPos.y) > 1) { drawPos = (drawPos.x, lastDrawPos.y + Sign(drawPos.y - lastDrawPos.y)); }
+                    }
+
+                    if (traits.plantGrowthRules.hindrancePreventionPositions != null)
+                    {
+                        HashSet<(int x, int y)> posToRemove = new HashSet<(int x, int y)>();
+                        (int x, int y) worldPos = getWorldPos(drawPos);
+                        motherPlant.screen.game.miscDebugList.Add((worldPos, Color.PeachPuff));
+                        if (drawPos.x < lastDrawPos.x && traits.plantGrowthRules.hindrancePreventionPositions.Value.left != null)
+                        {
+                            foreach ((int x, int y, bool stopGrowth) poso in traits.plantGrowthRules.hindrancePreventionPositions.Value.left)
+                            {
+                                motherPlant.screen.game.miscDebugList.Add(((worldPos.x + poso.x, worldPos.y + poso.y), Color.Red));
+                                if (motherPlant.screen.getTileContent((worldPos.x + poso.x, worldPos.y + poso.y)).isSolid)
+                                {
+                                    if (poso.stopGrowth) { goto Fail; }
+                                    else { posToRemove.Add((poso.x, poso.y)); }
+                                }
+                            }
+                        }
+                        else if (drawPos.x > lastDrawPos.x && traits.plantGrowthRules.hindrancePreventionPositions.Value.right != null)
+                        {
+                            foreach ((int x, int y, bool stopGrowth) poso in traits.plantGrowthRules.hindrancePreventionPositions.Value.right)
+                            {
+                                motherPlant.screen.game.miscDebugList.Add(((worldPos.x + poso.x, worldPos.y + poso.y), Color.Red));
+                                if (motherPlant.screen.getTileContent((worldPos.x + poso.x, worldPos.y + poso.y)).isSolid)
+                                {
+                                    if (poso.stopGrowth) { goto Fail; }
+                                    else { posToRemove.Add((poso.x, poso.y)); }
+                                }
+                            }
+                        }
+                        if (drawPos.y < lastDrawPos.y && traits.plantGrowthRules.hindrancePreventionPositions.Value.down != null)
+                        {
+                            foreach ((int x, int y, bool stopGrowth) poso in traits.plantGrowthRules.hindrancePreventionPositions.Value.down)
+                            {
+                                motherPlant.screen.game.miscDebugList.Add(((worldPos.x + poso.x, worldPos.y + poso.y), Color.Red));
+                                if (motherPlant.screen.getTileContent((worldPos.x + poso.x, worldPos.y + poso.y)).isSolid)
+                                {
+                                    if (poso.stopGrowth) { goto Fail; }
+                                    else { posToRemove.Add((poso.x, poso.y)); }
+                                }
+                            }
+                        }
+                        else if (drawPos.y > lastDrawPos.y && traits.plantGrowthRules.hindrancePreventionPositions.Value.up != null)
+                        {
+                            foreach ((int x, int y, bool stopGrowth) poso in traits.plantGrowthRules.hindrancePreventionPositions.Value.up)
+                            {
+                                motherPlant.screen.game.miscDebugList.Add(((worldPos.x + poso.x, worldPos.y + poso.y), Color.Red));
+                                if (motherPlant.screen.getTileContent((worldPos.x + poso.x, worldPos.y + poso.y)).isSolid)
+                                {
+                                    if (poso.stopGrowth) { goto Fail; }
+                                    else { posToRemove.Add((poso.x, poso.y)); }
+                                }
+                            }
+                        }
+                        foreach ((int x, int y) pos in posToRemove) { foreach (PlantElement child in childPlantElements) { if (child.traits.isSticky != null) { child.fillStates.Remove(pos); } } } // Crucial
+                    }
+
+
                     if (traits.plantGrowthRules.childArray != null && traits.plantGrowthRules.childArray.Length > 0 && (traits.plantGrowthRules.loopChild || currentChildArrayIdx + 1 < traits.plantGrowthRules.childArray.Length))
                     {
                         ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame) item = traits.plantGrowthRules.childArray[(currentChildArrayIdx + 1) % traits.plantGrowthRules.childArray.Length];
@@ -681,11 +744,6 @@ namespace Cave
                         }
                     }
 
-                    if (traits.plantGrowthRules.preventGaps)
-                    {
-                        if (Abs(drawPos.x - lastDrawPos.x) > 1) { drawPos = (lastDrawPos.x + Sign(drawPos.x - lastDrawPos.x), drawPos.y); }
-                        if (Abs(drawPos.y - lastDrawPos.y) > 1) { drawPos = (drawPos.x, lastDrawPos.y + Sign(drawPos.y - lastDrawPos.y)); }
-                    }
 
                     if (growthLevelToTest == maxGrowthLevel + 1) // Should only happen when plants has childrenOnGrowthEnd and has done its last growth already
                     {

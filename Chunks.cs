@@ -437,7 +437,7 @@ namespace Cave
                     {
                         if (rando > tupelo.percentage) { rando -= tupelo.percentage; continue; }
                         EntityTraits traits = entityTraitsDict.ContainsKey(tupelo.type) ? entityTraitsDict[tupelo.type] : entityTraitsDict[(-1, 0)];
-                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, true, traits.isSwimming, false, traits.isDigging, traits.isJesus);
+                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, true, traits.isSwimming, false, false, traits.isDigging, traits.isJesus);
                         if (!returnTuple.valid) { break; }
                         Entity newEntity = new Entity(this, tupelo.type, returnTuple.pos);
                         if (!newEntity.isDeadAndShouldDisappear) { screen.activeEntities[newEntity.id] = newEntity; }
