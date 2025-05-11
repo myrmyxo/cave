@@ -257,8 +257,9 @@ namespace Cave
             public bool isNestEntity;
 
             public ColorRange colorRange;
+            public int? lightRadius;
             public (Color color, float period)? wingTraits;
-            public EntityTraits(string namee, int hp, ((int type, int subType, int megaType) element, int count) drps, ColorRange colRange, (Color color, float period)? wT = null,
+            public EntityTraits(string namee, int hp, ((int type, int subType, int megaType) element, int count) drps, ColorRange colRange, (Color color, float period)? wT = null, int? lR = null,
                 int iW = 0, int oW = 0, int iA = 0, int oG = 0, int iG = 0,
                 float sS = 0.1f, float sMS = 0.5f, (float x, float y)? jS = null, float jC = 0)
             {
@@ -284,6 +285,7 @@ namespace Cave
                 jumpChance = jC;
 
                 colorRange = colRange;
+                lightRadius = lR;
                 wingTraits = wT;
             }
         }
@@ -297,16 +299,16 @@ namespace Cave
                 iW:1, oG:1, iG:2) },
 
                 { (0, 0), new EntityTraits("Fairy",           4,  ((-3, 0, 0), 1),      //  --> Fairy Liquid
-                new ColorRange((130, 50, 30), (130, -50, 30), (210, 0, 30)), wT:(Color.FromArgb(50, 220, 220, 200), 0.02165f),
+                new ColorRange((130, 50, 30), (130, -50, 30), (210, 0, 30)), lR:7, wT:(Color.FromArgb(50, 220, 220, 200), 0.02165f),
                 iW:1, iA:1, iG:3) },                                                                        
                 { (0, 1), new EntityTraits("ObsidianFairy",   10, ((-3, 0, 0), 1),      //  --> Fairy Liquid
-                new ColorRange((30, 0, 30), (30, 0, 30), (30, 0, 30)), wT:(Color.FromArgb(50, 0, 0, 0), 0.02165f),
+                new ColorRange((30, 0, 30), (30, 0, 30), (30, 0, 30)), lR:7, wT:(Color.FromArgb(50, 0, 0, 0), 0.02165f),
                 iW:1, iA:1, iG:3) },
                 { (0, 2), new EntityTraits("FrostFairy",      4 , ((-3, 0, 0), 1),      //  --> Fairy Liquid
-                new ColorRange((200, 25, 30), (200, 25, 30), (225, 0, 30)), wT:(Color.FromArgb(50, 255, 255, 255), 0.02165f),
+                new ColorRange((200, 25, 30), (200, 25, 30), (225, 0, 30)), lR:7, wT:(Color.FromArgb(50, 255, 255, 255), 0.02165f),
                 iW:1, iA:1, iG:3) },
                 { (0, 3), new EntityTraits("SkeletonFairy",   15, ((8, 1, 3), 1),       //  --> Bone
-                new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)), wT:(Color.FromArgb(50, 230, 230, 230), 0.02165f),
+                new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)), lR:7, wT:(Color.FromArgb(50, 230, 230, 230), 0.02165f),
                 iW:1, iA:1, iG:3) },
 
                 { (1, 0), new EntityTraits("Frog",            2,  ((8, 0, 3), 1),       //  --> Flesh

@@ -1084,7 +1084,7 @@ namespace Cave
                         float entityMult = 1 - redMult;
                         color = Color.FromArgb((int)(entityMult * color.R + redMult * 255), (int)(entityMult * color.G), (int)(entityMult * color.B));
                     }
-                    if (game.isLight && entity.type.type == 0) { lightPositions.Add((entity.posX, entity.posY, 7, entity.lightColor)); }
+                    if (game.isLight && entity.traits.lightRadius != null) { lightPositions.Add((entity.posX, entity.posY, entity.traits.lightRadius.Value, entity.lightColor)); }
                     drawPixel(gameBitmap, color, (entity.posX, entity.posY), camPos);
                     if (entity.length > 0)
                     {
@@ -1098,8 +1098,11 @@ namespace Cave
                     if (entity.traits.wingTraits != null)
                     {
                         (int x, int y) wingPos = wingPosArray[(int)(entity.wingTimer / entity.traits.wingTraits.Value.period) % 8];
-                        drawPixel(gameBitmap, entity.traits.wingTraits.Value.color, (entity.posX + wingPos.x, entity.posY + wingPos.y), camPos);
-                        drawPixel(gameBitmap, entity.traits.wingTraits.Value.color, (entity.posX - wingPos.x, entity.posY + wingPos.y), camPos);
+                        int? forceX = null;
+                        if (entity.speedX >= 1.5f) { forceX = -1; }
+                        else if (entity.speedX <= -1.5f) { forceX = 1; }
+                        drawPixel(gameBitmap, entity.traits.wingTraits.Value.color, (entity.posX + (forceX ?? (entity.speedX >= -0.75f ? wingPos.x : 0)), entity.posY + wingPos.y), camPos);
+                        drawPixel(gameBitmap, entity.traits.wingTraits.Value.color, (entity.posX + (forceX ?? (entity.speedX <= 0.75f ? -wingPos.x : 0)), entity.posY + wingPos.y), camPos);
                     }
                 }
 
@@ -1127,8 +1130,11 @@ namespace Cave
                 if (player.traits.wingTraits != null)
                 {
                     (int x, int y) wingPos = wingPosArray[(int)(player.wingTimer / player.traits.wingTraits.Value.period) % 8];
-                    drawPixel(gameBitmap, player.traits.wingTraits.Value.color, (player.posX + wingPos.x, player.posY + wingPos.y), camPos);
-                    drawPixel(gameBitmap, player.traits.wingTraits.Value.color, (player.posX - wingPos.x, player.posY + wingPos.y), camPos);
+                    int? forceX = null;
+                    if (player.speedX >= 1.5f) { forceX = -1; }
+                    else if (player.speedX <= -1.5f) { forceX = 1; }
+                    drawPixel(gameBitmap, player.traits.wingTraits.Value.color, (player.posX + (forceX ?? (player.speedX >= -0.75f ? wingPos.x : 0)), player.posY + wingPos.y), camPos);
+                    drawPixel(gameBitmap, player.traits.wingTraits.Value.color, (player.posX + (forceX ?? (player.speedX <= 0.75f ? -wingPos.x : 0)), player.posY + wingPos.y), camPos);
                 }
 
                 foreach (((int x, int y) pos, Color color) item in attacksToDraw)
