@@ -101,6 +101,7 @@ namespace Cave
             public float timeAtLastPlace = -9999;
             public float timeAtLastGottenHit = -9999;
             public float timeAtLastTeleportation = -9999;
+            public float wingTimer = 0;
 
             public bool isDeadAndShouldDisappear = false;
 
@@ -886,7 +887,7 @@ namespace Cave
                 TileTraits entityTile = returnType.entityPos;
                 TileTraits tileUnder = returnType.under;
 
-
+                float oldSpeedY = speedY;
                 if (type.type == 3) // hornet moving, as they need to pathfind and shit
                 {
                     moveHornet();
@@ -954,6 +955,8 @@ namespace Cave
                 testTileEffects(entityTile);  // test what happens if in special liquids (fairy lake, lava...)
 
                 if (currentAttack != null && currentAttack.isDone) { currentAttack = null; }
+
+                if (!onGround /*oldSpeedY + 0.001f <= speedY*/) { wingTimer += 0.02f; }
             }
             public void testTileEffects(TileTraits tile)
             {

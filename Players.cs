@@ -186,6 +186,7 @@ namespace Cave
                 TileTraits playerTile = returnType.entityPos;
                 TileTraits tileUnder = returnType.under;
 
+                float oldSpeedY = speedY;
                 if (traits.isFlying)
                 {
                     if (!dimensionSelection && !craftSelection)
@@ -297,6 +298,8 @@ namespace Cave
                 updateFogOfWar();
                 tryStartAttack();
                 if (craftSelection && digPress && tryCraft()) { digPress = false; }
+
+                if (!onGround && oldSpeedY <= speedY) { wingTimer += 0.02f; }
             }
             public override void entityExitingChunk((int x, int y) posToTest)
             {

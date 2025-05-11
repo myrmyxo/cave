@@ -254,7 +254,8 @@ namespace Cave
             // Add rats with a tail ? Rat swarms ?
             // Jellyfish
             // TERMINTES ??? Making exploratory tubes and shit ?
-            // Flies that hover over lakes
+            // Flies that hover over lakes. ACTUALLY, Dragonflies might be better ??? or both idk but flies might look like obsidian fairies
+            // Tunicates in oceans
 
             // Plants ideas !
             // bone trees and shrubs... like ribs.

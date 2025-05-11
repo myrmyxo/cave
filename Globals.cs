@@ -63,6 +63,7 @@ namespace Cave
         public static (int, int)[] neighbourArray = new (int, int)[4] { (-1, 0), (1, 0), (0, 1), (0, -1) };
         public static (int, int)[] diagArray = new (int, int)[4] { (-1, 1), (1, 1), (1, -1), (-1, -1) };
         public static (int x, int y)[] directionPositionArray = new (int x, int y)[] { (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), };
+        public static (int x, int y)[] wingPosArray = new (int x, int y)[] { (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), };
 
         public static Dictionary<(int x, int y), int> directionPositionDictionary = new Dictionary<(int x, int y), int>
         {

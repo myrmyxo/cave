@@ -1095,6 +1095,12 @@ namespace Cave
                             drawPixel(gameBitmap, color, entity.pastPositions[i], camPos);
                         }
                     }
+                    if (entity.traits.wingTraits != null)
+                    {
+                        (int x, int y) wingPos = wingPosArray[(int)(entity.wingTimer / entity.traits.wingTraits.Value.period) % 8];
+                        drawPixel(gameBitmap, entity.traits.wingTraits.Value.color, (entity.posX + wingPos.x, entity.posY + wingPos.y), camPos);
+                        drawPixel(gameBitmap, entity.traits.wingTraits.Value.color, (entity.posX - wingPos.x, entity.posY + wingPos.y), camPos);
+                    }
                 }
 
                 foreach (Particle particle in activeParticles)
@@ -1117,6 +1123,12 @@ namespace Cave
                         if (i >= county) { break; }
                         drawPixel(gameBitmap, player.color, player.pastPositions[i], camPos);
                     }
+                }
+                if (player.traits.wingTraits != null)
+                {
+                    (int x, int y) wingPos = wingPosArray[(int)(player.wingTimer / player.traits.wingTraits.Value.period) % 8];
+                    drawPixel(gameBitmap, player.traits.wingTraits.Value.color, (player.posX + wingPos.x, player.posY + wingPos.y), camPos);
+                    drawPixel(gameBitmap, player.traits.wingTraits.Value.color, (player.posX - wingPos.x, player.posY + wingPos.y), camPos);
                 }
 
                 foreach (((int x, int y) pos, Color color) item in attacksToDraw)
