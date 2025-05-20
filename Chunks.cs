@@ -239,13 +239,15 @@ namespace Cave
                         float mod2divider = 1;
                         float foresto = 1;
                         float oceano = 0;
+                        float caveWidth = 0;
 
                         BiomeTraits mainBiomeTraits = biomeIndex[i, j][0].Item1;
 
                         float mult;
                         foreach ((BiomeTraits traits, int percentage) tupel in biomeIndex[i, j])
                         {
-                            mult = tupel.percentage* 0.001f;
+                            mult = tupel.percentage * 0.001f;
+                            caveWidth += mult * tupel.traits.caveWidth;
                             if (tupel.traits.fillType != (0, 0)) { oceano = Max(oceano, mult * 10); }    // To make separation between OCEAN biomes (like acid and blood). CHANGE THIS to make ocean biomes that can merge with one another (like idk cool water ocean and temperate water ocean idk)
                             if (tupel.traits.isDegraded)
                             {
@@ -276,26 +278,28 @@ namespace Cave
                         }
 
                         float oceanoSeeSaw = Min(Seesaw((int)oceano, 8), 8 - oceano);
-                        if (oceanoSeeSaw < 0)
-                        {
-                            oceanoSeeSaw = oceanoSeeSaw * oceanoSeeSaw * oceanoSeeSaw;
-                        }
-                        else { oceanoSeeSaw = oceanoSeeSaw * Abs(oceanoSeeSaw); }
+                        if (oceanoSeeSaw < 0) { oceanoSeeSaw *= oceanoSeeSaw * oceanoSeeSaw; }
+                        else { oceanoSeeSaw *= oceanoSeeSaw; }
+                        if (oceanoSeeSaw > 3.5) { oceanoSeeSaw *= 10; }
+
                         oceano *= 10;
                         oceanoSeeSaw *= 10;
 
                         mod2 = (int)(mod2 / mod2divider);
 
+                        value1modifier = 0;
+                        mod2 = 0;
 
-                        float score1 = Min(value1 - (122 - mod2 * mod2 * foresto * 0.0003f + value1modifier + (int)(oceanoSeeSaw * 0.1f)), -value1 + (133 + mod2 * mod2 * foresto * 0.0003f - value1modifier - oceanoSeeSaw));
-                        bool fillTest1 = score1 > 0;
-                        float score2 = Max(value2 - (200 + value2modifier + oceano), -value2 + ((foresto - 1) * 75f - oceano));
-                        bool fillTest2 = score2 > 0;
-                        float plateauScore = Max(score1, score2) - (Abs(plateauPos - j) - 5) * 10;
-                        //if (fillTest1 && fillTest2) { fillStates[i, j] = 4; }
-                        //else if (fillTest1) { fillStates[i, j] = 3; }
-                        //else if (fillTest2) { fillStates[i, j] = 2; }
-                        if (((fillTest1 || fillTest2) && true) || (false && plateauScore >= 0)) { fillStates[i, j] = getTileTraits(mainBiomeTraits.fillType); }
+                        float score1 = -Abs(value1 - 128) + 10 * caveWidth + mod2 * mod2 * foresto * 0.0003f - value1modifier - (value1 > 128 ? oceanoSeeSaw * 0.1f : oceanoSeeSaw);
+                        bool carveTest1 = score1 > 0;
+                        float score2 = Max(value2 - oceano -200 - value2modifier,
+                                          -value2 - oceano + (foresto - 1) * 75f);
+                        bool carveTest2 = score2 > 0;
+                        // float plateauScore = Max(score1, score2) - (Abs(plateauPos - j) - 5) * 10;
+                        //if (carveTest1 && carveTest2) { fillStates[i, j] = 4; }
+                        //else if (carveTest1) { fillStates[i, j] = 3; }
+                        //else if (carveTest2) { fillStates[i, j] = 2; }
+                        if (((carveTest1 || carveTest2) && true)/* || plateauScore >= 0*/) { fillStates[i, j] = getTileTraits(mainBiomeTraits.fillType); }
                         else { fillStates[i, j] = getTileTraits(findMaterialToFillWith(tileValuesArray[i, j], (terrainValues[i, j, 4], terrainValues[i, j, 5]), biomeIndex[i, j])); }
                         //if (rand.Next(500) != 0){ fillStates[i, j] = 1; }
                     }

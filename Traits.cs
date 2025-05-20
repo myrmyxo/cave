@@ -1117,6 +1117,7 @@ namespace Cave
             public (int type, int subType) lakeType;
 
             public (int one, int two) caveType;
+            public float caveWidth;
 
             public TileTransitionTraits[] tileTransitionTraitsArray;
 
@@ -1154,7 +1155,10 @@ namespace Cave
             public ((int type, int subType) type, float percentage)[] plantWaterCeilingSpawnTypes;
             public ((int type, int subType) type, float percentage)[] plantWaterSideSpawnTypes;
 
-            public BiomeTraits(string namee, (int r, int g, int b) colorToPut, float[] spawnRates, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes, (int one, int two)? cT = null, TileTransitionTraits[] tTT = null, (int type, int subType)? fT = null, (int type, int subType)? tT = null, (int type, int subType)? lT = null, bool S = false, bool F = false, bool Dg = false, bool O = false, bool Da = false)
+            public BiomeTraits(string namee, (int r, int g, int b) colorToPut, float[] spawnRates, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes,
+                (int one, int two)? cT = null, float cW = 1, TileTransitionTraits[] tTT = null,
+                (int type, int subType)? fT = null, (int type, int subType)? tT = null, (int type, int subType)? lT = null,
+                bool S = false, bool F = false, bool Dg = false, bool O = false, bool Da = false)
             {
                 name = namee;
                 color = colorToPut;
@@ -1170,6 +1174,7 @@ namespace Cave
                 lakeType = lT ?? (-2, 0);
 
                 caveType = cT ?? (1, 2);
+                caveWidth = cW;
 
                 tileTransitionTraitsArray = tTT;
 
@@ -1366,7 +1371,7 @@ namespace Cave
                 new float[]{1, 1, 2, 1,        10, 4, 1, 4, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((1, 1), 50),  ((1, 2), 50),  ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((9, 0), 100) },
-                lT:(-6, 0), tT:(4, 0)) },                            // Hair
+                lT:(-6, 0), tT:(4, 0), cW:2.5f) },                   // Hair
 
                 { (11, 0), new BiomeTraits("Bone",                  (Color.White.R, Color.White.G, Color.White.B),
                 new float[]{1, 1, 2, 1,         0, 1, 1, 1, 0, 4, 4, 0},
