@@ -125,6 +125,7 @@ namespace Cave
                 { (7, 3), new OneSprite("FleshTree2", true) },              // TO CHANGE
                 { (8, 0), new OneSprite("BoneStalactite", true) },          // TO CHANGE
                 { (8, 1), new OneSprite("BoneStalagmite", true) },          // TO CHANGE
+                { (9, 0), new OneSprite("HairPlant", true) },               // TO CHANGE
                 { (20, 0), new OneSprite("LanternTree", false) },
                 { (20, 1), new OneSprite("LanternVine", false) },
                 { (20, 2), new OneSprite("LanternSide", false) },
@@ -146,7 +147,8 @@ namespace Cave
                 { (3, 2), new OneSprite("Mold", true) },                    // TO CHANGE
                 { (8, 0), new OneSprite("Flesh", true) },                   // TO CHANGE
                 { (8, 1), new OneSprite("Bone", true ) },                   // TO CHANGE
-                { (8, 2), new OneSprite("Wax", true ) },                   // TO CHANGE
+                { (8, 2), new OneSprite("Hair", true) },                    // TO CHANGE
+                { (8, 3), new OneSprite("Wax", true ) },                    // TO CHANGE
                 { (10, 0), new OneSprite("MagicRock", true) },              // TO CHANGE
                 { (11, 0), new OneSprite("Metal", true ) },                 // TO CHANGE
                 { (11, 1), new OneSprite("LightBulb", true ) },             // TO CHANGE

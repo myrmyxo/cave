@@ -117,6 +117,7 @@ namespace Cave
                 turnPngIntoString("FleshTree2");
                 turnPngIntoString("BoneStalactite");
                 turnPngIntoString("BoneStalagmite");
+                turnPngIntoString("HairPlant");
 
                 turnPngIntoString("LanternTree");
                 turnPngIntoString("LanternVine");
@@ -137,6 +138,7 @@ namespace Cave
                 turnPngIntoString("Mold");
                 turnPngIntoString("Flesh");
                 turnPngIntoString("Bone");
+                turnPngIntoString("Hair");
                 turnPngIntoString("MagicRock");
                 turnPngIntoString("Metal");
                 turnPngIntoString("LightBulb");
@@ -235,11 +237,14 @@ namespace Cave
             // -> sweat/salt glands structures in living dimension, that spawn more and more as salinity increases.
             // -> Make Mold biomes dependant on Salinity too to make their spawning better.
             // Params in the findBiome functions ? To make them serializable yes yes
+            // Teratoma and Cysts structures in living dimension. Hair forest, eyes ? nails teeth. ADD SKIN ALSO !!! Blood coagulation when exposed to air ???
+            // Living dimensions have hair color ??? Like the WHOLE dimension has black hair, or brown hair... idk
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
             // Ocean biome -> in some patches, have the normal cave system thing get added on top, so that there are kinds of small caves and shit in the ocean biome too (but only in some parts)
             // Salt biomes ?
+            // Bone marrow biome in living dimension ?
 
             // Entities ideas !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ? And add LITHOPEDIONS
@@ -268,6 +273,8 @@ namespace Cave
             // Snowflake plants ??
             // Glycine
             // algae (floatting ?)
+            // Douce-Amère/Bittersweet/Solanum Dulcamara (my beloved)                                                                                               ^  ^  ^
+            // --> maybe for plants who change direction rotationally, make a list of forbidden orientations ? or like a "moves upwards" thing, so that it can go <- \ | / -> upwards but not downards idk. Could be cool for hair.
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.
@@ -787,13 +794,13 @@ namespace Cave
         public static int PosMod(int poso, int modulo = 32)
         {
             int pos = poso % modulo;
-            if (pos < 0) { pos += modulo; }
+            if (pos < 0) { return pos + modulo; }
             return pos;
         }
         public static float PosMod(float poso, float modulo = 32)
         {
             float pos = poso % modulo;
-            if (pos < 0) { pos += modulo; }
+            if (pos < 0) { return pos + modulo; }
             return pos;
         }
         public static int getBound(List<(int x, int y)> listo, bool testY, bool testMax)

@@ -321,27 +321,34 @@ namespace Cave
         }
         public class PlantElementJson
         {
-            public int seed;
+            public int s;
+            public (int, int, int) t;
+
             public float mG;
+            public int gR;
+
             public (int, int) pos;
-            public (int, int) lstGrPos;
+
+            public (int, int) lGP;
+            public (int, int) gD;
             public (int, int) bD;
-            public (int, int, int) type;
-            public int grLvl;
 
             public int[,] fS;
+            public int[] oIA;   // offsets indexes array (for all the little ints)
 
             public List<PlantElementJson> pEs;
             public PlantElementJson(PlantElement plantElement)
             {
-                seed = plantElement.seed;
-                type = plantElement.type;
+                s = plantElement.seed;
+                t = plantElement.type;
                 pos = plantElement.pos;
-                lstGrPos = plantElement.lastDrawPos;
+                lGP = plantElement.lastDrawPos;
+                gD = plantElement.growthDirection;
                 bD = plantElement.baseDirection;
                 mG = plantElement.maxGrowthLevel;
-                grLvl = plantElement.growthLevel;
+                gR = plantElement.growthLevel;
                 fS = fillstatesToArray(plantElement.fillStates);
+                oIA = new int[8] { plantElement.currentFrameArrayIdx, plantElement.frameArrayOffset, plantElement.currentChildArrayIdx, plantElement.childArrayOffset, plantElement.currentDirectionArrayIdx, plantElement.directionArrayOffset, plantElement.currentModArrayIdx, plantElement.modArrayOffset };
                 pEs = new List<PlantElementJson>();
                 foreach (PlantElement childPlantElement in plantElement.childPlantElements)
                 {

@@ -455,7 +455,7 @@ namespace Cave
                         if (rando > tupelo.percentage) { rando -= tupelo.percentage; continue; }
                         PlantTraits traits = plantTraitsDict.ContainsKey(tupelo.type) ? plantTraitsDict[tupelo.type] : plantTraitsDict[(-1, 0)];
                     plantInvalidTryAgain:;
-                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, traits.isWater, traits.isCeiling, traits.isSide, soilType:traits.soilType);
+                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, traits.isWater, traits.isCeiling, traits.isSide, soilType:traits.soilType, isEveryAttach:traits.isEveryAttach);
                         if (!returnTuple.valid) { break; }
                         Plant newPlant = new Plant(this, returnTuple.pos, tupelo.type);
                         while (newPlant.isDeadAndShouldDisappear)
@@ -486,18 +486,16 @@ namespace Cave
                     Dictionary<(int x, int y), bool> forbiddenPositions = new Dictionary<(int x, int y), bool>();
                     spawnOnePlants(traits.plantGroundSpawnRate, traits.plantGroundSpawnTypes, forbiddenPositions);
                     spawnOnePlants(traits.plantCeilingSpawnRate, traits.plantCeilingSpawnTypes, forbiddenPositions);
-                    if (traits.plantSideSpawnRate > 0)
-                    {
-                        spawnOnePlants(traits.plantSideSpawnRate, traits.plantSideSpawnTypes, forbiddenPositions);
-                    }
+                    spawnOnePlants(traits.plantSideSpawnRate, traits.plantSideSpawnTypes, forbiddenPositions);
                     spawnOnePlants(traits.plantTreeSpawnRate, traits.plantTreeSpawnTypes, forbiddenPositions);
                     spawnOnePlants(traits.plantWaterGroundSpawnRate, traits.plantWaterGroundSpawnTypes, forbiddenPositions);
                     spawnOnePlants(traits.plantWaterCeilingSpawnRate, traits.plantWaterCeilingSpawnTypes, forbiddenPositions);
                     spawnOnePlants(traits.plantWaterSideSpawnRate, traits.plantWaterSideSpawnTypes, forbiddenPositions);
+                    spawnOnePlants(traits.plantEveryAttachSpawnRate, traits.plantEveryAttachSpawnTypes, forbiddenPositions);
                 }
                 entitiesAndPlantsSpawned = true;
             }
-            public ((int x, int y), bool valid) findSuitablePosition(Dictionary<(int x, int y), bool> forbiddenPositions, bool isEntity, bool isWater, bool isCeiling = false, bool isSide = false, bool isDigging = false, bool isJesus = false, (int type, int subType)? soilType = null)
+            public ((int x, int y), bool valid) findSuitablePosition(Dictionary<(int x, int y), bool> forbiddenPositions, bool isEntity, bool isWater, bool isCeiling = false, bool isSide = false, bool isDigging = false, bool isJesus = false, (int type, int subType)? soilType = null, bool isEveryAttach = false)
             {
                 int counto = 0;
                 (int x, int y) posToTest;
@@ -512,16 +510,11 @@ namespace Cave
                     if (tileTraits.isAir == (isWater && !isJesus) && !isDigging) { continue; };    // If water plant and liquid tile, yay, if normal plant and empty tile, yay, else no
                     if (isEntity && !isJesus) { goto success; }   // For entities, no need to test if ceiling or ground shit
 
-                    if (isSide)
-                    {
-                        posToTest = (randPos.x + (isSide && !isCeiling ? (counto % 2) * 2 - 1 : 0), randPos.y);
-                        tileTraits = screen.getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
-                    }
-                    else
-                    {
-                        posToTest = (randPos.x, randPos.y + (isCeiling ? 1 : -1));
-                        tileTraits = screen.getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
-                    }
+                    if (isEveryAttach) { (int x, int y) mod = neighbourArray[rand.Next(4)]; posToTest = (randPos.x + mod.x, randPos.y + mod.y); }
+                    else if (isSide) { posToTest = (randPos.x + (isSide && !isCeiling ? (counto % 2) * 2 - 1 : 0), randPos.y); }
+                    else { posToTest = (randPos.x, randPos.y + (isCeiling ? 1 : -1)); }
+                    tileTraits = screen.getTileContent(posToTest);
+
                     if (soilType != null && tileTraits.type != soilType.Value) { continue; }
                     if (isJesus)
                     {
@@ -1143,7 +1136,7 @@ namespace Cave
                     int distAcid = Abs(acidity - biomeTypicalValues[i].acid);
                     int distToxi = Abs(toxicity - biomeTypicalValues[i].toxi);
 
-                    int distTot = (biomeTypicalValues[i].range - (distTemp + distHumi + distAcid + distToxi));
+                    int distTot = biomeTypicalValues[i].range - (distTemp + distHumi + distAcid + distToxi);
                     listo.Add((i, distTot));
                 }
                 int max = listo[0].Item2;
@@ -1257,14 +1250,16 @@ namespace Cave
                 }
                 else if (dimensionType == (2, 0)) // type == 2, living dimension
                 {
-                    percentageFree -= calculateAndAddBiome(listo, (12, 1), percentageFree, acidity, (750, 999999)); // acid ocean
-                    percentageFree -= calculateAndAddBiome(listo, (12, 0), percentageFree, temperature, (-999999, 350)); // blood ocean
-                    if (humidity > 700)
+                    percentageFree -= calculateAndAddBiome(listo, (12, 1), percentageFree, acidity, (800, 999999)); // acid ocean
+                    percentageFree -= calculateAndAddBiome(listo, (12, 0), percentageFree, temperature, (-999999, 300)); // blood ocean
+                    if (humidity > 500)
                     {
-                        int fleshiness = calculateBiome(percentageFree, humidity, (700, 999999));
-                        int forestness = calculateAndAddBiome(listo, (10, 1), fleshiness, toxicity, (-999999, 500)); // flesh forest
-                        percentageFree -= forestness;
+                        int fleshiness = calculateBiome(percentageFree, humidity, (500, 999999));
+                        int hairiness = calculateAndAddBiome(listo, (10, 3), fleshiness, toxicity, (700, 999999)); // hair forest
+                        fleshiness -= hairiness;
+                        int forestness = calculateAndAddBiome(listo, (10, 1), fleshiness, toxicity, (-999999, 350)); // flesh forest
                         fleshiness -= forestness;
+                        percentageFree -= forestness + hairiness;
                         percentageFree -= testAddBiome(listo, (10, 0), fleshiness); // add what's remaining as normal flesh
                     }
                     percentageFree -= calculateAndAddBiome(listo, (11, 0), percentageFree, humidity, (-999999, 300)); // bone
