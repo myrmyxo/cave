@@ -175,7 +175,7 @@ namespace Cave
 
                 foreach ((int x, int y) drawPos in fillDict.Keys)
                 {
-                    setPixelButFaster(bitmapToMake, (drawPos.x - minX, drawPos.y - minY), colorDict[fillDict[drawPos]]);
+                    bitmapToMake.SetPixel(drawPos.x - minX, drawPos.y - minY, colorDict[fillDict[drawPos]]);
                 }
 
                 posOffset = (minX, minY);

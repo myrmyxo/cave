@@ -1117,15 +1117,15 @@ namespace Cave
             public (int type, int subType) lakeType;
 
             public (int one, int two) caveType;
+            public (int one, int two) textureType;
+            public int separatorType;
             public float caveWidth;
 
             public TileTransitionTraits[] tileTransitionTraitsArray;
 
             public bool isDark;
-            public bool isSlimy;        // temp
-            public bool isForesty;      // temp
-            public bool isDegraded;     // temp
-            public bool isObsidianny;   // temp
+            public bool isSlimy;
+            public bool isDegraded;
 
             public float entityBaseSpawnRate;
             public float entityGroundSpawnRate;
@@ -1156,24 +1156,24 @@ namespace Cave
             public ((int type, int subType) type, float percentage)[] plantWaterSideSpawnTypes;
 
             public BiomeTraits(string namee, (int r, int g, int b) colorToPut, float[] spawnRates, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes,
-                (int one, int two)? cT = null, float cW = 1, TileTransitionTraits[] tTT = null,
+                (int one, int two)? cT = null, (int one, int two)? txT = null, int sT = 0, float cW = 1, TileTransitionTraits[] tTT = null,
                 (int type, int subType)? fT = null, (int type, int subType)? tT = null, (int type, int subType)? lT = null,
-                bool S = false, bool F = false, bool Dg = false, bool O = false, bool Da = false)
+                bool S = false, bool Dg = false, bool Da = false)
             {
                 name = namee;
                 color = colorToPut;
 
                 isDark = Da;
                 isSlimy = S;
-                isForesty = F;
                 isDegraded = Dg;
-                isObsidianny = O;
 
                 fillType = fT ?? (0, 0);
                 tileType = tT ?? (1, 0);
                 lakeType = lT ?? (-2, 0);
 
                 caveType = cT ?? (1, 2);
+                textureType= txT ?? (0, 1);
+                separatorType = sT;
                 caveWidth = cW;
 
                 tileTransitionTraitsArray = tTT;
@@ -1289,29 +1289,29 @@ namespace Cave
                 new float[]{1, 0.25f, 2, 2,     0, 4, 1, 2, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), },
-                fT:(-4, 0)) },                                       // Base           Vine           Kelp           CeilingKelp
+                cT:(0, 3), txT:(0, 0), sT:1, fT:(-4, 0)) },          // Base           Vine           Kelp           CeilingKelp
                 { (2, 2),  new BiomeTraits("Obsidian",              (-100, -100, -100),
                 new float[]{1, 0.25f, 2, 2,     0, 4, 1, 2, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((0, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((3, 0), 100), ((5, 1), 100), ((2, 0), 100), ((2, 1), 100), },
-                O:true) },                                           // ObsidianPlant  Vine           Kelp           CeilingKelp
+                cT:(1, 4), txT:(0, 0), cW:0.3f) },                   // ObsidianPlant  Vine           Kelp           CeilingKelp
 
                 { (3, 0),  new BiomeTraits("Forest",                (Color.Green.R, Color.Green.G, Color.Green.B),       // finish forest flowers shite
                 new float[]{1, 0.25f, 2, 2,     0, 6, 1, 2, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((1, 0), 100), ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), },
-                F:true) },                                           // Base           Tree           Vine           Kelp           CeilingKelp
+                cT:(1, 5), txT:(0, 0)) },                            // Base           Tree           Vine           Kelp           CeilingKelp
                 { (3, 1),  new BiomeTraits("Flower Forest",         (Color.Green.R, Color.Green.G + 40, Color.Green.B + 80),
                 new float[]{1, 0.25f, 2, 2,    0, 16, 1, 3, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 100), },
-                new ((int type, int subType) type, float percentage)[]{ ((0, 0), 10), ((0, 1), 20), ((0, 2), 20), ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), }
-                ) },                                                 // Base          Tulip         Allium        Vine           Kelp           CeilingKelp
+                new ((int type, int subType) type, float percentage)[]{ ((0, 0), 10), ((0, 1), 20), ((0, 2), 20), ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), },
+                txT:(0, 0)) },                                       // Base          Tulip         Allium        Vine           Kelp           CeilingKelp
 
                 { (4, 0),  new BiomeTraits("Toxic",                 (Color.GreenYellow.R, Color.GreenYellow.G, Color.GreenYellow.B),
                 new float[]{1, 0.25f, 2, 2,     0, 4, 1, 2, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), },
-                S:true) },                                           // Base           Vine           Kelp           CeilingKelp
+                txT:(0, 0), S:true) },                                           // Base           Vine           Kelp           CeilingKelp
 
                 { (5, 0),  new BiomeTraits("Fairy",                 (Color.LightPink.R, Color.LightPink.G, Color.LightPink.B),
                 new float[]{1, 0.25f, 2, 2,     0, 4, 1, 2, 0, 4, 4, 0},
@@ -1323,13 +1323,13 @@ namespace Cave
                 new float[]{1, 0.25f, 2, 2,     4, 1, 2, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((4, 1), 100), },
-                tTT:new TileTransitionTraits[]{ famousTTT["Mold"] }) },// Mold
+                txT:(0, 0), tTT:new TileTransitionTraits[]{ famousTTT["Mold"] }) }, // Mold
 
                 { (8, 0),  new BiomeTraits("Ocean",                 (Color.LightBlue.R, Color.LightBlue.G + 60, Color.LightBlue.B + 130),
                 new float[]{1, 0.25f, 3, 6,     0, 4, 1, 2, 0, 8, 8, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((5, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((2, 1), 100), },
-                fT:(-2, 0)) },                                       // Kelp           CeilingKelp
+                cT:(0, 3), txT:(0, 0), sT:1, fT:(-2, 0)) },          // Kelp           CeilingKelp
 
 
                 //      -E- C  G  W  J      -P- G  T  C  S  WG WC WS  
@@ -1337,7 +1337,7 @@ namespace Cave
                 new float[]{1, 0.25f, 2, 1,     0, 4, 1, 2, 2, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((20, 0), 100), ((20, 1), 100), ((20, 2), 100) },
-                F:true, Da:true) },                                  // LanternTree     LanternVine     LanternSide
+                cT:(1, 5), txT:(0, 0), Da:true) },                   // LanternTree     LanternVine     LanternSide
                 { (9, 1),  new BiomeTraits("MixedLuminous",           (Color.Gray.R, Color.Gray.G, Color.Gray.B),
                 new float[]{1, 0.25f, 2, 1,     0, 4, 1, 1, 1, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), },
@@ -1347,7 +1347,7 @@ namespace Cave
                 new float[]{1, 0.25f, 2, 1,     0, 4, 1, 1, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((21, 0), 50), ((21, 1), 50), ((21, 2), 100), },
-                F:true, Da:true) },                                  // Candle         Chandelier     Candelabrum 
+                cT:(1, 5), txT:(0, 0), Da:true) },                   // Candle         Chandelier     Candelabrum 
 
 
                 //      -E- C  G  W  J      -P- E  G  T  C  S  WG WC WS  
@@ -1360,7 +1360,7 @@ namespace Cave
                 new float[]{1, 1, 2, 1,         0, 3, 1, 3, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((1, 1), 100), ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((7, 0), 100), ((7, 1), 100), ((7, 2), 50), ((7, 3), 50) },
-                lT:(-7, 0), tT:(4, 0), F:true) },                    // Flesh Vine     Flesh Tendril  Flesh Tree 1   Flesh Tree 2
+                cT:(1, 5), txT:(0, 0), lT:(-7, 0), tT:(4, 0)) },     // Flesh Vine     Flesh Tendril  Flesh Tree 1   Flesh Tree 2
                 { (10, 2), new BiomeTraits("Flesh and Bone",        (Color.Pink.R, Color.Pink.G, Color.Pink.B),
                 new float[]{1, 1, 2, 1,         0, 4, 1, 4, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((1, 1), 50),  ((1, 2), 50),  ((4, 1), 100), },
@@ -1371,7 +1371,7 @@ namespace Cave
                 new float[]{1, 1, 2, 1,        10, 4, 1, 4, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((1, 1), 50),  ((1, 2), 50),  ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((9, 0), 100) },
-                lT:(-6, 0), tT:(4, 0), cW:2.5f) },                   // Hair
+                cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f) },        // Hair
 
                 { (11, 0), new BiomeTraits("Bone",                  (Color.White.R, Color.White.G, Color.White.B),
                 new float[]{1, 1, 2, 1,         0, 1, 1, 1, 0, 4, 4, 0},
@@ -1383,13 +1383,13 @@ namespace Cave
                 new float[]{1, 1, 2, 1,         0, 4, 1, 2, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ },
-                tT:(4, 0), fT:(-6, 0),
+                cT:(0, 3), txT:(0, 0), sT:1, tT:(4, 0), fT:(-6, 0),
                 tTT:new TileTransitionTraits[]{ famousTTT["Bone"] }) },
                 { (12, 1), new BiomeTraits("Acid Ocean",            (Color.YellowGreen.R, Color.YellowGreen.G, Color.YellowGreen.B),
                 new float[]{1, 1, 1, 1,         0, 4, 1, 2, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ },
-                tT:(4, 0), fT:(-7, 0),
+                cT:(0, 3), txT:(0, 0), sT:1, tT:(4, 0), fT:(-7, 0),
                 tTT:new TileTransitionTraits[] { famousTTT["Bone"] }) },
             };
 

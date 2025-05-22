@@ -109,7 +109,7 @@ namespace Cave
                     {
                         for (int j = 0; j < 32; j++)
                         {
-                            if (!fogOfWar[i, j]) { setPixelButFaster(fogBitmap, (i, j), Color.Black); }
+                            if (!fogOfWar[i, j]) { fogBitmap.SetPixel(i, j, Color.Black); }
                         }
                     }
                 }
@@ -144,7 +144,7 @@ namespace Cave
                         }
                         darkness = Max(0, 255 - darkness);
                         Color colorToDraw = Color.FromArgb(255, darkness, darkness, darkness);
-                        setPixelButFaster(lightBitmap, (i, j), colorToDraw);
+                        lightBitmap.SetPixel(i, j, colorToDraw);
                     }
                 }
 
@@ -221,110 +221,69 @@ namespace Cave
                     for (int j = 0; j < 32; j++)
                     {
                         int value1 = terrainValues[i, j, 0] + (int)(0.25 * terrainValues[i, j, 1]) - 32;
-                        // value1 = terrainValues[i, j, 1];
-                        // value1 = 0;
                         int value2 = terrainValues[i, j, 2] + (int)(0.25 * terrainValues[i, j, 3]) - 32;
-                        // value2 = terrainValues[i, j, 3];
-                        // value2 = 128;
-                        // int temperature = tileValuesArray[i, j].temp;
-                        // int mod1 = (int)(tileValuesArray[i, j].mod1 * 0.25);
                         int mod2 = (int)(tileValuesArray[i, j].mod2 * 0.25);
-
-                        int plateauPos = (int)(chunkSeed % 32);
-
-                        float valueToBeAdded;
-                        float value1modifier = 0;
-                        float value2PREmodifier;
-                        float value2modifier = 0;
-                        float mod2divider = 1;
-                        float foresto = 1;
-                        float oceano = 0;
-                        float caveWidth = 0;
 
                         BiomeTraits mainBiomeTraits = biomeIndex[i, j][0].Item1;
 
                         float mult;
+                        float score1 = 0;
+                        float score2 = 0;
+                        float valueModifier;
+                        float separatorScore = 0;
                         foreach ((BiomeTraits traits, int percentage) tupel in biomeIndex[i, j])
                         {
                             mult = tupel.percentage * 0.001f;
-                            caveWidth += mult * tupel.traits.caveWidth;
-                            if (tupel.traits.fillType != (0, 0)) { oceano = Max(oceano, mult * 10); }    // To make separation between OCEAN biomes (like acid and blood). CHANGE THIS to make ocean biomes that can merge with one another (like idk cool water ocean and temperate water ocean idk)
-                            if (tupel.traits.isDegraded)
-                            {
-                                valueToBeAdded = -3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value1, 11));
-                                value1modifier += valueToBeAdded;
-                                value2modifier += valueToBeAdded;
-                                }
-                            if (tupel.traits.isForesty) { foresto += mult; }
-                            if (tupel.traits.isSlimy) // toxic biome
-                            {
-                                float see1 = Sin(i + mod2 * 0.3f + 0.5f, 16);
-                                float see2 = Sin(j + mod2 * 0.3f + 0.5f, 16);
-                                valueToBeAdded = mult * Min(0, 20 * (see1 + see2) - 10);
-                                value2modifier += valueToBeAdded;
-                                value1modifier += valueToBeAdded + 2;
-                            }
-                            if (tupel.traits.isObsidianny) // obsidian biome
-                            {
-                                float see1 = Obs((pos.Item1 * 32) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
-                                float see2 = Obs((pos.Item2 * 32) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
-                                if (false && (value2 < 50 || value2 > 200)) { value2PREmodifier = 300; }
-                                else { value2PREmodifier = (Min(0, -40 * (see1 + see2) + 20) * 10 + value2 - 200); }
-                                value1modifier += 5 * mult;
-                                value2modifier += mult * value2PREmodifier;
-                                mod2divider += mult * 1.5f;
-                            }
-                            else { value2modifier += mult * ((2 * value1) % 32); }
+
+                            valueModifier = 0;
+                            if (tupel.traits.isDegraded) { valueModifier += 3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value2, 11)); }
+                            if (tupel.traits.isSlimy) { valueModifier -= mult * Min(0, 20 * (Sin(i + mod2 * 0.3f + 0.5f, 16) + Sin(j + mod2 * 0.3f + 0.5f, 16)) - 10); }
+                            
+                            score1 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.one, value1, (i, j), mod2) + findTextureScore(tupel.traits.textureType.one, value2) + valueModifier); // Swapping is normal !
+                            score2 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.two, value2, (i, j), mod2) + findTextureScore(tupel.traits.textureType.two, value1) + valueModifier); // Cause it needs to be an independant noise !
+                            if (tupel.traits.separatorType != 0) { separatorScore += findSeparatorScore(tupel.traits.separatorType, mult); }
                         }
 
-                        float oceanoSeeSaw = Min(Seesaw((int)oceano, 8), 8 - oceano);
-                        if (oceanoSeeSaw < 0) { oceanoSeeSaw *= oceanoSeeSaw * oceanoSeeSaw; }
-                        else { oceanoSeeSaw *= oceanoSeeSaw; }
-                        if (oceanoSeeSaw > 3.5) { oceanoSeeSaw *= 10; }
+                        bool carveTest1 = score1 * (1 - separatorScore * 0.001f) - separatorScore > 0;
+                        bool carveTest2 = score2 * (1 - separatorScore * 0.001f) - separatorScore > 0;
 
-                        oceano *= 10;
-                        oceanoSeeSaw *= 10;
-
-                        mod2 = (int)(mod2 / mod2divider);
-
-                        value1modifier = 0;
-                        mod2 = 0;
-
-                        float score1 = -Abs(value1 - 128) + 10 * caveWidth + mod2 * mod2 * foresto * 0.0003f - value1modifier - (value1 > 128 ? oceanoSeeSaw * 0.1f : oceanoSeeSaw);
-                        bool carveTest1 = score1 > 0;
-                        float score2 = Max(value2 - oceano -200 - value2modifier,
-                                          -value2 - oceano + (foresto - 1) * 75f);
-                        bool carveTest2 = score2 > 0;
-                        // float plateauScore = Max(score1, score2) - (Abs(plateauPos - j) - 5) * 10;
-                        //if (carveTest1 && carveTest2) { fillStates[i, j] = 4; }
-                        //else if (carveTest1) { fillStates[i, j] = 3; }
-                        //else if (carveTest2) { fillStates[i, j] = 2; }
-                        if (((carveTest1 || carveTest2) && true)/* || plateauScore >= 0*/) { fillStates[i, j] = getTileTraits(mainBiomeTraits.fillType); }
+                        if (carveTest1 || carveTest2) { fillStates[i, j] = getTileTraits(mainBiomeTraits.fillType); }
                         else { fillStates[i, j] = getTileTraits(findMaterialToFillWith(tileValuesArray[i, j], (terrainValues[i, j, 4], terrainValues[i, j, 5]), biomeIndex[i, j])); }
-                        //if (rand.Next(500) != 0){ fillStates[i, j] = 1; }
                     }
                 }
             }
-            public float findFillScore(int type, int value, int valueModifier, int mod, int foresto, int oceano)
+            public float findFillScore(BiomeTraits biomeTraits, int type, int value, (int x, int y) mod32pos, int mod2)
             {
-                float oceanoSeeSaw = 0;
-                if (oceano != 0)
+                if (type == 0) { return -999999; }                                          // 0 - nothing
+                if (type == 1) { return -Abs(value - 128) + 10 * biomeTraits.caveWidth; }   // 1 - normal slither caves
+                if (type == 2) { return value - 210 + 10 * biomeTraits.caveWidth; }         // 2 - normal bubble caves
+                if (type == 3) { return value - 138 + 10 * biomeTraits.caveWidth; }         // 3 - normal ocean 
+                if (type == 4)                                                              // 4 - obsidian biome
                 {
-                    Min(Seesaw((int)oceano, 8), 8 - oceano);
-                    if (oceanoSeeSaw < 0)
-                    {
-                        oceanoSeeSaw = oceanoSeeSaw * oceanoSeeSaw * oceanoSeeSaw;
-                    }
-                    else { oceanoSeeSaw = oceanoSeeSaw * Abs(oceanoSeeSaw); }
-                    oceano *= 10;
-                    oceanoSeeSaw *= 10;
+                    float see1 = Obs((pos.Item1 * 32) % 64 + 64 + mod32pos.x + mod2 * 0.15f + 0.5f, 64);
+                    float see2 = Obs((pos.Item2 * 32) % 64 + 64 + mod32pos.y + mod2 * 0.15f + 0.5f, 64);
+                    return 500 * (see1 + see2) - 250;
                 }
-
-                if (type == 1) { return -10; }
-                if (type == 2) { return -10; }
-
-
-                return -10;
+                if (type == 5) { return Max(value - 200, 75 - value); }                     // 5 - forest biome
+                if (type == 6)                                                              // 6 - plateaus
+                {
+                    int plateauPos = (int)(chunkSeed % 32);
+                    float plateauScore = 160 - (Abs(plateauPos - mod32pos.y) - 5) * 10;
+                    return plateauScore;
+                }
+                return -999999;
+            }
+            public float findTextureScore(int type, float value)
+            {
+                if (type == 0) { return 0; }                                                // 0 - nothing
+                if (type == 1) { return (2 * value) % 32; }                                 // 1 - base texture
+                return 0;
+            }
+            public float findSeparatorScore(int type, float mult)
+            {
+                if (type == 0) { return 0; }                                                // 0 - nothing
+                if (type == 1) { float a = (0.5f - Abs(mult - 0.5f)) * 30; return a * a; }                  // 1 - ocean separator
+                return 0;
             }
             public (int type, int subType) findMaterialToFillWith((int temp, int humi, int acid, int toxi, int mod1, int mod2) biomeValues, (int, int) values, (BiomeTraits traits, int percentage)[] biomeTraits)
             {
@@ -393,7 +352,7 @@ namespace Cave
                     if ((i + j) % 2 == 0) { colorToSet = Color.Black; }
                     else { colorToSet = Color.FromArgb(255, 00, 255); }
                 }
-                setPixelButFaster(bitmap, (i, j), colorToSet);
+                bitmap.SetPixel(i, j, colorToSet);
             }
             public TileTraits tileModification(int i, int j, (int type, int subType) newMaterial)
             {
@@ -920,7 +879,7 @@ namespace Cave
                 {
                     for (int jj = 0; jj < 32; jj++)
                     {
-                        setPixelButFaster(fogBitmap, (ii, jj), Color.Black);
+                        fogBitmap.SetPixel(ii, jj, Color.Black);
                     }
                 }
             }
@@ -936,7 +895,7 @@ namespace Cave
                 if (!fogOfWar[tileIndex.x, tileIndex.y])
                 {
                     fogOfWar[tileIndex.x, tileIndex.y] = true;
-                    setPixelButFaster(fogBitmap, (tileIndex.x, tileIndex.y), Color.Transparent);
+                    fogBitmap.SetPixel(tileIndex.x, tileIndex.y, Color.Transparent);
                     chunkDict[this] = true;
                 }
             }
@@ -1041,7 +1000,7 @@ namespace Cave
                     for (int j = 0; j < noiseValues.GetLength(1); j++)
                     {
                         value = noiseValues[i, j, layer];
-                        setPixelButFaster(bitmapToExport, (i, noiseValues.GetLength(1) - 1 - j), Color.FromArgb(value, value, value));
+                        bitmapToExport.SetPixel(i, noiseValues.GetLength(1) - 1 - j, Color.FromArgb(value, value, value));
                     }
                 }
                 bitmapToExport.Save($"{currentDirectory}\\CaveData\\{screen.game.seed}\\ChunkNoise\\x{pos.x}y{pos.y}.png");
@@ -1091,10 +1050,7 @@ namespace Cave
         }
         public static int testAddBiome(List<((int biome, int subBiome), int)> biomeList, (int biome, int subBiome) biomeToTest, int biomeness)
         {
-            if (biomeness > 0)
-            {
-                biomeList.Add((biomeToTest, biomeness));
-            }
+            if (biomeness > 0) { biomeList.Add((biomeToTest, biomeness)); }
             return biomeness;
         }
         public static int calculateBiome(int percentageFree, int valueToTest, (int min, int max) bounds, int transitionSpeed = 25) // transitionSpeed : the higher, the faster the transition
@@ -1104,10 +1060,7 @@ namespace Cave
         public static int calculateAndAddBiome(List<((int biome, int subBiome), int)> biomeList, (int biome, int subBiome) biomeToTest, int percentageFree, int valueToTest, (int min, int max) bounds, int transitionSpeed = 25) // transitionSpeed : the higher, the faster the transition
         {
             int biomeness = (int)(Clamp(0, Min(valueToTest - bounds.min, bounds.max - valueToTest) * transitionSpeed, 1000) * percentageFree * 0.001f);
-            if (biomeness > 0)
-            {
-                biomeList.Add((biomeToTest, biomeness));
-            }
+            if (biomeness > 0) { biomeList.Add((biomeToTest, biomeness)); }
             return biomeness;
         }
         public static (BiomeTraits traits, int percentage)[] findBiome((int, int) dimensionType, int[] values)

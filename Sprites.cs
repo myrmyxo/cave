@@ -412,7 +412,7 @@ namespace Cave
             {
                 for (int j = 0; j < dimensions.Item2; j++)
                 {
-                    setPixelButFaster(bitmapToReturn, (i, j), palette[thirdLineInts[i + j * dimensions.Item1]]);
+                    bitmapToReturn.SetPixel(i, j, palette[thirdLineInts[i + j * dimensions.Item1]]);
                 }
             }
             return bitmapToReturn;
@@ -724,7 +724,7 @@ namespace Cave
                             color = transparent;
                         }
                         else { color = semiTransparent; }
-                        setPixelButFaster(bitmap, (i, j), color);
+                        bitmap.SetPixel(i, j, color);
                     }
                 }
             }
@@ -901,7 +901,7 @@ namespace Cave
             {
                 for (int j = 0; j < 32; j++)
                 {
-                    Sprites.setPixelButFaster(black32Bitmap, (i, j), Color.Black);
+                    black32Bitmap.SetPixel(i, j, Color.Black);
                 }
             }
             Color colortoSet = Color.FromArgb(128, 0, 80, 255);
@@ -910,7 +910,7 @@ namespace Cave
             {
                 for (int j = 0; j < 32; j++)
                 {
-                    Sprites.setPixelButFaster(transBlue32Bitmap, (i, j), colortoSet);
+                    transBlue32Bitmap.SetPixel(i, j, colortoSet);
                 }
             }
         }

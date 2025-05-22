@@ -365,7 +365,7 @@ namespace Cave
                 saveAllChunks(screen);
             }
         }
-        public static void makeBiomeDiagram((int, int) dimensionType, (int, int) variablesToTest, (int, int) fixedValues)
+        public static void makeBiomeDiagram((int, int) dimensionType, (int, int) variablesToTest, (int, int) fixedValues, string name)
         {
             Dictionary<int, string> dicto = new Dictionary<int, string>
             {
@@ -376,7 +376,9 @@ namespace Cave
             };
             (int, int) fixedValuesIdx = (0, 0);
 
-            int[] values = new int[4];
+            int[] values = new int[6];
+            values[4] = 0;
+            values[5] = 0;
             bool addZone = false;
             for (int i = 0; i < 4; i++)
             {
@@ -410,13 +412,25 @@ namespace Cave
                     values[variablesToTest.Item2] = j*8;
                     (BiomeTraits traits, int percentage)[] biomeArray = findBiome(dimensionType, values);
                     //(int temp, int humi, int acid, int toxi) tileValues = makeTileBiomeValueArray(values, i, j);
-                    if (biomeArray[0].traits.name == "Error" && ((i/4)+(j/4))%2 == 1){ setPixelButFaster(bitmap, (i, 255 - j), Color.Black); continue; }
+                    if (biomeArray[0].traits.name == "Error" && ((i/4)+(j/4))%2 == 1){ bitmap.SetPixel(i, 255 - j, Color.Black); continue; }
                     int[] colorArray = findBiomeColor(biomeArray);
-                    colorToPut = Color.FromArgb(colorArray[0], colorArray[1], colorArray[2]);
-                    setPixelButFaster(bitmap, (i+64, 191-j), colorToPut);
+                    colorToPut = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
+                    bitmap.SetPixel(i + 64, 191 - j, colorToPut);
                 }
             }
-            bitmap.Save($"{currentDirectory}\\BiomeDiagrams\\biomeDiagram   {dicto[fixedValuesIdx.Item1]}={fixedValues.Item1}, {dicto[fixedValuesIdx.Item2]}={fixedValues.Item2}.png");
+
+            for (int i = 0; i < 128; i+=2)
+            {
+                values[variablesToTest.Item1] = i * 8;
+                for (int j = 0; j < 128; j+=2)
+                {
+                    if (!(Abs(i - 64) == 64 || Abs(j - 64) == 64)) { continue; }
+                    bitmap.SetPixel(i + 64, 191 - j, Color.Black);
+                    bitmap.SetPixel(191 - j, i + 64, Color.Black);
+                }
+            }
+
+            bitmap.Save($"{currentDirectory}\\BiomeDiagrams\\biomeDiagram   -{name}-   {dicto[fixedValuesIdx.Item1]}={fixedValues.Item1}, {dicto[fixedValuesIdx.Item2]}={fixedValues.Item2}.png");
         }
     }
     public class MathF

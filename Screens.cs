@@ -72,7 +72,7 @@ namespace Cave
                 seed = 123456;
 
                 int idToPut = 0;
-                (int type, int subType) forceBiome = (2, 0);
+                (int type, int subType) forceBiome = (0, 0);
                 int PNGsize = 150;
                 PNGsize = 100;
 
@@ -123,11 +123,13 @@ namespace Cave
                     while (b == a) { b = rand.Next(4); }
                     int c = rand.Next(1024);
                     int d = rand.Next(1024);
-                    makeBiomeDiagram((0, 0), (a, b), (c, d));
+                    makeBiomeDiagram((0, 0), (a, b), (c, d), "-");
                 }
+                int counti = 0;
                 for (int i = -512; i < -1000/*1536*/; i += 64)
                 {
-                    makeBiomeDiagram((0, 0), (0, 1), (512, i));
+                    makeBiomeDiagram((0, 0), (1, 3), (i, 512), counti.ToString());
+                    counti++;
                 }
 
                 if (settings != null)
