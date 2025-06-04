@@ -81,6 +81,8 @@ namespace Cave
             public List<(int x, int y)> pastPositions = new List<(int x, int y)>();
             public int length;
 
+            public bool isCurrentlyClimbing = false;
+
             public Entity targetEntity = null;
             public (int x, int y) targetPos = (0, 0);
             public List<(int x, int y)> pathToTarget = new List<(int x, int y)>();
@@ -546,7 +548,7 @@ namespace Cave
                     inGround = false;
                     inWater = false;
                     if (onWater && traits.isJesus) { ariGeoSlowDownY(0.8f, 0.25f); }
-                    else if (!onGround && !traits.isFlying) { speedY -= 0.5f; }
+                    else if (!onGround && !traits.isFlying && (!traits.isCliming || !isCurrentlyClimbing)) { speedY -= 0.5f; }
                 }
 
                 return (entityTile, tileUnder);
@@ -561,7 +563,7 @@ namespace Cave
                 speedX += rangeX * (float)(rand.NextDouble() - 0.5);
                 speedY += maxY * (float)(rand.NextDouble());
             }
-            public void Jump(int changeX, float jumpSpeed)
+            public void Jump(float changeX, float jumpSpeed)
             {
                 speedX += changeX;
                 speedY = Max(jumpSpeed, speedY);
@@ -893,6 +895,19 @@ namespace Cave
                     moveHornet();
                 }
 
+
+                if (isCurrentlyClimbing)
+                {
+                    if (traits.onPlantBehavior != 1 || !screen.climbablePositions.Contains((posX, posY))) { isCurrentlyClimbing = false; }
+                    else
+                    {
+                        changeSpeedRandom(0.2f);
+                        clampSpeed(1, 1);
+                        goto AfterBehaviorMovement;
+                    }
+                }
+                else if (traits.onPlantBehavior == 1 && screen.climbablePositions.Contains((posX, posY))) { isCurrentlyClimbing = true; speedX = 0; speedY = 0; }
+
                 if (inGround)
                 {
                     if (traits.inGroundBehavior == 2)   // For worms, don't care about tile under always do the same thing
@@ -910,7 +925,7 @@ namespace Cave
                             }
                             else { changeSpeedRandom(0.5f); }
                         }
-                    } 
+                    }
                     else if (onGround) { jumpRandom(1, 1); }    // For non worms, if stuck, try jumping out, so if stuck in a tile it can escape if next to air
                     else { speedY -= 1; }   // fall under if tile under is free (might have to change that depending on gravity)
                 }
@@ -943,14 +958,16 @@ namespace Cave
                         if (traits.isJesus && (float)rand.NextDouble() <= traits.jumpChance) { jumpRandom(5, 0); }
                     }
                 }
+            AfterBehaviorMovement:;
 
                 // inWater   -> 0: nothing, 1: float upwards, 2: move randomly in water
                 // onWater   -> 0: nothing, 1: skip, 2: drift towards land                   
                 // inAir     -> 0: nothing, 1: fly randomly, 2: random jump ?
                 // onGround  -> 0: nothing, 1: random jump, 2: move around, 3: dig down
                 // inGround  -> 0: nothing, 1: random jump, 2: dig around, 3: teleport, 4: dig tile                   
+                // onPlant   -> 0: fallOut, 1: random movement
 
-                actuallyMoveTheEntity();
+                actuallyMoveTheEntity(isCurrentlyClimbing);
 
                 testTileEffects(entityTile);  // test what happens if in special liquids (fairy lake, lava...)
 
@@ -1017,7 +1034,7 @@ namespace Cave
                     if (counto >= length) { pastPositions.RemoveAt(counto - 1); }
                 }
             }
-            public void actuallyMoveTheEntity()
+            public bool actuallyMoveTheEntity(bool climbing = false)
             {
                 TileTraits tile;
                 (int x, int y) previousPos = (posX, posY);
@@ -1036,6 +1053,8 @@ namespace Cave
                 bool allowY = true;
                 bool isDoneX = false;
                 bool isDoneY = false;
+                bool hasIntMovedX = false;
+                bool hasIntMovedY = false;
 
                 while (true)
                 {
@@ -1055,8 +1074,9 @@ namespace Cave
                         Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                         if (chunk is null) { goto SaveEntity; }
                         tile = screen.getTileContent(posToTest);
-                        if (!tile.isSolid || traits.isDigging) // if a worm or the material is not a solid tile, update positions and continue
+                        if ((!tile.isSolid || traits.isDigging) && (!climbing || screen.climbablePositions.Contains(posToTest))) // if a worm or the material is not a solid tile, update positions and continue
                         {
+                            hasIntMovedX = true;
                             realPosX = realPosToTest;
                             posX = posToTest.x;
                             toMoveX -= diff;
@@ -1085,8 +1105,9 @@ namespace Cave
                         Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                         if (chunk is null) { goto SaveEntity; }
                         tile = screen.getTileContent(posToTest);
-                        if (!tile.isSolid || traits.isDigging) // if a worm or the material is not a solid tile, update positions and continue
+                        if ((!tile.isSolid || traits.isDigging) && (!climbing || screen.climbablePositions.Contains(posToTest))) // if a worm or the material is not a solid tile, update positions and continue
                         {
+                            hasIntMovedY = true;
                             realPosY = realPosToTest;
                             posY = posToTest.y;
                             toMoveY -= diff;
@@ -1104,11 +1125,11 @@ namespace Cave
                 }
                 if (!isDoneX) { speedX = 0; }
                 if (!isDoneY) { speedY = 0; }
-                return;
+                return hasIntMovedX || hasIntMovedY;
 
             SaveEntity:;
                 entityExitingChunk(posToTest);
-                return;
+                return true;
             }
             public virtual void entityExitingChunk((int x, int y) posToTest)
             {

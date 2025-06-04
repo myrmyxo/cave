@@ -53,6 +53,7 @@ namespace Cave
             public float speedCamY = 0;
 
             public float timeAtLastMenuChange = -9999;
+            public float timeAtLastIntPosChange = -9999;
 
             public int inventoryCursor = 0;
             public int craftCursor = 0;
@@ -64,10 +65,7 @@ namespace Cave
                 // transformEntity((4, 1), true);      // Nematode
                 transformEntity((6, 0), true);      // Goblin
 
-                if (settingsJson == null)
-                {
-                    initializeInventory();
-                }
+                if (settingsJson == null) { initializeInventory(); }
                 else
                 {
                     realPosX = settingsJson.player.pos.Item1;
@@ -182,12 +180,29 @@ namespace Cave
             }
             public void movePlayer()
             {
+                if (traits.isCliming && screen.climbablePositions.Contains((posX, posY))) { isCurrentlyClimbing = true; }
+                else { isCurrentlyClimbing = false; }
+
                 (TileTraits entityPos, TileTraits under) returnType = applyForces();
                 TileTraits playerTile = returnType.entityPos;
                 TileTraits tileUnder = returnType.under;
 
+                int directionState = 0;
+                if (arrowKeysState[0]) { directionState -= 1; }
+                if (arrowKeysState[1]) { directionState += 1; }
+
                 float oldSpeedY = speedY;
-                if (traits.isFlying)
+                if (isCurrentlyClimbing)
+                {
+                    ariGeoSlowDown(0.85f, 0.1f);
+                    if (arrowKeysState[0]) { speedX -= 0.25f; }
+                    if (arrowKeysState[1]) { speedX += 0.25f; }
+                    if (arrowKeysState[2]) { speedY -= 0.25f; }
+                    if (arrowKeysState[3]) { speedY += 0.25f; }
+                    clampSpeed(1, 1);
+                    if (onGround && !shiftPress && jumpPress) { Jump(directionState * Min(1, traits.jumpStrength.x), traits.jumpStrength.y); isCurrentlyClimbing = false; }
+                }
+                else if (traits.isFlying)
                 {
                     if (!dimensionSelection && !craftSelection)
                     {
@@ -230,18 +245,15 @@ namespace Cave
                     {
                         ariGeoSlowDownX(0.9f, 0.1f);
 
-                        int directionState = 0;
-                        if (arrowKeysState[0]) { directionState -= 1; if (!onGround) { speedX -= 0.15f; } }
-                        if (arrowKeysState[1]) { directionState += 1; if (!onGround) { speedX += 0.15f; } }
-
+                        if (!onGround) { speedX += directionState * 0.15f; }
                         if (onGround)
                         {
-                            if (arrowKeysState[3]) { Jump(directionState, 1.5f); }
+                            if (jumpPress) { Jump(directionState * Max(1, traits.jumpStrength.x), traits.jumpStrength.y); }
                         }
                         else if (onWater && traits.isJesus)
                         {
                             if (arrowKeysState[2]) { speedY -= 0.25f; }
-                            Jump(directionState * 3, arrowKeysState[3] ? 2 : -10);  // -10 so speedY doesn't get put at 0
+                            if (jumpPress) { Jump(directionState * 3, arrowKeysState[3] ? 2 : -10); }  // -10 so speedY doesn't get put at 0
                             clampSpeedX(5);
                         }
                     }
@@ -250,18 +262,13 @@ namespace Cave
                 else
                 {
                     if (!inWater) { ariGeoSlowDownX(0.8f, 0.15f); }
-                    int directionState = 0;
                     if (!dimensionSelection && !craftSelection)
                     {
-                        if (arrowKeysState[0]) { speedX -= 0.5f; directionState -= 1; }
-                        if (arrowKeysState[1]) { speedX += 0.5f; directionState += 1; }
+                        speedX += 0.5f * directionState;
                         if (onGround && (directionState == 0 || (directionState == 1 && speedX < 0) || (directionState == -1 && speedX > 0))) { ariGeoSlowDownX(0.7f, 0.3f); }  // Turn fast when on ground
                         if (arrowKeysState[2]) { speedY -= 0.5f; }
-                        if (arrowKeysState[3])
-                        {
-                            if (onGround && !shiftPress) { Jump(directionState, 4); }
-                            else if (debugMode || inWater) { speedY += 1f; }
-                        }
+                        if (onGround && !shiftPress && jumpPress) { Jump(directionState * Max(1, traits.jumpStrength.x), traits.jumpStrength.y); }
+                        else if ((debugMode && jumpPress) || (inWater && arrowKeysState[3])) { speedY += 1f; }
                     }
                     if (shiftPress) { ariGeoSlowDown(0.75f, 0.75f); }
                 }
@@ -280,7 +287,8 @@ namespace Cave
                 updateDirection();
 
                 // Actually move the player
-                actuallyMoveTheEntity();
+                bool hasIntMoved = actuallyMoveTheEntity(timeElapsed - timeAtLastIntPosChange < 0.2f ? isCurrentlyClimbing : false);
+                if (hasIntMoved) { timeAtLastIntPosChange = timeElapsed; }
 
                 // camera stuff (not really working anymore which makes it better than it was before yayyy) 
 

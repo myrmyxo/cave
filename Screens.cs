@@ -72,7 +72,7 @@ namespace Cave
                 seed = 123456;
 
                 int idToPut = 0;
-                (int type, int subType) forceBiome = (0, 0);
+                (int type, int subType) forceBiome = (2, 0);
                 int PNGsize = 150;
                 PNGsize = 100;
 
@@ -300,10 +300,11 @@ namespace Cave
                     }
                     screen.chunksToSpawnEntitiesIn = new Dictionary<(int x, int y), bool>();
 
+                    foreach (Plant plant in screen.activePlants.Values) { plant.testPlantGrowth(false); }
+                    screen.putPlantsInChunks();
+
                     foreach (Entity entity in screen.activeEntities.Values) { entity.moveEntity(); }
                     screen.addRemoveEntities();
-
-                    foreach (Plant plant in screen.activePlants.Values) { plant.testPlantGrowth(false); }
 
                     screen.attacksToRemove = new Dictionary<Attack, bool>();
                     for (int i = 0; i < screen.activeAttacks.Count; i++) { screen.activeAttacks[i].updateAttack(); }
@@ -319,7 +320,7 @@ namespace Cave
                     }
 
                     screen.makeBitmapsOfPlants();
-                    screen.putEntitiesAndPlantsInChunks();
+                    screen.putEntitiesInChunks();
                     screen.attacksToRemove = new Dictionary<Attack, bool>();
                     foreach (((int x, int y) pos, Attack attack) attack in screen.attacksToDo) { attack.attack.sendAttack(attack.pos); }
                     foreach (Attack attack in screen.attacksToRemove.Keys) { screen.activeAttacks.Remove(attack); }
@@ -622,6 +623,8 @@ namespace Cave
             public Dictionary<(int, int), bool> liquidsThatCantGoLeft = new Dictionary<(int, int), bool>();
             public Dictionary<(int, int), bool> liquidsThatCantGoRight = new Dictionary<(int, int), bool>();
 
+            public HashSet<(int x, int y)> climbablePositions = new HashSet<(int x, int y)>();
+
             public bool initialLoadFinished = false;
 
             public int chunkX = 0;
@@ -731,14 +734,26 @@ namespace Cave
             }
             public void putPlantsInChunks()
             {
+                climbablePositions = new HashSet<(int x, int y)>();
+
                 Plant[] plantArray = activePlants.Values.ToArray();
                 Plant plant;
                 for (int i = 0; i < plantArray.Length; i++)
                 {
                     plant = plantArray[i];
-                    foreach ((int x, int y) chunkPos in plant.chunkPresence.Keys)
+                    foreach ((int x, int y) chunkPos in plant.chunkPresence.Keys) { getChunkFromChunkPos(chunkPos).plants[plant.id] = activePlants[plant.id]; }
+                    if (plant.traits.isClimbable)
                     {
-                        getChunkFromChunkPos(chunkPos).plants[plant.id] = activePlants[plant.id];
+                        foreach (PlantElement plantElement in plant.returnAllPlantElements())
+                        if (plantElement.traits.isClimbable)
+                        {
+                            foreach ((int x, int y) pos in plantElement.fillStates.Keys)
+                            {
+                                (int x, int y) pososo = plantElement.getWorldPos(pos);
+                                climbablePositions.Add(pososo);
+                                foreach ((int x, int y) mod in neighbourArray) { climbablePositions.Add((pososo.x + mod.x, pososo.y + mod.y)); }
+                            }
+                        }
                     }
                     activePlants.Remove(plant.id);
                 }

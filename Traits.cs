@@ -242,6 +242,7 @@ namespace Cave
             public bool isSwimming;
             public bool isDigging;
             public bool isJesus;
+            public bool isCliming;
 
             // Behaviors
             public int inWaterBehavior;     // -> 0: nothing, 1: float upwards, 2: move randomly in water
@@ -249,6 +250,7 @@ namespace Cave
             public int inAirBehavior;       // -> 0: nothing, 1: fly randomly, 2: random drift
             public int onGroundBehavior;    // -> 0: nothing, 1: random jump, 2: move around, 3: dig down
             public int inGroundBehavior;    // -> 0: nothing, 1: random jump, 2: dig around, 3: teleport, 4: dig tile
+            public int onPlantBehavior;     // -> 0: fallOut, 1: random movement
 
             public float swimSpeed;
             public float swimMaxSpeed;
@@ -262,7 +264,7 @@ namespace Cave
             public int? lightRadius;
             public (Color color, float period)? wingTraits;
             public EntityTraits(string namee, int hp, ((int type, int subType, int megaType) element, int count) drps, ColorRange colRange, (Color color, float period)? wT = null, int? lR = null,
-                int iW = 0, int oW = 0, int iA = 0, int oG = 0, int iG = 0,
+                int iW = 0, int oW = 0, int iA = 0, int oG = 0, int iG = 0, int oP = 0,
                 float sS = 0.1f, float sMS = 0.5f, (float x, float y)? jS = null, float jC = 0)
             {
                 name = namee;
@@ -273,12 +275,14 @@ namespace Cave
                 isSwimming = iW == 2 ? true : false;
                 isDigging = iG == 2 ? true : false;
                 isJesus = oW == 1 ? true : false;
+                isCliming = oP != 0 ? true : false;
 
                 inWaterBehavior = iW;
                 onWaterBehavior = oW;
                 inAirBehavior = iA;
                 inGroundBehavior = iG;
                 onGroundBehavior = oG;
+                onPlantBehavior = oP;
 
                 swimSpeed = sS;
                 swimMaxSpeed = sMS;
@@ -315,13 +319,13 @@ namespace Cave
 
                 { (1, 0), new EntityTraits("Frog",            2,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((90, 50, 30), (210, 50, 30), (110, -50, 30)),
-                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(2.5f, 2.5f), jC:0.1f) },
+                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(2, 2.5f), jC:0.1f) },
                 { (1, 1), new EntityTraits("Carnal",          7,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((135, 0, 30), (55, 30, 30), (55, 30, 30)),
-                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(2.5f, 2.5f), jC:0.1f) },
+                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(2, 2.5f), jC:0.1f) },
                 { (1, 2), new EntityTraits("Skeletal",        7,  ((8, 1, 3), 1),       //  --> Bone
                 new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),
-                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(2.5f, 2.5f), jC:0.1f) },
+                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(2, 2.5f), jC:0.1f) },
 
                 { (2, 0), new EntityTraits("Fish",            2,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((190, 0, 30), (80, -50, 30), (80, 50, 30)),
@@ -352,11 +356,15 @@ namespace Cave
 
                 { (5, 0), new EntityTraits("WaterSkipper",    3,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((110, 0, 30), (110, 0, 30), (140, 20, 30)),
-                iW:1, oW:1, iA:2, oG:1, iG:1, jS:(1, 1), jC:0.05f) },
+                iW:1, oW:1, iA:2, oG:1, iG:1, jC:0.05f) },
 
                 { (6, 0), new EntityTraits("Goblin",          3,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((80, 50, 30), (175, 50, 30), (80, 50, 30)),
-                iW:1, oW:2, iA:2, oG:1, iG:1, jC:0.05f) },
+                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(1, 4), jC:0.05f) },
+
+                { (7, 0), new EntityTraits("Louse",           2,  ((8, 0, 3), 1),       //  --> Flesh
+                new ColorRange((160, -10, 30), (180, 10, 30), (200, 10, 30)),
+                iW:1, oW:2, iA:2, oG:4, iG:1, oP:1, jS:(1, 1.5f), jC:0.1f) },
             };
         }
 
@@ -604,6 +612,8 @@ namespace Cave
             public (int maxLevel, int range) maxGrowth;
             public ((int x, int y) pos, (bool x, bool y) flip)? isSticky;
 
+            public bool isClimbable;
+
             public OneAnimation animation;
             public ((int frame, int range) changeFrame, PlantStructureFrame frame)[] frames;
             public ((int type, int subType, int subSubType) plantElement, (int x, int y) offset, int chance)? deathChild;
@@ -618,11 +628,16 @@ namespace Cave
             public (int type, int subType)[] colorOverrideArray;    // not used YET (will be used if individual plantElements of the same plant need to have different colors (like idk a flower is blue, another is yellow... or different leaf colors in the same tree...)
             
             public HashSet<(int type, int subType)> materialsPresent;
-            public PlantElementTraits(string namee, ((int x, int y) pos, (bool x, bool y) flip)? stick = null, (int maxLevel, int range)? fMG = null, OneAnimation anm = null, ((int frame, int range) changeFrame, PlantStructureFrame frame)[] framez = null, ((int type, int subType, int subSubType) plantElement, (int x, int y) offset, int chance)? dC = null, PlantGrowthRules pGR = null, ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[] rET = null, ((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip)[] sRET = null, (int type, int subType)[] cOverride = null, bool isReg = false, bool fLAP = false, int lR = 0, (int type, int subType)? lE = null)
+            public PlantElementTraits(string namee, ((int x, int y) pos, (bool x, bool y) flip)? stick = null, (int maxLevel, int range)? fMG = null, OneAnimation anm = null,
+                ((int frame, int range) changeFrame, PlantStructureFrame frame)[] framez = null, ((int type, int subType, int subSubType) plantElement,
+                (int x, int y) offset, int chance)? dC = null, PlantGrowthRules pGR = null, ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[] rET = null,
+                ((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip)[] sRET = null, (int type, int subType)[] cOverride = null,
+                bool isReg = false, bool fLAP = false, int lR = 0, (int type, int subType)? lE = null, bool iC = false)
             {
                 name = namee;
                 isRegenerative = isReg;
                 isSticky = stick;
+                isClimbable = iC;
                 animation = anm;
                 frames = framez;
                 deathChild = dC;
@@ -776,7 +791,7 @@ namespace Cave
                     cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((8, 0, -1), (-1, 0), 0, 0, 100), ((8, 0, -1), (1, 0), 0, 0, 100) }
                 )) },
 
-                { (9, 0, 0), new PlantElementTraits("Hair",// rET:(from number in Enumerable.Range(0, 5) select ((0, -number), (true, false))).ToArray(),
+                { (9, 0, 0), new PlantElementTraits("Hair", iC:true,
                 pGR:new PlantGrowthRules(t:(8, 2), mG:(8, 22),
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, true, false), (1, 0), 66), ((-1, 0), (true, true, false), (1, 0), 34) },
                     lDG:true, rDG:true, dGO:1
@@ -961,6 +976,7 @@ namespace Cave
             public bool isEveryAttach;
             public bool isWater;
             public bool isLuminous;
+            public bool isClimbable;
 
             public (int type, int subType, int subSubType) plantElementType;
             public (int type, int subType)? initFailType;
@@ -969,7 +985,9 @@ namespace Cave
             public int minGrowthForValidity;
 
             public ((int type, int subType) type, ColorRange colorRange)[] colorOverrideArray;
-            public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? iFT = null, (int type, int subType)? sT = null, int mGFV = 1, ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, bool T = false, bool C = false, bool S = false, bool EA = false, bool W = false, bool lum = false)
+            public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? iFT = null, (int type, int subType)? sT = null, int mGFV = 1,
+                ((int type, int subType) type, ColorRange colorRange)[] cOverride = null,
+                bool T = false, bool C = false, bool S = false, bool EA = false, bool W = false, bool lum = false, bool cl = false)
             {
                 name = namee;
                 isTree = T;
@@ -979,6 +997,7 @@ namespace Cave
                 isWater = W;
                 soilType = sT;
                 isLuminous = lum;
+                isClimbable  = cl;
                 colorOverrideArray = cOverride;
                 minGrowthForValidity = mGFV;
                 plantElementType = t ?? (-1, 0, 0);
@@ -1040,7 +1059,7 @@ namespace Cave
                 { (8, 1), new PlantTraits("BoneStalagmite",
                 t:(8, 1, 0), mGFV:4, sT:(4, 1)) },
 
-                { (9, 0), new PlantTraits("Hair",                                   EA:true,
+                { (9, 0), new PlantTraits("Hair",                                   EA:true, cl:true,
                 t:(9, 0, 0), mGFV:4, sT:(4, 0)) },
 
                 { (20, 0), new PlantTraits("LanternTree",                           T:true, lum:true,
@@ -1369,7 +1388,7 @@ namespace Cave
                 tTT:new TileTransitionTraits[] { famousTTT["Bone"] }) },
                 { (10, 3), new BiomeTraits("HairForest",            (Color.DarkRed.R - 20, Color.DarkRed.G - 50, Color.DarkRed.B - 70),
                 new float[]{1, 1, 2, 1,        10, 4, 1, 4, 0, 4, 4, 0},
-                new ((int type, int subType) type, float percentage)[]{ ((1, 1), 50),  ((1, 2), 50),  ((4, 1), 100), },
+                new ((int type, int subType) type, float percentage)[]{ ((7, 0), 100),  ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((9, 0), 100) },
                 cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f) },        // Hair
 

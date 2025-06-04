@@ -32,6 +32,7 @@ namespace Cave
 
         public static bool[] arrowKeysState = { false, false, false, false };
         public static bool digPress = false;
+        public static bool jumpPress = false;
         public static bool[] placePress = { false, false };
         public static bool[] zoomPress = { false, false };
         public static bool[] inventoryChangePress = { false, false };

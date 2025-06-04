@@ -82,6 +82,7 @@ namespace Cave
                 turnPngIntoString("Nematode");
                 turnPngIntoString("WaterSkipper");
                 turnPngIntoString("Goblin");
+                turnPngIntoString("Louse");
 
 
                 turnPngIntoString("Acid");
@@ -197,13 +198,11 @@ namespace Cave
             // Fix the fucking mold... or make it interesting. Make that, on mold conversion, it Digs ALL tiles in plants present. As an ATTACK like all diggings will be made.
             // The uh... menu... and uh text... and uh dialogues... and uh villages... and uhhhhhhh make an actual fucking game uhhh
             // In the debugging put extraLoadedMegachunks as another color than the red. Ig.
-            // Upgrade plants spawning : if Maxgrowth returns a growth level that is too small, it FAILS, and tries again with another position
             // nornet nests disappear when they empty
             // Hornet larvae climbing up to the ceiling to go pupate ?
             // Bubble effects in water ?
             // Fishing rod
             // PlantElement side ponderation factor -> prevent all branches of a tree from spawning on the same size (like a left facing decrease directionScore by 1, if < -2 if will force right facing for next child, same for the opposite. Allows to have more equilibrated trees and shite).
-            // Wings for fairies (and hornets and flies and all)
             // Traits behaviors of entities ? idk.
 
             // - - - Le Evil Bugz... - - -
@@ -275,6 +274,8 @@ namespace Cave
             // algae (floatting ?)
             // Douce-Amère/Bittersweet/Solanum Dulcamara (my beloved)                                                                                               ^  ^  ^
             // --> maybe for plants who change direction rotationally, make a list of forbidden orientations ? or like a "moves upwards" thing, so that it can go <- \ | / -> upwards but not downards idk. Could be cool for hair.
+            // WIND TURBINE PLANTS LMAOOOOOOOOOOOOo
+            // Have poppy and other plants growing in wheat fields. Like before.
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.
@@ -329,8 +330,9 @@ namespace Cave
             if (e.KeyCode == Keys.D) { zoomPress[1] = true; }
             if (e.KeyCode == Keys.C) { inventoryChangePress[0] = true; }
             if (e.KeyCode == Keys.V) { inventoryChangePress[1] = true; }
-            if (e.KeyCode == Keys.P) { pausePress = true; }
+            if (e.KeyCode == Keys.P) { pausePress = !pausePress; }
             if (e.KeyCode == Keys.F) { fastForward = true; }
+            if (e.KeyCode == Keys.Space) { jumpPress = true; }
             if (e.KeyCode == Keys.K && !dimensionChangePress) { craftPress = true; }
             if (e.KeyCode == Keys.M) { debugMode = !debugMode; }
             if (e.KeyCode == Keys.L && !craftPress) { dimensionChangePress = true; }
@@ -349,8 +351,9 @@ namespace Cave
             if (e.KeyCode == Keys.D) { zoomPress[1] = false; }
             if (e.KeyCode == Keys.C) { inventoryChangePress[0] = false; }
             if (e.KeyCode == Keys.V) { inventoryChangePress[1] = false; }
-            if (e.KeyCode == Keys.P) { pausePress = false; }
+            if (e.KeyCode == Keys.P) { }
             if (e.KeyCode == Keys.F) { fastForward = false; }
+            if (e.KeyCode == Keys.Space) { jumpPress = false; }
             if (e.KeyCode == Keys.K) { }
             if (e.KeyCode == Keys.M) { }
             if (e.KeyCode == Keys.L) { }
