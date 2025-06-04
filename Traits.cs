@@ -791,10 +791,14 @@ namespace Cave
                     cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((8, 0, -1), (-1, 0), 0, 0, 100), ((8, 0, -1), (1, 0), 0, 0, 100) }
                 )) },
 
-                { (9, 0, 0), new PlantElementTraits("Hair", iC:true,
+                { (9, 0, 0), new PlantElementTraits("HairBody", iC:true,
                 pGR:new PlantGrowthRules(t:(8, 2), mG:(8, 22),
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, true, false), (1, 0), 66), ((-1, 0), (true, true, false), (1, 0), 34) },
                     lDG:true, rDG:true, dGO:1
+                )) },{ (9, 1, 0), new PlantElementTraits("HairLong", iC:true,
+                pGR:new PlantGrowthRules(t:(8, 2), mG:(12, 88),
+                    PM:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 1), 100), ((-1, 0), (true, false, false), (3, 2), 100), ((-1, 0), (true, false, false), (1, 1), 100), ((1, 0), (true, false, false), (3, 2), 100) },
+                    lPM:true
                 )) },
 
 
@@ -1059,8 +1063,10 @@ namespace Cave
                 { (8, 1), new PlantTraits("BoneStalagmite",
                 t:(8, 1, 0), mGFV:4, sT:(4, 1)) },
 
-                { (9, 0), new PlantTraits("Hair",                                   EA:true, cl:true,
+                { (9, 0), new PlantTraits("Body Hair",                              EA:true, cl:true,
                 t:(9, 0, 0), mGFV:4, sT:(4, 0)) },
+                { (9, 1), new PlantTraits("Long Hair",                              C:true, cl:true,
+                t:(9, 1, 0), mGFV:4, sT:(4, 0)) },
 
                 { (20, 0), new PlantTraits("LanternTree",                           T:true, lum:true,
                 t:(20, 0, 0)) },
@@ -1068,9 +1074,9 @@ namespace Cave
                 t:(20, 1, 0)) },
                 { (20, 2), new PlantTraits("SideLantern",                           S:true, lum:true,
                 t:(20, 2, 0)) },
-                { (21, 0), new PlantTraits("Candle",                                         lum:true,
+                { (21, 0), new PlantTraits("Candle",                                        lum:true,
                 t:(21, 0, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
-                { (21, 1), new PlantTraits("Chandelier",                                     lum:true,
+                { (21, 1), new PlantTraits("Chandelier",                                    lum:true,
                 t:(21, 1, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
                 { (21, 2), new PlantTraits("Candelabrum",                           T:true, lum:true,
                 t:(21, 2, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
@@ -1351,7 +1357,7 @@ namespace Cave
                 cT:(0, 3), txT:(0, 0), sT:1, fT:(-2, 0)) },          // Kelp           CeilingKelp
 
 
-                //      -E- C  G  W  J      -P- G  T  C  S  WG WC WS  
+                //      -E- C  G  W  J      -P- E  G  T  C  S  WG WC WS  
                 { (9, 0),  new BiomeTraits("Lanterns",                (Color.Gray.R - 50, Color.Gray.G - 10, Color.Gray.B + 40),
                 new float[]{1, 0.25f, 2, 1,     0, 4, 1, 2, 2, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), },
@@ -1386,11 +1392,16 @@ namespace Cave
                 new ((int type, int subType) type, float percentage)[]{ ((7, 0), 75),  ((7, 1), 75),  ((8, 0), 25),  ((8, 1), 25) },
                 lT:(-6, 0), tT:(4, 0),                               // Flesh Vine     Flesh Tendril  Bone Stalagmi  Bone Stalactite
                 tTT:new TileTransitionTraits[] { famousTTT["Bone"] }) },
-                { (10, 3), new BiomeTraits("HairForest",            (Color.DarkRed.R - 20, Color.DarkRed.G - 50, Color.DarkRed.B - 70),
+                { (10, 3), new BiomeTraits("Body Hair Forest",      (Color.DarkRed.R - 20, Color.DarkRed.G - 50, Color.DarkRed.B - 70),
                 new float[]{1, 1, 2, 1,        10, 4, 1, 4, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((7, 0), 100),  ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((9, 0), 100) },
-                cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f) },        // Hair
+                cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f) },        // Body Hair
+                { (10, 4), new BiomeTraits("Long Hair Forest",      (Color.DarkRed.R - 20, Color.DarkRed.G - 50, Color.DarkRed.B - 70),
+                new float[]{1, 1, 2, 1,         0, 4, 1, 10, 0, 4, 4, 0},
+                new ((int type, int subType) type, float percentage)[]{ ((7, 0), 100),  ((4, 1), 100), },
+                new ((int type, int subType) type, float percentage)[]{ ((9, 1), 100) },
+                cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f) },        // Long Hair
 
                 { (11, 0), new BiomeTraits("Bone",                  (Color.White.R, Color.White.G, Color.White.B),
                 new float[]{1, 1, 2, 1,         0, 1, 1, 1, 0, 4, 4, 0},

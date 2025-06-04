@@ -1212,8 +1212,14 @@ namespace Cave
                     if (humidity > 500)
                     {
                         int fleshiness = calculateBiome(percentageFree, humidity, (500, 999999));
-                        int hairiness = calculateAndAddBiome(listo, (10, 3), fleshiness, toxicity, (700, 999999)); // hair forest
-                        fleshiness -= hairiness;
+                        int hairiness = 0;
+                        if (toxicity >= 700)
+                        {
+                            hairiness = calculateBiome(fleshiness, toxicity, (700, 999999));
+                            int longHairToAdd = hairiness - calculateAndAddBiome(listo, (10, 3), hairiness, temperature + acidity, (1024, 999999)); // hair forest
+                            testAddBiome(listo, (10, 4), longHairToAdd);
+                            fleshiness -= hairiness;
+                        }
                         int forestness = calculateAndAddBiome(listo, (10, 1), fleshiness, toxicity, (-999999, 350)); // flesh forest
                         fleshiness -= forestness;
                         percentageFree -= forestness + hairiness;

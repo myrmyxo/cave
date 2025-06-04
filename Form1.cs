@@ -118,7 +118,8 @@ namespace Cave
                 turnPngIntoString("FleshTree2");
                 turnPngIntoString("BoneStalactite");
                 turnPngIntoString("BoneStalagmite");
-                turnPngIntoString("HairPlant");
+                turnPngIntoString("HairBody");
+                turnPngIntoString("HairLong");
 
                 turnPngIntoString("LanternTree");
                 turnPngIntoString("LanternVine");

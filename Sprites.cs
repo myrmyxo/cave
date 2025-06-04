@@ -126,7 +126,8 @@ namespace Cave
                 { (7, 3), new OneSprite("FleshTree2", true) },              // TO CHANGE
                 { (8, 0), new OneSprite("BoneStalactite", true) },          // TO CHANGE
                 { (8, 1), new OneSprite("BoneStalagmite", true) },          // TO CHANGE
-                { (9, 0), new OneSprite("HairPlant", true) },               // TO CHANGE
+                { (9, 0), new OneSprite("HairBody", true) },                // TO CHANGE
+                { (9, 1), new OneSprite("HairLong", true) },                // TO CHANGE
                 { (20, 0), new OneSprite("LanternTree", false) },
                 { (20, 1), new OneSprite("LanternVine", false) },
                 { (20, 2), new OneSprite("LanternSide", false) },
