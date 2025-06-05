@@ -71,6 +71,7 @@ namespace Cave
                 { (-4, 0), new OneSprite("Lava", false) },
                 { (-3, 0), new OneSprite("FairyLiquid", false) },
                 { (-2, 0), new OneSprite("Water", false) },
+                { (-2, -1), new OneSprite("Ice", true) },                   // TO CHANGE
                 { (-1, 0), new OneSprite("Piss", false) },
                 { (0, 0), errorSprite },
                 { (1, 0), new OneSprite("BasicTile", false) },

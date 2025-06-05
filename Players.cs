@@ -261,11 +261,15 @@ namespace Cave
                 }
                 else
                 {
-                    if (!inWater) { ariGeoSlowDownX(0.8f, 0.15f); }
+                    if (!inWater)
+                    {
+                        if (tileUnder.isSlippery) { ariGeoSlowDownX(0.96f, 0.04f); }
+                        else { ariGeoSlowDownX(0.8f, 0.15f); }
+                    }
                     if (!dimensionSelection && !craftSelection)
                     {
-                        speedX += 0.5f * directionState;
-                        if (onGround && (directionState == 0 || (directionState == 1 && speedX < 0) || (directionState == -1 && speedX > 0))) { ariGeoSlowDownX(0.7f, 0.3f); }  // Turn fast when on ground
+                        speedX += directionState * (tileUnder.isSlippery ? 0.2f : 0.5f);
+                        if (onGround && (directionState == 0 || (directionState == 1 && speedX < 0) || (directionState == -1 && speedX > 0)) && !tileUnder.isSlippery) { ariGeoSlowDownX(0.7f, 0.3f); }  // Turn fast when on ground
                         if (arrowKeysState[2]) { speedY -= 0.5f; }
                         if (onGround && !shiftPress && jumpPress) { Jump(directionState * Max(1, traits.jumpStrength.x), traits.jumpStrength.y); }
                         else if ((debugMode && jumpPress) || (inWater && arrowKeysState[3])) { speedY += 1f; }
@@ -375,7 +379,7 @@ namespace Cave
                     if (chunk is null) { return; }
                     TileTraits tile = screen.getTileContent(posToTest);
                     chunk.updateFogOfWarOneTile(chunkDict, posToTest);
-                    if (tile.isSolid) { lifeLoss = true; }
+                    if (!tile.isTransparent) { lifeLoss = true; }
                     if (lifeLoss) { lives--; }
                     if (lives <= 0) { return; }
                 }   // Under this comment, important to keep the sign >= 0 ? 0 : 1 stuff !!! Else it will drift of when raycasting in negatives

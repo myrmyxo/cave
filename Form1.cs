@@ -92,6 +92,7 @@ namespace Cave
                 turnPngIntoString("Lava");
                 turnPngIntoString("FairyLiquid");
                 turnPngIntoString("Water");
+                turnPngIntoString("Ice");
                 turnPngIntoString("Piss");
                 turnPngIntoString("BasicTile");
                 turnPngIntoString("DenseRockTile");
@@ -215,6 +216,7 @@ namespace Cave
             // When worms are on solid ground, like in air on top of a solid... they stop moving lol
             // An ocean biome was leaking out in a slime biome ??? the fuck
             // When making portal, it FUCKING EATS THE PLANTS AROUND IT ????????? LIKE DUDE ??? STOP ???
+            // Weird transition between mold and ocean has appeared after ice ocean update
 
             // cool ideas for later !
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
@@ -261,6 +263,7 @@ namespace Cave
             // TERMINTES ??? Making exploratory tubes and shit ?
             // Flies that hover over lakes. ACTUALLY, Dragonflies might be better ??? or both idk but flies might look like obsidian fairies
             // Tunicates in oceans
+            // Squirrels that climb trees and have a tail ?
 
             // Plants ideas !
             // bone trees and shrubs... like ribs.

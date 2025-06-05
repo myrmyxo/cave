@@ -65,16 +65,19 @@ namespace Cave
             public bool isAir;
             public bool isLiquid;
             public bool isAcidic;
-            public bool isLava; // H for hot
+            public bool isLava;         // H for hot
             public bool isTransformant; // Fairy liquid
+
+            public bool isTransparent;
+            public bool isSlippery;
 
             public int hardness;
             public int viscosity = 0;
 
             public ColorRange colorRange;
             public float biomeColorBlend;
-            public bool isTextured; // For mold for now
-            public TileTraits(string namee, float biomeColorBlendToPut, ColorRange colRange, bool Air = false, bool Tex = false, bool L = false, bool H = false, bool A = false, bool T = false)
+            public bool isTextured;     // For mold for now
+            public TileTraits(string namee, float biomeColorBlendToPut, ColorRange colRange, bool Air = false, bool Tex = false, bool L = false, bool H = false, bool A = false, bool T = false, bool S = false, bool Tr = false)
             {
                 name = namee;
                 colorRange = colRange;
@@ -88,6 +91,8 @@ namespace Cave
                 isLava = H;
                 isAcidic = A;
                 isTransformant = T;
+                isSlippery = S;
+                isTransparent = Tr || isLiquid || isAir ;
             }
             public void setType((int type, int subType) typeToSet) { type = typeToSet; }
         }
@@ -98,34 +103,34 @@ namespace Cave
         {
             tileTraitsDict = new Dictionary<(int type, int subType), TileTraits>()
             {
-                { (0, 0), new TileTraits("Error/Air", 0.5f,
-                new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0)),      Air:true                                    ) },
-                                                                                                                            
-                                                                                                                            
-                                                                                                                            
-                { (-1, 0), new TileTraits("Piss", 0.2f,                                                      
-                new ColorRange((120, 0, 0), (120, 0, 0), (80, 0, 0)),       L:true                                      ) },
-                                                                                                                            
-                { (-2, 0), new TileTraits("Water", 0.2f,
-                new ColorRange((80, 0, 0), (80, 0, 0), (120, 0, 0)),        L:true                                      ) },
-
-                { (-3, 0), new TileTraits("Fairy Liquid", 0.2f,
-                new ColorRange((105, 0, 0), (80, 0, 0), (120, 0, 0)),       L:true, T:true                              ) },
-                                                                                                                            
-                { (-4, 0), new TileTraits("Lava", 0.05f,
-                new ColorRange((255, 0, 0), (90, 0, 0), (0, 0, 0)),         L:true, H:true                              ) },
-
-                { (-5, 0), new TileTraits("Honey", 0.2f,
-                new ColorRange((160, 0, 0), (120, 0, 0), (70, 0, 0)),       L:true                                      ) },
+                { (-7, 0), new TileTraits("Acid", 0.2f,
+                new ColorRange((120, 0, 0), (180, 0, 0), (60, 0, 0)),       L:true, A:true                              ) },
 
                 { (-6, 0), new TileTraits("Blood", 0.2f,
                 new ColorRange((100, 0, 0), (15, 0, 0), (25, 0, 0)),        L:true                                      ) },
                 { (-6, 1), new TileTraits("Deoxygenated Blood", 0.2f,
                 new ColorRange((65, 0, 0), (5, 0, 0), (35, 0, 0)),          L:true                                      ) },
 
-                { (-7, 0), new TileTraits("Acid", 0.2f,
-                new ColorRange((120, 0, 0), (180, 0, 0), (60, 0, 0)),       L:true, A:true                              ) },
+                { (-5, 0), new TileTraits("Honey", 0.2f,
+                new ColorRange((160, 0, 0), (120, 0, 0), (70, 0, 0)),       L:true                                      ) },
 
+                { (-4, 0), new TileTraits("Lava", 0.05f,
+                new ColorRange((255, 0, 0), (90, 0, 0), (0, 0, 0)),         L:true, H:true                              ) },
+
+                { (-3, 0), new TileTraits("Fairy Liquid", 0.2f,
+                new ColorRange((105, 0, 0), (80, 0, 0), (120, 0, 0)),       L:true, T:true                              ) },
+
+                { (-2, -1), new TileTraits("Ice", 0.2f,
+                new ColorRange((160, 0, 0), (160, 0, 0), (200, 0, 0)),      S:true, Tr:true                             ) },
+                { (-2, 0), new TileTraits("Water", 0.2f,
+                new ColorRange((80, 0, 0), (80, 0, 0), (120, 0, 0)),        L:true                                      ) },
+
+                { (-1, 0), new TileTraits("Piss", 0.2f,                                                      
+                new ColorRange((120, 0, 0), (120, 0, 0), (80, 0, 0)),       L:true                                      ) },
+
+
+                { (0, 0), new TileTraits("Error/Air", 0.5f,
+                new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0)),      Air:true                                    ) },
 
 
                 { (1, 0), new TileTraits("Rock", 0.5f,
@@ -1144,6 +1149,7 @@ namespace Cave
             public (int one, int two) caveType;
             public (int one, int two) textureType;
             public int separatorType;
+            public int antiSeparatorType;
             public float caveWidth;
 
             public TileTransitionTraits[] tileTransitionTraitsArray;
@@ -1181,7 +1187,7 @@ namespace Cave
             public ((int type, int subType) type, float percentage)[] plantWaterSideSpawnTypes;
 
             public BiomeTraits(string namee, (int r, int g, int b) colorToPut, float[] spawnRates, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes,
-                (int one, int two)? cT = null, (int one, int two)? txT = null, int sT = 0, float cW = 1, TileTransitionTraits[] tTT = null,
+                (int one, int two)? cT = null, (int one, int two)? txT = null, int sT = 0, int aST = 0, float cW = 1, TileTransitionTraits[] tTT = null,
                 (int type, int subType)? fT = null, (int type, int subType)? tT = null, (int type, int subType)? lT = null,
                 bool S = false, bool Dg = false, bool Da = false)
             {
@@ -1197,8 +1203,9 @@ namespace Cave
                 lakeType = lT ?? (-2, 0);
 
                 caveType = cT ?? (1, 2);
-                textureType= txT ?? (0, 1);
+                textureType = txT ?? (0, 1);
                 separatorType = sT;
+                antiSeparatorType = aST;
                 caveWidth = cW;
 
                 tileTransitionTraitsArray = tTT;
@@ -1297,8 +1304,8 @@ namespace Cave
                 { (0, 1),  new BiomeTraits("Frost",                 (Color.LightBlue.R, Color.LightBlue.G, Color.LightBlue.B),
                 new float[]{1, 0.25f, 2, 2,     0, 4, 1, 2, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), },
-                new ((int type, int subType) type, float percentage)[]{ }
-                ) },                                                 // Nothing lol
+                new ((int type, int subType) type, float percentage)[]{ },
+                lT:(-2, -1)) },                                      // Nothing lol
                 { (1, 0),  new BiomeTraits("Acid",                  (Color.Fuchsia.R, Color.Fuchsia.G, Color.Fuchsia.B),
                 new float[]{1, 0.25f, 2, 2,     0, 4, 1, 2, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 100), ((2, 0), 100),  ((5, 0), 100), },
@@ -1354,7 +1361,12 @@ namespace Cave
                 new float[]{1, 0.25f, 3, 6,     0, 4, 1, 2, 0, 8, 8, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((5, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((2, 1), 100), },
-                cT:(0, 3), txT:(0, 0), sT:1, fT:(-2, 0)) },          // Kelp           CeilingKelp
+                cT:(0, 3), txT:(0, 0), fT:(-2, 0), sT:1) },          // Kelp           CeilingKelp
+                { (8, 1),  new BiomeTraits("Frozen Ocean",          (Color.LightBlue.R + 60, Color.LightBlue.G + 90, Color.LightBlue.B + 150),
+                new float[]{1, 0.25f, 3, 6,     0, 4, 1, 2, 0, 8, 8, 0},
+                new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((5, 0), 100), },
+                new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((2, 1), 100), },
+                cT:(0, 3), txT:(0, 0), fT:(-2, -1), aST:1) },        // Kelp           CeilingKelp
 
 
                 //      -E- C  G  W  J      -P- E  G  T  C  S  WG WC WS  

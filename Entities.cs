@@ -949,7 +949,8 @@ namespace Cave
                     }
                     else if (onGround)
                     {
-                        ariGeoSlowDownX(0.8f, 0.1f);
+                        if (tileUnder.isSlippery) { ariGeoSlowDownX(0.96f, 0.04f); }
+                        else { ariGeoSlowDownX(0.8f, 0.1f); }
                         if ((float)rand.NextDouble() <= traits.jumpChance) { jumpRandom(traits.jumpStrength.x, traits.jumpStrength.y); }
                     }
                     else if (onWater)

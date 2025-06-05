@@ -231,6 +231,7 @@ namespace Cave
                         float score2 = 0;
                         float valueModifier;
                         float separatorScore = 0;
+                        float antiSeparatorScore = 0;
                         foreach ((BiomeTraits traits, int percentage) tupel in biomeIndex[i, j])
                         {
                             mult = tupel.percentage * 0.001f;
@@ -242,8 +243,10 @@ namespace Cave
                             score1 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.one, value1, (i, j), mod2) + findTextureScore(tupel.traits.textureType.one, value2) + valueModifier); // Swapping is normal !
                             score2 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.two, value2, (i, j), mod2) + findTextureScore(tupel.traits.textureType.two, value1) + valueModifier); // Cause it needs to be an independant noise !
                             if (tupel.traits.separatorType != 0) { separatorScore += findSeparatorScore(tupel.traits.separatorType, mult); }
+                            if (tupel.traits.antiSeparatorType != 0) { antiSeparatorScore += findSeparatorScore(tupel.traits.antiSeparatorType, mult); }
                         }
 
+                        separatorScore = Max(0, separatorScore - antiSeparatorScore);
                         bool carveTest1 = score1 * (1 - separatorScore * 0.001f) - separatorScore > 0;
                         bool carveTest2 = score2 * (1 - separatorScore * 0.001f) - separatorScore > 0;
 
@@ -282,7 +285,7 @@ namespace Cave
             public float findSeparatorScore(int type, float mult)
             {
                 if (type == 0) { return 0; }                                                // 0 - nothing
-                if (type == 1) { float a = (0.5f - Abs(mult - 0.5f)) * 30; return a * a; }                  // 1 - ocean separator
+                if (type == 1) { float a = (0.5f - Abs(mult - 0.5f)) * 30; return a * a; }  // 1 - ocean separator
                 return 0;
             }
             public (int type, int subType) findMaterialToFillWith((int temp, int humi, int acid, int toxi, int mod1, int mod2) biomeValues, (int, int) values, (BiomeTraits traits, int percentage)[] biomeTraits)
@@ -1077,8 +1080,8 @@ namespace Cave
             int percentageFree = 1000;
             int currentInt;
 
-            int temperature = values.temp;
-            int humidity = values.humi;
+            int temperature = values.temp; // - 512;
+            int humidity = values.humi; // + 1000;
             int acidity = values.acid;
             int toxicity = values.toxi;
 
@@ -1135,12 +1138,16 @@ namespace Cave
                 {
                     listo = new List<((int biome, int subBiome), int)>();
 
-                    percentageFree -= calculateAndAddBiome(listo, (6, 0), percentageFree, Min(500 - temperature, humidity - 500, acidity - 500), (0, 999999), 5);  // add mold
-
-                    if (humidity - Abs((int)(0.4f * (temperature - 512))) > 720)
+                    if (humidity - Abs((int)(0.4f * Max(-256, temperature - 512))) > 720)
                     {
-                        percentageFree -= calculateAndAddBiome(listo, (8, 0), percentageFree, humidity - Abs((int)(0.4f * (temperature - 512))), (720, 999999)); // ocean
+                        int oceanness = calculateBiome(percentageFree, humidity - Abs((int)(0.4f * Max(-256, temperature - 512))), (720, 999999));   // ocean
+                        int oceanToAdd = oceanness - calculateAndAddBiome(listo, (8, 1), oceanness, temperature, (-999999, 0)); // Frozen ocean
+                        testAddBiome(listo, (8, 0), oceanToAdd);
+                        percentageFree -= oceanness;
                     }
+
+                    percentageFree -= calculateAndAddBiome(listo, (0, 1), percentageFree, temperature, (-999999, 0));   // add frost
+                    percentageFree -= calculateAndAddBiome(listo, (6, 0), percentageFree, Min(500 - temperature, humidity - 500, acidity - 500), (0, 999999), 5);  // add mold
 
                     if (percentageFree <= 0) { goto AfterTest; }
 
@@ -1165,13 +1172,6 @@ namespace Cave
                     if (temperature < 440 && percentageFree > 0)
                     {
                         int coldness = calculateBiome(percentageFree, temperature, (-999999, 440));
-                        if (temperature < 0)
-                        {
-                            int frostness = calculateAndAddBiome(listo, (0, 1), coldness, temperature, (-999999, 0));
-                            percentageFree -= frostness;
-                            coldness -= frostness;
-                        }
-
                         int savedColdness = calculateBiome(coldness, temperature, (-999999, 120));
                         coldness -= savedColdness;
 

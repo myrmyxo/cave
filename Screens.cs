@@ -72,7 +72,7 @@ namespace Cave
                 seed = 123456;
 
                 int idToPut = 0;
-                (int type, int subType) forceBiome = (2, 0);
+                (int type, int subType) forceBiome = (0, 0);
                 int PNGsize = 150;
                 PNGsize = 100;
 
@@ -84,9 +84,9 @@ namespace Cave
                 bool isPngToExport = false;
 
                 loadStructuresYesOrNo = false;
-                spawnNests = true;
-                spawnEntitiesBool = true;
-                spawnPlants = true;
+                spawnNests = false;
+                spawnEntitiesBool = false;
+                spawnPlants = false;
                 bool spawnNOTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
 
@@ -128,7 +128,7 @@ namespace Cave
                 int counti = 0;
                 for (int i = -512; i < -1000/*1536*/; i += 64)
                 {
-                    makeBiomeDiagram((0, 0), (1, 3), (i, 512), counti.ToString());
+                    makeBiomeDiagram((0, 0), (0, 1), (i, 512), counti.ToString());
                     counti++;
                 }
 
