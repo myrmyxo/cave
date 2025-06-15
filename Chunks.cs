@@ -1080,8 +1080,8 @@ namespace Cave
             int percentageFree = 1000;
             int currentInt;
 
-            int temperature = values.temp; // - 512;
-            int humidity = values.humi; // + 1000;
+            int temperature = values.temp;
+            int humidity = values.humi;
             int acidity = values.acid;
             int toxicity = values.toxi;
 
@@ -1217,7 +1217,7 @@ namespace Cave
                         {
                             hairiness = calculateBiome(fleshiness, toxicity, (700, 999999));
                             int longHairToAdd = hairiness - calculateAndAddBiome(listo, (10, 3), hairiness, temperature + acidity, (1024, 999999)); // hair forest
-                            testAddBiome(listo, (10, 4), longHairToAdd);
+                            testAddBiome(listo, (10, 4), longHairToAdd); // long hair forest
                             fleshiness -= hairiness;
                         }
                         int forestness = calculateAndAddBiome(listo, (10, 1), fleshiness, toxicity, (-999999, 350)); // flesh forest

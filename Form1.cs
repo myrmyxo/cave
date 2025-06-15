@@ -83,6 +83,8 @@ namespace Cave
                 turnPngIntoString("WaterSkipper");
                 turnPngIntoString("Goblin");
                 turnPngIntoString("Louse");
+                turnPngIntoString("Shark");
+                turnPngIntoString("WaterDog");
 
 
                 turnPngIntoString("Acid");
@@ -155,6 +157,8 @@ namespace Cave
                 turnPngIntoString("WandMagic");
                 turnPngIntoString("WandCarnal");
                 turnPngIntoString("WandFloral");
+                turnPngIntoString("WandTeleport");
+                turnPngIntoString("WandDig");
 
 
                 turnPngIntoString("GoblinHand");
@@ -217,6 +221,7 @@ namespace Cave
             // An ocean biome was leaking out in a slime biome ??? the fuck
             // When making portal, it FUCKING EATS THE PLANTS AROUND IT ????????? LIKE DUDE ??? STOP ???
             // Weird transition between mold and ocean has appeared after ice ocean update
+            // Entities exiting chunks seems to disappear still... Fuuuckkk. Not sure tho !
 
             // cool ideas for later !
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
@@ -880,6 +885,13 @@ namespace Cave
         {
             rotation = PosMod(rotation, 4);
             return ((rotation % 2 == 0 ? pos.x : pos.y) * (rotation >= 2 ? -1 : 1), (rotation % 2 == 0 ? pos.y : pos.x) * (rotation == 1 || rotation == 2 ? -1 : 1));
+        }
+        public static (int x, int y) rotate8((int x, int y) pos, int rotation) // 0 : nothing, +1 -> + 45‹ (so -1/7, -2/6, -3,5 do the same)
+        {
+            rotation = PosMod(rotation, 8);
+            if (rotation > 1) { pos = rotate(pos, rotation / 2); }  // Do a rotate4 to rotate by the 90
+            if (rotation % 2 == 1) { pos = (pos.x + pos.y, pos.y - pos.x); }    // Do the remaining rotate by 45 (not scaled correctly but octogonal)
+            return pos;
         }
         public static (int x, int y) flip((int x, int y) pos, int flip) // 0 : nothing, 1 : vertical, 2 : horizontal, 3 : both
         {

@@ -149,7 +149,7 @@ namespace Cave
 
                     if (state >= 4) { finishAttack(); }
                 }
-                else if (type.type == 3 && type.subSubType == 0)   // If magic wand attack WOODEN STAFF
+                else if (type.type == 3 && type.subSubType == 0)   // WOODEN STAFF for all attacks with wands
                 {
                     int sign = Sign(direction.x);
 
@@ -166,7 +166,7 @@ namespace Cave
 
                     if (state >= 5) { finishAttack(); }
                 }
-                else if (type == (3, 2, 2, 4))
+                else if (type == (3, 2, 2, 4))  // (WandFloral) Downwards bullet that spawns plants
                 {
                     if (state > 0) { pos = (pos.x, pos.y - 1); }
                     if (screen.getTileContent(pos).isSolid)
@@ -185,7 +185,7 @@ namespace Cave
 
                     if (state >= 150) { finishAttack(); }
                 }
-                else if (type == (3, 2, 1, 4))
+                else if (type == (3, 2, 1, 4))  // (WandFloral) horizontal bullet that spawns downwards bullets
                 {
                     if (state > 0)
                     {
@@ -210,11 +210,76 @@ namespace Cave
 
                     if (state >= 150) { finishAttack(); }
                 }
-                else if (type.type == 3 && type.subSubType == 1)   // If magic wand attack THE PARTICLE
+                else if (type == (3, 3, 1, 4))  // (WandTeleport)
+                {
+                    if (state > 0) { pos = (pos.x + SignZero(direction.x) * (state > 3 ? 1 : 10), pos.y + SignZero(direction.y) * (state > 3 ? 1 : 10)); }
+
+                    posToDrawList.Add((pos, Color.Cyan));
+                    posToAttackList.Add((pos, this));
+
+                    if (state >= 15) { finishAttack(); }
+                }
+                else if (type == (3, 4, 1, 4))  // (WandDig) horizontal bullet that spawns 5 other bullets on death
+                {
+                    if (state > 0)
+                    {
+                        pos = (pos.x + Sign(direction.x), pos.y);
+                        if (state == 5)
+                        {
+                            new Attack(screen, motherEntity, (type.type, type.subType, 3, 4), pos, (-direction.x, direction.y));
+                            new Attack(screen, motherEntity, (type.type, type.subType, 2, 4), pos, direction);
+                            new Attack(screen, motherEntity, (type.type, type.subType, 2, 4), (pos.x + 1, pos.y), direction);
+                            new Attack(screen, motherEntity, (type.type, type.subType, 2, 4), (pos.x - 1, pos.y), direction);
+                            new Attack(screen, motherEntity, (type.type, type.subType, 2, 4), (pos.x, pos.y + 1), direction);
+                            new Attack(screen, motherEntity, (type.type, type.subType, 2, 4), (pos.x, pos.y - 1), direction);
+                        }
+                    }
+
+                    posToDrawList.Add((pos, Color.SandyBrown));
+                    posToAttackList.Add((pos, this));
+
+                    if (state >= 5) { finishAttack(); }
+                }
+                else if (type == (3, 4, 2, 4))  // (WandDig) horizontal bullet that just exists
+                {
+                    if (state > 0)
+                    {
+                        pos = (pos.x + Sign(direction.x), pos.y);
+                        if (state == 10)
+                        {
+                            new Attack(screen, motherEntity, (type.type, type.subType, 3, 4), pos, direction);
+                            new Attack(screen, motherEntity, (type.type, type.subType, 3, 4), (pos.x + 1, pos.y), direction);
+                            new Attack(screen, motherEntity, (type.type, type.subType, 3, 4), (pos.x - 1, pos.y), direction);
+                            new Attack(screen, motherEntity, (type.type, type.subType, 3, 4), (pos.x, pos.y + 1), direction);
+                            new Attack(screen, motherEntity, (type.type, type.subType, 3, 4), (pos.x, pos.y - 1), direction);
+                        }
+                    }
+
+                    posToDrawList.Add((pos, Color.SandyBrown));
+                    posToAttackList.Add((pos, this));
+
+                    if (state >= 10) { finishAttack(); }
+                }
+                else if (type == (3, 4, 3, 4))  // (WandDig) horizontal bullet that just exists
                 {
                     if (state > 0) { pos = (pos.x + Sign(direction.x), pos.y); }
 
-                    Color spellColor = type.subType != 1 ? Color.BlueViolet : Color.Crimson;
+                    posToDrawList.Add((pos, Color.SandyBrown));
+                    posToAttackList.Add((pos, this));
+
+                    if (state >= 15) { finishAttack(); }
+                }
+                else if (type.type == 3 && type.subSubType == 1)   // Particle color
+                {
+                    if (state > 0) { pos = (pos.x + Sign(direction.x), pos.y); }
+
+                    Color spellColor;
+                    if (type.subType == 0) { spellColor = Color.BlueViolet; }
+                    else if (type.subType == 1) { spellColor = Color.Crimson; }
+                    else if (type.subType == 2) { spellColor = Color.MediumSpringGreen; }
+                    else if (type.subType == 3) { spellColor = Color.Cyan; }
+                    else if (type.subType == 4) { spellColor = Color.SandyBrown; }
+                    else { spellColor = Color.Black; }
 
                     posToDrawList.Add((pos, spellColor));
                     posToAttackList.Add((pos, this));
@@ -240,6 +305,10 @@ namespace Cave
                     if (!digSuccess) { abort++; }
                 }
                 if (type == (3, 0, 1, 4)) { if (screen.type.type != 2) testForBloodAltar(screen, attackPos); }
+                else if (type == (3, 3, 1, 4))  // (WandTeleport)
+                {
+                    if (state == 3) { motherEntity.setEntityPos(pos); }
+                }
 
                 if (!traits.isHitting) { return; }
                 List<Entity> hitList = getHitList(attackPos, chunkToTest);

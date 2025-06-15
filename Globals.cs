@@ -68,6 +68,7 @@ namespace Cave
 
         public static Dictionary<(int x, int y), int> directionPositionDictionary = new Dictionary<(int x, int y), int>
         {
+            { (0, 0), 0 },  // in case
             { (-1, 0), 0 },
             { (-1, 1), 1 },
             { (0, 1), 2 },

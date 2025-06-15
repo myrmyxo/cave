@@ -238,11 +238,16 @@ namespace Cave
         public class EntityTraits
         {
             public string name;
-
             public int startingHp;
-
             public ((int type, int subType, int megaType) element, int count) drops;
 
+            public ColorRange colorRange;
+            public (Color color, float period)? wingTraits;
+            public int? lightRadius;
+            public (int baseLength, int variation)? length;
+            public (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, (int a, int r, int g, int b) value)? color)[] tailMap;
+
+            // Characteristics (automatically derived from Behaviors)
             public bool isFlying;
             public bool isSwimming;
             public bool isDigging;
@@ -262,19 +267,21 @@ namespace Cave
 
             public (float x, float y) jumpStrength;
             public float jumpChance;
-            public float idleChance;
-            public bool isNestEntity;
-
-            public ColorRange colorRange;
-            public int? lightRadius;
-            public (Color color, float period)? wingTraits;
-            public EntityTraits(string namee, int hp, ((int type, int subType, int megaType) element, int count) drps, ColorRange colRange, (Color color, float period)? wT = null, int? lR = null,
+            public EntityTraits(string namee, int hp, ((int type, int subType, int megaType) element, int count) drps,
+                ColorRange colRange, (Color color, float period)? wT = null, int? lR = null, (int baseLength, int variation)? L = null,
+                (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, (int a, int r, int g, int b) value)? color)[] tM = null,
                 int iW = 0, int oW = 0, int iA = 0, int oG = 0, int iG = 0, int oP = 0,
                 float sS = 0.1f, float sMS = 0.5f, (float x, float y)? jS = null, float jC = 0)
             {
                 name = namee;
                 startingHp = hp;
                 drops = drps;
+
+                colorRange = colRange;
+                wingTraits = wT;
+                lightRadius = lR;
+                length = L;
+                tailMap = tM;
 
                 isFlying = iA == 1 ? true : false;
                 isSwimming = iW == 2 ? true : false;
@@ -294,10 +301,6 @@ namespace Cave
 
                 jumpStrength = jS ?? (1, 1);
                 jumpChance = jC;
-
-                colorRange = colRange;
-                lightRadius = lR;
-                wingTraits = wT;
             }
         }
         public static Dictionary<(int type, int subType), EntityTraits> entityTraitsDict;
@@ -353,10 +356,10 @@ namespace Cave
                 iW:1, iA:1, iG:4) },
 
                 { (4, 0), new EntityTraits("Worm",            7,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((210, 0, 30), (140, 20, 30), (140, 20, 30)),
+                new ColorRange((210, 0, 30), (140, 20, 30), (140, 20, 30)), L:(2, 4),
                 iW:1, oW:2, iA:2, oG:3, iG:2) },
                 { (4, 1), new EntityTraits("Nematode",        3,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((210, -20, 30), (210, 20, 30), (235, 0, 30)),
+                new ColorRange((210, -20, 30), (210, 20, 30), (235, 0, 30)), L:(2, 8),
                 iW:2, oW:2, iA:2, oG:3, iG:2) },
 
                 { (5, 0), new EntityTraits("WaterSkipper",    3,  ((8, 0, 3), 1),       //  --> Flesh
@@ -370,11 +373,19 @@ namespace Cave
                 { (7, 0), new EntityTraits("Louse",           2,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((160, -10, 30), (180, 10, 30), (200, 10, 30)),
                 iW:1, oW:2, iA:2, oG:4, iG:1, oP:1, jS:(1, 1.5f), jC:0.1f) },
+
+                { (8, 0), new EntityTraits("Shark",           5,  ((8, 0, 3), 1),       //  --> Flesh
+                new ColorRange((110, 0, 30), (110, 0, 30), (140, 20, 30)), L:(4, 1), tM:new (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, (int a, int r, int g, int b) value)? color)[]{ (1, false, false, 0, (0, 1), (true, (0, -15, -15, -20))), (1, false, false, 0, (0, 2), (true, (0, -15, -15, -20))),     (0, true, true, 1, (1, 0), (true, (0, -15, -15, -20))), (0, true, true, 7, (1, 0), (true, (0, -15, -15, -20))) },
+                iW:2, oG:1, iG:1, jC:0.01f) },
+
+                { (9, 0), new EntityTraits("WaterDog",       15,  ((8, 0, 3), 1),       //  --> Flesh
+                new ColorRange((150, 0, 30), (120, 10, 30), (90, 20, 30)), L:(13, 7), tM:new (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, (int a, int r, int g, int b) value)? color)[]{ (2, false, false, 0, (0, 1), (true, (0, -20, -20, -15))), (2, false, false, 0, (0, 2), (true, (0, -20, -20, -15))),    (3, false, false, 0, (0, -1), (true, (0, -20, -20, -15))),    (5, false, false, 0, (0, 1), (true, (0, -20, -20, -15))), (5, false, false, 0, (0, 2), (true, (0, -20, -20, -15))),    (6, false, false, 0, (0, -1), (true, (0, -20, -20, -15))),    (8, false, false, 0, (0, 1), (true, (0, -20, -20, -15))),    (11, false, false, 0, (0, 1), (true, (0, -20, -20, -15))) },
+                iW:2, oG:1, iG:1, jC:0.01f) },
             };
         }
 
 
-
+         
 
 
 
@@ -538,6 +549,7 @@ namespace Cave
         {
             public (int maxLevel, int range) maxGrowth;
             public bool offsetMaxGrowthVariation;
+            public (float baseValue, float variation) growthSpeedVariationFactor;
 
             public (int type, int subType) materalToFillWith;
             public (int type, int subType)? tileContentNeededToGrow;
@@ -562,36 +574,42 @@ namespace Cave
 
             public bool preventGaps;
             public bool isMold;
-            public PlantGrowthRules((int type, int subType) t, (int type, int subType)? tCNTG = null, (int frame, int range)? mG = null, bool oMGV = false, bool M = false,
+            public PlantGrowthRules((int type, int subType) t, (int type, int subType)? tCNTG = null, (int frame, int range)? mG = null, bool oMGV = false, (float baseValue, float variation)? gSVF = null,
                 ((int x, int y, bool stopGrowth)[] left, (int x, int y, bool stopGrowth)[] right, (int x, int y, bool stopGrowth)[] down, (int x, int y, bool stopGrowth)[] up)? hPP = null,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] cOGS = null,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] cOGE = null,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] C = null, int cO = 0, bool lC = false, bool mTC = false,    // O O OOOO I. WANT A HEN-
                 ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped)? sD = null,
                 ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] DG = null, int dGO = 0, bool rDG = false, bool lDG = false,
-                ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] PM = null, int pMO = 0, bool lPM = false, bool pG = true)
+                ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] PM = null, int pMO = 0, bool lPM = false, bool pG = true, bool M = false)
             {
-                isMold = M;
                 maxGrowth = mG ?? (5, 0);
                 offsetMaxGrowthVariation = oMGV;
+                growthSpeedVariationFactor = gSVF ?? (1, 0);
+
                 materalToFillWith = t;
                 tileContentNeededToGrow = tCNTG;
+                hindrancePreventionPositions = hPP;
+
                 childrenOnGrowthStart = cOGS;
                 childrenOnGrowthEnd = cOGE;
                 childArray = C;
                 childOffset = cO;
                 mirrorTwinChildren = mTC;
                 loopChild = lC;
+
                 startDirection = sD;
                 directionGrowthArray = DG;
                 dGOffset = dGO;
                 rotationalDG = rDG;
                 loopDG = lDG;
+
                 growthPosModArray = PM;
                 pMOffset = pMO;
                 loopPM = lPM;
+
                 preventGaps = pG;
-                hindrancePreventionPositions = hPP;
+                isMold = M;
             }
         }
         public static Dictionary<string, ((int x, int y, bool stopGrowth)[] left, (int x, int y, bool stopGrowth)[] right, (int x, int y, bool stopGrowth)[] down, (int x, int y, bool stopGrowth)[] up)> fHPP = new Dictionary<string, ((int x, int y, bool stopGrowth)[] left, (int x, int y, bool stopGrowth)[] right, (int x, int y, bool stopGrowth)[] down, (int x, int y, bool stopGrowth)[] up)>
@@ -801,7 +819,7 @@ namespace Cave
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, true, false), (1, 0), 66), ((-1, 0), (true, true, false), (1, 0), 34) },
                     lDG:true, rDG:true, dGO:1
                 )) },{ (9, 1, 0), new PlantElementTraits("HairLong", iC:true,
-                pGR:new PlantGrowthRules(t:(8, 2), mG:(12, 88),
+                pGR:new PlantGrowthRules(t:(8, 2), mG:(12, 88), gSVF:(0.75f, 2),
                     PM:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 1), 100), ((-1, 0), (true, false, false), (3, 2), 100), ((-1, 0), (true, false, false), (1, 1), 100), ((1, 0), (true, false, false), (3, 2), 100) },
                     lPM:true
                 )) },
@@ -1359,14 +1377,14 @@ namespace Cave
 
                 { (8, 0),  new BiomeTraits("Ocean",                 (Color.LightBlue.R, Color.LightBlue.G + 60, Color.LightBlue.B + 130),
                 new float[]{1, 0.25f, 3, 6,     0, 4, 1, 2, 0, 8, 8, 0},
-                new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((5, 0), 100), },
+                new ((int type, int subType) type, float percentage)[]{ ((2, 0), 95), ((8, 0), 4), ((9, 0), 1), ((5, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((2, 1), 100), },
                 cT:(0, 3), txT:(0, 0), fT:(-2, 0), sT:1) },          // Kelp           CeilingKelp
                 { (8, 1),  new BiomeTraits("Frozen Ocean",          (Color.LightBlue.R + 60, Color.LightBlue.G + 90, Color.LightBlue.B + 150),
                 new float[]{1, 0.25f, 3, 6,     0, 4, 1, 2, 0, 8, 8, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((5, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((2, 1), 100), },
-                cT:(0, 3), txT:(0, 0), fT:(-2, -1), aST:1) },        // Kelp           CeilingKelp
+                cT:(0, 3), txT:(0, 0), fT:(-2, -1), lT:(-2, -1), aST:1) }, // Kelp     CeilingKelp
 
 
                 //      -E- C  G  W  J      -P- E  G  T  C  S  WG WC WS  
@@ -1506,7 +1524,12 @@ namespace Cave
                 { (3, 2, 0, 4), new AttackTraits("Floral Wand",                 m:100,          B:true                                  ) },
                 { (3, 2, 1, 4), new AttackTraits("Floral Bullet"                                                                        ) },
                 { (3, 2, 2, 4), new AttackTraits("Floral Bullet 2"                                                                      ) },
-
+                { (3, 3, 0, 4), new AttackTraits("Teleport Wand",               m:10,           B:true                                  ) },
+                { (3, 3, 1, 4), new AttackTraits("Teleport bullet"                                                                      ) },
+                { (3, 4, 0, 4), new AttackTraits("Dig Wand",                    m:15,           B:true                                  ) },
+                { (3, 4, 1, 4), new AttackTraits("Dig bullet",                                          T:true                          ) },
+                { (3, 4, 2, 4), new AttackTraits("Dig bullet 2",                                        T:true                          ) },
+                { (3, 4, 3, 4), new AttackTraits("Dig bullet 3",                                        T:true                          ) },
 
                 { (6, 0, 0, 5), new AttackTraits("Goblin Hand",         d:0.25f,        H:true, B:true, T:true, P:true, A:true          ) },
                                                                                                                                     

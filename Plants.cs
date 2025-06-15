@@ -386,7 +386,8 @@ namespace Cave
             
             public float maxGrowthLevel;
             public int growthLevel;
-            
+            public float growthSpeedVariation;
+
             public (int x, int y) pos;
 
             public (int x, int y) lastDrawPos = (0, 0);
@@ -465,14 +466,15 @@ namespace Cave
             public void getTraitAndAddColorsAndFindMaxGrowth()
             {
                 traits = getPlantElementTraits(type);
-                int variation = seed % (traits.maxGrowth.range + 1);
-                maxGrowthLevel = traits.maxGrowth.maxLevel + variation;
+                int maxGrowthLevelVariation = seed % (traits.maxGrowth.range + 1);
+                maxGrowthLevel = traits.maxGrowth.maxLevel + maxGrowthLevelVariation;
+                growthSpeedVariation = traits.plantGrowthRules is null ? 1 : traits.plantGrowthRules.growthSpeedVariationFactor.baseValue + (float)(rand.NextDouble() * traits.plantGrowthRules.growthSpeedVariationFactor.variation);
                 if (traits.plantGrowthRules != null && traits.plantGrowthRules.offsetMaxGrowthVariation)
                 {
-                    directionArrayOffset += variation;
-                    childArrayOffset += variation;
-                    modArrayOffset += variation;
-                    frameArrayOffset += variation;
+                    directionArrayOffset += (int)(growthSpeedVariation * maxGrowthLevelVariation);
+                    childArrayOffset += (int)(growthSpeedVariation * maxGrowthLevelVariation);
+                    modArrayOffset += (int)(growthSpeedVariation * maxGrowthLevelVariation);
+                    frameArrayOffset += (int)(growthSpeedVariation * maxGrowthLevelVariation);
                 }
                 foreach ((int type, int subType) material in traits.materialsPresent) { motherPlant.tryAddMaterialColor(material); }
                 if (traits.lightRadius > 0) { motherPlant.tryAddMaterialColor(traits.lightElement); }
@@ -642,7 +644,7 @@ namespace Cave
                     {
                         ((int frame, int range) changeFrame, PlantStructureFrame frame) frame = traits.frames[(currentFrameArrayIdx) % traits.frames.Length];
 
-                        int cost = frame.changeFrame.frame + rand.Next(frame.changeFrame.range);
+                        int cost = (int)(growthSpeedVariation * (frame.changeFrame.frame + rand.Next(frame.changeFrame.range)));
                         if (growthLevel - frameArrayOffset >= cost)
                         {
                             frameArrayOffset += cost;
@@ -670,7 +672,7 @@ namespace Cave
                     {
                         ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance) item = traits.plantGrowthRules.directionGrowthArray[(currentDirectionArrayIdx + 1) % traits.plantGrowthRules.directionGrowthArray.Length];
 
-                        int cost = item.changeFrame.frame + getRandValue(directionArrayOffset + 10000, item.changeFrame.range + 1);
+                        int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue(directionArrayOffset + 10000, item.changeFrame.range + 1)));
                         if (growthLevelToTest - directionArrayOffset >= cost)
                         {
                             directionArrayOffset += cost;
@@ -690,7 +692,7 @@ namespace Cave
                     {
                         ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance) item = traits.plantGrowthRules.growthPosModArray[(currentModArrayIdx + 1) % traits.plantGrowthRules.growthPosModArray.Length];
 
-                        int cost = item.changeFrame.frame + getRandValue(modArrayOffset + 20000, item.changeFrame.range + 1);
+                        int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue(modArrayOffset + 20000, item.changeFrame.range + 1)));
                         if (growthLevelToTest - modArrayOffset >= cost)
                         {
                             modArrayOffset += cost;
@@ -767,7 +769,7 @@ namespace Cave
                     {
                         ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance) item = traits.plantGrowthRules.childArray[(currentChildArrayIdx + 1) % traits.plantGrowthRules.childArray.Length];
 
-                        int cost = item.birthFrame.frame + getRandValue(childArrayOffset + 30000, item.birthFrame.range + 1);
+                        int cost = (int)(growthSpeedVariation * (item.birthFrame.frame + getRandValue(childArrayOffset + 30000, item.birthFrame.range + 1)));
                         if (growthLevelToTest - childArrayOffset >= cost)
                         {   // This part here will make it so it the baby chance is not 100 AND fails it still proceeds in the array even without spawning the bebe
                             if ((item.chance < 100 && getRandValue(growthLevelToTest + childArrayOffset + 20000, 100) > item.chance) || makeBaby(item, growthLevelToTest))  // Only increase cost and position when the growth of the child succeeds. Might add that as a parameter idk to make some kids skippable

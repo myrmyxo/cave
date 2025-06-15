@@ -104,6 +104,8 @@ namespace Cave
                 { (5, 0), new OneSprite("WaterSkipper", true) },            // TO CHANGE
                 { (6, 0), new OneSprite("Goblin", true) },                  // TO CHANGE
                 { (7, 0), new OneSprite("Louse", true) },                   // TO CHANGE
+                { (8, 0), new OneSprite("Shark", true) },                   // TO CHANGE
+                { (9, 0), new OneSprite("WaterDog", true) },                // TO CHANGE
             };                                                               
             plantSprites = new Dictionary<(int, int), OneSprite>
             {
@@ -166,6 +168,8 @@ namespace Cave
                 { (3, 0), new OneSprite("WandMagic", true) },               // TO CHANGE
                 { (3, 1), new OneSprite("WandCarnal", true) },              // TO CHANGE
                 { (3, 2), new OneSprite("WandFloral", true) },              // TO CHANGE
+                { (3, 3), new OneSprite("WandTeleport", true) },            // TO CHANGE
+                { (3, 4), new OneSprite("WandDig", true) },                 // TO CHANGE
                 { (4, 0), new OneSprite("Axe", true) },                     // TO CHANGE
             };
             attacksSprites = new Dictionary<(int, int), OneSprite>

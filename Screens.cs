@@ -85,10 +85,12 @@ namespace Cave
 
                 loadStructuresYesOrNo = false;
                 spawnNests = false;
-                spawnEntitiesBool = false;
+                spawnEntitiesBool = true;
                 spawnPlants = false;
                 bool spawnNOTHING = false;
+                bool spawnEVERYTHING = true;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
+                if (spawnEVERYTHING) { loadStructuresYesOrNo = true; spawnEntitiesBool = true; spawnPlants = true; }
 
                 if (randomSeed)
                 {
@@ -1111,6 +1113,29 @@ namespace Cave
                             if (i >= county) { break; }
                             drawPixel(gameBitmap, color, entity.pastPositions[i], camPos);
                         }
+
+                        if (entity.traits.tailMap != null)
+                        {
+                            foreach ((int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, (int a, int r, int g, int b) value)? color) tupelo in entity.traits.tailMap)
+                            {
+                                int segment = tupelo.fromEnd ? entity.pastPositions.Count - 1 - tupelo.segment : tupelo.segment;
+                                if (segment < 0 || entity.pastPositions.Count <= segment) { continue; }
+                                
+                                (int x, int y) segmentPos = entity.pastPositions[segment];
+                                (int x, int y) previousSegmentPos = entity.pastPositions[Clamp(0, segment - 1, entity.pastPositions.Count)]; ;
+                                int angleModo = tupelo.oriented ? directionPositionDictionary[(SignZero(previousSegmentPos.x - segmentPos.x), SignZero(previousSegmentPos.y - segmentPos.y))] : 0;
+                                (int x, int y) poso = rotate8(tupelo.pos, tupelo.angleMod + angleModo);
+
+                                Color tailColor = color;
+                                if (tupelo.color.HasValue)
+                                {
+                                    if (tupelo.color.Value.isVariation == true) { tailColor = Color.FromArgb(ColorClamp(color.A + tupelo.color.Value.value.a), ColorClamp(color.R + tupelo.color.Value.value.r), ColorClamp(color.G + tupelo.color.Value.value.g), ColorClamp(color.B + tupelo.color.Value.value.b)); }
+                                    else { tailColor = Color.FromArgb(ColorClamp(tupelo.color.Value.value.a), ColorClamp(tupelo.color.Value.value.r), ColorClamp(tupelo.color.Value.value.g), ColorClamp(tupelo.color.Value.value.b)); }
+                                }
+
+                                drawPixel(gameBitmap, tailColor, (segmentPos.x + poso.x, segmentPos.y + poso.y), camPos);
+                            }
+                        }
                     }
                     if (entity.traits.wingTraits != null)
                     {
@@ -1152,6 +1177,11 @@ namespace Cave
                     else if (player.speedX <= -1.5f) { forceX = 1; }
                     drawPixel(gameBitmap, player.traits.wingTraits.Value.color, (player.posX + (forceX ?? (player.speedX >= -0.75f ? wingPos.x : 0)), player.posY + wingPos.y), camPos);
                     drawPixel(gameBitmap, player.traits.wingTraits.Value.color, (player.posX + (forceX ?? (player.speedX <= 0.75f ? -wingPos.x : 0)), player.posY + wingPos.y), camPos);
+                }
+                if (debugMode)
+                {
+                    Color directionColor = Color.FromArgb(100, playerColor.R, playerColor.G, playerColor.B);
+                    for (int i = 1; i <= 3; i++) { drawPixel(gameBitmap, directionColor, (player.posX + player.direction.x * i, player.posY + player.direction.y * i), camPos); }
                 }
 
                 foreach (((int x, int y) pos, Color color) item in attacksToDraw)

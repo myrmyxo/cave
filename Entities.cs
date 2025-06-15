@@ -43,7 +43,7 @@ namespace Cave
             { 0, 1 },       // air
             { -1, 3 },      // piss
             { -2, 3 },      // water
-            { -3, 999 },     // fairy liquid
+            { -3, 999 },    // fairy liquid
             { -4, 999999 }, // lava (cannot cross)
             { -5, 5 },      // honey
             { -6, 3 },      // blood
@@ -1012,27 +1012,25 @@ namespace Cave
             public void dieAndDrop(Entity entityToGive)
             {
                 ((int type, int subType, int megaType) element, int count) entityDrop = traits.drops;
-                if (type.type == 4) { entityDrop = (entityDrop.element, length); }
+                if (length > 0) { entityDrop = (entityDrop.element, length); }
                 entityToGive.addElementToInventory(entityDrop.element, entityDrop.count);
                 screen.entitesToRemove[id] = this;
             }
             public void findLength()
             {
-                if (type.type == 4)
+                if (traits.length is null) { length = 0; pastPositions = new List<(int x, int y)>(); }
+                else
                 {
-                    if (type.subType == 1) { length = 2 + seed % 9; }
-                    else { length = 2 + seed % 5; }
+                    length = traits.length.Value.baseLength + seed % (traits.length.Value.variation + 1);
+                    while (pastPositions.Count > length) { pastPositions.RemoveAt(pastPositions.Count - 1); }
                 }
-                else { length = 0; }
-                while (pastPositions.Count > length) { pastPositions.RemoveAt(pastPositions.Count - 1); }
             }
             public void updatePastPositions((int x, int y) posToAdd)    // if lenght DECREASES it will not work anymore probably idk
             {
-                int counto = pastPositions.Count;
-                if (counto == 0 || pastPositions[0].x == posX || pastPositions[0].y == posY || manhattanDistance(pastPositions[0], (posX, posY)) > 2) // if pos-2 and current pos have no x and y in common, means there are diag and pos - 1 should not be added
+                if (pastPositions.Count == 0 || pastPositions[0].x == posX || pastPositions[0].y == posY || manhattanDistance(pastPositions[0], (posX, posY)) > 2) // if pos-2 and current pos have no x and y in common, means there are diag and pos - 1 should not be added
                 {
                     pastPositions.Insert(0, posToAdd);
-                    if (counto >= length) { pastPositions.RemoveAt(counto - 1); }
+                    while (pastPositions.Count >= length) { pastPositions.RemoveAt(pastPositions.Count - 1); }
                 }
             }
             public bool actuallyMoveTheEntity(bool climbing = false)
@@ -1081,7 +1079,7 @@ namespace Cave
                             realPosX = realPosToTest;
                             posX = posToTest.x;
                             toMoveX -= diff;
-                            if (type.type == 4) { updatePastPositions(previousPos); } // to make worm's tails
+                            if (traits.length != null) { updatePastPositions(previousPos); } // to make worm's tails
                             previousPos = (posX, posY);
                             currentSide -= yRatio;
                             allowX = true;
@@ -1112,7 +1110,7 @@ namespace Cave
                             realPosY = realPosToTest;
                             posY = posToTest.y;
                             toMoveY -= diff;
-                            if (type.type == 4) { updatePastPositions(previousPos); } // to make worm's tails
+                            if (traits.length != null) { updatePastPositions(previousPos); } // to make worm's tails
                             previousPos = (posX, posY);
                             currentSide += xRatio;
                             allowX = true;
@@ -1132,6 +1130,13 @@ namespace Cave
                 entityExitingChunk(posToTest);
                 return true;
             }
+            public void setEntityPos((int x, int y) posToSet)
+            {
+                posX = posToSet.x;
+                realPosX = posToSet.x + 0.5f;
+                posY = posToSet.y;
+                realPosY = posToSet.y + 0.5f;
+            }
             public virtual void entityExitingChunk((int x, int y) posToTest)
             {
                 posX = posToTest.x;
@@ -1145,10 +1150,7 @@ namespace Cave
                 screen.entitesToRemove[id] = this;
                 screenToTeleportTo.activeEntities[id] = this;
                 screen = screenToTeleportTo;
-                realPosX = newPos.x;
-                posX = newPos.x;
-                realPosY = newPos.y;
-                posY = newPos.y;
+                setEntityPos(newPos);
                 speedX = 0;
                 speedY = 0;
                 timeAtLastTeleportation = timeElapsed;
