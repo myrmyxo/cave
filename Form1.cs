@@ -96,10 +96,12 @@ namespace Cave
                 turnPngIntoString("Water");
                 turnPngIntoString("Ice");
                 turnPngIntoString("Piss");
+
                 turnPngIntoString("BasicTile");
                 turnPngIntoString("DenseRockTile");
                 turnPngIntoString("FleshTile");
                 turnPngIntoString("BoneTile");
+                turnPngIntoString("SkinTile");
                 turnPngIntoString("MoldTile");
 
 
@@ -143,6 +145,7 @@ namespace Cave
                 turnPngIntoString("Mold");
                 turnPngIntoString("Flesh");
                 turnPngIntoString("Bone");
+                turnPngIntoString("Skin");
                 turnPngIntoString("Hair");
                 turnPngIntoString("MagicRock");
                 turnPngIntoString("Metal");
@@ -222,6 +225,8 @@ namespace Cave
             // When making portal, it FUCKING EATS THE PLANTS AROUND IT ????????? LIKE DUDE ??? STOP ???
             // Weird transition between mold and ocean has appeared after ice ocean update
             // Entities exiting chunks seems to disappear still... Fuuuckkk. Not sure tho !
+            // BUG IN THE ENTITY MOVEMENT !! Moves perfectly in diagonal when doing +x+y, but when going another direction it makes weir L shapes of movement. Can observe when moving fast as waterdog
+            // Sometimes leakage between ice ocean and ocean, due to antiborder idk thing
 
             // cool ideas for later !
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh

@@ -80,6 +80,7 @@ namespace Cave
                 { (3, 0), new OneSprite("PlantMatter", false) },
                 { (4, 0), new OneSprite("FleshTile", true) },               // TO CHANGE
                 { (4, 1), new OneSprite("BoneTile", true) },                // TO CHANGE
+                { (4, 2), new OneSprite("SkinTile", true) },                // TO CHANGE
                 { (5, 0), new OneSprite("MoldTile", true) },                // TO CHANGE          
                 { (6, 0), new OneSprite("BasicTile", false) }
             };                                                               
@@ -153,7 +154,7 @@ namespace Cave
                 { (8, 0), new OneSprite("Flesh", true) },                   // TO CHANGE
                 { (8, 1), new OneSprite("Bone", true ) },                   // TO CHANGE
                 { (8, 2), new OneSprite("Hair", true) },                    // TO CHANGE
-                { (8, 3), new OneSprite("Wax", true ) },                    // TO CHANGE
+                { (8, 3), new OneSprite("Skin", true ) },                   // TO CHANGE
                 { (10, 0), new OneSprite("MagicRock", true) },              // TO CHANGE
                 { (11, 0), new OneSprite("Metal", true ) },                 // TO CHANGE
                 { (11, 1), new OneSprite("LightBulb", true ) },             // TO CHANGE

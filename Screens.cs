@@ -1047,10 +1047,41 @@ namespace Cave
 
                 List<(int x, int y, int radius, Color color)> lightPositions = new List<(int x, int y, int radius, Color color)>();
 
-                Chunk chunko;
                 Player player = game.playerList[0];
                 (int x, int y) camPos = (player.camPosX - game.zoomLevel, player.camPosY - game.zoomLevel);
 
+                drawChunksOnScreen(gameBitmap, camPos, isPngToBeExported);
+
+                foreach (Structure structure in activeStructures.Values) { drawStructureOnScreen(gameBitmap, camPos, lightPositions, structure); }
+
+                foreach (Plant plant in activePlants.Values) { drawPlantOnScreen(gameBitmap, camPos, lightPositions, plant); }
+                foreach (Entity entity in activeEntities.Values) { drawEntityOnScreen(gameBitmap, camPos, lightPositions, entity); }
+                foreach (Particle particle in activeParticles) { drawParticleOnScreen(gameBitmap, camPos, lightPositions, particle); }
+                drawPlayerOnScreen(gameBitmap, camPos, lightPositions, player);
+
+                drawAttacksOnScreen(gameBitmap, camPos, isPngToBeExported);
+
+                drawLightOnScreen(gameBitmap, lightBitmap, camPos, lightPositions);
+
+                drawFogOfWarOnScreen(gameBitmap, camPos);                
+
+                if (debugMode && !isPngToBeExported && false) { drawNestDebugOnScreen(gameBitmap, camPos); } // debug for nests
+                if (debugMode && !isPngToBeExported && false) { drawEntityPathDebugOnScreen(gameBitmap, camPos); } // debug for paths
+                if (debugMode && !isPngToBeExported && false) { drawMiscDebugOnScreen(gameBitmap, camPos); } // debug misc
+                if (true) { game.miscDebugList = new List<((int x, int y) pos, Color col)>(); }  // For memory leak ig blah blah
+
+                // Upscale 1*1 bitmap into the pngmult*pngmult bitmap !
+                Bitmap finalBitmap = game.finalBitmap;
+                if (game.PNGmultiplicator > 1) { pasteImage(finalBitmap, gameBitmap, (0, 0), (0, 0), game.PNGmultiplicator); }
+
+                if (debugMode && !isPngToBeExported) { drawChunksAndMegachunksDebugOnScreen(finalBitmap, player); } // debug shit for chunks and megachunks
+
+                finalBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                return finalBitmap;
+            }
+            public void drawChunksOnScreen(Bitmap gameBitmap, (int x, int y) camPos, bool isPngToBeExported)
+            {
+                Chunk chunko;
                 for (int i = -game.effectiveRadius; i <= game.effectiveRadius; i++)
                 {
                     for (int j = -game.effectiveRadius; j <= game.effectiveRadius; j++)
@@ -1060,134 +1091,112 @@ namespace Cave
                         //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32)); } // if want to show chunk origin
                     }
                 }
-
-                foreach (Structure structure in activeStructures.Values)
+            }
+            public void drawStructureOnScreen(Bitmap gameBitmap, (int x, int y) camPos, List<(int x, int y, int radius, Color color)> lightPositions, Structure structure)
+            {
+                // NOT USED AND WAS NEVER USED but keep in case idk // if (structure.bitmap != null) { pasteImage(gameBitmap, structure.bitmap, (structure.pos.x + structure.posOffset.x, structure.pos.y + structure.posOffset.y), camPos); }
+                if (structure.animation != null)
                 {
-                    // NOT USED AND WAS NEVER USED but keep in case idk // if (structure.bitmap != null) { pasteImage(gameBitmap, structure.bitmap, (structure.pos.x + structure.posOffset.x, structure.pos.y + structure.posOffset.y), camPos); }
-                    if (structure.animation != null)
+                    int frame = ((int)(timeElapsed * 10) + (int)(structure.seed.x) % 100) % 4;
+                    pasteImage(gameBitmap, structure.animation.frames[frame], (structure.pos.x + structure.animation.offset.x, structure.pos.y + structure.animation.offset.y), camPos);
+                }
+            }
+            public void drawPlantOnScreen(Bitmap gameBitmap, (int x, int y) camPos, List<(int x, int y, int radius, Color color)> lightPositions, Plant plant)
+            {
+                if (plant.bounds.x.max + plant.outOfBoundsVisibility < camPos.x || plant.bounds.x.min - plant.outOfBoundsVisibility > camPos.x + game.zoomLevel * 2 + 1 || plant.bounds.y.max + plant.outOfBoundsVisibility < camPos.y || plant.bounds.y.min - plant.outOfBoundsVisibility > camPos.y + game.zoomLevel * 2 + 1) { return; }
+
+                pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset.x, plant.posY + plant.posOffset.y), camPos);
+                if (plant.animatedPlantElements != null && !debugMode)
+                {
+                    foreach (PlantElement plantElement in plant.animatedPlantElements)
                     {
-                        int frame = ((int)(timeElapsed * 10) + (int)(structure.seed.x) % 100) % 4;
-                        pasteImage(gameBitmap, structure.animation.frames[frame], (structure.pos.x + structure.animation.offset.x, structure.pos.y + structure.animation.offset.y), camPos);
+                        int frame = ((int)(timeElapsed * 20) + plantElement.seed % 100) % 6;
+                        (int x, int y) posToDraw = plantElement.motherPlant.getRealPos(plantElement.pos);
+                        pasteImage(gameBitmap, plantElement.traits.animation.frames[frame], (posToDraw.x + plantElement.traits.animation.offset.x, posToDraw.y + plantElement.traits.animation.offset.y), camPos);
                     }
                 }
-
-                int plantsTested = 0;
-                foreach (Plant plant in activePlants.Values)
+                if (game.isLight)
                 {
-                    if ((plant.bounds.x.max + plant.outOfBoundsVisibility < camPos.x || plant.bounds.x.min - plant.outOfBoundsVisibility > camPos.x + game.zoomLevel * 2 + 1 || plant.bounds.y.max + plant.outOfBoundsVisibility < camPos.y || plant.bounds.y.min - plant.outOfBoundsVisibility > camPos.y + game.zoomLevel * 2 + 1)) { continue; }
-
-                    plantsTested++;
-
-                    pasteImage(gameBitmap, plant.bitmap, (plant.posX + plant.posOffset.x, plant.posY + plant.posOffset.y), camPos);
-                    if (plant.animatedPlantElements != null && !debugMode)
-                    {
-                        foreach (PlantElement plantElement in plant.animatedPlantElements)
-                        {
-                            int frame = ((int)(timeElapsed * 20) + plantElement.seed % 100) % 6;
-                            (int x, int y) posToDraw = plantElement.motherPlant.getRealPos(plantElement.pos);
-                            pasteImage(gameBitmap, plantElement.traits.animation.frames[frame], (posToDraw.x + plantElement.traits.animation.offset.x, posToDraw.y + plantElement.traits.animation.offset.y), camPos);
-                        }
-                    }
-                    if (game.isLight)
-                    {
-                        if (plant.lightPositions != null) { foreach ((int x, int y, int radius, Color color) item in plant.lightPositions) { lightPositions.Add(item); } }
-                    }
+                    if (plant.lightPositions != null) { foreach ((int x, int y, int radius, Color color) item in plant.lightPositions) { lightPositions.Add(item); } }
                 }
+            }
+            public void drawEntityOnScreen(Bitmap gameBitmap, (int x, int y) camPos, List<(int x, int y, int radius, Color color)> lightPositions, Entity entity, int forceLightRadius = 0)
+            {
+                if (entity.posX + entity.length < camPos.x || entity.posX - entity.length > camPos.x + game.zoomLevel * 2 + 1 || entity.posY + entity.length < camPos.y || entity.posY - entity.length > camPos.y + game.zoomLevel * 2 + 1) { return; }
 
-                foreach (Entity entity in activeEntities.Values)
+                Color color = entity.color;
+                if (entity.timeAtLastGottenHit > timeElapsed - 0.5f)
                 {
-                    Color color = entity.color;
-                    if (entity.timeAtLastGottenHit > timeElapsed - 0.5f)
-                    {
-                        float redMult = Min(1, (entity.timeAtLastGottenHit - timeElapsed + 0.5f) * 3);
-                        float entityMult = 1 - redMult;
-                        color = Color.FromArgb((int)(entityMult * color.R + redMult * 255), (int)(entityMult * color.G), (int)(entityMult * color.B));
-                    }
-                    if (game.isLight && entity.traits.lightRadius != null) { lightPositions.Add((entity.posX, entity.posY, entity.traits.lightRadius.Value, entity.lightColor)); }
-                    drawPixel(gameBitmap, color, (entity.posX, entity.posY), camPos);
-                    if (entity.length > 0)
-                    {
-                        int county = entity.pastPositions.Count;
-                        for (int i = 0; i < entity.length - 1; i++)
-                        {
-                            if (i >= county) { break; }
-                            drawPixel(gameBitmap, color, entity.pastPositions[i], camPos);
-                        }
-
-                        if (entity.traits.tailMap != null)
-                        {
-                            foreach ((int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, (int a, int r, int g, int b) value)? color) tupelo in entity.traits.tailMap)
-                            {
-                                int segment = tupelo.fromEnd ? entity.pastPositions.Count - 1 - tupelo.segment : tupelo.segment;
-                                if (segment < 0 || entity.pastPositions.Count <= segment) { continue; }
-                                
-                                (int x, int y) segmentPos = entity.pastPositions[segment];
-                                (int x, int y) previousSegmentPos = entity.pastPositions[Clamp(0, segment - 1, entity.pastPositions.Count)]; ;
-                                int angleModo = tupelo.oriented ? directionPositionDictionary[(SignZero(previousSegmentPos.x - segmentPos.x), SignZero(previousSegmentPos.y - segmentPos.y))] : 0;
-                                (int x, int y) poso = rotate8(tupelo.pos, tupelo.angleMod + angleModo);
-
-                                Color tailColor = color;
-                                if (tupelo.color.HasValue)
-                                {
-                                    if (tupelo.color.Value.isVariation == true) { tailColor = Color.FromArgb(ColorClamp(color.A + tupelo.color.Value.value.a), ColorClamp(color.R + tupelo.color.Value.value.r), ColorClamp(color.G + tupelo.color.Value.value.g), ColorClamp(color.B + tupelo.color.Value.value.b)); }
-                                    else { tailColor = Color.FromArgb(ColorClamp(tupelo.color.Value.value.a), ColorClamp(tupelo.color.Value.value.r), ColorClamp(tupelo.color.Value.value.g), ColorClamp(tupelo.color.Value.value.b)); }
-                                }
-
-                                drawPixel(gameBitmap, tailColor, (segmentPos.x + poso.x, segmentPos.y + poso.y), camPos);
-                            }
-                        }
-                    }
-                    if (entity.traits.wingTraits != null)
-                    {
-                        (int x, int y) wingPos = wingPosArray[(int)(entity.wingTimer / entity.traits.wingTraits.Value.period) % 8];
-                        int? forceX = null;
-                        if (entity.speedX >= 1.5f) { forceX = -1; }
-                        else if (entity.speedX <= -1.5f) { forceX = 1; }
-                        drawPixel(gameBitmap, entity.traits.wingTraits.Value.color, (entity.posX + (forceX ?? (entity.speedX >= -0.75f ? wingPos.x : 0)), entity.posY + wingPos.y), camPos);
-                        drawPixel(gameBitmap, entity.traits.wingTraits.Value.color, (entity.posX + (forceX ?? (entity.speedX <= 0.75f ? -wingPos.x : 0)), entity.posY + wingPos.y), camPos);
-                    }
+                    float redMult = Min(1, (entity.timeAtLastGottenHit - timeElapsed + 0.5f) * 3);
+                    float entityMult = 1 - redMult;
+                    color = Color.FromArgb((int)(entityMult * color.R + redMult * 255), (int)(entityMult * color.G), (int)(entityMult * color.B));
                 }
-
-                foreach (Particle particle in activeParticles)
+                if (game.isLight && (entity.traits.lightRadius != null || forceLightRadius > 0)) { lightPositions.Add((entity.posX, entity.posY, entity.traits.lightRadius is null ? forceLightRadius : entity.traits.lightRadius.Value, entity.lightColor)); }
+                drawPixel(gameBitmap, color, (entity.posX, entity.posY), camPos);
+                if (entity.length > 0)
                 {
-                    Color color = particle.color;
-                    //if (game.isLight && entity.type == 0) { lightPositions.Add((entity.posX, entity.posY, 7, entity.lightColor)); }
-                    drawPixel(gameBitmap, color, (particle.posX, particle.posY), camPos);
-                }
-
-                // player
-                Color playerColor = player.color;
-                if (player.type.type != 4 && getChunkFromPixelPos((player.posX, player.posY)).fillStates[PosMod(player.posX), PosMod(player.posY)].isSolid) { playerColor = Color.Red; }
-                if (game.isLight) { lightPositions.Add((player.posX, player.posY, 9, player.lightColor)); }
-                drawPixel(gameBitmap, playerColor, (player.posX, player.posY), camPos);
-                if (player.length > 0)
-                {
-                    int county = player.pastPositions.Count;
-                    for (int i = 0; i < player.length - 1; i++)
+                    int county = entity.pastPositions.Count;
+                    for (int i = 0; i < entity.length - 1; i++)
                     {
                         if (i >= county) { break; }
-                        drawPixel(gameBitmap, player.color, player.pastPositions[i], camPos);
+                        drawPixel(gameBitmap, color, entity.pastPositions[i], camPos);
+                    }
+
+                    if (entity.traits.tailMap != null)
+                    {
+                        foreach ((int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, (int a, int r, int g, int b) value)? color) tupelo in entity.traits.tailMap)
+                        {
+                            int segment = tupelo.fromEnd ? entity.pastPositions.Count - 1 - tupelo.segment : tupelo.segment;
+                            if (segment < 0 || entity.pastPositions.Count <= segment) { continue; }
+
+                            (int x, int y) segmentPos = entity.pastPositions[segment];
+                            (int x, int y) previousSegmentPos = entity.pastPositions[Clamp(0, segment - 1, entity.pastPositions.Count)]; ;
+                            int angleModo = tupelo.oriented ? directionPositionDictionary[(SignZero(previousSegmentPos.x - segmentPos.x), SignZero(previousSegmentPos.y - segmentPos.y))] : 0;
+                            (int x, int y) poso = rotate8(tupelo.pos, tupelo.angleMod + angleModo);
+
+                            Color tailColor = color;
+                            if (tupelo.color.HasValue)
+                            {
+                                if (tupelo.color.Value.isVariation == true) { tailColor = Color.FromArgb(ColorClamp(color.A + tupelo.color.Value.value.a), ColorClamp(color.R + tupelo.color.Value.value.r), ColorClamp(color.G + tupelo.color.Value.value.g), ColorClamp(color.B + tupelo.color.Value.value.b)); }
+                                else { tailColor = Color.FromArgb(ColorClamp(tupelo.color.Value.value.a), ColorClamp(tupelo.color.Value.value.r), ColorClamp(tupelo.color.Value.value.g), ColorClamp(tupelo.color.Value.value.b)); }
+                            }
+
+                            drawPixel(gameBitmap, tailColor, (segmentPos.x + poso.x, segmentPos.y + poso.y), camPos);
+                        }
                     }
                 }
-                if (player.traits.wingTraits != null)
+                if (entity.traits.wingTraits != null)
                 {
-                    (int x, int y) wingPos = wingPosArray[(int)(player.wingTimer / player.traits.wingTraits.Value.period) % 8];
+                    (int x, int y) wingPos = wingPosArray[(int)(entity.wingTimer / entity.traits.wingTraits.Value.period) % 8];
                     int? forceX = null;
-                    if (player.speedX >= 1.5f) { forceX = -1; }
-                    else if (player.speedX <= -1.5f) { forceX = 1; }
-                    drawPixel(gameBitmap, player.traits.wingTraits.Value.color, (player.posX + (forceX ?? (player.speedX >= -0.75f ? wingPos.x : 0)), player.posY + wingPos.y), camPos);
-                    drawPixel(gameBitmap, player.traits.wingTraits.Value.color, (player.posX + (forceX ?? (player.speedX <= 0.75f ? -wingPos.x : 0)), player.posY + wingPos.y), camPos);
+                    if (entity.speedX >= 1.5f) { forceX = -1; }
+                    else if (entity.speedX <= -1.5f) { forceX = 1; }
+                    drawPixel(gameBitmap, entity.traits.wingTraits.Value.color, (entity.posX + (forceX ?? (entity.speedX >= -0.75f ? wingPos.x : 0)), entity.posY + wingPos.y), camPos);
+                    drawPixel(gameBitmap, entity.traits.wingTraits.Value.color, (entity.posX + (forceX ?? (entity.speedX <= 0.75f ? -wingPos.x : 0)), entity.posY + wingPos.y), camPos);
                 }
+            }
+            public void drawPlayerOnScreen(Bitmap gameBitmap, (int x, int y) camPos, List<(int x, int y, int radius, Color color)> lightPositions, Player player)
+            {
+                drawEntityOnScreen(gameBitmap, camPos, lightPositions, player, 7);
+                Color playerColor = player.color;
+                if (!player.traits.isDigging && getChunkFromPixelPos((player.posX, player.posY)).fillStates[PosMod(player.posX), PosMod(player.posY)].isSolid) { drawPixel(gameBitmap, Color.Red, (player.posX, player.posY), camPos); }
                 if (debugMode)
                 {
                     Color directionColor = Color.FromArgb(100, playerColor.R, playerColor.G, playerColor.B);
                     for (int i = 1; i <= 3; i++) { drawPixel(gameBitmap, directionColor, (player.posX + player.direction.x * i, player.posY + player.direction.y * i), camPos); }
                 }
+            }
+            public void drawParticleOnScreen(Bitmap gameBitmap, (int x, int y) camPos, List<(int x, int y, int radius, Color color)> lightPositions, Particle particle, int forceLightRadius = 0)
+            {
+                if (particle.posX < camPos.x || particle.posX > camPos.x + game.zoomLevel * 2 + 1 || particle.posY < camPos.y || particle.posY > camPos.y + game.zoomLevel * 2 + 1) { return; }
 
-                foreach (((int x, int y) pos, Color color) item in attacksToDraw)
-                {
-                    drawPixel(gameBitmap, item.color, item.pos, camPos);
-                }
+                Color color = particle.color;
+                //if (game.isLight && entity.type == 0) { lightPositions.Add((particle.posX, particle.posY, 7, particle.lightColor)); }
+                drawPixel(gameBitmap, color, (particle.posX, particle.posY), camPos);
+            }
+            public void drawAttacksOnScreen(Bitmap gameBitmap, (int x, int y) camPos, bool isPngToBeExported)
+            {
+                foreach (((int x, int y) pos, Color color) item in attacksToDraw) { drawPixel(gameBitmap, item.color, item.pos, camPos); }
                 if (debugMode && !isPngToBeExported)
                 {
                     foreach (((int x, int y) pos, Attack attack) attack in attacksToDo)
@@ -1195,7 +1204,10 @@ namespace Cave
                         drawPixel(gameBitmap, Color.IndianRed, attack.pos, camPos);
                     }
                 }
-
+            }
+            public void drawLightOnScreen(Bitmap gameBitmap, Bitmap lightBitmap, (int x, int y) camPos, List<(int x, int y, int radius, Color color)> lightPositions)
+            {
+                Chunk chunko;
                 if (game.isLight && !debugMode) // light shit
                 {
                     for (int i = -game.effectiveRadius; i <= game.effectiveRadius; i++)
@@ -1206,9 +1218,6 @@ namespace Cave
                             pasteImage(lightBitmap, chunko.lightBitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos, 1);
                         }
                     }
-
-
-
 
                     pasteBitmapTransparenciesOnBitmap(lightBitmap, lightPositions, camPos); // very slow for some reason !
                     /*else
@@ -1233,7 +1242,10 @@ namespace Cave
                     }
                     pasteLightBitmapOnGameBitmap(gameBitmap, resizedBitmap);
                 }
-
+            }
+            public void drawFogOfWarOnScreen(Bitmap gameBitmap, (int x, int y) camPos)
+            {
+                Chunk chunko;
                 if (!debugMode) // fog of war
                 {
                     for (int i = -game.effectiveRadius; i <= game.effectiveRadius; i++)
@@ -1241,140 +1253,128 @@ namespace Cave
                         for (int j = -game.effectiveRadius; j <= game.effectiveRadius; j++)
                         {
                             chunko = getChunkFromChunkPos((chunkX + i, chunkY + j));
-                            if (chunko.explorationLevel == 0)
-                            {
-                                pasteImage(gameBitmap, black32Bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos);
-                            }
+                            if (chunko.explorationLevel == 0) { pasteImage(gameBitmap, black32Bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos); }
                             else if (chunko.explorationLevel == 1)
-                            {                                           // THIS SHOULD NEVER HAPPEN ! Like actually what the fuck ! Due to switching from Debug mode to not debug it seems
+                            {                                           //    \/ \/ \/ THIS SHOULD NEVER HAPPEN ! Like actually what the fuck ! Due to switching from Debug mode to not debug it seems
                                 pasteImage(gameBitmap, chunko.fogBitmap ?? transBlue32Bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos);
                             }
                         }
                     }
                 }
-
-                if (debugMode && !isPngToBeExported) // debug for nests
+            }
+            public void drawNestDebugOnScreen(Bitmap gameBitmap, (int x, int y) camPos)
+            {
+                foreach (Structure structure in activeStructures.Values)
                 {
-                    foreach (Structure structure in activeStructures.Values)
+                    Nest nest = structure.getItselfAsNest();
+                    if (nest == null) { continue; }
+                    foreach ((int x, int y) posToDrawAt in nest.digErrands)
                     {
-                        Nest nest = structure.getItselfAsNest();
-                        if (nest == null) { continue; }
-                        foreach ((int x, int y) posToDrawAt in nest.digErrands)
+                        drawPixel(gameBitmap, Color.FromArgb(100, 255, 0, 0), posToDrawAt, camPos);
+                    }
+                    if (nest.rooms.ContainsKey(1))
+                    {
+                        foreach ((int x, int y) posToDrawAt in nest.rooms[1].tiles)
                         {
-                            drawPixel(gameBitmap, Color.FromArgb(100, 255, 0, 0), posToDrawAt, camPos);
+                            drawPixel(gameBitmap, Color.FromArgb(100, 120, 0, 100), posToDrawAt, camPos);
                         }
-                        if (nest.rooms.ContainsKey(1))
+                    }
+                    foreach (Room room in nest.rooms.Values)
+                    {
+                        if (room.type == 2)
                         {
-                            foreach ((int x, int y) posToDrawAt in nest.rooms[1].tiles)
+                            foreach ((int x, int y) posToDrawAt in room.dropPositions)
                             {
-                                drawPixel(gameBitmap, Color.FromArgb(100, 120, 0, 100), posToDrawAt, camPos);
+                                drawPixel(gameBitmap, Color.FromArgb(100, 0, 0, 255), posToDrawAt, camPos);
                             }
                         }
-                        foreach (Room room in nest.rooms.Values)
+                        else if (room.type == 3)
                         {
-                            if (room.type == 2)
+                            foreach ((int x, int y) posToDrawAt in room.dropPositions)
                             {
-                                foreach ((int x, int y) posToDrawAt in room.dropPositions)
-                                {
-                                    drawPixel(gameBitmap, Color.FromArgb(100, 0, 0, 255), posToDrawAt, camPos);
-                                }
-                            }
-                            else if (room.type == 3)
-                            {
-                                foreach ((int x, int y) posToDrawAt in room.dropPositions)
-                                {
-                                    drawPixel(gameBitmap, Color.FromArgb(100, 220, 255, 150), posToDrawAt, camPos);
-                                }
+                                drawPixel(gameBitmap, Color.FromArgb(100, 220, 255, 150), posToDrawAt, camPos);
                             }
                         }
                     }
                 }
-                if (debugMode && !isPngToBeExported) // debug for paths
+            }
+            public void drawEntityPathDebugOnScreen(Bitmap gameBitmap, (int x, int y) camPos)
+            {
+                foreach (Entity entity in activeEntities.Values)
                 {
-                    foreach (Entity entity in activeEntities.Values)
+                    foreach ((int x, int y) posToDrawAt in entity.pathToTarget)
                     {
-                        foreach ((int x, int y) posToDrawAt in entity.pathToTarget)
-                        {
-                            drawPixel(gameBitmap, Color.FromArgb(100, entity.color.R, entity.color.G, entity.color.B), posToDrawAt, camPos);
-                        }
-                        foreach ((int x, int y) posToDrawAt in entity.simplifiedPathToTarget)
-                        {
-                            drawPixel(gameBitmap, Color.FromArgb(100, 200, 0, 100), posToDrawAt, camPos);
-                        }
+                        drawPixel(gameBitmap, Color.FromArgb(100, entity.color.R, entity.color.G, entity.color.B), posToDrawAt, camPos);
                     }
-                    foreach (Chunk chunkoko in loadedChunks.Values)
+                    foreach ((int x, int y) posToDrawAt in entity.simplifiedPathToTarget)
                     {
-                        if (chunkoko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunkoko.pos.x * 32, chunkoko.pos.y * 32), camPos); }
+                        drawPixel(gameBitmap, Color.FromArgb(100, 200, 0, 100), posToDrawAt, camPos);
                     }
                 }
-                if (debugMode && !isPngToBeExported) // debug misc
+                foreach (Chunk chunkoko in loadedChunks.Values)
                 {
-                    if (false)  // Debug for plants exact Plant and PlantElement's positions
-                    {
-                        List<PlantElement> listo = new List<PlantElement>();
-                        foreach (Plant plant in activePlants.Values)
-                        {
-                            listo.Add(plant.plantElement);
-                            if (rand.Next(5) == 0) { game.miscDebugList.Add(((plant.posX, plant.posY), Color.Crimson)); }
-                        }
-                        while (listo.Count > 0)
-                        {
-                            PlantElement current = listo[0];
-                            listo.RemoveAt(0);
-                            foreach (PlantElement baby in current.childPlantElements) { listo.Add(baby); }
-                            if (rand.Next(5) != 0) { game.miscDebugList.Insert(0, (current.motherPlant.getRealPos(current.pos), Color.MediumPurple)); }
-                        }
-                    }
-                    foreach (((int x, int y) pos, Color col) item in game.miscDebugList)
-                    {
-                        drawPixel(gameBitmap, item.col, item.pos, camPos);
-                    }
-                    game.miscDebugList = new List<((int x, int y) pos, Color col)>();
+                    if (chunkoko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunkoko.pos.x * 32, chunkoko.pos.y * 32), camPos); }
                 }
-
-                // Upscale 1*1 bitmap into the pngmult*pngmult bitmap !
-                Bitmap finalBitmap = game.finalBitmap;
-                if (game.PNGmultiplicator > 1) { pasteImage(finalBitmap, gameBitmap, (0, 0), (0, 0), game.PNGmultiplicator); }
-
-                if (debugMode && !isPngToBeExported) // debug shit for chunks and megachunks
+            }
+            public void drawMiscDebugOnScreen(Bitmap gameBitmap, (int x, int y) camPos)
+            {
+                if (false)  // Debug for plants exact Plant and PlantElement's positions
                 {
-                    int xOffset = (game.loadedScreens.Count - 1) * 100;
-                    int scaleFactor = Max(1, 30 / (game.zoomLevel + 10));
-                    Color colorToDraw;
-                    (int x, int y) playerChunkPos = (ChunkIdx(player.posX), ChunkIdx(player.posY));
-                    foreach (Screen screenToDebug in game.loadedScreens.Values)
+                    List<PlantElement> listo = new List<PlantElement>();
+                    foreach (Plant plant in activePlants.Values)
                     {
-                        foreach ((int x, int y) poso in screenToDebug.megaChunks.Keys)
-                        {
-                            if (player.screen == screenToDebug) { colorToDraw = Color.IndianRed; }
-                            else { colorToDraw = Color.Crimson; }
-                            drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset + playerChunkPos.x * 2, 100 + playerChunkPos.y * 2), (-poso.x, -poso.y), 32 * scaleFactor, true);
-                        }
-                        foreach ((int x, int y) poso in screenToDebug.activeStructureLoadedChunkIndexes.Keys)
-                        {
-                            colorToDraw = Color.FromArgb(100, 255, 255, 100);
-                            drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
-                        }
-                        foreach ((int x, int y) poso in screenToDebug.extraLoadedChunks.Keys)
-                        {
-                            colorToDraw = Color.Purple;
-                            drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
-                        }
-                        foreach ((int x, int y) poso in screenToDebug.loadedChunks.Keys)
-                        {
-                            colorToDraw = Color.FromArgb(150, 0, 128, 0);
-                            if (screenToDebug.loadedChunks[poso].unstableLiquidCount > 0) { colorToDraw = Color.DarkBlue; }
-                            else if (screenToDebug.activeStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.Cyan; }
-                            else if (screenToDebug.inertStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.FromArgb(130, 50, 130); }
-                            drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
-                        }
-                        drawPixelFixed(finalBitmap, Color.Red, (100 + xOffset, 100), (0, 0), 2 * scaleFactor, true);
-                        xOffset -= 120;
+                        listo.Add(plant.plantElement);
+                        if (rand.Next(5) == 0) { game.miscDebugList.Add(((plant.posX, plant.posY), Color.Crimson)); }
+                    }
+                    while (listo.Count > 0)
+                    {
+                        PlantElement current = listo[0];
+                        listo.RemoveAt(0);
+                        foreach (PlantElement baby in current.childPlantElements) { listo.Add(baby); }
+                        if (rand.Next(5) != 0) { game.miscDebugList.Insert(0, (current.motherPlant.getRealPos(current.pos), Color.MediumPurple)); }
                     }
                 }
-
-                finalBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
-                return finalBitmap;
+                foreach (((int x, int y) pos, Color col) item in game.miscDebugList)
+                {
+                    drawPixel(gameBitmap, item.col, item.pos, camPos);
+                }
+                game.miscDebugList = new List<((int x, int y) pos, Color col)>();
+            }
+            public void drawChunksAndMegachunksDebugOnScreen(Bitmap finalBitmap, Player player)
+            {
+                int xOffset = (game.loadedScreens.Count - 1) * 100;
+                int scaleFactor = Max(1, 30 / (game.zoomLevel + 10));
+                Color colorToDraw;
+                (int x, int y) playerChunkPos = (ChunkIdx(player.posX), ChunkIdx(player.posY));
+                foreach (Screen screenToDebug in game.loadedScreens.Values)
+                {
+                    foreach ((int x, int y) poso in screenToDebug.megaChunks.Keys)
+                    {
+                        if (player.screen == screenToDebug) { colorToDraw = Color.IndianRed; }
+                        else { colorToDraw = Color.Crimson; }
+                        drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset + playerChunkPos.x * 2, 100 + playerChunkPos.y * 2), (-poso.x, -poso.y), 32 * scaleFactor, true);
+                    }
+                    foreach ((int x, int y) poso in screenToDebug.activeStructureLoadedChunkIndexes.Keys)
+                    {
+                        colorToDraw = Color.FromArgb(100, 255, 255, 100);
+                        drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
+                    }
+                    foreach ((int x, int y) poso in screenToDebug.extraLoadedChunks.Keys)
+                    {
+                        colorToDraw = Color.Purple;
+                        drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
+                    }
+                    foreach ((int x, int y) poso in screenToDebug.loadedChunks.Keys)
+                    {
+                        colorToDraw = Color.FromArgb(150, 0, 128, 0);
+                        if (screenToDebug.loadedChunks[poso].unstableLiquidCount > 0) { colorToDraw = Color.DarkBlue; }
+                        else if (screenToDebug.activeStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.Cyan; }
+                        else if (screenToDebug.inertStructureLoadedChunkIndexes.ContainsKey(poso)) { colorToDraw = Color.FromArgb(130, 50, 130); }
+                        drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
+                    }
+                    drawPixelFixed(finalBitmap, Color.Red, (100 + xOffset, 100), (0, 0), 2 * scaleFactor, true);
+                    xOffset -= 120;
+                }
             }
             public TileTraits getTileContent((int x, int y) posToTest)
             {

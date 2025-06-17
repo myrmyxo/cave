@@ -148,6 +148,8 @@ namespace Cave
                 new ColorRange((135, 0, 0), (55, 0, 0), (55, 0, 0))                                                     ) },
                 { (4, 1), new TileTraits("Bone Tile", 0.2f,
                 new ColorRange((240, 0, 0), (230, 0, 0), (245, 0, 0))                                                   ) },
+                { (4, 2), new TileTraits("Skin Tile", 0.2f,
+                new ColorRange((240, 0, 0), (210, 0, 0), (180, 0, 0))                                                   ) },
 
                 { (5, 0), new TileTraits("Mold Tile", 0.1f,
                 new ColorRange((50, 0, 0), (50, 0, 0), (100, 0, 0)),        Tex:true                                    ) },
@@ -214,8 +216,8 @@ namespace Cave
                 col:new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20))                                           ) },
                 { (8, 2), new MaterialTraits("Hair",
                 col:new ColorRange((65, 20, 20), (40, 0, 20), (25, -20, 20))                                            ) },
-                { (8, 3), new MaterialTraits("Fat",
-                col:new ColorRange((200, 0, 0), (200, 0, 0), (170, 0, 0))                                               ) },
+                { (8, 3), new MaterialTraits("Skin",
+                col:new ColorRange((240, 0, 0), (210, 0, 0), (190, 0, 0))                                               ) },
 
                 { (10, 0), new MaterialTraits("Magic Rock",
                 col:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                               ) },
