@@ -72,7 +72,7 @@ namespace Cave
                 seed = 123456;
 
                 int idToPut = 0;
-                (int type, int subType) forceBiome = (0, 0);
+                (int type, int subType) forceBiome = (2, 0);
                 int PNGsize = 150;
                 PNGsize = 100;
 
@@ -85,10 +85,10 @@ namespace Cave
 
                 loadStructuresYesOrNo = false;
                 spawnNests = false;
-                spawnEntitiesBool = true;
-                spawnPlants = false;
+                spawnEntitiesBool = false;
+                spawnPlants = true;
                 bool spawnNOTHING = false;
-                bool spawnEVERYTHING = true;
+                bool spawnEVERYTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
                 if (spawnEVERYTHING) { loadStructuresYesOrNo = true; spawnEntitiesBool = true; spawnPlants = true; }
 
@@ -296,11 +296,11 @@ namespace Cave
 
                     screen.addRemoveEntities();
 
-                    foreach ((int x, int y) pos in screen.chunksToSpawnEntitiesIn.Keys)
+                    foreach ((int x, int y) pos in screen.chunksToMature.Keys)
                     {
-                        if (screen.loadedChunks.ContainsKey(pos)) { screen.loadedChunks[pos].spawnEntities(); }
+                        if (screen.loadedChunks.ContainsKey(pos)) { screen.loadedChunks[pos].matureChunk(); }
                     }
-                    screen.chunksToSpawnEntitiesIn = new Dictionary<(int x, int y), bool>();
+                    screen.chunksToMature = new Dictionary<(int x, int y), bool>();
 
                     foreach (Plant plant in screen.activePlants.Values) { plant.testPlantGrowth(false); }
                     screen.putPlantsInChunks();
@@ -584,7 +584,7 @@ namespace Cave
         {
             public Game game;
 
-            public Dictionary<(int x, int y), bool> chunksToSpawnEntitiesIn = new Dictionary<(int x, int y), bool>();
+            public Dictionary<(int x, int y), bool> chunksToMature = new Dictionary<(int x, int y), bool>();
             public Dictionary<(int x, int y), Chunk> loadedChunks = new Dictionary<(int x, int y), Chunk>();
             public Dictionary<(int x, int y), Chunk> extraLoadedChunks = new Dictionary<(int x, int y), Chunk>();
             public Dictionary<(int x, int y), MegaChunk> megaChunks = new Dictionary<(int x, int y), MegaChunk>();
@@ -678,12 +678,9 @@ namespace Cave
                 chunkY = ChunkIdx(player.posY);
                 if (player.dimension == id) { forceLoadChunksForAllPoints(); }
 
-                foreach ((int x, int y) pos in chunksToSpawnEntitiesIn.Keys)
+                foreach ((int x, int y) pos in chunksToMature.Keys)
                 {
-                    if (loadedChunks.ContainsKey(pos))
-                    {
-                        loadedChunks[pos].spawnEntities();
-                    }
+                    if (loadedChunks.ContainsKey(pos)) { loadedChunks[pos].matureChunk(); }
                 }
             }
             public int getLCGValue(((int x, int y) pos, int layer) key, int noiseAmplitude)

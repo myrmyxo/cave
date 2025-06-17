@@ -61,7 +61,7 @@ namespace Cave
 
             public int modificationCount = 0;
             public int unstableLiquidCount = 1;
-            public bool entitiesAndPlantsSpawned = false;
+            public bool isMature = false;
 
             public int explorationLevel = 0; // set fog : 0 for not visible, 1 for cremebetweens, 2 for fully visible
             public bool[,] fogOfWar = null;
@@ -77,7 +77,7 @@ namespace Cave
                 pos = chunkJson.pos;
                 chunkSeed = chunkJson.seed;
                 fillStates = ChunkJsonToChunkfillStates(chunkJson.fill1, chunkJson.fill2);
-                entitiesAndPlantsSpawned = chunkJson.spwnd;
+                isMature = chunkJson.mt;
 
                 determineContents(chunkJson);
             }
@@ -115,7 +115,7 @@ namespace Cave
                 }
                 else { fogOfWar = null; }
 
-                if (!entitiesAndPlantsSpawned) { screen.chunksToSpawnEntitiesIn[pos] = true; }
+                if (!isMature) { screen.chunksToMature[pos] = true; }
             }
             public void demoteToExtra()
             {
@@ -239,7 +239,7 @@ namespace Cave
                             valueModifier = 0;
                             if (tupel.traits.isDegraded) { valueModifier += 3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value2, 11)); }
                             if (tupel.traits.isSlimy) { valueModifier -= mult * Min(0, 20 * (Sin(i + mod2 * 0.3f + 0.5f, 16) + Sin(j + mod2 * 0.3f + 0.5f, 16)) - 10); }
-                            
+
                             score1 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.one, value1, (i, j), mod2) + findTextureScore(tupel.traits.textureType.one, value2) + valueModifier); // Swapping is normal !
                             score2 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.two, value2, (i, j), mod2) + findTextureScore(tupel.traits.textureType.two, value1) + valueModifier); // Cause it needs to be an independant noise !
                             if (tupel.traits.separatorType != 0) { separatorScore += findSeparatorScore(tupel.traits.separatorType, mult); }
@@ -344,12 +344,12 @@ namespace Cave
                 {
                     colorArray[k] = (int)(colorArray[k] * materialColor.mult);
                 };
-                int rando = traits.isTextured ? Abs((int)(LCGyNeg(LCGxPos(pos.x * 32 + i)%153 + LCGyPos(pos.y * 32 + j)%247) % 279)) % 40 - 20 : 0;
+                int rando = traits.isTextured ? Abs((int)(LCGyNeg(LCGxPos(pos.x * 32 + i) % 153 + LCGyPos(pos.y * 32 + j) % 247) % 279)) % 40 - 20 : 0;
                 colorArray[0] += (int)(materialColor.r * (1 - materialColor.mult)) + rando;
                 colorArray[1] += (int)(materialColor.g * (1 - materialColor.mult)) + rando;
                 colorArray[2] += (int)(materialColor.b * (1 - materialColor.mult)) + rando;
                 colorToSet = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
-                
+
                 if (false)  // This was for the csgo missing texture effect when thing is not in the the tha
                 {
                     if ((i + j) % 2 == 0) { colorToSet = Color.Black; }
@@ -421,7 +421,7 @@ namespace Cave
                         if (rando > tupelo.percentage) { rando -= tupelo.percentage; continue; }
                         PlantTraits traits = plantTraitsDict.ContainsKey(tupelo.type) ? plantTraitsDict[tupelo.type] : plantTraitsDict[(-1, 0)];
                     plantInvalidTryAgain:;
-                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, traits.isWater, traits.isCeiling, traits.isSide, soilType:traits.soilType, isEveryAttach:traits.isEveryAttach);
+                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, traits.isWater, traits.isCeiling, traits.isSide, soilType: traits.soilType, isEveryAttach: traits.isEveryAttach);
                         if (!returnTuple.valid) { break; }
                         Plant newPlant = new Plant(this, returnTuple.pos, tupelo.type);
                         while (newPlant.isDeadAndShouldDisappear)
@@ -436,9 +436,12 @@ namespace Cave
                     }
                 }
             }
-            public void spawnEntities()
+            public void matureChunk()
             {
                 BiomeTraits traits = biomeIndex[16, 16][0].traits;  // Middle of chunk
+
+                bool modified = replaceSurfaceTiles();
+
                 if (spawnEntitiesBool)
                 {
                     Dictionary<(int x, int y), bool> forbiddenPositions = new Dictionary<(int x, int y), bool>();
@@ -447,6 +450,7 @@ namespace Cave
                     spawnOneEntities(traits.entityWaterSpawnRate, traits.entityWaterSpawnTypes, forbiddenPositions);
                     spawnOneEntities(traits.entityJesusSpawnRate, traits.entityJesusSpawnTypes, forbiddenPositions);
                 }
+
                 if (spawnPlants)
                 {
                     Dictionary<(int x, int y), bool> forbiddenPositions = new Dictionary<(int x, int y), bool>();
@@ -459,9 +463,48 @@ namespace Cave
                     spawnOnePlants(traits.plantWaterSideSpawnRate, traits.plantWaterSideSpawnTypes, forbiddenPositions);
                     spawnOnePlants(traits.plantEveryAttachSpawnRate, traits.plantEveryAttachSpawnTypes, forbiddenPositions);
                 }
-                entitiesAndPlantsSpawned = true;
+                isMature = true;
+                if (modified) { saveChunk(this); }
             }
-            public ((int x, int y), bool valid) findSuitablePosition(Dictionary<(int x, int y), bool> forbiddenPositions, bool isEntity, bool isWater, bool isCeiling = false, bool isSide = false, bool isDigging = false, bool isJesus = false, (int type, int subType)? soilType = null, bool isEveryAttach = false)
+            public bool replaceSurfaceTiles()
+            {
+                List<((int i, int j) pos, BiomeTraits traits)> tilesToTryReplace = new List<((int i, int j) pos, BiomeTraits traits)>();
+
+                BiomeTraits biomeTraits;
+                for (int i = 0; i < 32; i++)
+                {
+                    for (int j = 0; j < 32; j++)
+                    {
+                        if (!fillStates[i, j].isSolid) { continue; }
+                        biomeTraits = biomeIndex[i, j][0].traits;
+                        if (biomeTraits.surfaceMaterial is null) { continue; }
+                        foreach ((int x, int y) mod in neighbourArray)
+                        {
+                            if (!screen.getTileContent((pos.x * 32 + i + mod.x, pos.y * 32 + j + mod.y)).isSolid) { tilesToTryReplace.Add(((i, j), biomeTraits)); break; }
+                        }
+                    }
+                }
+                if (tilesToTryReplace.Count == 0) { return false; }
+
+                int[] noiseValues = new int[4] {
+                    (int)(LCGxy((pos, 95), screen.seed) % 101),
+                    (int)(LCGxy(((pos.x + 1, pos.y), 95), screen.seed) % 101),
+                    (int)(LCGxy(((pos.x, pos.y + 1), 95), screen.seed) % 101),
+                    (int)(LCGxy(((pos.x + 1, pos.y + 1), 95), screen.seed) % 101)
+                };
+
+                bool modified = false;
+                foreach (((int i, int j) pos, BiomeTraits traits) item in tilesToTryReplace)
+                {
+                    if ((noiseValues[0] * (32 - item.pos.i) + noiseValues[1] * item.pos.i) * (32 - item.pos.j) +
+                        (noiseValues[2] * (32 - item.pos.i) + noiseValues[3] * item.pos.i) * item.pos.j
+                        > item.traits.surfaceMaterial.Value.chance * 1024) { continue; }
+                    fillStates[item.pos.i, item.pos.j] = getTileTraits(item.traits.surfaceMaterial.Value.type); findTileColor(item.pos.i, item.pos.j);
+                    modified = true;
+                }
+                return modified;
+            }
+            public ((int x, int y), bool valid) findSuitablePosition(Dictionary<(int x, int y), bool> forbiddenPositions, bool isEntity, bool isWater, bool isCeiling = false, bool isSide = false, bool isDigging = false, bool isJesus = false, (int type, int subType)[] soilType = null, bool isEveryAttach = false)
             {
                 int counto = 0;
                 (int x, int y) posToTest;
@@ -481,7 +524,7 @@ namespace Cave
                     else { posToTest = (randPos.x, randPos.y + (isCeiling ? 1 : -1)); }
                     tileTraits = screen.getTileContent(posToTest);
 
-                    if (soilType != null && tileTraits.type != soilType.Value) { continue; }
+                    if (soilType != null && !soilType.Contains(tileTraits.type)) { continue; }
                     if (isJesus)
                     {
                         if (!tileTraits.isLiquid) { continue ; }

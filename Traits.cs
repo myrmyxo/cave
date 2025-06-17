@@ -149,7 +149,7 @@ namespace Cave
                 { (4, 1), new TileTraits("Bone Tile", 0.2f,
                 new ColorRange((240, 0, 0), (230, 0, 0), (245, 0, 0))                                                   ) },
                 { (4, 2), new TileTraits("Skin Tile", 0.2f,
-                new ColorRange((240, 0, 0), (210, 0, 0), (180, 0, 0))                                                   ) },
+                new ColorRange((200, 0, 0), (150, 0, 0), (130, 0, 0))                                                   ) },
 
                 { (5, 0), new TileTraits("Mold Tile", 0.1f,
                 new ColorRange((50, 0, 0), (50, 0, 0), (100, 0, 0)),        Tex:true                                    ) },
@@ -1010,11 +1010,11 @@ namespace Cave
             public (int type, int subType, int subSubType) plantElementType;
             public (int type, int subType)? initFailType;
 
-            public (int type, int subType)? soilType;
+            public (int type, int subType)[] soilType;
             public int minGrowthForValidity;
 
             public ((int type, int subType) type, ColorRange colorRange)[] colorOverrideArray;
-            public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? iFT = null, (int type, int subType)? sT = null, int mGFV = 1,
+            public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? iFT = null, (int type, int subType)[] sT = null, int mGFV = 1,
                 ((int type, int subType) type, ColorRange colorRange)[] cOverride = null,
                 bool T = false, bool C = false, bool S = false, bool EA = false, bool W = false, bool lum = false, bool cl = false)
             {
@@ -1075,23 +1075,23 @@ namespace Cave
                 t:(5, 1, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), famousColorRanges["Obsidian"]), ((2, 1), famousColorRanges["ObsidianPollen"]) } ) },
 
                 { (7, 0), new PlantTraits("FleshVine",                              C:true,
-                t:(7, 0, 0), mGFV:4, sT:(4, 0)) },
+                t:(7, 0, 0), mGFV:4, sT:new (int type, int subType)[] { (4, 0), (4, 2) }) },
                 { (7, 1), new PlantTraits("FleshTendril",
-                t:(7, 1, 0), mGFV:4, sT:(4, 0)) },
+                t:(7, 1, 0), mGFV:4, sT:new (int type, int subType)[] { (4, 0), (4, 2) }) },
                 { (7, 2), new PlantTraits("FleshTree1",                             T:true,
-                t:(7, 2, 0), mGFV:1, sT:(4, 0)) },
+                t:(7, 2, 0), mGFV:1, sT:new (int type, int subType)[] { (4, 0), (4, 2) }) },
                 { (7, 3), new PlantTraits("FleshTree2",                             T:true,
-                t:(7, 3, 0), mGFV:1, sT:(4, 0)) },
+                t:(7, 3, 0), mGFV:1, sT:new (int type, int subType)[] { (4, 0), (4, 2) }) },
 
                 { (8, 0), new PlantTraits("BoneStalactite",                         C:true,
-                t:(8, 0, 0), mGFV:4, sT:(4, 1)) },
+                t:(8, 0, 0), mGFV:4, sT:new (int type, int subType)[] { (4, 1) }) },
                 { (8, 1), new PlantTraits("BoneStalagmite",
-                t:(8, 1, 0), mGFV:4, sT:(4, 1)) },
+                t:(8, 1, 0), mGFV:4, sT:new (int type, int subType)[] { (4, 1) }) },
 
                 { (9, 0), new PlantTraits("Body Hair",                              EA:true, cl:true,
-                t:(9, 0, 0), mGFV:4, sT:(4, 0)) },
+                t:(9, 0, 0), mGFV:4, sT:new (int type, int subType)[] { (4, 0), (4, 2) }) },
                 { (9, 1), new PlantTraits("Long Hair",                              C:true, cl:true,
-                t:(9, 1, 0), mGFV:4, sT:(4, 0)) },
+                t:(9, 1, 0), mGFV:4, sT:new (int type, int subType)[] { (4, 0), (4, 2) }) },
 
                 { (20, 0), new PlantTraits("LanternTree",                           T:true, lum:true,
                 t:(20, 0, 0)) },
@@ -1164,6 +1164,7 @@ namespace Cave
 
             public (int type, int subType) fillType;
             public (int type, int subType) tileType;
+            public ((int type, int subType) type, int chance)? surfaceMaterial;
             public (int type, int subType) lakeType;
 
             public (int one, int two) caveType;
@@ -1208,7 +1209,7 @@ namespace Cave
 
             public BiomeTraits(string namee, (int r, int g, int b) colorToPut, float[] spawnRates, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes,
                 (int one, int two)? cT = null, (int one, int two)? txT = null, int sT = 0, int aST = 0, float cW = 1, TileTransitionTraits[] tTT = null,
-                (int type, int subType)? fT = null, (int type, int subType)? tT = null, (int type, int subType)? lT = null,
+                (int type, int subType)? fT = null, (int type, int subType)? tT = null, ((int type, int subType) type, int chance)? sM = null, (int type, int subType)? lT = null,
                 bool S = false, bool Dg = false, bool Da = false)
             {
                 name = namee;
@@ -1220,6 +1221,7 @@ namespace Cave
 
                 fillType = fT ?? (0, 0);
                 tileType = tT ?? (1, 0);
+                surfaceMaterial = sM;
                 lakeType = lT ?? (-2, 0);
 
                 caveType = cT ?? (1, 2);
@@ -1412,7 +1414,7 @@ namespace Cave
                 new float[]{1, 1, 2, 1,         0, 4, 1, 4, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((1, 1), 100), ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((7, 0), 100), ((7, 1), 100) },
-                lT:(-7, 0), tT:(4, 0)) },                            // Flesh Vine     Flesh Tendril
+                lT:(-7, 0), tT:(4, 0), sM:((4, 2), 40)) },                 // Flesh Vine     Flesh Tendril
                 { (10, 1), new BiomeTraits("FleshForest",           (Color.DarkRed.R + 20, Color.DarkRed.G - 20, Color.DarkRed.B - 20),
                 new float[]{1, 1, 2, 1,         0, 3, 1, 3, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((1, 1), 100), ((4, 1), 100), },
@@ -1428,12 +1430,12 @@ namespace Cave
                 new float[]{1, 1, 2, 1,        10, 4, 1, 4, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((7, 0), 100),  ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((9, 0), 100) },
-                cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f) },        // Body Hair
+                cT:(1, 0), lT:(-6, 0), tT:(4, 0), sM:((4, 2), 90), cW:2.5f) }, // Body Hair
                 { (10, 4), new BiomeTraits("Long Hair Forest",      (Color.DarkRed.R - 20, Color.DarkRed.G - 50, Color.DarkRed.B - 70),
                 new float[]{1, 1, 2, 1,         0, 4, 1, 10, 0, 4, 4, 0},
                 new ((int type, int subType) type, float percentage)[]{ ((7, 0), 100),  ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((9, 1), 100) },
-                cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f) },        // Long Hair
+                cT:(1, 0), lT:(-6, 0), tT:(4, 0), sM:((4, 2), 75), cW:2.5f) }, // Long Hair
 
                 { (11, 0), new BiomeTraits("Bone",                  (Color.White.R, Color.White.G, Color.White.B),
                 new float[]{1, 1, 2, 1,         0, 1, 1, 1, 0, 4, 4, 0},
