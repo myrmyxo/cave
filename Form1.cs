@@ -214,6 +214,8 @@ namespace Cave
             // PlantElement side ponderation factor -> prevent all branches of a tree from spawning on the same size (like a left facing decrease directionScore by 1, if < -2 if will force right facing for next child, same for the opposite. Allows to have more equilibrated trees and shite).
             // Traits behaviors of entities ? idk.
             // A luminous liquid ocean in the chandelier dimension ? idk.
+            // -> Ocean biome AND lakes, that have lamprey fish
+            // -> Inverted lakes
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
