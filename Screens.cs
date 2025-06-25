@@ -72,7 +72,7 @@ namespace Cave
                 seed = 123456;
 
                 int idToPut = 0;
-                (int type, int subType) forceBiome = (2, 0);
+                (int type, int subType) forceBiome = (1, 0);
                 int PNGsize = 150;
                 PNGsize = 100;
 
@@ -87,8 +87,8 @@ namespace Cave
                 spawnNests = false;
                 spawnEntitiesBool = false;
                 spawnPlants = true;
-                bool spawnNOTHING = false;
-                bool spawnEVERYTHING = true;
+                bool spawnNOTHING = true;
+                bool spawnEVERYTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
                 if (spawnEVERYTHING) { loadStructuresYesOrNo = true; spawnEntitiesBool = true; spawnPlants = true; }
 
@@ -1117,6 +1117,29 @@ namespace Cave
                     if (plant.lightPositions != null) { foreach ((int x, int y, int radius, Color color) item in plant.lightPositions) { lightPositions.Add(item); } }
                 }
             }
+            public (int x, int y) findPreviousPastPosition(Entity entity, int segment, (int x, int y) segmentPos, (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color) item)
+            {
+                if (segment == 1) {; }
+                if (entity.pastPositions.Count < 2) { return (entity.posX, entity.posY); }
+                (int x, int y) tempPos = segmentPos;
+                if (segment <= 0)
+                {
+                    for (int i = Clamp(0, segment + 1, entity.pastPositions.Count); i < entity.pastPositions.Count && i >= 0; i++)
+                    {
+                        tempPos = entity.pastPositions[i];
+                        if (tempPos != segmentPos) { return (entity.posX - (tempPos.x - entity.posX), entity.posY - (tempPos.y - entity.posY)); }
+                    }
+                }
+                else
+                {
+                    for (int i = Clamp(0, segment - 1, entity.pastPositions.Count); i < entity.pastPositions.Count && i >= 0; i--)
+                    {
+                        tempPos = entity.pastPositions[i];
+                        if (tempPos != segmentPos) { return tempPos; }
+                    }
+                }
+                return tempPos;
+            }
             public void drawEntityOnScreen(Bitmap gameBitmap, (int x, int y) camPos, List<(int x, int y, int radius, Color color)> lightPositions, Entity entity, int forceLightRadius = 0)
             {
                 if (entity.posX + entity.length < camPos.x || entity.posX - entity.length > camPos.x + game.zoomLevel * 2 + 1 || entity.posY + entity.length < camPos.y || entity.posY - entity.length > camPos.y + game.zoomLevel * 2 + 1) { return; }
@@ -1129,25 +1152,29 @@ namespace Cave
                     color = Color.FromArgb((int)(entityMult * color.R + redMult * 255), (int)(entityMult * color.G), (int)(entityMult * color.B));
                 }
                 if (game.isLight && (entity.traits.lightRadius != null || forceLightRadius > 0)) { lightPositions.Add((entity.posX, entity.posY, entity.traits.lightRadius is null ? forceLightRadius : entity.traits.lightRadius.Value, entity.lightColor)); }
-                drawPixel(gameBitmap, color, (entity.posX, entity.posY), camPos);
+                if (!entity.traits.transparentTail) { drawPixel(gameBitmap, color, (entity.posX, entity.posY), camPos); }
                 if (entity.length > 0)
                 {
-                    int county = entity.pastPositions.Count;
-                    for (int i = 0; i < entity.length - 1; i++)
+                    if (!entity.traits.transparentTail)
                     {
-                        if (i >= county) { break; }
-                        drawPixel(gameBitmap, color, entity.pastPositions[i], camPos);
+                        int county = entity.pastPositions.Count;
+                        for (int i = 0; i < entity.length - 1; i++)
+                        {
+                            if (i >= county) { break; }
+                            drawPixel(gameBitmap, color, entity.pastPositions[i], camPos);
+                        }
                     }
 
                     if (entity.traits.tailMap != null)
                     {
-                        foreach ((int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, (int a, int r, int g, int b) value)? color) tupelo in entity.traits.tailMap)
+                        foreach ((int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color) tupelo in entity.traits.tailMap)
                         {
-                            int segment = tupelo.fromEnd ? entity.pastPositions.Count - 1 - tupelo.segment : tupelo.segment;
-                            if (segment < 0 || entity.pastPositions.Count <= segment) { continue; }
+                            int segment = tupelo.fromEnd ? entity.pastPositions.Count - 1 - tupelo.segment : tupelo.segment - 1;
+                            if (segment < -1 || entity.pastPositions.Count <= segment) { continue; }
 
-                            (int x, int y) segmentPos = entity.pastPositions[segment];
-                            (int x, int y) previousSegmentPos = entity.pastPositions[Clamp(0, segment - 1, entity.pastPositions.Count)]; ;
+                            (int x, int y) segmentPos = segment <= -1 ? (entity.posX, entity.posY) : entity.pastPositions[segment];
+                            (int x, int y) previousSegmentPos = findPreviousPastPosition(entity, segment, segmentPos, tupelo);
+                            int signX = tupelo.oriented ? 1 : SignZero(previousSegmentPos.x - segmentPos.x);
                             int angleModo = tupelo.oriented ? directionPositionDictionary[(SignZero(previousSegmentPos.x - segmentPos.x), SignZero(previousSegmentPos.y - segmentPos.y))] : 0;
                             (int x, int y) poso = rotate8(tupelo.pos, tupelo.angleMod + angleModo);
 
@@ -1156,9 +1183,10 @@ namespace Cave
                             {
                                 if (tupelo.color.Value.isVariation == true) { tailColor = Color.FromArgb(ColorClamp(color.A + tupelo.color.Value.value.a), ColorClamp(color.R + tupelo.color.Value.value.r), ColorClamp(color.G + tupelo.color.Value.value.g), ColorClamp(color.B + tupelo.color.Value.value.b)); }
                                 else { tailColor = Color.FromArgb(ColorClamp(tupelo.color.Value.value.a), ColorClamp(tupelo.color.Value.value.r), ColorClamp(tupelo.color.Value.value.g), ColorClamp(tupelo.color.Value.value.b)); }
+                                if (tupelo.color.Value.lightRadius != null) { lightPositions.Add((segmentPos.x + signX * poso.x, segmentPos.y + poso.y, tupelo.color.Value.lightRadius.Value, entity.getLightColorFromColor(tailColor))); }
                             }
 
-                            drawPixel(gameBitmap, tailColor, (segmentPos.x + poso.x, segmentPos.y + poso.y), camPos);
+                            drawPixel(gameBitmap, tailColor, (segmentPos.x + signX * poso.x, segmentPos.y + poso.y), camPos);
                         }
                     }
                 }

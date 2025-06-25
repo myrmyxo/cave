@@ -96,6 +96,7 @@ namespace Cave
                 { (1, 2), new OneSprite("Skeletal", true) },                // TO CHANGE
                 { (2, 0), new OneSprite("Fish", false) },                     
                 { (2, 1), new OneSprite("SkeletonFish", true) },            // TO CHANGE
+                { (2, 2), new OneSprite("Pufferfish", true) },              // TO CHANGE
                 { (3, 0), new OneSprite("HornetEgg", true) },               // TO CHANGE 
                 { (3, 1), new OneSprite("HornetLarva", true) },             // TO CHANGE
                 { (3, 2), new OneSprite("HornetCocoon", true) },            // TO CHANGE
@@ -106,6 +107,7 @@ namespace Cave
                 { (6, 0), new OneSprite("Goblin", true) },                  // TO CHANGE
                 { (7, 0), new OneSprite("Louse", true) },                   // TO CHANGE
                 { (8, 0), new OneSprite("Shark", true) },                   // TO CHANGE
+                { (8, 1), new OneSprite("Anglerfish", true) },              // TO CHANGE
                 { (9, 0), new OneSprite("WaterDog", true) },                // TO CHANGE
             };                                                               
             plantSprites = new Dictionary<(int, int), OneSprite>

@@ -247,7 +247,9 @@ namespace Cave
             public (Color color, float period)? wingTraits;
             public int? lightRadius;
             public (int baseLength, int variation)? length;
-            public (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, (int a, int r, int g, int b) value)? color)[] tailMap;
+            public (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[] tailMap;
+            public float? tailAxisRigidity;
+            public bool transparentTail;
 
             // Characteristics (automatically derived from Behaviors)
             public bool isFlying;
@@ -271,7 +273,8 @@ namespace Cave
             public float jumpChance;
             public EntityTraits(string namee, int hp, ((int type, int subType, int megaType) element, int count) drps,
                 ColorRange colRange, (Color color, float period)? wT = null, int? lR = null, (int baseLength, int variation)? L = null,
-                (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, (int a, int r, int g, int b) value)? color)[] tM = null,
+                (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[] tM = null,
+                ((bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color, (int segment, bool fromEnd, (int x, int y) pos)[] array)[] tM2 = null, float? tAR = null, bool tT = false,
                 int iW = 0, int oW = 0, int iA = 0, int oG = 0, int iG = 0, int oP = 0,
                 float sS = 0.1f, float sMS = 0.5f, (float x, float y)? jS = null, float jC = 0)
             {
@@ -284,6 +287,17 @@ namespace Cave
                 lightRadius = lR;
                 length = L;
                 tailMap = tM;
+                if (tM2 != null)
+                {
+                    List<(int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)> newTailMap = new List<(int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)>();
+                    foreach (((bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color, (int segment, bool fromEnd, (int x, int y) pos)[] array) subArray in tM2) {
+                        foreach ((int segment, bool fromEnd, (int x, int y) pos) element in subArray.array) { newTailMap.Add((element.segment, element.fromEnd, false, 0, element.pos, subArray.color)); }
+                    }
+                    if (tailMap != null) { foreach ((int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color) element in tailMap) { newTailMap.Add(element); } }
+                    tailMap = newTailMap.ToArray();
+                }
+                tailAxisRigidity = tAR;
+                transparentTail = tT;
 
                 isFlying = iA == 1 ? true : false;
                 isSwimming = iW == 2 ? true : false;
@@ -343,6 +357,9 @@ namespace Cave
                 { (2, 1), new EntityTraits("SkeletonFish",    2,  ((8, 1, 3), 1),       //  --> Bone
                 new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),
                 iW:2, oG:1, iG:1, jC:0.01f) },
+                { (2, 2), new EntityTraits("Pufferfish",      2,  ((8, 0, 3), 1),       //  --> Flesh
+                new ColorRange((190, 0, 30), (80, -50, 30), (80, 50, 30)),
+                iW:2, oG:1, iG:1, jC:0.01f) },
 
                 { (3, 0), new EntityTraits("HornetEgg",       2,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((205, 10, 30), (205, 10, 30), (235, 0, 30)),                                              
@@ -377,11 +394,41 @@ namespace Cave
                 iW:1, oW:2, iA:2, oG:4, iG:1, oP:1, jS:(1, 1.5f), jC:0.1f) },
 
                 { (8, 0), new EntityTraits("Shark",           5,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((110, 0, 30), (110, 0, 30), (140, 20, 30)), L:(4, 1), tM:new (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, (int a, int r, int g, int b) value)? color)[]{ (1, false, false, 0, (0, 1), (true, (0, -15, -15, -20))), (1, false, false, 0, (0, 2), (true, (0, -15, -15, -20))),     (0, true, true, 1, (1, 0), (true, (0, -15, -15, -20))), (0, true, true, 7, (1, 0), (true, (0, -15, -15, -20))) },
+                new ColorRange((110, 0, 30), (110, 0, 30), (140, 20, 30)), L:(4, 1), tM:new (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[]{ (2, false, false, 0, (0, 1), (true, null, (0, -15, -15, -20))), (2, false, false, 0, (0, 2), (true, null, (0, -15, -15, -20))),     (0, true, true, 1, (1, 0), (true, null, (0, -8, -8, -13))), (0, true, true, 7, (1, 0), (true, null, (0, -8, -8, -13))) },
+                iW:2, oG:1, iG:1, jC:0.01f, tAR:2.5f) },
+                { (8, 1), new EntityTraits("Anglerfish",      5,  ((8, 0, 3), 1),       //  --> Flesh
+                new ColorRange((80, 20, 20), (55, 0, 20), (35, -10, 20)), L:(9, 0), tM: new (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[] { (2, false, false, 0, (5, 3), (false, 4, (255, 255, 255, 255))), (2, false, false, 0, (0, 2), (false, null, (255, 230, 230, 230))) },   // light part, then eye
+                tM2:new ((bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color, (int segment, bool fromEnd, (int x, int y) pos)[] array)[]
+                {
+                    ((true, null, (0, 0, 0, 0)), new (int segment, bool fromEnd, (int x, int y) pos)[]
+                    {
+                        (0, false, (1, -2)),
+                        (0, false, (0, -3)), (0, false, (0, -2)), (0, false, (0, 2)),
+                        (1, false, (0, -3)), (1, false, (0, -2)), (1, false, (0, 1)), (1, false, (0, 2)), (1, false, (0, 3)),
+                        (2, false, (0, -3)), (2, false, (0, -2)), (2, false, (0, -1)), (2, false, (0, 0)), (2, false, (0, 1)), (2, false, (0, 2)), (2, false, (0, 3)),
+                        (3, false, (0, -3)), (3, false, (0, -2)), (3, false, (0, -1)), (3, false, (0, 0)), (3, false, (0, 1)), (3, false, (0, 2)), (3, false, (0, 3)),
+                        (4, false, (0, -3)), (4, false, (0, -2)), (4, false, (0, -1)), (4, false, (0, 0)), (4, false, (0, 1)), (4, false, (0, 2)), (4, false, (0, 3)),
+                        (5, false, (0, -2)), (5, false, (0, -1)), (5, false, (0, 0)), (5, false, (0, 1)), (5, false, (0, 2)),
+                        (6, false, (0, -1)), (6, false, (0, 0)), (6, false, (0, 1)),
+
+                        (2, false, (0, 4)), (2, false, (-1, 5)), (2, false, (-2, 5)), (2, false, (-2, 6)), (2, false, (-1, 7)), (2, false, (0, 7)), (2, false, (1, 7)), (2, false, (2, 7)), (2, false, (3, 6)), (2, false, (4, 5)), (2, false, (5, 4))
+                    }),
+
+                    ((true, null, (0, 70, 75, 80)), new (int segment, bool fromEnd, (int x, int y) pos)[]
+                    {
+                        (0, false, (-1, 0)), (0, false, (0, -1)), (0, false, (1, 1)), (0, false, (2, -1)), // Teeth
+
+                        (5, false, (-1, 3)), (5, false, (0, 3)),
+                        (5, false, (-1, -3)), (5, false, (0, -3)),
+
+                        (7, false, (0, 1)), (7, false, (0, 0)), (7, false, (0, -1)),
+                        (7, false, (-1, 1)), (7, false, (-1, 2)), (7, false, (-1, 0)), (7, false, (-1, -1)), (7, false, (-1, -2)),
+                    })
+                }, tAR:3.1f, tT:true,
                 iW:2, oG:1, iG:1, jC:0.01f) },
 
                 { (9, 0), new EntityTraits("WaterDog",       15,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((150, 0, 30), (120, 10, 30), (90, 20, 30)), L:(13, 7), tM:new (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, (int a, int r, int g, int b) value)? color)[]{ (2, false, false, 0, (0, 1), (true, (0, -20, -20, -15))), (2, false, false, 0, (0, 2), (true, (0, -20, -20, -15))),    (3, false, false, 0, (0, -1), (true, (0, -20, -20, -15))),    (5, false, false, 0, (0, 1), (true, (0, -20, -20, -15))), (5, false, false, 0, (0, 2), (true, (0, -20, -20, -15))),    (6, false, false, 0, (0, -1), (true, (0, -20, -20, -15))),    (8, false, false, 0, (0, 1), (true, (0, -20, -20, -15))),    (11, false, false, 0, (0, 1), (true, (0, -20, -20, -15))) },
+                new ColorRange((150, 0, 30), (120, 10, 30), (90, 20, 30)), L:(13, 7), tM:new (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[]{ (2, false, false, 0, (0, 1), (true, null, (0, -20, -20, -15))), (2, false, false, 0, (0, 2), (true, null, (0, -20, -20, -15))),    (3, false, false, 0, (0, -1), (true, null, (0, -20, -20, -15))),    (5, false, false, 0, (0, 1), (true, null, (0, -20, -20, -15))), (5, false, false, 0, (0, 2), (true, null, (0, -20, -20, -15))),    (6, false, false, 0, (0, -1), (true, null, (0, -20, -20, -15))),    (8, false, false, 0, (0, 1), (true, null, (0, -20, -20, -15))),    (11, false, false, 0, (0, 1), (true, null, (0, -20, -20, -15))) },
                 iW:2, oG:1, iG:1, jC:0.01f) },
             };
         }
@@ -1399,21 +1446,26 @@ namespace Cave
 
 
                 //      -E- C  G  W  J      -P- E  G  T  C  S  WG WC WS  
-                { (10, 0),  new BiomeTraits("Lanterns",             (Color.Gray.R - 50, Color.Gray.G - 10, Color.Gray.B + 40),
+                { (10, 0), new BiomeTraits("Lanterns",             (Color.Gray.R - 50, Color.Gray.G - 10, Color.Gray.B + 40),
                 new float[]{1, 0.25f, 2, 1,     0, 4, 1, 2, 2, 4, 4, 0}, // Frost Fairy
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((10, 0), 100), ((10, 1), 100), ((10, 2), 100) },
                 cT:(1, 5), txT:(0, 0), Da:true) },                   // LanternTree     LanternVine     LanternSide
-                { (10, 1),  new BiomeTraits("MixedLuminous",        (Color.Gray.R, Color.Gray.G, Color.Gray.B),
+                { (10, 1), new BiomeTraits("MixedLuminous",        (Color.Gray.R, Color.Gray.G, Color.Gray.B),
                 new float[]{1, 0.25f, 2, 1,     0, 4, 1, 1, 1, 4, 4, 0}, // Frost Fairy
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((11, 0), 50), ((12, 1), 50), ((10, 1), 100), ((10, 2), 100) },
                 Da:true) },                                          // Candle         Chandelier     LanternVine     LanternSide
-                { (10, 2),  new BiomeTraits("Chandeliers",          (Color.Gray.R + 50, Color.Gray.G + 10, Color.Gray.B - 40),
+                { (10, 2), new BiomeTraits("Chandeliers",          (Color.Gray.R + 50, Color.Gray.G + 10, Color.Gray.B - 40),
                 new float[]{1, 0.25f, 2, 1,     0, 4, 1, 1, 0, 4, 4, 0}, // Frost Fairy
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((11, 0), 50), ((11, 1), 50), ((11, 2), 100), },
-                cT:(1, 5), txT:(0, 0), Da:true) },                   // Candle         Chandelier     Candelabrum
+                cT:(1, 5), txT:(0, 0), Da:true) },                   // Candle         Chandelier     Candelabrum 
+                { (11, 0), new BiomeTraits("Dark Ocean",            (Color.DarkSlateBlue.R, Color.DarkSlateBlue.G, Color.DarkSlateBlue.B),
+                new float[]{1, 0.25f, 3, 6,     0, 4, 1, 2, 0, 8, 8, 0}, // Fish      Shark           Anglerfish   Waterdog        WaterSkipper
+                new ((int type, int subType) type, float percentage)[]{ ((2, 0), 95), ((8, 0), 3.5f), ((8, 1), 1), ((9, 0), 0.5f), ((5, 0), 100), },
+                new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((2, 1), 100), },
+                cT:(0, 3), txT:(0, 0), fT:(-2, 0), sT:1, Da:true) }, // Kelp           CeilingKelp
 
 
                 //      -E- C  G  W  J      -P- E  G  T  C  S  WG WC WS  
@@ -1448,7 +1500,7 @@ namespace Cave
                 new float[]{1, 1, 2, 1,         0, 1, 1, 1, 0, 4, 4, 0}, // Skeletal   Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((1, 2), 100), ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((21, 0), 100), ((21, 1), 100) },
-                lT:(-6, 0), tT:(4, 1)) },                            // Bone Stalagmi   Bone Stalactite
+                lT:(-6, 0), tT:(4, 1)) },                            // Bone Stalagmite Bone Stalactite
 
                 { (22, 0), new BiomeTraits("Blood Ocean",           (Color.DarkRed.R, Color.DarkRed.G, Color.DarkRed.B),
                 new float[]{1, 1, 2, 1,         0, 4, 1, 2, 0, 4, 4, 0}, // Nematode

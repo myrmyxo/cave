@@ -1244,8 +1244,9 @@ namespace Cave
                 }
                 else if (dimensionType == (1, 0)) // type == 1, chandelier dimension
                 {
-                    percentageFree -= calculateAndAddBiome(listo, (10, 0), percentageFree, humidity, (700, 999999)); // Lantern
-                    percentageFree -= calculateAndAddBiome(listo, (10, 2), percentageFree, humidity, (-999999, 300)); // Chandelier
+                    percentageFree -= calculateAndAddBiome(listo, (11, 0), percentageFree, humidity, (720, 999999)); // Dark ocean...
+                    percentageFree -= calculateAndAddBiome(listo, (10, 0), percentageFree, temperature, (700, 999999)); // Lantern
+                    percentageFree -= calculateAndAddBiome(listo, (10, 2), percentageFree, temperature, (-999999, 300)); // Chandelier
                     testAddBiome(listo, (10, 1), percentageFree); // MixedLuminous
                 }
                 else if (dimensionType == (2, 0)) // type == 2, living dimension

@@ -190,6 +190,10 @@ namespace Cave
             {
                 lightColor = Color.FromArgb(255, (color.R + 255) / 2, (color.G + 255) / 2, (color.B + 255) / 2);
             }
+            public Color getLightColorFromColor(Color colorToGetLightFrom)
+            {
+                return Color.FromArgb(255, (colorToGetLightFrom.R + 255) / 2, (colorToGetLightFrom.G + 255) / 2, (colorToGetLightFrom.B + 255) / 2);
+            }
             public void findRandomDestination(int distance)
             {
                 targetPos = (posX + rand.Next(distance * 2 + 1) - distance, posY + rand.Next(distance * 2 + 1) - distance);
@@ -1033,6 +1037,19 @@ namespace Cave
                     while (pastPositions.Count >= length) { pastPositions.RemoveAt(pastPositions.Count - 1); }
                 }
             }
+            public void applyTailRigidity(float rigidity)
+            {
+                int diff;
+                int yVariationAllowed;
+                (int x, int y) pos;
+                for(int i = 0; i < pastPositions.Count; i++)
+                {
+                    pos = pastPositions[i];
+                    yVariationAllowed = (int)((i + 1)/ rigidity); // i+ 1 because First position of pastPositions actually is tail's second position (since the first one is entity.pos)
+                    diff = posY - pos.y; 
+                    if (Abs(diff) > yVariationAllowed) { pastPositions[i] = (pos.x, posY - yVariationAllowed * Sign(diff)); }
+                }
+            }
             public bool actuallyMoveTheEntity(bool climbing = false)
             {
                 TileTraits tile;
@@ -1124,7 +1141,12 @@ namespace Cave
                 }
                 if (!isDoneX) { speedX = 0; }
                 if (!isDoneY) { speedY = 0; }
-                return hasIntMovedX || hasIntMovedY;
+                if (hasIntMovedX || hasIntMovedY)
+                {
+                    if (traits.tailAxisRigidity != null) { applyTailRigidity(traits.tailAxisRigidity.Value); }
+                    return true;
+                }
+                return false;
 
             SaveEntity:;
                 entityExitingChunk(posToTest);

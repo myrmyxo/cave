@@ -73,6 +73,7 @@ namespace Cave
                 turnPngIntoString("Carnal");
                 turnPngIntoString("Skeletal");
                 turnPngIntoString("Fish");
+                turnPngIntoString("Pufferfish");
                 turnPngIntoString("SkeletonFish");
                 turnPngIntoString("HornetEgg");
                 turnPngIntoString("HornetLarva");
@@ -84,6 +85,7 @@ namespace Cave
                 turnPngIntoString("Goblin");
                 turnPngIntoString("Louse");
                 turnPngIntoString("Shark");
+                turnPngIntoString("Anglerfish");
                 turnPngIntoString("WaterDog");
 
 
@@ -215,7 +217,11 @@ namespace Cave
             // Traits behaviors of entities ? idk.
             // A luminous liquid ocean in the chandelier dimension ? idk.
             // -> Ocean biome AND lakes, that have lamprey fish
-            // -> Inverted lakes
+            // -> Inverted lakes (floating luminescent lily pads spawn there and in lakes also)
+            // -> Make light sources have varying High intensity/Low intensity circles, so player can have a BIG low intensity light in some cases. Maye have a different size for if in water or not ? Like in water bigger low intensity but smaller high intensity (or the opposite, or just lower in general since water.)).
+            // -> Add pufferfish UUUUUUUURRRRRRRRRGHHHHHHHHHHHHHHHHHHHHIHHHHHHHHHHHHHHHHHLHHHHHHHHHHHHHHHHHHHHHYHHHHHHHHHHHHHHHH
+            // -> Better tail function (parametric)
+            // -> Lil 1 pixel tails for fishies ! (like wings but only one side AND upside and downside too. Might be better for tadpoles only tho ? idk when they'll be added LOL).
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
@@ -254,6 +260,7 @@ namespace Cave
             // Params in the findBiome functions ? To make them serializable yes yes
             // Teratoma and Cysts structures in living dimension. Hair forest, eyes ? nails teeth. ADD SKIN ALSO !!! Blood coagulation when exposed to air ???
             // Living dimensions have hair color ??? Like the WHOLE dimension has black hair, or brown hair... idk
+            // swarms of locusts that uhhhh go and uh. eat plants idk.
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
@@ -277,6 +284,7 @@ namespace Cave
             // Flies that hover over lakes. ACTUALLY, Dragonflies might be better ??? or both idk but flies might look like obsidian fairies
             // Tunicates in oceans
             // Squirrels that climb trees and have a tail ?
+            // flying fish ?
 
             // Plants ideas !
             // bone trees and shrubs... like ribs.
