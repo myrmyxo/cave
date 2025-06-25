@@ -311,7 +311,7 @@ namespace Cave
                 tryStartAttack();
                 if (craftSelection && digPress && tryCraft()) { digPress = false; }
 
-                if (!onGround && oldSpeedY <= speedY) { wingTimer += 0.02f; }
+                if ((traits.wingTraits != null) && ((!onGround && oldSpeedY <= speedY) || (traits.wingTraits.Value.type == 1))) { wingTimer += 0.02f; }
             }
             public override void entityExitingChunk((int x, int y) posToTest)
             {

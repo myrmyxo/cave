@@ -978,7 +978,7 @@ namespace Cave
 
                 if (currentAttack != null && currentAttack.isDone) { currentAttack = null; }
 
-                if (!onGround /*oldSpeedY + 0.001f <= speedY*/) { wingTimer += 0.02f; }
+                if (traits.wingTraits != null && (!onGround || (traits.wingTraits.Value.type == 1))/*oldSpeedY + 0.001f <= speedY*/) { wingTimer += 0.02f; }
             }
             public void testTileEffects(TileTraits tile)
             {

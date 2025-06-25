@@ -1153,7 +1153,7 @@ namespace Cave
                 }
                 if (game.isLight && (entity.traits.lightRadius != null || forceLightRadius > 0)) { lightPositions.Add((entity.posX, entity.posY, entity.traits.lightRadius is null ? forceLightRadius : entity.traits.lightRadius.Value, entity.lightColor)); }
                 if (!entity.traits.transparentTail) { drawPixel(gameBitmap, color, (entity.posX, entity.posY), camPos); }
-                if (entity.length > 0)
+                if (entity.length > 0 || entity.traits.tailMap != null)
                 {
                     if (!entity.traits.transparentTail)
                     {
@@ -1192,12 +1192,26 @@ namespace Cave
                 }
                 if (entity.traits.wingTraits != null)
                 {
+                    Color wingColor;
+                    if (entity.traits.wingTraits.Value.color.isVariation == true) { wingColor = Color.FromArgb(ColorClamp(color.A + entity.traits.wingTraits.Value.color.value.a), ColorClamp(color.R + entity.traits.wingTraits.Value.color.value.r), ColorClamp(color.G + entity.traits.wingTraits.Value.color.value.g), ColorClamp(color.B + entity.traits.wingTraits.Value.color.value.b)); }
+                    else { wingColor = Color.FromArgb(ColorClamp(entity.traits.wingTraits.Value.color.value.a), ColorClamp(entity.traits.wingTraits.Value.color.value.r), ColorClamp(entity.traits.wingTraits.Value.color.value.g), ColorClamp(entity.traits.wingTraits.Value.color.value.b)); }
                     (int x, int y) wingPos = wingPosArray[(int)(entity.wingTimer / entity.traits.wingTraits.Value.period) % 8];
-                    int? forceX = null;
-                    if (entity.speedX >= 1.5f) { forceX = -1; }
-                    else if (entity.speedX <= -1.5f) { forceX = 1; }
-                    drawPixel(gameBitmap, entity.traits.wingTraits.Value.color, (entity.posX + (forceX ?? (entity.speedX >= -0.75f ? wingPos.x : 0)), entity.posY + wingPos.y), camPos);
-                    drawPixel(gameBitmap, entity.traits.wingTraits.Value.color, (entity.posX + (forceX ?? (entity.speedX <= 0.75f ? -wingPos.x : 0)), entity.posY + wingPos.y), camPos);
+                    if (entity.traits.wingTraits.Value.type == 0)
+                    {
+                        int forceX = 0;
+                        if (entity.speedX >= 1.5f) { forceX = -1; }
+                        else if (entity.speedX <= -1.5f) { forceX = 1; }
+                        drawPixel(gameBitmap, wingColor, (entity.posX + (forceX == 0 ? (entity.speedX >= -0.75f ? wingPos.x : 0) : forceX), entity.posY + wingPos.y), camPos);
+                        drawPixel(gameBitmap, wingColor, (entity.posX + (forceX == 0 ? (entity.speedX <= 0.75f ? -wingPos.x : 0) : forceX), entity.posY + wingPos.y), camPos);
+                    }
+                    else if (entity.traits.wingTraits.Value.type == 1)
+                    {
+                        if (Abs(entity.speedX) > 0.05f || Abs(entity.speedY) > 0.05f)
+                        {
+                            wingPos = rotate8((1, 0), wingPos.y + directionPositionDictionary[(Abs(entity.speedY) >= 2 * Abs(entity.speedX) ? 0 : SignZero(entity.speedX), Abs(entity.speedX) >= 2 * Abs(entity.speedY) ? 0 : SignZero(entity.speedY))]);   // else if would never go orthoganal (even if speedX = 3 and speedY = 0.05 for example)
+                            drawPixel(gameBitmap, wingColor, (entity.posX + wingPos.x, entity.posY + wingPos.y), camPos);
+                        }
+                    }
                 }
             }
             public void drawPlayerOnScreen(Bitmap gameBitmap, (int x, int y) camPos, List<(int x, int y, int radius, Color color)> lightPositions, Player player)
