@@ -216,17 +216,13 @@ namespace Cave
             // PlantElement side ponderation factor -> prevent all branches of a tree from spawning on the same size (like a left facing decrease directionScore by 1, if < -2 if will force right facing for next child, same for the opposite. Allows to have more equilibrated trees and shite).
             // Traits behaviors of entities ? idk.
             // A luminous liquid ocean in the chandelier dimension ? idk.
-            // -> Ocean biome AND lakes, that have lamprey fish
             // -> Inverted lakes (floating luminescent lily pads spawn there and in lakes also)
             // -> Make light sources have varying High intensity/Low intensity circles, so player can have a BIG low intensity light in some cases. Maye have a different size for if in water or not ? Like in water bigger low intensity but smaller high intensity (or the opposite, or just lower in general since water.)).
             // -> Add pufferfish UUUUUUUURRRRRRRRRGHHHHHHHHHHHHHHHHHHHHIHHHHHHHHHHHHHHHHHLHHHHHHHHHHHHHHHHHHHHHYHHHHHHHHHHHHHHHH
-            // -> Better tail function (parametric)
-            // -> Lil 1 pixel tails for fishies ! (like wings but only one side AND upside and downside too. Might be better for tadpoles only tho ? idk when they'll be added LOL).
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
             // 30/01/2025 Once, a broken honey storage room was made, as the tunnel that lead to it made it have a leak mid height (tunnel dug in the bordel...)
-            // Nest making rooms SUPER fucking far away from spawn
             // Prevent waterSkippers for yeeting themselves out of pools where there is nothing on the sides of a lake to prevent them from doing so
             // -> Waterskippers fly 1 tile above ground also ???????????? They don't fall (bug with jesus)
             // When worms are on solid ground, like in air on top of a solid... they stop moving lol
@@ -234,7 +230,6 @@ namespace Cave
             // When making portal, it FUCKING EATS THE PLANTS AROUND IT ????????? LIKE DUDE ??? STOP ???
             // Weird transition between mold and ocean has appeared after ice ocean update
             // Entities exiting chunks seems to disappear still... Fuuuckkk. Not sure tho !
-            // BUG IN THE ENTITY MOVEMENT !! Moves perfectly in diagonal when doing +x+y, but when going another direction it makes weir L shapes of movement. Can observe when moving fast as waterdog
             // Sometimes leakage between ice ocean and ocean, due to antiborder idk thing
 
             // cool ideas for later !

@@ -243,15 +243,19 @@ namespace Cave
             public int startingHp;
             public ((int type, int subType, int megaType) element, int count) drops;
 
+            // Cosmetic stuff
             public ColorRange colorRange;
-            public (int type, (int x, int y) pos, float period, (bool isVariation, (int a, int r, int g, int b) value) color)? wingTraits;
             public int? lightRadius;
             public (int baseLength, int variation)? length;
-            public (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[] tailMap;
             public float? tailAxisRigidity;
             public bool transparentTail;
+            public (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[] tailMap;
+            public (int type, (int x, int y) pos, float period, (bool isVariation, (int a, int r, int g, int b) value) color)? wingTraits;
 
-            // Characteristics (automatically derived from Behaviors)
+            // Collisions shit
+            public ((int x, int y)[] up, (int x, int y)[] side, (int x, int y)[] down) collisionPoints;
+
+            // Behavior Characteristics (automatically derived from Behaviors)
             public bool isFlying;
             public bool isSwimming;
             public bool isDigging;
@@ -266,15 +270,17 @@ namespace Cave
             public int inGroundBehavior;    // -> 0: nothing, 1: random jump, 2: dig around, 3: teleport, 4: dig tile
             public int onPlantBehavior;     // -> 0: fallOut, 1: random movement
 
+            // Characteristics
             public float swimSpeed;
             public float swimMaxSpeed;
-
             public (float x, float y) jumpStrength;
             public float jumpChance;
             public EntityTraits(string namee, int hp, ((int type, int subType, int megaType) element, int count) drps,
-                ColorRange colRange, (int type, (int x, int y) pos, float period, (bool isVariation, (int a, int r, int g, int b) value) color)? wT = null, int? lR = null, (int baseLength, int variation)? L = null,
+                ColorRange colRange, int? lR = null, (int baseLength, int variation)? L = null, float? tAR = null, bool tT = false,
                 (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[] tM = null,
-                ((bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color, (int segment, bool fromEnd, (int x, int y) pos)[] array)[] tM2 = null, float? tAR = null, bool tT = false,
+                ((bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color, (int segment, bool fromEnd, (int x, int y) pos)[] array)[] tM2 = null,
+                (int type, (int x, int y) pos, float period, (bool isVariation, (int a, int r, int g, int b) value) color)? wT = null,
+                ((int x, int y)[] up, (int x, int y)[] side, (int x, int y)[] down)? cP = null,
                 int iW = 0, int oW = 0, int iA = 0, int oG = 0, int iG = 0, int oP = 0,
                 float sS = 0.1f, float sMS = 0.5f, (float x, float y)? jS = null, float jC = 0)
             {
@@ -283,9 +289,10 @@ namespace Cave
                 drops = drps;
 
                 colorRange = colRange;
-                wingTraits = wT;
                 lightRadius = lR;
                 length = L;
+                tailAxisRigidity = tAR;
+                transparentTail = tT;
                 tailMap = tM;
                 if (tM2 != null)
                 {
@@ -296,8 +303,10 @@ namespace Cave
                     if (tailMap != null) { foreach ((int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color) element in tailMap) { newTailMap.Add(element); } }
                     tailMap = newTailMap.ToArray();
                 }
-                tailAxisRigidity = tAR;
-                transparentTail = tT;
+                wingTraits = wT;
+
+                if (cP is null) { collisionPoints = (doubleZeroArray, doubleZeroArray, doubleZeroArray); }
+                else { collisionPoints = cP.Value; }
 
                 isFlying = iA == 1 ? true : false;
                 isSwimming = iW == 2 ? true : false;
@@ -424,7 +433,9 @@ namespace Cave
                         (7, false, (0, 1)), (7, false, (0, 0)), (7, false, (0, -1)),
                         (7, false, (-1, 1)), (7, false, (-1, 2)), (7, false, (-1, 0)), (7, false, (-1, -1)), (7, false, (-1, -2)),
                     })
-                }, tAR:3.1f, tT:true,
+                }, 
+                tAR:3.1f, tT:true,
+                cP:(new (int x, int y)[] { (-6, 5), (-5, 6), (-4, 7), (-3, 7), (-2, 7), (-1, 7), (0, 7), (1, 6), (2, 5), (3, 4) },    new (int x, int y)[] { (0, -3), (1, -2), (2, -1), (2, 0), (2, 1), (2, 2), (3, 3), (3, 4), (2, 5), (1, 6), (0, 7) },    new (int x, int y)[] { (-6, -1), (-5, -2), (-4, -3), (-3, -3), (-2, -3), (-1, -3), (0, -3), (1, -2), (2, -1) }), 
                 iW:2, oG:1, iG:1, jC:0.01f) },
 
                 { (9, 0), new EntityTraits("WaterDog",       15,  ((8, 0, 3), 1),       //  --> Flesh

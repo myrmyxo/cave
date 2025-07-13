@@ -1052,7 +1052,6 @@ namespace Cave
             }
             public bool actuallyMoveTheEntity(bool climbing = false)
             {
-                TileTraits tile;
                 (int x, int y) previousPos = (posX, posY);
                 (int x, int y) posToTest;
                 float realPosToTest;
@@ -1060,8 +1059,8 @@ namespace Cave
                 float toMoveX = speedX;
                 float toMoveY = speedY;
 
-                float xRatio = toMoveX / (Abs(toMoveY) + 0.0000001f);
-                float yRatio = toMoveY / (Abs(toMoveX) + 0.0000001f);
+                float xRatio = Abs(toMoveX) / (Abs(toMoveY) + 0.0000001f);
+                float yRatio = Abs(toMoveY) / (Abs(toMoveX) + 0.0000001f);
                 float currentSide = 0; // + go horizontal, - go vertical
                 float diff;
 
@@ -1071,6 +1070,9 @@ namespace Cave
                 bool isDoneY = false;
                 bool hasIntMovedX = false;
                 bool hasIntMovedY = false;
+
+                int signX = Sign(toMoveX);
+                int signY = Sign(toMoveY);
 
                 while (true)
                 {
@@ -1089,8 +1091,13 @@ namespace Cave
 
                         Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                         if (chunk is null) { goto SaveEntity; }
-                        tile = screen.getTileContent(posToTest);
-                        if ((!tile.isSolid || traits.isDigging) && (!climbing || screen.climbablePositions.Contains(posToTest))) // if a worm or the material is not a solid tile, update positions and continue
+                        bool proceed = true;
+                        foreach ((int x, int y) mod in traits.collisionPoints.side)
+                        {   // if a worm or the material is not a solid tile, stop updating positions
+                            if (screen.getTileContent((posToTest.x + mod.x * signX, posToTest.y + mod.y)).isSolid && !traits.isDigging) { proceed = false; break; }
+                        }
+                        if (climbing && !screen.climbablePositions.Contains(posToTest)) { proceed = false; }
+                        if (proceed)
                         {
                             hasIntMovedX = true;
                             realPosX = realPosToTest;
@@ -1120,8 +1127,13 @@ namespace Cave
 
                         Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                         if (chunk is null) { goto SaveEntity; }
-                        tile = screen.getTileContent(posToTest);
-                        if ((!tile.isSolid || traits.isDigging) && (!climbing || screen.climbablePositions.Contains(posToTest))) // if a worm or the material is not a solid tile, update positions and continue
+                        bool proceed = true;
+                        foreach ((int x, int y) mod in signY > 0 ? traits.collisionPoints.up : traits.collisionPoints.down)
+                        {   // if a worm or the material is not a solid tile, stop updating positions
+                            if (screen.getTileContent((posToTest.x + mod.x * signX, posToTest.y + mod.y)).isSolid && !traits.isDigging) { proceed = false; break; }
+                        }
+                        if (climbing && !screen.climbablePositions.Contains(posToTest)) { proceed = false; }
+                        if (proceed)
                         {
                             hasIntMovedY = true;
                             realPosY = realPosToTest;

@@ -84,7 +84,7 @@ namespace Cave
                 bool isPngToExport = false;
 
                 loadStructuresYesOrNo = false;
-                spawnNests = false;
+                spawnNests = true;
                 spawnEntitiesBool = false;
                 spawnPlants = true;
                 bool spawnNOTHING = true;
@@ -1063,7 +1063,7 @@ namespace Cave
                 drawFogOfWarOnScreen(gameBitmap, camPos);                
 
                 if (debugMode && !isPngToBeExported && false) { drawNestDebugOnScreen(gameBitmap, camPos); } // debug for nests
-                if (debugMode && !isPngToBeExported && false) { drawEntityPathDebugOnScreen(gameBitmap, camPos); } // debug for paths
+                if (debugMode && !isPngToBeExported && true) { drawEntityPathDebugOnScreen(gameBitmap, camPos, player); } // debug for paths
                 if (debugMode && !isPngToBeExported && false) { drawMiscDebugOnScreen(gameBitmap, camPos); } // debug misc
                 if (true) { game.miscDebugList = new List<((int x, int y) pos, Color col)>(); }  // For memory leak ig blah blah
 
@@ -1313,46 +1313,47 @@ namespace Cave
                     }
                     if (nest.rooms.ContainsKey(1))
                     {
-                        foreach ((int x, int y) posToDrawAt in nest.rooms[1].tiles)
-                        {
-                            drawPixel(gameBitmap, Color.FromArgb(100, 120, 0, 100), posToDrawAt, camPos);
-                        }
+                        foreach ((int x, int y) posToDrawAt in nest.rooms[1].tiles) { drawPixel(gameBitmap, Color.FromArgb(100, 120, 0, 100), posToDrawAt, camPos); }
                     }
                     foreach (Room room in nest.rooms.Values)
                     {
                         if (room.type == 2)
                         {
-                            foreach ((int x, int y) posToDrawAt in room.dropPositions)
-                            {
-                                drawPixel(gameBitmap, Color.FromArgb(100, 0, 0, 255), posToDrawAt, camPos);
-                            }
+                            foreach ((int x, int y) posToDrawAt in room.dropPositions) { drawPixel(gameBitmap, Color.FromArgb(100, 0, 0, 255), posToDrawAt, camPos); }
                         }
                         else if (room.type == 3)
                         {
-                            foreach ((int x, int y) posToDrawAt in room.dropPositions)
-                            {
-                                drawPixel(gameBitmap, Color.FromArgb(100, 220, 255, 150), posToDrawAt, camPos);
-                            }
+                            foreach ((int x, int y) posToDrawAt in room.dropPositions) { drawPixel(gameBitmap, Color.FromArgb(100, 220, 255, 150), posToDrawAt, camPos); }
                         }
                     }
                 }
             }
-            public void drawEntityPathDebugOnScreen(Bitmap gameBitmap, (int x, int y) camPos)
+            public void drawEntityPathDebugOnScreen(Bitmap gameBitmap, (int x, int y) camPos, Player player)
             {
+                Color simplifiedPathColor = Color.FromArgb(100, 200, 0, 100);
+                Color collisionColor = Color.FromArgb(255 - (int)(510 * Seesaw(timeElapsed * 2.724f, 1)), 200, 100 + (int)(200 * Seesaw(timeElapsed * 2.724f, 1)), 100 + (int)(200 * Seesaw(timeElapsed * 2.724f, 1)));
                 foreach (Entity entity in activeEntities.Values)
                 {
-                    foreach ((int x, int y) posToDrawAt in entity.pathToTarget)
-                    {
-                        drawPixel(gameBitmap, Color.FromArgb(100, entity.color.R, entity.color.G, entity.color.B), posToDrawAt, camPos);
-                    }
-                    foreach ((int x, int y) posToDrawAt in entity.simplifiedPathToTarget)
-                    {
-                        drawPixel(gameBitmap, Color.FromArgb(100, 200, 0, 100), posToDrawAt, camPos);
-                    }
+                    foreach ((int x, int y) posToDrawAt in entity.pathToTarget) { drawPixel(gameBitmap, Color.FromArgb(100, entity.color.R, entity.color.G, entity.color.B), posToDrawAt, camPos); }
+                    foreach ((int x, int y) posToDrawAt in entity.simplifiedPathToTarget) { drawPixel(gameBitmap, simplifiedPathColor, posToDrawAt, camPos); }
+                    //foreach ((int x, int y) posToDrawAt in entity.traits.collisionPoints) { drawPixel(gameBitmap, collisionColor, (entity.posX + posToDrawAt.x, entity.posY + posToDrawAt.y), camPos); }
                 }
-                foreach (Chunk chunkoko in loadedChunks.Values)
+
+                foreach ((int x, int y) posToDrawAt in player.pathToTarget) { drawPixel(gameBitmap, Color.FromArgb(100, player.color.R, player.color.G, player.color.B), posToDrawAt, camPos); }
+                foreach ((int x, int y) posToDrawAt in player.simplifiedPathToTarget) { drawPixel(gameBitmap, simplifiedPathColor, posToDrawAt, camPos); }
+
+                int signX = Sign(player.speedX);
+                if (timeElapsed % 0.5f < 0.333f)
                 {
-                    if (chunkoko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunkoko.pos.x * 32, chunkoko.pos.y * 32), camPos); }
+                    foreach ((int x, int y) posToDrawAt in player.traits.collisionPoints.down) { drawPixel(gameBitmap, Color.Red, (player.posX + posToDrawAt.x * signX, player.posY + posToDrawAt.y), camPos); }
+                }
+                if (timeElapsed % 0.5f > 0.1666f)
+                {
+                    foreach ((int x, int y) posToDrawAt in player.traits.collisionPoints.side) { drawPixel(gameBitmap, Color.Blue, (player.posX + posToDrawAt.x * signX, player.posY + posToDrawAt.y), camPos); }
+                }
+                if (timeElapsed % 0.5f < 0.1666f || timeElapsed % 0.5f > 0.333)
+                {
+                    foreach ((int x, int y) posToDrawAt in player.traits.collisionPoints.up) { drawPixel(gameBitmap, Color.Green, (player.posX + posToDrawAt.x * signX, player.posY + posToDrawAt.y), camPos); }
                 }
             }
             public void drawMiscDebugOnScreen(Bitmap gameBitmap, (int x, int y) camPos)
@@ -1373,10 +1374,8 @@ namespace Cave
                         if (rand.Next(5) != 0) { game.miscDebugList.Insert(0, (current.motherPlant.getRealPos(current.pos), Color.MediumPurple)); }
                     }
                 }
-                foreach (((int x, int y) pos, Color col) item in game.miscDebugList)
-                {
-                    drawPixel(gameBitmap, item.col, item.pos, camPos);
-                }
+                foreach (Chunk chunkoko in loadedChunks.Values) { if (chunkoko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunkoko.pos.x * 32, chunkoko.pos.y * 32), camPos); } }
+                foreach (((int x, int y) pos, Color col) item in game.miscDebugList) { drawPixel(gameBitmap, item.col, item.pos, camPos); }
                 game.miscDebugList = new List<((int x, int y) pos, Color col)>();
             }
             public void drawChunksAndMegachunksDebugOnScreen(Bitmap finalBitmap, Player player)

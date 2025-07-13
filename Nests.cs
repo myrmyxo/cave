@@ -520,13 +520,7 @@ namespace Cave
             }
             public void findDropPositions()
             {
-                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
-
-                foreach ((int x, int y) pos in tiles)
-                {
-                    Chunk chunkToTest = nest.screen.getChunkFromPixelPos(pos, true, false, chunkDict);
-                    if (pos.y == maxBordelLevel - 1) { dropPositions.Add(pos); }
-                }
+                foreach ((int x, int y) pos in tiles) { if (pos.y == maxBordelLevel - 1) { dropPositions.Add(pos); } }
             }
             public void testFullness()
             {
@@ -786,7 +780,7 @@ namespace Cave
                 while (repeatCounter < amountToTest)
                 {
                     currentPos = tilesToTest[repeatCounter];
-                    Chunk chunkToTest = screen.getChunkFromPixelPos(pos, true, false, chunkDict);
+                    Chunk chunkToTest = screen.getChunkFromPixelPos(currentPos, true, false, chunkDict);
                     TileTraits tile = chunkToTest.fillStates[PosMod(currentPos.x), PosMod(currentPos.y)];
                     if (!tile.isSolid || tiles.ContainsKey(currentPos))
                     {
