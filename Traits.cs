@@ -250,7 +250,7 @@ namespace Cave
             public float? tailAxisRigidity;
             public bool transparentTail;
             public (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[] tailMap;
-            public (int type, (int x, int y) pos, float period, (bool isVariation, (int a, int r, int g, int b) value) color)? wingTraits;
+            public (int type, (int x, int y) pos, float period, float turningSpeed, (bool isVariation, (int a, int r, int g, int b) value) color)? wingTraits;
 
             // Collisions shit
             public ((int x, int y)[] up, (int x, int y)[] side, (int x, int y)[] down) collisionPoints;
@@ -273,16 +273,17 @@ namespace Cave
             // Characteristics
             public float swimSpeed;
             public float swimMaxSpeed;
+            public float movementChance;
             public (float x, float y) jumpStrength;
             public float jumpChance;
             public EntityTraits(string namee, int hp, ((int type, int subType, int megaType) element, int count) drps,
                 ColorRange colRange, int? lR = null, (int baseLength, int variation)? L = null, float? tAR = null, bool tT = false,
                 (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[] tM = null,
                 ((bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color, (int segment, bool fromEnd, (int x, int y) pos)[] array)[] tM2 = null,
-                (int type, (int x, int y) pos, float period, (bool isVariation, (int a, int r, int g, int b) value) color)? wT = null,
+                (int type, (int x, int y) pos, float period, float turningSpeed, (bool isVariation, (int a, int r, int g, int b) value) color)? wT = null,
                 ((int x, int y)[] up, (int x, int y)[] side, (int x, int y)[] down)? cP = null,
                 int iW = 0, int oW = 0, int iA = 0, int oG = 0, int iG = 0, int oP = 0,
-                float sS = 0.1f, float sMS = 0.5f, (float x, float y)? jS = null, float jC = 0)
+                float sS = 0.1f, float sMS = 0.5f, (float x, float y)? jS = null, float jC = 0, float mC = 0)
             {
                 name = namee;
                 startingHp = hp;
@@ -308,7 +309,7 @@ namespace Cave
                 if (cP is null) { collisionPoints = (doubleZeroArray, doubleZeroArray, doubleZeroArray); }
                 else { collisionPoints = cP.Value; }
 
-                isFlying = iA == 1 ? true : false;
+                isFlying = iA > 0 ? true : false;
                 isSwimming = iW == 2 ? true : false;
                 isDigging = iG == 2 ? true : false;
                 isJesus = oW == 1 ? true : false;
@@ -324,6 +325,8 @@ namespace Cave
                 swimSpeed = sS;
                 swimMaxSpeed = sMS;
 
+                movementChance = mC;
+
                 jumpStrength = jS ?? (1, 1);
                 jumpChance = jC;
             }
@@ -338,30 +341,30 @@ namespace Cave
                 iW:1, oG:1, iG:2) },
 
                 { (0, 0), new EntityTraits("Fairy",           4,  ((-3, 0, 0), 1),      //  --> Fairy Liquid
-                new ColorRange((130, 50, 30), (130, -50, 30), (210, 0, 30)), lR:7, wT:(0, (0, 0), 0.02165f, (false, (50, 220, 220, 200))),
+                new ColorRange((130, 50, 30), (130, -50, 30), (210, 0, 30)), lR:7, wT:(0, (0, 0), 0.02165f, 0.75f, (false, (50, 220, 220, 200))),
                 iW:1, iA:1, iG:3) },                                                                        
                 { (0, 1), new EntityTraits("ObsidianFairy",   10, ((-3, 0, 0), 1),      //  --> Fairy Liquid
-                new ColorRange((30, 0, 30), (30, 0, 30), (30, 0, 30)), lR:7, wT:(0, (0, 0), 0.02165f, (false, (50, 0, 0, 0))),
+                new ColorRange((30, 0, 30), (30, 0, 30), (30, 0, 30)), lR:7, wT:(0, (0, 0), 0.02165f, 0.75f, (false, (50, 0, 0, 0))),
                 iW:1, iA:1, iG:3) },
                 { (0, 2), new EntityTraits("FrostFairy",      4 , ((-3, 0, 0), 1),      //  --> Fairy Liquid
-                new ColorRange((200, 25, 30), (200, 25, 30), (225, 0, 30)), lR:7, wT:(0, (0, 0), 0.02165f, (false, (50, 255, 255, 255))),
+                new ColorRange((200, 25, 30), (200, 25, 30), (225, 0, 30)), lR:7, wT:(0, (0, 0), 0.02165f, 0.75f, (false, (50, 255, 255, 255))),
                 iW:1, iA:1, iG:3) },
                 { (0, 3), new EntityTraits("SkeletonFairy",   15, ((8, 1, 3), 1),       //  --> Bone
-                new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)), lR:7, wT:(0, (0, 0), 0.02165f, (false, (50, 230, 230, 230))),
+                new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)), lR:7, wT:(0, (0, 0), 0.02165f, 0.75f, (false, (50, 230, 230, 230))),
                 iW:1, iA:1, iG:3) },
 
                 { (1, 0), new EntityTraits("Frog",            2,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((90, 50, 30), (210, 50, 30), (110, -50, 30)),
-                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(2, 2.5f), jC:0.1f) },
+                iW:1, oW:2, iA:0, oG:1, iG:1, jS:(2, 2.5f), jC:0.1f) },
                 { (1, 1), new EntityTraits("Carnal",          7,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((135, 0, 30), (55, 30, 30), (55, 30, 30)),
-                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(2, 2.5f), jC:0.1f) },
+                iW:1, oW:2, iA:0, oG:1, iG:1, jS:(2, 2.5f), jC:0.1f) },
                 { (1, 2), new EntityTraits("Skeletal",        7,  ((8, 1, 3), 1),       //  --> Bone
                 new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),
-                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(2, 2.5f), jC:0.1f) },
+                iW:1, oW:2, iA:0, oG:1, iG:1, jS:(2, 2.5f), jC:0.1f) },
 
                 { (2, 0), new EntityTraits("Fish",            2,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((190, 0, 30), (80, -50, 30), (80, 50, 30)), wT:(1, (0, 0), 0.01865f, (true, (-205, 50, 50, 50))),
+                new ColorRange((190, 0, 30), (80, -50, 30), (80, 50, 30)), wT:(1, (0, 0), 0.01865f, 0.05f, (true, (-205, 50, 50, 50))),
                 iW:2, oG:1, iG:1, jC:0.01f) },
                 { (2, 1), new EntityTraits("SkeletonFish",    2,  ((8, 1, 3), 1),       //  --> Bone
                 new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),
@@ -375,32 +378,32 @@ namespace Cave
                 iW:1) },
                 { (3, 1), new EntityTraits("HornetLarva",     3,  ((8, 0, 3), 1),       //  --> Flesh   
                 new ColorRange((180, 10, 30), (180, 10, 30), (160, 0, 30)),                             
-                iW:1, oW:2, iA:2, oG:1, iG:1, jC:0.01f) },                                                              
+                iW:1, oW:2, iA:0, oG:1, iG:1, jC:0.01f) },                                                              
                 { (3, 2), new EntityTraits("HornetCocoon",    20, ((8, 0, 3), 1),       //  --> Flesh   
                 new ColorRange((120, 10, 30), (120, 10, 30), (20, 0, 20)),                              
                 iW:1) },
                 { (3, 3), new EntityTraits("Hornet",          6,  ((8, 0, 3), 1),       //  --> Flesh
-                new ColorRange((190, 10, 30), (190, 10, 30), (80, 0, 30)), wT:(0, (0, 0), 0.02165f, (false, (50, 220, 220, 200))),
+                new ColorRange((190, 10, 30), (190, 10, 30), (80, 0, 30)), wT:(0, (0, 0), 0.02165f, 0.75f, (false, (50, 220, 220, 200))),
                 iW:1, iA:1, iG:4) },
 
                 { (4, 0), new EntityTraits("Worm",            7,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((210, 0, 30), (140, 20, 30), (140, 20, 30)), L:(2, 4),
-                iW:1, oW:2, iA:2, oG:3, iG:2) },
+                iW:1, oW:2, iA:0, oG:3, iG:2) },
                 { (4, 1), new EntityTraits("Nematode",        3,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((210, -20, 30), (210, 20, 30), (235, 0, 30)), L:(2, 8),
-                iW:2, oW:2, iA:2, oG:3, iG:2) },
+                iW:2, oW:2, iA:0, oG:3, iG:2) },
 
                 { (5, 0), new EntityTraits("WaterSkipper",    3,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((110, 0, 30), (110, 0, 30), (140, 20, 30)),
-                iW:1, oW:1, iA:2, oG:1, iG:1, jC:0.05f) },
+                iW:1, oW:1, iA:0, oG:1, iG:1, jC:0.05f) },
 
                 { (6, 0), new EntityTraits("Goblin",          3,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((80, 50, 30), (175, 50, 30), (80, 50, 30)),
-                iW:1, oW:2, iA:2, oG:1, iG:1, jS:(1, 4), jC:0.05f) },
+                iW:1, oW:2, iA:0, oG:1, iG:1, jS:(1, 4), jC:0.05f) },
 
                 { (7, 0), new EntityTraits("Louse",           2,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((160, -10, 30), (180, 10, 30), (200, 10, 30)),
-                iW:1, oW:2, iA:2, oG:4, iG:1, oP:1, jS:(1, 1.5f), jC:0.1f) },
+                iW:1, oW:2, iA:0, oG:4, iG:1, oP:1, jS:(1, 1.5f), jC:0.1f) },
 
                 { (8, 0), new EntityTraits("Shark",           5,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((110, 0, 30), (110, 0, 30), (140, 20, 30)), L:(4, 1), tM:new (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[]{ (2, false, false, 0, (0, 1), (true, null, (0, -15, -15, -20))), (2, false, false, 0, (0, 2), (true, null, (0, -15, -15, -20))),     (0, true, true, 1, (1, 0), (true, null, (0, -8, -8, -13))), (0, true, true, 7, (1, 0), (true, null, (0, -8, -8, -13))) },
@@ -441,6 +444,10 @@ namespace Cave
                 { (9, 0), new EntityTraits("WaterDog",       15,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((150, 0, 30), (120, 10, 30), (90, 20, 30)), L:(13, 7), tM:new (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[]{ (2, false, false, 0, (0, 1), (true, null, (0, -20, -20, -15))), (2, false, false, 0, (0, 2), (true, null, (0, -20, -20, -15))),    (3, false, false, 0, (0, -1), (true, null, (0, -20, -20, -15))),    (5, false, false, 0, (0, 1), (true, null, (0, -20, -20, -15))), (5, false, false, 0, (0, 2), (true, null, (0, -20, -20, -15))),    (6, false, false, 0, (0, -1), (true, null, (0, -20, -20, -15))),    (8, false, false, 0, (0, 1), (true, null, (0, -20, -20, -15))),    (11, false, false, 0, (0, 1), (true, null, (0, -20, -20, -15))) },
                 iW:2, oG:1, iG:1, jC:0.01f) },
+
+                { (10, 0), new EntityTraits("Dragonfly",      2,  ((8, 0, 3), 1),       //  --> Flesh
+                new ColorRange((50, -30, 20), (70, 30, 25), (110, 15, 30)), L:(2, 0), wT:(0, (0, 0), 0.007132f, 1.5f, (false, (50, 220, 220, 200))),
+                iW:1, iA:2, iG:3, tAR:2, mC:0.02f) },
             };
         }
 

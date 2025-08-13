@@ -1199,14 +1199,14 @@ namespace Cave
                     if (entity.traits.wingTraits.Value.type == 0)
                     {
                         int forceX = 0;
-                        if (entity.speedX >= 1.5f) { forceX = -1; }
-                        else if (entity.speedX <= -1.5f) { forceX = 1; }
-                        drawPixel(gameBitmap, wingColor, (entity.posX + (forceX == 0 ? (entity.speedX >= -0.75f ? wingPos.x : 0) : forceX), entity.posY + wingPos.y), camPos);
-                        drawPixel(gameBitmap, wingColor, (entity.posX + (forceX == 0 ? (entity.speedX <= 0.75f ? -wingPos.x : 0) : forceX), entity.posY + wingPos.y), camPos);
+                        if (entity.speedX >= entity.traits.wingTraits.Value.turningSpeed * 2) { forceX = -1; }
+                        else if (entity.speedX <= -entity.traits.wingTraits.Value.turningSpeed * 2) { forceX = 1; }
+                        drawPixel(gameBitmap, wingColor, (entity.posX + (forceX == 0 ? (entity.speedX >= -entity.traits.wingTraits.Value.turningSpeed ? wingPos.x : 0) : forceX), entity.posY + wingPos.y), camPos);
+                        drawPixel(gameBitmap, wingColor, (entity.posX + (forceX == 0 ? (entity.speedX <= entity.traits.wingTraits.Value.turningSpeed ? -wingPos.x : 0) : forceX), entity.posY + wingPos.y), camPos);
                     }
                     else if (entity.traits.wingTraits.Value.type == 1)
                     {
-                        if (Abs(entity.speedX) > 0.05f || Abs(entity.speedY) > 0.05f)
+                        if (Abs(entity.speedX) > entity.traits.wingTraits.Value.turningSpeed || Abs(entity.speedY) > entity.traits.wingTraits.Value.turningSpeed)
                         {
                             wingPos = rotate8((1, 0), wingPos.y + directionPositionDictionary[(Abs(entity.speedY) >= 2 * Abs(entity.speedX) ? 0 : SignZero(entity.speedX), Abs(entity.speedX) >= 2 * Abs(entity.speedY) ? 0 : SignZero(entity.speedY))]);   // else if would never go orthoganal (even if speedX = 3 and speedY = 0.05 for example)
                             drawPixel(gameBitmap, wingColor, (entity.posX + wingPos.x, entity.posY + wingPos.y), camPos);
@@ -1337,6 +1337,7 @@ namespace Cave
                     foreach ((int x, int y) posToDrawAt in entity.pathToTarget) { drawPixel(gameBitmap, Color.FromArgb(100, entity.color.R, entity.color.G, entity.color.B), posToDrawAt, camPos); }
                     foreach ((int x, int y) posToDrawAt in entity.simplifiedPathToTarget) { drawPixel(gameBitmap, simplifiedPathColor, posToDrawAt, camPos); }
                     //foreach ((int x, int y) posToDrawAt in entity.traits.collisionPoints) { drawPixel(gameBitmap, collisionColor, (entity.posX + posToDrawAt.x, entity.posY + posToDrawAt.y), camPos); }
+                    drawPixel(gameBitmap, Color.DarkBlue, entity.targetPos, camPos);
                 }
 
                 foreach ((int x, int y) posToDrawAt in player.pathToTarget) { drawPixel(gameBitmap, Color.FromArgb(100, player.color.R, player.color.G, player.color.B), posToDrawAt, camPos); }

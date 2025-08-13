@@ -82,6 +82,7 @@ namespace Cave
             public int length;
 
             public bool isCurrentlyClimbing = false;
+            public bool isCurrentlyMovingTowardsTarget = false;
 
             public Entity targetEntity = null;
             public (int x, int y) targetPos = (0, 0);
@@ -117,7 +118,8 @@ namespace Cave
                 posX = (int)realPosX;
                 realPosY = entityJson.pos.Item2;
                 posY = (int)realPosY;
-                targetPos = entityJson.tPos;
+                if (entityJson.tPos is null) { targetPos = (0, 0); }
+                else { targetPos = entityJson.tPos.Value; }
                 seed = entityJson.seed; ;
                 id = entityJson.id;
                 nestId = entityJson.nstId;
@@ -616,6 +618,89 @@ namespace Cave
             {
                 speedX = Clamp(-clampY, speedY, clampY);
             }
+            public void followComplexPath()
+            {
+                // if following path
+                float realDiffX;
+                float realDiffY;
+                if (simplifiedPathToTarget.Count > 0)
+                {
+                    realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
+                    realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
+                    while (Abs(realDiffX) < 0.5f && Abs(realDiffY) < 0.5f)
+                    {
+                        simplifiedPathToTarget.RemoveAt(0);
+                        if (simplifiedPathToTarget.Count == 0) { break; }
+                        realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
+                        realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
+                    }
+                }
+                else
+                {
+                    realDiffX = targetPos.x + 0.5f - realPosX;
+                    realDiffY = targetPos.y + 0.5f - realPosY;
+                }
+
+                int maxDist;
+                if (state == 10005) { maxDist = 1; }
+                else { maxDist = 1; }
+                if (manhattanDistance(targetPos, (posX, posY)) <= maxDist)
+                {
+                    if (state == 10009)
+                    {
+                        if (targetEntity is null) { state = 1; }
+                        if (manhattanDistance((targetEntity.posX, targetEntity.posY), (posX, posY)) > maxDist)
+                        {
+                            targetPos = (targetEntity.posX, targetEntity.posY);
+                            if (!pathfindToLocation(targetPos))
+                            {
+                                targetEntity = null;
+                                pathToTarget = new List<(int x, int y)>();
+                                simplifiedPathToTarget = new List<(int x, int y)>();
+                                state = 0;
+                            }
+                            return;
+                        }
+                    }
+                    timeAtLastDig = timeElapsed;
+                    state -= 10000; // go to corresponding state, easier to to +3 lol (wait what no??)
+                    speedX = 0;
+                    speedY = 0;
+                    //goto AfterTest; // makes so it digs next frame, idk if to change idk
+                }
+                else
+                {
+                    if (Abs(realDiffX) < 0.25f) { speedX = Sign(speedX) * Max(Abs(speedX) - 0.55f, 0); }
+                    else if (speedX * speedX > Abs(realDiffX) && Sign(speedX) == Sign(realDiffX)) { speedX -= Sign(realDiffX) * 0.35f; }
+                    else { speedX += Sign(realDiffX) * 0.335f; }
+                    if (Abs(realDiffY) < 0.25f) { speedY = Sign(speedY) * Max(Abs(speedY) - 0.55f, 0); }
+                    else if (speedY * speedY > Abs(realDiffY) && Sign(speedY) == Sign(realDiffY)) { speedY -= Sign(realDiffY) * 0.35f; }
+                    else { speedY += Sign(realDiffY) * 0.335f; }
+
+                    if (rand.Next(2500) == 0) { state = 0; }
+                }
+            }
+            public void moveTowardsTargetPos(float abandonChance)
+            {
+                if (rand.NextDouble() < abandonChance * ((speedX == speedY && speedX == 0) ? 25 : 1)) { isCurrentlyMovingTowardsTarget = false; return; }
+
+                // if following path
+                float realDiffX = targetPos.x + 0.5f - realPosX;
+                float realDiffY = targetPos.y + 0.5f - realPosY;
+
+                if (manhattanDistance(targetPos, (posX, posY)) <= 1) { isCurrentlyMovingTowardsTarget = false; return; }
+                else
+                {
+                    if (Abs(realDiffX) < 0.25f) { speedX = Sign(speedX) * Max(Abs(speedX) - 0.55f, 0); }
+                    else if (speedX * speedX > Abs(realDiffX) && Sign(speedX) == Sign(realDiffX)) { speedX -= Sign(realDiffX) * 0.35f; }
+                    else { speedX += Sign(realDiffX) * 0.335f; }
+                    if (Abs(realDiffY) < 0.25f) { speedY = Sign(speedY) * Max(Abs(speedY) - 0.55f, 0); }
+                    else if (speedY * speedY > Abs(realDiffY) && Sign(speedY) == Sign(realDiffY)) { speedY -= Sign(realDiffY) * 0.35f; }
+                    else { speedY += Sign(realDiffY) * 0.335f; }
+
+                    if (rand.Next(2500) == 0) { state = 0; }
+                }
+            }
             public void moveHornet()
             {
                 testOrphanage();
@@ -738,65 +823,7 @@ namespace Cave
                 }
                 else if (state >= 10000) // moving in the air towards direction
                 {
-                    // if following path
-                    float realDiffX;
-                    float realDiffY;
-                    if (simplifiedPathToTarget.Count > 0)
-                    {
-                        realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
-                        realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
-                        while (Abs(realDiffX) < 0.5f && Abs(realDiffY) < 0.5f)
-                        {
-                            simplifiedPathToTarget.RemoveAt(0);
-                            if (simplifiedPathToTarget.Count == 0) { break; }
-                            realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
-                            realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
-                        }
-                    }
-                    else
-                    {
-                        realDiffX = targetPos.x + 0.5f - realPosX;
-                        realDiffY = targetPos.y + 0.5f - realPosY;
-                    }
-
-                    int maxDist;
-                    if (state == 10005) { maxDist = 1; }
-                    else { maxDist = 1; }
-                    if (manhattanDistance(targetPos, (posX, posY)) <= maxDist)
-                    {
-                        if (state == 10009)
-                        {
-                            if (targetEntity is null) { state = 1; }
-                            if (manhattanDistance((targetEntity.posX, targetEntity.posY), (posX, posY)) > maxDist)
-                            {
-                                targetPos = (targetEntity.posX, targetEntity.posY);
-                                if (!pathfindToLocation(targetPos))
-                                {
-                                    targetEntity = null;
-                                    pathToTarget = new List<(int x, int y)>();
-                                    simplifiedPathToTarget = new List<(int x, int y)>();
-                                    state = 0;
-                                }
-                                return;
-                            }
-                        }
-                        timeAtLastDig = timeElapsed;
-                        state -= 10000; // go to corresponding state, easier to to +3 lol (wait what no??)
-                        speedX = 0;
-                        speedY = 0;
-                        //goto AfterTest; // makes so it digs next frame, idk if to change idk
-                    }
-                    else
-                    {
-                        if (Abs(realDiffX) < 0.25f) { speedX = Sign(speedX) * Max(Abs(speedX) - 0.55f, 0); }
-                        else if (speedX * speedX > Abs(realDiffX) && Sign(speedX) == Sign(realDiffX)) { speedX -= Sign(realDiffX) * 0.35f; }
-                        else { speedX += Sign(realDiffX) * 0.335f; }
-                        if (Abs(realDiffY) < 0.25f) { speedY = Sign(speedY) * Max(Abs(speedY) - 0.55f, 0); }
-                        else if (speedY * speedY > Abs(realDiffY) && Sign(speedY) == Sign(realDiffY)) { speedY -= Sign(realDiffY) * 0.35f; }
-                        else { speedY += Sign(realDiffY) * 0.335f; }
-
-                        if (rand.Next(2500) == 0) { state = 0; }
-                    }
+                    followComplexPath();
                 }
                 else if (state == 5 || state == 6) // preparing to dig plant OR terrain
                 {
@@ -947,20 +974,29 @@ namespace Cave
                 }
                 else // if (inAir)
                 {
-                    if (traits.inAirBehavior == 1)  // if flying
+                    if (traits.inAirBehavior > 0)  // if flying
                     {
-                        if (type.type != 3) { changeSpeedRandom(0.5f); }
+                        if (traits.inAirBehavior == 1)
+                        {
+                            if (type.type != 3) { changeSpeedRandom(0.5f); }
+                        }
+                        else if (traits.inAirBehavior == 2)
+                        {
+                            if (isCurrentlyMovingTowardsTarget) { moveTowardsTargetPos(0.01f); }
+                            else if (rand.NextDouble() < traits.movementChance) { findNewRandomPlaceToMoveTo(); }
+                            else { ariGeoSlowDown(0.9f, 0.1f); }
+                        }
                     }
                     else if (onGround)
                     {
                         if (tileUnder.isSlippery) { ariGeoSlowDownX(0.96f, 0.04f); }
                         else { ariGeoSlowDownX(0.8f, 0.1f); }
-                        if ((float)rand.NextDouble() <= traits.jumpChance) { jumpRandom(traits.jumpStrength.x, traits.jumpStrength.y); }
+                        if ((float)rand.NextDouble() < traits.jumpChance) { jumpRandom(traits.jumpStrength.x, traits.jumpStrength.y); }
                     }
                     else if (onWater)
                     {
                         ariGeoSlowDownX(0.9f, 0.1f);
-                        if (traits.isJesus && (float)rand.NextDouble() <= traits.jumpChance) { jumpRandom(5, 0); }
+                        if (traits.isJesus && (float)rand.NextDouble() < traits.jumpChance) { jumpRandom(5, 0); }
                     }
                 }
             AfterBehaviorMovement:;
@@ -979,6 +1015,52 @@ namespace Cave
                 if (currentAttack != null && currentAttack.isDone) { currentAttack = null; }
 
                 if (traits.wingTraits != null && (!onGround || (traits.wingTraits.Value.type == 1))/*oldSpeedY + 0.001f <= speedY*/) { wingTimer += 0.02f; }
+            }
+            public void findNewRandomPlaceToMoveTo()
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    (int x, int y) newTargetPos = (posX - 10 + rand.Next(21), posY - 10 + rand.Next(21));
+                    if (raycastPathValidity((realPosX, realPosY), (newTargetPos.x, newTargetPos.y + 0.0001f)))
+                    {
+                        targetPos = newTargetPos;
+                        isCurrentlyMovingTowardsTarget = true;
+                        speedX = 0.0001f; speedY = 0.0002f; // For abandon chance when entity is stuck ! ! !! important
+                        return;
+                    };
+                }
+            }
+            public bool raycastPathValidity((float x, float y) startPos, (float x, float y) targetPos)  // Doesn't work if angle x == angle y !!!
+            {
+                (int x, int y) targetPosInt = ((int)targetPos.x - (int)startPos.x, (int)targetPos.y - (int)startPos.y);
+                (float x, float y) angle = (targetPos.x - startPos.x, targetPos.y - startPos.y);
+                float xRatio = (angle.x) / (Abs(angle.y) + 0.0000001f);
+                float yRatio = (angle.y) / (Abs(angle.x) + 0.0000001f);
+                int signX = Sign(angle.x);
+                int signY = Sign(angle.y);
+
+                (float x, float y) currentPos = (signX >= 0 ? 0 : -1, signY >= 0 ? 0 : -1); // Very important !
+                (int x, int y) currentPosInt = (0, 0);
+
+                int repeatCounter = 0;
+                while (currentPosInt != targetPosInt && repeatCounter < 1000)
+                {
+                    (float x, float y) diff = ((1 - Abs(currentPos.x) % 1), (1 - Abs(currentPos.y) % 1));
+                    if (diff.x * Abs(yRatio) < diff.y)
+                    {
+                        currentPosInt = (currentPosInt.x + signX, currentPosInt.y);
+                        currentPos = (currentPosInt.x, currentPos.y + diff.x * yRatio);
+                    }
+                    else
+                    {
+                        currentPosInt = (currentPosInt.x, currentPosInt.y + signY);
+                        currentPos = (currentPos.x + diff.y * xRatio, currentPosInt.y);
+                    }
+                    (int x, int y) posToTest = (currentPosInt.x + (int)Floor(startPos.x, 1), currentPosInt.y + (int)Floor(startPos.y, 1));
+                    if (!screen.getTileContent(posToTest).isAir) { return false; }
+                    repeatCounter++;
+                }
+                return true;
             }
             public void testTileEffects(TileTraits tile)
             {

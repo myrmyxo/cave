@@ -267,7 +267,7 @@ namespace Cave
             public (int, int) type;
             public int state;
             public (float, float) pos;
-            public (int, int) tPos;
+            public (int, int)? tPos;
             public (float, float) speed;
             public int[,] inv;
             public (float, float) lastDP;
@@ -284,6 +284,7 @@ namespace Cave
                 type = entity.type;
                 state = entity.state;
                 pos = (entity.realPosX, entity.realPosY);
+                if (entity.isCurrentlyMovingTowardsTarget) { tPos = null; }
                 tPos = entity.targetPos;
                 speed = (entity.speedX, entity.speedY);
                 inv = inventoryToArray(entity.inventoryQuantities, entity.inventoryElements);
