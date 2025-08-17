@@ -599,6 +599,10 @@ namespace Cave
             {
                 speedY = Sign(speedY) * Max(0, Abs(speedY) * geo - ari);
             }
+            public void accelerateX(float geo, float ari, float limitX)
+            {
+                speedX = Sign(speedX) * Clamp(0, Abs(speedX) * geo + ari, limitX);
+            }
             public void hoverIdle(float slowdownSpeed, int stateChangeChance)
             {
                 slowDown(slowdownSpeed);
@@ -969,14 +973,20 @@ namespace Cave
                 }
                 else if (inWater)
                 {
-                    if (traits.inWaterBehavior == 1)    // drift upwards
+                    if (traits.inWaterBehavior == 1)    // Drift upwards (stuff that doesn't swim well)
                     {
-                        changeSpeedRandom(0.5f); // worm ???????? and others ????????
+                        changeSpeedRandom(0.5f);
                     }
-                    else if (traits.inWaterBehavior == 2)
+                    else if (traits.inWaterBehavior == 2)   // Move randomly (fish and other swimming entities)
                     {
                         changeSpeedRandom(traits.swimSpeed);
                         clampSpeed(traits.swimMaxSpeed, traits.swimMaxSpeed);
+                    }
+                    else if (traits.inWaterBehavior == 3)   // Go towards sides/land (for worms who fell in water)
+                    {
+                        if (speedX == 0) { speedX = 0.001f * (rand.Next(2) == 0 ? -1 : 1); }
+                        accelerateX(1.05f, 0.18f, 0.75f);
+                        changeSpeedRandom(0.02f);
                     }
                 }
                 else // if (inAir)
@@ -1012,6 +1022,11 @@ namespace Cave
                     {
                         ariGeoSlowDownX(0.9f, 0.1f);
                         if (traits.isJesus && (float)rand.NextDouble() < traits.jumpChance) { jumpRandom(5, 0); }
+                        else if (traits.onWaterBehavior == 2)   // Go towards sides/land (for entities on top of water (including worms and others))
+                        {
+                            if (speedX == 0) { speedX = 0.001f * (rand.Next(2) == 0 ? -1 : 1); }
+                            accelerateX(1.05f, 0.18f, 0.75f);
+                        }
                     }
                 }
             AfterBehaviorMovement:;
@@ -1159,7 +1174,7 @@ namespace Cave
                     if (Abs(diff) > yVariationAllowed) { pastPositions[i] = (pos.x, posY - yVariationAllowed * Sign(diff)); }
                 }
             }
-            public bool actuallyMoveTheEntity(bool climbing = false)
+            public bool actuallyMoveTheEntity(bool climbing = false, bool isPlayer = false)
             {
                 (int x, int y) previousPos = (posX, posY);
                 (int x, int y) posToTest;
@@ -1203,16 +1218,34 @@ namespace Cave
                         bool proceed = true;
                         foreach ((int x, int y) mod in traits.collisionPoints.side)
                         {   // if a worm or the material is not a solid tile, stop updating positions
-                            if (screen.getTileContent((posToTest.x + mod.x * signX, posToTest.y + mod.y)).isSolid && !traits.isDigging) { proceed = false; break; }
+                            if (screen.getTileContent((posToTest.x + mod.x * signX, posToTest.y + mod.y)).isSolid && !traits.isDigging)
+                            {
+                                if (isPlayer && arrowKeysState[3] && onGround && !climbing && speedY <= 0 && traits.collisionPoints.side.Length == 1)  // Make players able to move 1 tile upwards (not get stuck on small slopes cuz it's annoying)
+                                {
+                                    if (!screen.getTileContent((posToTest.x, posToTest.y + 1)).isSolid) { realPosY++; posY++; goto Proceed; }
+                                }
+                                proceed = false; break;
+                            }
                         }
                         if (climbing && !screen.climbablePositions.Contains(posToTest)) { proceed = false; }
+                        if (traits.onWaterBehavior == 1 && onWater) // To make waterskippers not skip out of bodies of water, while allowing them to go up/down in case of weird water terrain
+                        {
+                            TileTraits tileUnderTheOneToTest = screen.getTileContent((posToTest.x, posToTest.y - 1));
+                            if (!tileUnderTheOneToTest.isLiquid)
+                            {
+                                if (tileUnderTheOneToTest.isAir && screen.getTileContent((posToTest.x, posToTest.y - 2)).isLiquid) { realPosY--; posY--; goto Proceed; }
+                                if (screen.getTileContent((posToTest.x, posToTest.y + 1)).isAir && screen.getTileContent(posToTest).isLiquid) { realPosY++; posY++; goto Proceed; }
+                                proceed = false;
+                            }
+                        }
+                    Proceed:;
                         if (proceed)
                         {
                             hasIntMovedX = true;
                             realPosX = realPosToTest;
                             posX = posToTest.x;
                             toMoveX -= diff;
-                            if (traits.length != null) { updatePastPositions(previousPos); } // to make worm's tails
+                            if (traits.length != null) { updatePastPositions(previousPos); } // to make worm's tails AND SO MUCH MORE
                             previousPos = (posX, posY);
                             currentSide -= yRatio;
                             allowX = true;
@@ -1248,7 +1281,7 @@ namespace Cave
                             realPosY = realPosToTest;
                             posY = posToTest.y;
                             toMoveY -= diff;
-                            if (traits.length != null) { updatePastPositions(previousPos); } // to make worm's tails
+                            if (traits.length != null) { updatePastPositions(previousPos); } // to make worm's tails AND SO MUCH MORE
                             previousPos = (posX, posY);
                             currentSide += xRatio;
                             allowX = true;

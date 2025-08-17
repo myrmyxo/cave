@@ -54,6 +54,7 @@ namespace Cave
             public TileTraits[,] fillStates = new TileTraits[32, 32];
             public (int, int, int)[,] baseColors;
             public Bitmap bitmap;
+            public Bitmap effectsBitmap;
 
             public List<Entity> entityList = new List<Entity>();
             public Dictionary<int, Plant> plants = new Dictionary<int, Plant>();
@@ -179,6 +180,7 @@ namespace Cave
                 biomeIndex = new (BiomeTraits traits, int percentage)[32, 32][];
                 baseColors = new (int, int, int)[32, 32];
                 bitmap = new Bitmap(32, 32);
+                effectsBitmap = new Bitmap(32, 32);
 
                 for (int i = 0; i < 32; i += 1)
                 {
@@ -356,6 +358,7 @@ namespace Cave
                     else { colorToSet = Color.FromArgb(255, 00, 255); }
                 }
                 bitmap.SetPixel(i, j, colorToSet);
+                effectsBitmap.SetPixel(i, j, traits.isLiquid ? Color.FromArgb(80, ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2])) : Color.Transparent);
             }
             public TileTraits tileModification(int i, int j, (int type, int subType) newMaterial)
             {

@@ -263,7 +263,7 @@ namespace Cave
             public bool isCliming;
 
             // Behaviors
-            public int inWaterBehavior;     // -> 0: nothing, 1: float upwards, 2: move randomly in water
+            public int inWaterBehavior;     // -> 0: nothing, 1: float upwards, 2: move randomly in water, 3:drift towards land
             public int onWaterBehavior;     // -> 0: nothing, 1: skip, 2: drift towards land
             public int inAirBehavior;       // -> 0: nothing, 1: fly randomly, 2: random drift
             public int onGroundBehavior;    // -> 0: nothing, 1: random jump, 2: move around, 3: dig down
@@ -392,7 +392,7 @@ namespace Cave
 
                 { (4, 0), new EntityTraits("Worm",            7,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((210, 0, 30), (140, 20, 30), (140, 20, 30)), L:(2, 4),
-                iW:1, oW:2, iA:0, oG:3, iG:2) },
+                iW:3, oW:2, iA:0, oG:3, iG:2) },
                 { (4, 1), new EntityTraits("Nematode",        3,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((210, -20, 30), (210, 20, 30), (235, 0, 30)), L:(2, 8),
                 iW:2, oW:2, iA:0, oG:3, iG:2) },

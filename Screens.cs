@@ -1058,6 +1058,8 @@ namespace Cave
 
                 drawAttacksOnScreen(gameBitmap, camPos, isPngToBeExported);
 
+                drawChunkEffectsOnScreen(gameBitmap, camPos, isPngToBeExported);
+
                 drawLightOnScreen(gameBitmap, lightBitmap, camPos, lightPositions);
 
                 drawFogOfWarOnScreen(gameBitmap, camPos);                
@@ -1085,6 +1087,19 @@ namespace Cave
                     {
                         chunko = getChunkFromChunkPos((chunkX + i, chunkY + j), !isPngToBeExported);
                         pasteImage(gameBitmap, chunko.bitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos);
+                        //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32)); } // if want to show chunk origin
+                    }
+                }
+            }
+            public void drawChunkEffectsOnScreen(Bitmap gameBitmap, (int x, int y) camPos, bool isPngToBeExported)
+            {
+                Chunk chunko;
+                for (int i = -game.effectiveRadius; i <= game.effectiveRadius; i++)
+                {
+                    for (int j = -game.effectiveRadius; j <= game.effectiveRadius; j++)
+                    {
+                        chunko = getChunkFromChunkPos((chunkX + i, chunkY + j), !isPngToBeExported);
+                        pasteImage(gameBitmap, chunko.effectsBitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos);
                         //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32)); } // if want to show chunk origin
                     }
                 }
