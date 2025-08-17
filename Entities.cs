@@ -98,6 +98,8 @@ namespace Cave
             public int food = 0;
             public float mana = 0;
 
+            public (int x, int y) homePosition = (0, 0);
+
             public float timeAtBirth = 0;
             public float timeAtLastStateChange = 0;
             public float timeAtLastDig = -9999;
@@ -118,6 +120,7 @@ namespace Cave
                 posX = (int)realPosX;
                 realPosY = entityJson.pos.Item2;
                 posY = (int)realPosY;
+                homePosition = entityJson.hPos;
                 if (entityJson.tPos is null) { targetPos = (0, 0); }
                 else { targetPos = entityJson.tPos.Value; }
                 seed = entityJson.seed; ;
@@ -143,6 +146,7 @@ namespace Cave
                 realPosX = posX;
                 posY = posToPut.Item2;
                 realPosY = posY;
+                homePosition = posToPut;
                 targetPos = posToPut;
                 seed = LCGint1(Abs((int)chunk.chunkSeed));
                 type = typeToPut;
@@ -160,6 +164,7 @@ namespace Cave
                 realPosX = posX;
                 posY = posToPut.Item2;
                 realPosY = posY;
+                homePosition = posToPut;
                 targetPos = posToPut;
                 seed = rand.Next(1000000000); //                              TO CHANGE FALSE RANDOM NOT SEEDED ARGHHEHEEEE
                 id = currentEntityId;
@@ -195,10 +200,6 @@ namespace Cave
             public Color getLightColorFromColor(Color colorToGetLightFrom)
             {
                 return Color.FromArgb(255, (colorToGetLightFrom.R + 255) / 2, (colorToGetLightFrom.G + 255) / 2, (colorToGetLightFrom.B + 255) / 2);
-            }
-            public void findRandomDestination(int distance)
-            {
-                targetPos = (posX + rand.Next(distance * 2 + 1) - distance, posY + rand.Next(distance * 2 + 1) - distance);
             }
             public bool findPointOfInterestInPlants((int type, int subType) elementOfInterest)
             {
@@ -479,6 +480,7 @@ namespace Cave
                 pathToTarget = path;
                 simplifiedPathToTarget = new List<(int x, int y)>(path);
                 simplifyPath(simplifiedPathToTarget);
+                isCurrentlyMovingTowardsTarget = true;
                 return true;
             }
             public void simplifyPath(List<(int x, int y)> path)
@@ -630,7 +632,11 @@ namespace Cave
                     while (Abs(realDiffX) < 0.5f && Abs(realDiffY) < 0.5f)
                     {
                         simplifiedPathToTarget.RemoveAt(0);
-                        if (simplifiedPathToTarget.Count == 0) { break; }
+                        if (simplifiedPathToTarget.Count == 0)
+                        {
+                            pathToTarget = new List<(int x, int y)>();
+                            break;
+                        }
                         realDiffX = simplifiedPathToTarget[0].x + 0.5f - realPosX;
                         realDiffY = simplifiedPathToTarget[0].y + 0.5f - realPosY;
                     }
@@ -666,6 +672,7 @@ namespace Cave
                     state -= 10000; // go to corresponding state, easier to to +3 lol (wait what no??)
                     speedX = 0;
                     speedY = 0;
+                    isCurrentlyMovingTowardsTarget = false;
                     //goto AfterTest; // makes so it digs next frame, idk if to change idk
                 }
                 else
@@ -982,8 +989,16 @@ namespace Cave
                         }
                         else if (traits.inAirBehavior == 2)
                         {
-                            if (isCurrentlyMovingTowardsTarget) { moveTowardsTargetPos(0.01f); }
-                            else if (rand.NextDouble() < traits.movementChance) { findNewRandomPlaceToMoveTo(); }
+                            if (isCurrentlyMovingTowardsTarget)
+                            {
+                                if (simplifiedPathToTarget.Count > 0) { followComplexPath(); }
+                                else { moveTowardsTargetPos(0.01f); }
+                            }
+                            else if (rand.NextDouble() < traits.movementChance)
+                            {
+                                if (manhattanDistance((posX, posY), homePosition) > traits.goHomeDistance) { pathfindHome(); }
+                                else { findNewRandomPlaceToMoveTo(); }
+                            }
                             else { ariGeoSlowDown(0.9f, 0.1f); }
                         }
                     }
@@ -1016,11 +1031,23 @@ namespace Cave
 
                 if (traits.wingTraits != null && (!onGround || (traits.wingTraits.Value.type == 1))/*oldSpeedY + 0.001f <= speedY*/) { wingTimer += 0.02f; }
             }
+            public (int x, int y) findRandomDestinationFromCurrentPos(int distance)
+            {
+                return (posX + rand.Next(distance * 2 + 1) - distance, posY + rand.Next(distance * 2 + 1) - distance);
+            }
+            public void pathfindHome()
+            {
+                if (pathfindToLocation(homePosition))
+                {
+                    targetPos = homePosition;
+                    speedX = 0.0001f; speedY = 0.0002f; // For abandon chance when entity is stuck ! ! !! important
+                }
+            }
             public void findNewRandomPlaceToMoveTo()
             {
                 for (int i = 0; i < 5; i++)
                 {
-                    (int x, int y) newTargetPos = (posX - 10 + rand.Next(21), posY - 10 + rand.Next(21));
+                    (int x, int y) newTargetPos = findRandomDestinationFromCurrentPos(10);
                     if (raycastPathValidity((realPosX, realPosY), (newTargetPos.x, newTargetPos.y + 0.0001f)))
                     {
                         targetPos = newTargetPos;

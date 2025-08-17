@@ -267,6 +267,7 @@ namespace Cave
             public (int, int) type;
             public int state;
             public (float, float) pos;
+            public (int, int) hPos;
             public (int, int)? tPos;
             public (float, float) speed;
             public int[,] inv;
@@ -283,6 +284,7 @@ namespace Cave
                 else { nstId = entity.nest.id; }
                 type = entity.type;
                 state = entity.state;
+                hPos = entity.homePosition;
                 pos = (entity.realPosX, entity.realPosY);
                 if (entity.isCurrentlyMovingTowardsTarget) { tPos = null; }
                 tPos = entity.targetPos;

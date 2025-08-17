@@ -72,7 +72,7 @@ namespace Cave
                 seed = 123456;
 
                 int idToPut = 0;
-                (int type, int subType) forceBiome = (1, 0);
+                (int type, int subType) forceBiome = (0, 0);
                 int PNGsize = 150;
                 PNGsize = 100;
 
@@ -83,11 +83,11 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                loadStructuresYesOrNo = false;
-                spawnNests = true;
-                spawnEntitiesBool = false;
+                loadStructuresYesOrNo = true;
+                spawnNests = false;
+                spawnEntitiesBool = true;
                 spawnPlants = true;
-                bool spawnNOTHING = true;
+                bool spawnNOTHING = false;
                 bool spawnEVERYTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
                 if (spawnEVERYTHING) { loadStructuresYesOrNo = true; spawnEntitiesBool = true; spawnPlants = true; }
