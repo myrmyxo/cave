@@ -1203,8 +1203,14 @@ namespace Cave
             public (int threshold, bool reverse)? humidity;
             public (int threshold, bool reverse)? acidity;
             public (int threshold, bool reverse)? toxicity;
+            public (int threshold, bool reverse)? salinity;
+            public (int threshold, bool reverse)? illumination;
+            public (int threshold, bool reverse)? oceanity;
             public int biomeValuesScale;
-            public TileTransitionTraits((int type, int subType) tT, int tR, bool mBVR = false, int bT = 512, (int threshold, bool reverse)? T = null, (int threshold, bool reverse)? H = null, (int threshold, bool reverse)? A = null, (int threshold, bool reverse)? TX = null, int bVS = 512)
+            public TileTransitionTraits((int type, int subType) tT, int tR, bool mBVR = false, int bT = 512,
+                (int threshold, bool reverse)? T = null, (int threshold, bool reverse)? H = null, (int threshold, bool reverse)? A = null,
+                (int threshold, bool reverse)? TX = null, (int threshold, bool reverse)? S = null, (int threshold, bool reverse)? I = null,
+                (int threshold, bool reverse)? O = null, int bVS = 512)
             {
                 tileType = tT;
 
@@ -1217,6 +1223,10 @@ namespace Cave
                 humidity = H;
                 acidity = A;
                 toxicity = TX;
+                salinity = S;
+                illumination = I;
+                oceanity = O;
+
                 biomeValuesScale = bVS;
             }
         }

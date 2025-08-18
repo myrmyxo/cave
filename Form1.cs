@@ -390,43 +390,36 @@ namespace Cave
                 saveAllChunks(screen);
             }
         }
-        public static void makeBiomeDiagram((int, int) dimensionType, (int, int) variablesToTest, (int, int) fixedValues, string name)
+        public static void makeBiomeDiagram((int, int) dimensionType, (int, int) variablesToTest, int[] fixedValues, string name)
         {
             Dictionary<int, string> dicto = new Dictionary<int, string>
             {
                 { 0, "temperature" },
                 { 1, "humidity" },
                 { 2, "acidity" },
-                { 3, "toxicity" }
+                { 3, "toxicity" },
+                { 4, "salinity" },
+                { 5, "illumination" },
+                { 6, "oceanness" }
             };
-            (int, int) fixedValuesIdx = (0, 0);
+            List<int> fixedValuesIdx = new List<int>();
 
-            int[] values = new int[6];
-            values[4] = 0;
-            values[5] = 0;
-            bool addZone = false;
-            for (int i = 0; i < 4; i++)
+            int[] values = new int[9];
+            values[7] = 0;
+            values[8] = 0;
+            values[variablesToTest.Item1] = -1;
+            values[variablesToTest.Item2] = -1;
+
+            int idx = 0;
+            for (int i = 0; i < 5; i++)
             {
-                if (variablesToTest.Item1 == i)
-                {
-                    values[i] = -1;
-                }
-                else if (variablesToTest.Item2 == i)
-                {
-                    values[i] = -1;
-                }
-                else if (!addZone)
-                {
-                    values[i] = fixedValues.Item1;
-                    fixedValuesIdx = (i, fixedValuesIdx.Item2);
-                    addZone = true;
-                }
-                else
-                {
-                    values[i] = fixedValues.Item2;
-                    fixedValuesIdx = (fixedValuesIdx.Item1, i);
-                }
+                if (variablesToTest.Item1 == idx) { idx++; }
+                if (variablesToTest.Item2 == idx) { idx++; }
+                values[idx] = fixedValues[i];
+                fixedValuesIdx.Add(idx);
+                idx++;
             }
+
             Bitmap bitmap = new Bitmap(256, 256);
             Color colorToPut;
             for (int i = -64; i < 192; i++)
@@ -455,7 +448,7 @@ namespace Cave
                 }
             }
 
-            bitmap.Save($"{currentDirectory}\\BiomeDiagrams\\biomeDiagram   -{name}-   {dicto[fixedValuesIdx.Item1]}={fixedValues.Item1}, {dicto[fixedValuesIdx.Item2]}={fixedValues.Item2}.png");
+            bitmap.Save($"{currentDirectory}\\BiomeDiagrams\\biomeDiagram   -{name}-   {dicto[fixedValuesIdx[0]]}={fixedValues[0]}, {dicto[fixedValuesIdx[1]]}={fixedValues[1]}, {dicto[fixedValuesIdx[2]]}={fixedValues[2]}, {dicto[fixedValuesIdx[3]]}={fixedValues[3]}, {dicto[fixedValuesIdx[4]]}={fixedValues[4]}, .png");
         }
     }
     public class MathF

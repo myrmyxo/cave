@@ -81,37 +81,37 @@ namespace Cave
         };
 
         // 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
-        public static Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int range, int prio)> biomeTypicalValues = new Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int range, int prio)>
+        public static Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int sali, int lumi, int ocea, int range, int prio)> biomeTypicalValues = new Dictionary<(int biome, int subBiome), (int temp, int humi, int acid, int toxi, int sali, int lumi, int ocea, int range, int prio)>
         {
-            { (-1, 0), (690, 690, 690, 690, 1000, 0)},  // undefined
+            { (-1, 0), (690, 690, 690, 690, 512, 512, 512, 1000, 0)},  // undefined
 
-            { (0, 0), (200, 320, 320, 512, 1000, 0) },  // cold biome
-            { (0, 1), (-100, 320, 320, 512, 1000, 2) }, // frost biome
+            { (0, 0), (200, 320, 320, 512, 512, 512, 512, 1000, 0) },  // cold biome
+            { (0, 1), (-100, 320, 320, 512, 512, 512, 512, 1000, 2) }, // frost biome
 
-            { (1, 0), (200, 300, 800, 512, 1000, 0) },  // acid biome
+            { (1, 0), (200, 300, 800, 512, 512, 512, 512, 1000, 0) },  // acid biome
 
-            { (2, 0), (840, 512, 512, 512, 1000, 1) },  // hot biome
-            { (2, 1), (1024, 512, 512, 512, 1000, 3) }, // lava ocean biome
-            { (2, 2), (880, 880, 512, 512, 1000, 2) },  // obsidian biome...
+            { (2, 0), (840, 512, 512, 512, 512, 512, 512, 1000, 1) },  // hot biome
+            { (2, 1), (1024, 512, 512, 512, 512, 512, 512, 1000, 3) }, // lava ocean biome
+            { (2, 2), (880, 880, 512, 512, 512, 512, 512, 1000, 2) },  // obsidian biome...
 
-            { (3, 0), (512, 720, 768, 340, 1000, 0) },  // forest biome
-            { (3, 1), (512, 720, 256, 220, 1000, 0) },  // flower forest biome
+            { (3, 0), (512, 720, 768, 340, 512, 512, 512, 1000, 0) },  // forest biome
+            { (3, 1), (512, 720, 256, 220, 512, 512, 512, 1000, 0) },  // flower forest biome
 
-            { (4, 0), (512, 280, 512, 680, 1000, 0) },  // toxic biome
+            { (4, 0), (512, 280, 512, 680, 512, 512, 512, 1000, 0) },  // toxic biome
 
-            { (5, 0), (200, 840, 200, 320, 1000, 0) },  // fairy biome !
+            { (5, 0), (200, 840, 200, 320, 512, 512, 512, 1000, 0) },  // fairy biome !
                 
-            { (6, 0), (200, 800, 800, 512, 1000, 0) },  // mold biome
+            { (6, 0), (200, 800, 800, 512, 512, 512, 512, 1000, 0) },  // mold biome
 
-            { (8, 0), (512, 960, 512, 512, 1000, 0) },  // ocean biome !
+            { (8, 0), (512, 960, 512, 512, 512, 512, 512, 1000, 0) },  // ocean biome !
 
-            { (9, 0), (320, 320, 240, 240, 1000, 0) },  // chandeliers biome !
+            { (9, 0), (320, 320, 240, 240, 512, 512, 512, 1000, 0) },  // chandeliers biome !
 
-            { (10, 0), (720, 512, 512, 512, 1000, 0) }, // Flesh biome !
-            { (10, 1), (512, 360, 380, 512, 1000, 0) }, // Flesh and bone biome !
-            { (10, 2), (320, 200, 256, 512, 1000, 0) }, // Bone biome...
-            { (10, 3), (320, 880, 380, 360, 1000, 0) }, // Blood ocean biome !
-            { (10, 4), (720, 600, 880, 880, 1000, 0) }, // Acid ocean biome !
+            { (10, 0), (720, 512, 512, 512, 512, 512, 512, 1000, 0) }, // Flesh biome !
+            { (10, 1), (512, 360, 380, 512, 512, 512, 512, 1000, 0) }, // Flesh and bone biome !
+            { (10, 2), (320, 200, 256, 512, 512, 512, 512, 1000, 0) }, // Bone biome...
+            { (10, 3), (320, 880, 380, 360, 512, 512, 512, 1000, 0) }, // Blood ocean biome !
+            { (10, 4), (720, 600, 880, 880, 512, 512, 512, 1000, 0) }, // Acid ocean biome !
         };
 
         public static List<((int type, int subType, int megaType) material, int count)[]> craftRecipes = new List<((int type, int subType, int megaType) material, int count)[]>

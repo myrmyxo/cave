@@ -87,7 +87,7 @@ namespace Cave
                 spawnNests = false;
                 spawnEntitiesBool = true;
                 spawnPlants = true;
-                bool spawnNOTHING = false;
+                bool spawnNOTHING = true;
                 bool spawnEVERYTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
                 if (spawnEVERYTHING) { loadStructuresYesOrNo = true; spawnEntitiesBool = true; spawnPlants = true; }
@@ -117,7 +117,7 @@ namespace Cave
 
                 timeElapsed = 0;
 
-                // to make biome diagrams for testinggggg       order : temp, humi, acid, toxi
+                // to make biome diagrams for testinggggg       order : temp, humi, acid, toxi, sali, illu, ocea
                 for (int i = 0; i < 0; i++)
                 {
                     int a = rand.Next(4);
@@ -125,12 +125,12 @@ namespace Cave
                     while (b == a) { b = rand.Next(4); }
                     int c = rand.Next(1024);
                     int d = rand.Next(1024);
-                    makeBiomeDiagram((0, 0), (a, b), (c, d), "-");
+                    makeBiomeDiagram((0, 0), (a, b), new int[]{ c, d, 512, 512, 512 }, "-");
                 }
                 int counti = 0;
-                for (int i = -512; i < -1000/*1536*/; i += 64)
+                for (int i = -512; i < /*-1000*/1536; i += 64)
                 {
-                    makeBiomeDiagram((0, 0), (0, 1), (i, 512), counti.ToString());
+                    makeBiomeDiagram((0, 0), (0, 1), new int[]{ 512, 512, 512, 512, i }, counti.ToString());
                     counti++;
                 }
 

@@ -130,7 +130,7 @@ namespace Cave
             {
                 chunkSeed = screen.getLCGValue((pos, 0), 32);
 
-                (int temp, int humi, int acid, int toxi, int mod1, int mod2)[,] tileValuesArray = determineAllBiomeValues();
+                (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] tileValuesArray = determineAllBiomeValues();
 
                 if (chunkJson == null) { generateTerrain(tileValuesArray); }   // If first loading only, generate terrain
 
@@ -157,26 +157,33 @@ namespace Cave
                     }
                 }
             }
-            public (int temp, int humi, int acid, int toxi, int mod1, int mod2)[,] determineAllBiomeValues()
+            public (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] determineAllBiomeValues()
             {
-                int[,,] biomeValues = new int[33, 33, 12];
+                int[,,] biomeValues = new int[33, 33, 18];
                 if (!screen.isMonoBiome)
                 {
-                    findNoiseValues(biomeValues, 0, 100, 512, 1028);    // big temp
-                    findNoiseValues(biomeValues, 1, 101, 1024, 1028);   // small temp
-                    findNoiseValues(biomeValues, 2, 102, 512, 1028);    // big humi
-                    findNoiseValues(biomeValues, 3, 103, 1024, 1028);   // small humi
-                    findNoiseValues(biomeValues, 4, 104, 512, 1028);    // big acid
-                    findNoiseValues(biomeValues, 5, 105, 1024, 1028);   // small acid
-                    findNoiseValues(biomeValues, 6, 106, 512, 1028);    // big toxi
-                    findNoiseValues(biomeValues, 7, 107, 1024, 1028);   // small toxi
-                    findNoiseValues(biomeValues, 8, 108, 512, 1028);    // big mod1
-                    findNoiseValues(biomeValues, 9, 109, 1024, 1028);   // small mod1
-                    findNoiseValues(biomeValues, 10, 110, 512, 1028);   // big mod2
-                    findNoiseValues(biomeValues, 11, 111, 1024, 1028);  // small mod2
+                    findNoiseValues(biomeValues, 0, 100, 512, 1028);    // BIG   Temperature
+                    findNoiseValues(biomeValues, 1, 101, 1024, 1028);   // small Temperature
+                    findNoiseValues(biomeValues, 2, 102, 512, 1028);    // BIG   Humidity
+                    findNoiseValues(biomeValues, 3, 103, 1024, 1028);   // small Humidity
+                    findNoiseValues(biomeValues, 4, 104, 512, 1028);    // BIG   Acidity
+                    findNoiseValues(biomeValues, 5, 105, 1024, 1028);   // small Acidity
+                    findNoiseValues(biomeValues, 6, 106, 512, 1028);    // BIG   Toxicity
+                    findNoiseValues(biomeValues, 7, 107, 1024, 1028);   // small Toxicity
+                    findNoiseValues(biomeValues, 8, 108, 512, 1028);    // BIG   Salinity
+                    findNoiseValues(biomeValues, 9, 109, 1024, 1028);   // small Salinity
+                    findNoiseValues(biomeValues, 10, 110, 512, 1028);   // BIG   Illumination
+                    findNoiseValues(biomeValues, 11, 111, 1024, 1028);  // small Illumination
+                    findNoiseValues(biomeValues, 12, 108, 512, 1028);   // BIG   Oceanity
+                    findNoiseValues(biomeValues, 13, 109, 1024, 1028);  // small Oceanity
+
+                    findNoiseValues(biomeValues, 14, 108, 512, 1028);   // BIG   mod1
+                    findNoiseValues(biomeValues, 15, 109, 1024, 1028);  // small mod1
+                    findNoiseValues(biomeValues, 16, 110, 512, 1028);   // BIG   mod2
+                    findNoiseValues(biomeValues, 17, 111, 1024, 1028);  // small mod2
                 }
 
-                (int temp, int humi, int acid, int toxi, int mod1, int mod2)[,] tileValuesArray = new (int temp, int humi, int acid, int toxi, int mod1, int mod2)[32, 32];
+                (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] tileValuesArray = new (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[32, 32];
                 biomeIndex = new (BiomeTraits traits, int percentage)[32, 32][];
                 baseColors = new (int, int, int)[32, 32];
                 bitmap = new Bitmap(32, 32);
@@ -186,7 +193,7 @@ namespace Cave
                 {
                     for (int j = 0; j < 32; j += 1)
                     {
-                        (int temp, int humi, int acid, int toxi, int mod1, int mod2) tileValues;
+                        (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) tileValues;
                         if (screen.isMonoBiome)
                         {
                             tileValues = makeTileBiomeValueArrayMonoBiome(screen.type);
@@ -206,7 +213,7 @@ namespace Cave
 
                 return tileValuesArray;
             }
-            public void generateTerrain((int temp, int humi, int acid, int toxi, int mod1, int mod2)[,] tileValuesArray)
+            public void generateTerrain((int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] tileValuesArray)
             {
                 fillStates = new TileTraits[32, 32];
 
@@ -290,7 +297,7 @@ namespace Cave
                 if (type == 1) { float a = (0.5f - Abs(mult - 0.5f)) * 30; return a * a; }  // 1 - ocean separator
                 return 0;
             }
-            public (int type, int subType) findMaterialToFillWith((int temp, int humi, int acid, int toxi, int mod1, int mod2) biomeValues, (int, int) values, (BiomeTraits traits, int percentage)[] biomeTraits)
+            public (int type, int subType) findMaterialToFillWith((int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) biomeValues, (int, int) values, (BiomeTraits traits, int percentage)[] biomeTraits)
             {
                 Dictionary<TileTransitionTraits, int> transitionDict = new Dictionary<TileTransitionTraits, int>();
                 foreach ((BiomeTraits traits, int percentage) tupel in biomeTraits)
@@ -311,7 +318,10 @@ namespace Cave
                         tTT.temperature is null ? 100000 : (tTT.temperature.Value.reverse ? -1 : 1) * (tTT.temperature.Value.threshold - biomeValues.temp),
                         tTT.humidity is null ? 100000 : (tTT.humidity.Value.reverse ? -1 : 1) * (tTT.humidity.Value.threshold - biomeValues.humi),
                         tTT.acidity is null ? 100000 : (tTT.acidity.Value.reverse ? -1 : 1) * (tTT.acidity.Value.threshold - biomeValues.acid),
-                        tTT.toxicity is null ? 100000 : (tTT.toxicity.Value.reverse ? -1 : 1) * (tTT.toxicity.Value.threshold - biomeValues.toxi)
+                        tTT.toxicity is null ? 100000 : (tTT.toxicity.Value.reverse ? -1 : 1) * (tTT.toxicity.Value.threshold - biomeValues.toxi),
+                        tTT.salinity is null ? 100000 : (tTT.salinity.Value.reverse ? -1 : 1) * (tTT.salinity.Value.threshold - biomeValues.toxi),
+                        tTT.illumination is null ? 100000 : (tTT.illumination.Value.reverse ? -1 : 1) * (tTT.illumination.Value.threshold - biomeValues.toxi),
+                        tTT.oceanity is null ? 100000 : (tTT.oceanity.Value.reverse ? -1 : 1) * (tTT.oceanity.Value.threshold - biomeValues.toxi)
                         ) / 320f, 1) * tTT.biomeValuesScale;
                     }
 
@@ -1066,36 +1076,32 @@ namespace Cave
                 }
             }
         }
-        public static (int temp, int humi, int acid, int toxi, int mod1, int mod2) makeTileBiomeValueArrayMonoBiome((int type, int subType) biome)
+        public static (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) makeTileBiomeValueArrayMonoBiome((int type, int subType) biome)
         {
-            (int temp, int humi, int acid, int toxi, int range, int prio) values = biomeTypicalValues.ContainsKey(biome) ? biomeTypicalValues[biome] : biomeTypicalValues[(-1, 0)];
+            (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int range, int prio) values = biomeTypicalValues.ContainsKey(biome) ? biomeTypicalValues[biome] : biomeTypicalValues[(-1, 0)];
             int temperature = values.temp;
             int humidity = values.humi;
             int acidity = values.acid;
             int toxicity = values.toxi;
+            int salinity = values.toxi;
+            int illumination = values.toxi;
+            int oceanity = values.toxi;
             int mod1 = 0;
             int mod2 = 0;
-            return (temperature, humidity, acidity, toxicity, mod1, mod2);
+            return (temperature, humidity, acidity, toxicity, salinity, illumination, oceanity, mod1, mod2);
         }
-        public static (int temp, int humi, int acid, int toxi, int mod1, int mod2) makeTileBiomeValueArray(int[,,] values, int posX, int posY)
+        public static (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) makeTileBiomeValueArray(int[,,] values, int posX, int posY)
         {
             int temperature = values[posX, posY, 0] + values[posX, posY, 1] - 512;
             int humidity = values[posX, posY, 2] + values[posX, posY, 3] - 512;
             int acidity = values[posX, posY, 4] + values[posX, posY, 5] - 512;
             int toxicity = values[posX, posY, 6] + values[posX, posY, 7] - 512;
-            int mod1 = values[posX, posY, 8] + values[posX, posY, 9] - 512;
-            int mod2 = values[posX, posY, 10] + values[posX, posY, 11] - 512;
-            return (temperature, humidity, acidity, toxicity, mod1, mod2);
-        }
-        public static (int temp, int humi, int acid, int toxi, int mod1, int mod2) makeTileBiomeValueArray(int[] values, int posX, int posY)
-        {
-            int temperature = values[0];
-            int humidity = values[1];
-            int acidity = values[2];
-            int toxicity = values[3];
-            int mod1 = values[4];
-            int mod2 = values[5];
-            return (temperature, humidity, acidity, toxicity, mod1, mod2);
+            int salinity = values[posX, posY, 8] + values[posX, posY, 9] - 512;
+            int illumination = values[posX, posY, 10] + values[posX, posY, 11] - 512;
+            int oceanity = values[posX, posY, 12] + values[posX, posY, 13] - 512;
+            int mod1 = values[posX, posY, 14] + values[posX, posY, 15] - 512;
+            int mod2 = values[posX, posY, 16] + values[posX, posY, 17] - 512;
+            return (temperature, humidity, acidity, toxicity, salinity, illumination, oceanity, mod1, mod2);
         }
         public static int testAddBiome(List<((int biome, int subBiome), int)> biomeList, (int biome, int subBiome) biomeToTest, int biomeness)
         {
@@ -1114,9 +1120,9 @@ namespace Cave
         }
         public static (BiomeTraits traits, int percentage)[] findBiome((int, int) dimensionType, int[] values)
         {
-            return findBiome(dimensionType, (values[0], values[1], values[2], values[3], values[4], values[5]));
+            return findBiome(dimensionType, (values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8]));
         }
-        public static (BiomeTraits traits, int percentage)[] findBiome((int, int) dimensionType, (int temp, int humi, int acid, int toxi, int mod1, int mod2) values)
+        public static (BiomeTraits traits, int percentage)[] findBiome((int, int) dimensionType, (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) values)
         {
             //return new (int, int)[]{ (8, 1000) }; // use this to force a biome for debug (infite biome)
 
@@ -1130,6 +1136,9 @@ namespace Cave
             int humidity = values.humi;
             int acidity = values.acid;
             int toxicity = values.toxi;
+            int salinity = values.sali;
+            int illumination = values.illu;
+            int oceanity = values.ocea;
 
             bool expensiveUglyBlending = false;
             if (expensiveUglyBlending) // distance shit that's slow asf and bad asf
@@ -1184,12 +1193,12 @@ namespace Cave
                 {
                     listo = new List<((int biome, int subBiome), int)>();
 
-                    if (humidity - Abs((int)(0.4f * Max(-256, temperature - 512))) > 720)
+                    if (oceanity > 720)
                     {
-                        int oceanness = calculateBiome(percentageFree, humidity - Abs((int)(0.4f * Max(-256, temperature - 512))), (720, 999999));   // ocean
-                        int oceanToAdd = oceanness - calculateAndAddBiome(listo, (8, 1), oceanness, temperature, (-999999, 0)); // Frozen ocean
+                        int oceaness = calculateBiome(percentageFree, oceanity, (720, 999999));   // ocean
+                        int oceanToAdd = oceaness - calculateAndAddBiome(listo, (8, 1), oceaness, temperature, (-999999, 0)); // Frozen ocean
                         testAddBiome(listo, (8, 0), oceanToAdd);
-                        percentageFree -= oceanness;
+                        percentageFree -= oceaness;
                     }
 
                     percentageFree -= calculateAndAddBiome(listo, (0, 1), percentageFree, temperature, (-999999, 0));   // add frost
@@ -1200,17 +1209,17 @@ namespace Cave
                     if (temperature > 720)
                     {
                         int hotness = calculateBiome(percentageFree, temperature, (720, 999999));
-                        if (temperature > 1024)
-                        {
-                            int lavaness = calculateAndAddBiome(listo, (2, 1), hotness, temperature - Max(0, humidity - 512), (1024, 999999));
-                            percentageFree -= lavaness;
-                            hotness -= lavaness;
-                        }
                         if (temperature > 840 && humidity > 600)
                         {
                             int obsidianess = calculateAndAddBiome(listo, (2, 2), hotness, Min(temperature - 840, humidity - 600), (0, 999999));
                             percentageFree -= obsidianess;
                             hotness -= obsidianess;
+                        }
+                        if (temperature > 920 && oceanity < 512)
+                        {
+                            int lavaness = calculateAndAddBiome(listo, (2, 1), hotness, Min(temperature - 920, 512 - oceanity), (0, 999999));
+                            percentageFree -= lavaness;
+                            hotness -= lavaness;
                         }
                         percentageFree -= testAddBiome(listo, (2, 0), hotness);
                     }
@@ -1247,7 +1256,7 @@ namespace Cave
                 }
                 else if (dimensionType == (1, 0)) // type == 1, chandelier dimension
                 {
-                    percentageFree -= calculateAndAddBiome(listo, (11, 0), percentageFree, humidity, (720, 999999)); // Dark ocean...
+                    percentageFree -= calculateAndAddBiome(listo, (11, 0), percentageFree, oceanity, (720, 999999)); // Dark ocean...
                     percentageFree -= calculateAndAddBiome(listo, (10, 0), percentageFree, temperature, (700, 999999)); // Lantern
                     percentageFree -= calculateAndAddBiome(listo, (10, 2), percentageFree, temperature, (-999999, 300)); // Chandelier
                     testAddBiome(listo, (10, 1), percentageFree); // MixedLuminous
