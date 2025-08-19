@@ -225,7 +225,6 @@ namespace Cave
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
             // 30/01/2025 Once, a broken honey storage room was made, as the tunnel that lead to it made it have a leak mid height (tunnel dug in the bordel...)
-            // Prevent waterSkippers for yeeting themselves out of pools where there is nothing on the sides of a lake to prevent them from doing so
             // -> Waterskippers fly 1 tile above ground also ???????????? They don't fall (bug with jesus)
             // When worms are on solid ground, like in air on top of a solid... they stop moving lol
             // An ocean biome was leaking out in a slime biome ??? the fuck
@@ -233,6 +232,7 @@ namespace Cave
             // Weird transition between mold and ocean has appeared after ice ocean update
             // Entities exiting chunks seems to disappear still... Fuuuckkk. Not sure tho !
             // Sometimes leakage between ice ocean and ocean, due to antiborder idk thing
+            // Vines when arriving on terrain that forces them to move left or right become MONSTRUOUS
 
             // cool ideas for later !
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
@@ -278,7 +278,6 @@ namespace Cave
             // Add rats with a tail ? Rat swarms ?
             // Jellyfish
             // TERMINTES ??? Making exploratory tubes and shit ?
-            // Flies that hover over lakes. ACTUALLY, Dragonflies might be better ??? or both idk but flies might look like obsidian fairies
             // Tunicates in oceans
             // Squirrels that climb trees and have a tail ?
             // flying fish ?
@@ -298,6 +297,7 @@ namespace Cave
             // --> maybe for plants who change direction rotationally, make a list of forbidden orientations ? or like a "moves upwards" thing, so that it can go <- \ | / -> upwards but not downards idk. Could be cool for hair.
             // WIND TURBINE PLANTS LMAOOOOOOOOOOOOo
             // Have poppy and other plants growing in wheat fields. Like before.
+            // Colored guirelandes in chandeliers dimension !!!
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.

@@ -602,7 +602,7 @@ namespace Cave
             serializer.Converters.Add(new JavaScriptDateTimeConverter());
             serializer.NullValueHandling = NullValueHandling.Ignore;
 
-            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{chunk.screen.game.seed}\\ChunkData\\{chunk.screen.id}\\{chunk.pos.Item1}.{chunk.pos.Item2}.json"))
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{chunk.screen.game.seed}\\ChunkData\\{chunk.screen.id}\\{chunk.pos.x}.{chunk.pos.y}.json"))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
                 ChunkJson baby = new ChunkJson(chunk);

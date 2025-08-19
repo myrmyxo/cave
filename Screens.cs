@@ -83,11 +83,11 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                loadStructuresYesOrNo = true;
+                loadStructuresYesOrNo = false;
                 spawnNests = false;
                 spawnEntitiesBool = true;
                 spawnPlants = true;
-                bool spawnNOTHING = true;
+                bool spawnNOTHING = false;
                 bool spawnEVERYTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
                 if (spawnEVERYTHING) { loadStructuresYesOrNo = true; spawnEntitiesBool = true; spawnPlants = true; }
@@ -690,21 +690,21 @@ namespace Cave
             }
             public void addPlantsToChunk(Chunk chunk)
             {
-                if (outOfBoundsPlants.ContainsKey((chunk.pos.Item1, chunk.pos.Item2)))
+                if (outOfBoundsPlants.ContainsKey((chunk.pos.x, chunk.pos.y)))
                 {
-                    chunk.exteriorPlantList = outOfBoundsPlants[(chunk.pos.Item1, chunk.pos.Item2)];
-                    outOfBoundsPlants.Remove((chunk.pos.Item1, chunk.pos.Item2));
+                    chunk.exteriorPlantList = outOfBoundsPlants[(chunk.pos.x, chunk.pos.y)];
+                    outOfBoundsPlants.Remove((chunk.pos.x, chunk.pos.y));
                 }
             }
             public void removePlantsFromChunk(Chunk chunk)
             {
                 if (chunk.exteriorPlantList.Count > 0)
                 {
-                    outOfBoundsPlants.Add((chunk.pos.Item1, chunk.pos.Item2), new List<Plant>());
+                    outOfBoundsPlants.Add((chunk.pos.x, chunk.pos.y), new List<Plant>());
                 }
                 foreach (Plant plant in chunk.exteriorPlantList)
                 {
-                    outOfBoundsPlants[(chunk.pos.Item1, chunk.pos.Item2)].Add(plant);
+                    outOfBoundsPlants[(chunk.pos.x, chunk.pos.y)].Add(plant);
                 }
             }
             public void addRemoveEntities()
@@ -1374,8 +1374,8 @@ namespace Cave
             }
             public void drawMiscDebugOnScreen(Bitmap gameBitmap, (int x, int y) camPos)
             {
-                if (false)  // Debug for plants exact Plant and PlantElement's positions
-                {
+                /*
+                {   // Debug for plants exact Plant and PlantElement's positions
                     List<PlantElement> listo = new List<PlantElement>();
                     foreach (Plant plant in activePlants.Values)
                     {
@@ -1389,7 +1389,7 @@ namespace Cave
                         foreach (PlantElement baby in current.childPlantElements) { listo.Add(baby); }
                         if (rand.Next(5) != 0) { game.miscDebugList.Insert(0, (current.motherPlant.getRealPos(current.pos), Color.MediumPurple)); }
                     }
-                }
+                }*/
                 foreach (Chunk chunkoko in loadedChunks.Values) { if (chunkoko.unstableLiquidCount > 0) { pasteImage(gameBitmap, transBlue32Bitmap, (chunkoko.pos.x * 32, chunkoko.pos.y * 32), camPos); } }
                 foreach (((int x, int y) pos, Color col) item in game.miscDebugList) { drawPixel(gameBitmap, item.col, item.pos, camPos); }
                 game.miscDebugList = new List<((int x, int y) pos, Color col)>();

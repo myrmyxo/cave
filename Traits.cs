@@ -86,7 +86,7 @@ namespace Cave
 
                 isAir = Air;
                 isLiquid = L;
-                isSolid = (isAir || isLiquid) ? false : true;
+                isSolid = !(isAir || isLiquid);
 
                 isLava = H;
                 isAcidic = A;
@@ -530,6 +530,21 @@ namespace Cave
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-1, -2), (0, -2), (1, -2), (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -1), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1), (-1, 2), (0, 2), (1, 2) } } }
                 ) },
 
+
+                { "BulbousAlgaeLeaves1", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, 0) } } }
+                ) },
+                { "BulbousAlgaeLeaves2", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, -1), (-1, 0), (0, 0), (1, 0), (0, 1) } } }
+                ) },
+                { "BulbousAlgaeLeaves3", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, -2), (-1, -1), (0, -1), (-1, 0), (0, 0), (1, 0), (0, 1), (1, 1), (0, 2) } } }
+                ) },
+                { "BulbousAlgaeLeaves4", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, -3), (-1, -2), (0, -2), (-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1), (0, 2), (1, 2), (0, 3) } } }
+                ) },
+
+
                 { "Lantern1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 1), new (int x, int y)[] { (0, 0) } } }
                 ) },
@@ -611,6 +626,7 @@ namespace Cave
                 { "ReedFlower3", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0), (0, 1) } }, { (2, 1), new (int x, int y)[] { (0, 2) } } }
                 ) },
+
             };
         }
 
@@ -693,6 +709,14 @@ namespace Cave
             { "Up3Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 3, true) }) },
             { "Up3GapX3Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (-1, 3, true), (0, 3, true), (1, 3, true) }) },
             { "Up4Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 4, true) }) },
+            { "Up5Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 5, true) }) },
+            { "Up6Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 6, true) }) },
+            { "Up7Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 7, true) }) },
+            { "Up8Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 8, true) }) },
+            { "Up9Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 9, true) }) },
+            { "Up10Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 10, true) }) },
+            { "Up11Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 11, true) }) },
+            { "Up12Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 12, true) }) },
 
             { "Down1Gap", (null, null, new (int x, int y, bool stopGrowth)[]{ (0, -1, true) }, null) },
             { "Down2Gap", (null, null, new (int x, int y, bool stopGrowth)[]{ (0, -2, true) }, null) },
@@ -719,13 +743,13 @@ namespace Cave
             public bool forceLightAtPos;
             public int lightRadius;
             public (int type, int subType) lightElement;
-            public (int type, int subType)[] colorOverrideArray;    // not used YET (will be used if individual plantElements of the same plant need to have different colors (like idk a flower is blue, another is yellow... or different leaf colors in the same tree...)
-            
+            public ((int type, int subType) type, ColorRange colorRange)[] colorOverrideArray;  // If specific PlantElement has different color from the one in the whole Plant. If colorRange is null, it will take the colorRange of the motherPlant, but with a different range due to see (so variations of color in different leaves for example)
+
             public HashSet<(int type, int subType)> materialsPresent;
             public PlantElementTraits(string namee, ((int x, int y) pos, (bool x, bool y) flip)? stick = null, (int maxLevel, int range)? fMG = null, OneAnimation anm = null,
                 ((int frame, int range) changeFrame, PlantStructureFrame frame)[] framez = null, ((int type, int subType, int subSubType) plantElement,
                 (int x, int y) offset, int chance)? dC = null, PlantGrowthRules pGR = null, ((int x, int y) pos, (bool x, bool y) baseDirectionFlip)[] rET = null,
-                ((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip)[] sRET = null, (int type, int subType)[] cOverride = null,
+                ((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip)[] sRET = null, ((int type, int subType) type, ColorRange colorRange)[] cOverride = null,
                 bool isReg = false, bool fLAP = false, int lR = 0, (int type, int subType)? lE = null, bool iC = false)
             {
                 name = namee;
@@ -825,6 +849,22 @@ namespace Cave
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(4, 4), hPP:fHPP["Up3Gap"],
                     // PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 0)), ((-1, 0), (true, false, false), (1, 0)) }
                     C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((2, 2, 1), (0, 0), 0, 0, (1, 1), 100) }
+                )) },
+                { (2, 3, 0), new PlantElementTraits("Algae 1 Stem", rET:(from number in Enumerable.Range(0, 5) select ((number % 2, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(4, 3), tCNTG:(-2, 0),
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 1), 65) },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((2, 3, -1), (-1, 0), 1, 0, (1, 1), 90), ((2, 3, -1), (1, 0), 1, 0, (1, 1), 90) },
+                    lC:true
+                )) },
+                { (2, 4, 0), new PlantElementTraits("Algae Bulbous", rET:(from number in Enumerable.Range(0, 5) select ((number % 2, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(10, 32), hPP:fHPP["Up12Gap"], tCNTG:(-2, 0),
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (2, 4), 65), ((-1, 0), (true, false, false), (2, 4), 35) },
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((2, 4, -1), (0, 0), 0, 0, 100) }
+                )) },
+                { (2, 5, 0), new PlantElementTraits("Algae Ceiling 1", rET:(from number in Enumerable.Range(0, 5) select ((number % 2, -number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(3, 8), tCNTG:(-2, 0)
+                    //PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 0), 100), ((-1, 0), (true, false, false), (1, 0), 100) },
+                    //lPM:true
                 )) },
 
                 { (3, 0, 0), new PlantElementTraits("ObsidianStem", rET:(from number in Enumerable.Range(0, 3) select ((0, number), (true, false))).ToArray(),
@@ -947,6 +987,21 @@ namespace Cave
                     lPM:true
                 )) },
 
+                { (2, 3, -1), new PlantElementTraits("Algae 1 branch",
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(4, 2), hPP:fHPP["Up1Gap"],
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 1), (true, false, false), (1, 1), 100), ((0, 1), (false, false, false), (1, 1), 100) }
+                )) },
+                { (2, 4, -1), new PlantElementTraits("Algae Bulbous mother branch",
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(6, 6), hPP:fHPP["Up6Gap"],
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((2, 4, 1), (0, 0), 0, 0, 100) },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((2, 4, -2), (-1, 1), 1, 0, (1, 0), 100), ((2, 4, -2), (1, 1), 1, 0, (1, 0), 100) },
+                    lC:true
+                )) },
+                { (2, 4, -2), new PlantElementTraits("Algae Bulbous child branch",
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(1, 3), hPP:fHPP["Up4Gap"],
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((2, 4, 1), (0, 0), 0, 0, 100) }
+                )) },
+
                 { (3, 0, -1), new PlantElementTraits("ObsidianBranch",
                 pGR:new PlantGrowthRules(t:(1, 3), mG:(2, 1), hPP:fHPP["Up1Gap"]
                 )) },
@@ -1037,6 +1092,10 @@ namespace Cave
 
                 { (2, 2, 1), new PlantElementTraits("ReedFlower", stick:((0, 1), (false, false)),
                 framez:makeStructureFrameArray(null, "ReedFlower1", "ReedFlower2", "ReedFlower3")
+                ) },
+                { (2, 4, 1), new PlantElementTraits("BulbousAlgaeLeaves", stick:((0, 0), (false, false)),
+                framez:makeStructureFrameArray(null, "BulbousAlgaeLeaves1", "BulbousAlgaeLeaves2", "BulbousAlgaeLeaves3", "BulbousAlgaeLeaves4"),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), null) }
                 ) },
 
                 { (4, 0, 1), new PlantElementTraits("MushroomCap", stick:((0, 1), (false, false)),
@@ -1132,6 +1191,12 @@ namespace Cave
                 t:(2, 1, 0)) },
                 { (2, 2), new PlantTraits("Reed",                                   W:true,
                 t:(2, 2, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), new ColorRange((120, 30, 30), (40, 0, 20), (20, -10, 10))), ((2, 1), new ColorRange((235, 0, 10), (225, 5, 10), (190, 15, 10))) }) },
+                { (2, 3), new PlantTraits("Algae 1",                                        W:true,
+                t:(2, 3, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((65, 0, 20), (110, -10, 20), (50, 30, 20))) }) },
+                { (2, 4), new PlantTraits("Algae Bulbous",                                  W:true,
+                t:(2, 4, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((45, 0, 10), (80, 10, 10), (30, 20, 10))) }) },
+                { (2, 5), new PlantTraits("Algae Ceiling 1",                        C:true, W:true,
+                t:(2, 5, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((65, 0, 20), (110, -10, 20), (50, 30, 20))) }) },
 
                 { (3, 0), new PlantTraits("ObsidianPlant",
                 t:(3, 0, 0)) },
@@ -1475,6 +1540,11 @@ namespace Cave
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((2, 1), 100), },
                 cT:(0, 3), txT:(0, 0), fT:(-2, -1), lT:(-2, -1), aST:1) }, // Kelp     CeilingKelp
+                { (8, 2),  new BiomeTraits("Algae Ocean",           (Color.DarkSeaGreen.R, Color.DarkSeaGreen.G, Color.DarkSeaGreen.B),
+                new float[]{1, 0.25f, 15, 6,    0, 4, 1, 2, 0, 8, 8, 0}, // Fish      Shark           Waterdog        WaterSkipper   Dragonfly
+                new ((int type, int subType) type, float percentage)[]{ ((2, 0), 99), ((8, 0), 0.9f),  ((9, 0), 0.1f), ((5, 0), 75), ((10, 0), 25), },
+                new ((int type, int subType) type, float percentage)[]{ ((2, 3), 85), ((2, 4), 15), ((2, 5), 100), },
+                cT:(0, 3), txT:(0, 0), fT:(-2, 0), sT:1) },          // Algae 1        Algae Bulbous  Algae Ceiling 1
 
 
                 //      -E- C  G  W  J      -P- E  G  T  C  S  WG WC WS  

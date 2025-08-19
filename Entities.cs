@@ -142,9 +142,9 @@ namespace Cave
             public Entity(Chunk chunk, (int type, int subType) typeToPut, (int x, int y) posToPut)
             {
                 screen = chunk.screen;
-                posX = posToPut.Item1;
+                posX = posToPut.x;
                 realPosX = posX;
-                posY = posToPut.Item2;
+                posY = posToPut.y;
                 realPosY = posY;
                 homePosition = posToPut;
                 targetPos = posToPut;

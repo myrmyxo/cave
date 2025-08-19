@@ -114,14 +114,17 @@ namespace Cave
             plantSprites = new Dictionary<(int, int), OneSprite>
             {
                 { (-1, 0), errorSprite },
-                { (0, 0), new OneSprite("BasePlant", false) },                
-                { (0, 1), new OneSprite("Tulip", false) },                    
+                { (0, 0), new OneSprite("BasePlant", false) },
+                { (0, 1), new OneSprite("Tulip", false) },
                 { (0, 2), new OneSprite("Allium", false) },
                 { (0, 3), new OneSprite("Tulip", false) },
-                { (1, 0), new OneSprite("Tree", false) },                     
-                { (2, 0), new OneSprite("KelpUpwards", false) },              
+                { (1, 0), new OneSprite("Tree", false) },
+                { (2, 0), new OneSprite("KelpUpwards", false) },
                 { (2, 1), new OneSprite("KelpDownwards", false) },
                 { (2, 2), new OneSprite("Reed", false) },
+                { (2, 3), new OneSprite("KelpDownwards", false) },
+                { (2, 4), new OneSprite("KelpUpwards", false) },
+                { (2, 5), new OneSprite("KelpDownwards", false) },
                 { (3, 0), new OneSprite("ObsidianPlant", false) },
                 { (4, 0), new OneSprite("Mushroom", false) },
                 { (4, 1), new OneSprite("Mold", true) },                    // TO CHANGE

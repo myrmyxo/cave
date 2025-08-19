@@ -64,9 +64,9 @@ namespace Cave
             {
                 screen = screenToPut;
                 refId = idToPut;
-                posX = positionToPut.Item1;
+                posX = positionToPut.x;
                 realPosX = posX;
-                posY = positionToPut.Item2;
+                posY = positionToPut.y;
                 realPosY = posY;
                 targetPos = targetPosToPut;
                 seed = rand.Next(1000000000); //                              TO CHANGE FALSE RANDOM NOT SEEDED ARGHHEHEEEE

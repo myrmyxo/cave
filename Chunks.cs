@@ -233,7 +233,7 @@ namespace Cave
                         int value2 = terrainValues[i, j, 2] + (int)(0.25 * terrainValues[i, j, 3]) - 32;
                         int mod2 = (int)(tileValuesArray[i, j].mod2 * 0.25);
 
-                        BiomeTraits mainBiomeTraits = biomeIndex[i, j][0].Item1;
+                        BiomeTraits mainBiomeTraits = biomeIndex[i, j][0].traits;
 
                         float mult;
                         float score1 = 0;
@@ -272,8 +272,8 @@ namespace Cave
                 if (type == 3) { return value - 138 + 10 * biomeTraits.caveWidth; }         // 3 - normal ocean 
                 if (type == 4)                                                              // 4 - obsidian biome
                 {
-                    float see1 = Obs((pos.Item1 * 32) % 64 + 64 + mod32pos.x + mod2 * 0.15f + 0.5f, 64);
-                    float see2 = Obs((pos.Item2 * 32) % 64 + 64 + mod32pos.y + mod2 * 0.15f + 0.5f, 64);
+                    float see1 = Obs((pos.x * 32) % 64 + 64 + mod32pos.x + mod2 * 0.15f + 0.5f, 64);
+                    float see2 = Obs((pos.y * 32) % 64 + 64 + mod32pos.y + mod2 * 0.15f + 0.5f, 64);
                     return 500 * (see1 + see2) - 250;
                 }
                 if (type == 5) { return Max(value - 200, 75 - value); }                     // 5 - forest biome
@@ -362,11 +362,11 @@ namespace Cave
                 colorArray[2] += (int)(materialColor.b * (1 - materialColor.mult)) + rando;
                 colorToSet = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
 
-                if (false)  // This was for the csgo missing texture effect when thing is not in the the tha
+                /*if (false)  // This was for the csgo missing texture effect when thing is not in the the tha
                 {
                     if ((i + j) % 2 == 0) { colorToSet = Color.Black; }
                     else { colorToSet = Color.FromArgb(255, 00, 255); }
-                }
+                }*/
                 bitmap.SetPixel(i, j, colorToSet);
                 effectsBitmap.SetPixel(i, j, traits.isLiquid ? Color.FromArgb(80, ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2])) : Color.Transparent);
             }
@@ -554,11 +554,11 @@ namespace Cave
             {
                 if (unstableLiquidCount > 0) //here
                 {
-                    Chunk leftChunk = screen.getChunkFromChunkPos((pos.Item1 - 1, pos.Item2), false, true) ?? theFilledChunk;
-                    Chunk bottomLeftChunk = screen.getChunkFromChunkPos((pos.Item1 - 1, pos.Item2 - 1), false, true) ?? theFilledChunk;
-                    Chunk bottomChunk = screen.getChunkFromChunkPos((pos.Item1, pos.Item2 - 1), false, true) ?? theFilledChunk;
-                    Chunk bottomRightChunk = screen.getChunkFromChunkPos((pos.Item1 + 1, pos.Item2 - 1), false, true) ?? theFilledChunk;
-                    Chunk rightChunk = screen.getChunkFromChunkPos((pos.Item1 + 1, pos.Item2), false, true) ?? theFilledChunk;
+                    Chunk leftChunk = screen.getChunkFromChunkPos((pos.x - 1, pos.y), false, true) ?? theFilledChunk;
+                    Chunk bottomLeftChunk = screen.getChunkFromChunkPos((pos.x - 1, pos.y - 1), false, true) ?? theFilledChunk;
+                    Chunk bottomChunk = screen.getChunkFromChunkPos((pos.x, pos.y - 1), false, true) ?? theFilledChunk;
+                    Chunk bottomRightChunk = screen.getChunkFromChunkPos((pos.x + 1, pos.y - 1), false, true) ?? theFilledChunk;
+                    Chunk rightChunk = screen.getChunkFromChunkPos((pos.x + 1, pos.y), false, true) ?? theFilledChunk;
 
                     unstableLiquidCount = 0;
 
@@ -646,7 +646,7 @@ namespace Cave
                         middleChunk.tileModification(i, jb, traits);
                         return true;
                     } // THIS ONE WAS FUCKING BUGGYYYYY BRUH
-                    if ((i < 15 || middleChunk.pos.Item1 < rightChunk.pos.Item1) && (rightChunk.fillStates[ir, j].isAir || middleChunk.fillStates[i, jb].isLiquid) && rightDiagChunk.fillStates[ir, jb].isAir)
+                    if ((i < 15 || middleChunk.pos.x < rightChunk.pos.x) && (rightChunk.fillStates[ir, j].isAir || middleChunk.fillStates[i, jb].isLiquid) && rightDiagChunk.fillStates[ir, jb].isAir)
                     {
                         tileModification(i, j, (0, 0));
                         rightDiagChunk.tileModification(ir, jb, traits);
@@ -659,7 +659,7 @@ namespace Cave
                             return true;
                         }
                     }
-                    if ((i > 0 || leftChunk.pos.Item1 < middleChunk.pos.Item1) && (leftChunk.fillStates[il, j].isAir || middleChunk.fillStates[i, jb].isLiquid) && leftDiagChunk.fillStates[il, jb].isAir)
+                    if ((i > 0 || leftChunk.pos.x < middleChunk.pos.x) && (leftChunk.fillStates[il, j].isAir || middleChunk.fillStates[i, jb].isLiquid) && leftDiagChunk.fillStates[il, jb].isAir)
                     {
                         tileModification(i, j, (0, 0));
                         leftDiagChunk.tileModification(il, jb, traits);
@@ -680,8 +680,8 @@ namespace Cave
                 int iTested = i;
                 int jTested = j - 1;
 
-                int absChunkX = pos.Item1;
-                int absChunkY = pos.Item2;
+                int absChunkX = pos.x;
+                int absChunkY = pos.y;
                 if (jTested < 0) { jTested += 32; absChunkY--; }
                 Chunk chunkToTest = screen.getChunkFromChunkPos((absChunkX, absChunkY), false, true);    // Should alwats be loaded
                 if (chunkToTest is null) { return false; }
@@ -723,8 +723,8 @@ namespace Cave
                 int iTested = i;
                 int jTested = j - 1;
 
-                int absChunkX = pos.Item1;
-                int absChunkY = pos.Item2;
+                int absChunkX = pos.x;
+                int absChunkY = pos.y;
                 if (jTested < 0) { jTested += 32; absChunkY--; }
                 Chunk chunkToTest = screen.getChunkFromChunkPos((absChunkX, absChunkY), false, true);    // Should alwats be loaded
                 if (chunkToTest is null) { return false; }
@@ -1197,6 +1197,7 @@ namespace Cave
                     {
                         int oceaness = calculateBiome(percentageFree, oceanity, (720, 999999));   // ocean
                         int oceanToAdd = oceaness - calculateAndAddBiome(listo, (8, 1), oceaness, temperature, (-999999, 0)); // Frozen ocean
+                        oceanToAdd -= calculateAndAddBiome(listo, (8, 2), oceaness, Min(salinity, illumination) - 512, (0, 999999)); // Algae ocean
                         testAddBiome(listo, (8, 0), oceanToAdd);
                         percentageFree -= oceaness;
                     }
@@ -1304,7 +1305,7 @@ namespace Cave
             float mult;
             foreach ((BiomeTraits traits, int percentage) tupel in arrayo)
             {
-                mult = tupel.Item2 * 0.001f;
+                mult = tupel.percentage * 0.001f;
                 colorArray[0] += (int)(mult * tupel.traits.color.r);
                 colorArray[1] += (int)(mult * tupel.traits.color.g);
                 colorArray[2] += (int)(mult * tupel.traits.color.b);

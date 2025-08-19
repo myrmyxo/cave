@@ -145,7 +145,7 @@ namespace Cave
             public void makeBitmap()
             {
                 List<PlantElement> plantElements = returnAllPlantElements();
-                Dictionary<(int x, int y), (int type, int subType)> fillDict = returnFullPlantFillDict(plantElements);
+                Dictionary<(int x, int y), Color> fillDict = returnFullPlantFillDict(plantElements);
                 animatedPlantElements = returnAnimatedPlantElements(plantElements);
 
                 outOfBoundsVisibility = 0;
@@ -175,7 +175,7 @@ namespace Cave
 
                 foreach ((int x, int y) drawPos in fillDict.Keys)
                 {
-                    bitmapToMake.SetPixel(drawPos.x - minX, drawPos.y - minY, colorDict[fillDict[drawPos]]);
+                    bitmapToMake.SetPixel(drawPos.x - minX, drawPos.y - minY, fillDict[drawPos]);
                 }
 
                 posOffset = (minX, minY);
@@ -186,7 +186,7 @@ namespace Cave
 
                 testDeath(fillDict);
             }
-            public void findChunkPresence(Dictionary<(int x, int y), (int type, int subType)> fillDict)
+            public void findChunkPresence(Dictionary<(int x, int y), Color> fillDict)
             {
                 chunkPresence = new Dictionary<(int x, int y), bool>();
                 if (fillDict.Count == 0) { chunkPresence[ChunkIdx(posX, posY)] = true; }    // Needed if plant at stage 0 so it doesn't disappear forever lmfao !
@@ -288,13 +288,18 @@ namespace Cave
                 foreach (PlantElement element in plantElements) { if (element.traits.animation != null) { animatedPlantElementList.Add(element); } }
                 return animatedPlantElementList.ToArray();
             }
-            public Dictionary<(int x, int y), (int type, int subType)> returnFullPlantFillDict(List<PlantElement> plantElements = null)
+            public Dictionary<(int x, int y), Color> returnFullPlantFillDict(List<PlantElement> plantElements = null)
             {
                 if (plantElements is null) { plantElements = returnAllPlantElements(); }
-                Dictionary<(int x, int y), (int type, int subType)> fillDict = new Dictionary<(int x, int y), (int type, int subType)>();
+                Dictionary<(int x, int y), Color> fillDict = new Dictionary<(int x, int y), Color>();
                 foreach (PlantElement element in plantElements)
                 {
-                    foreach ((int x, int y) keyo in element.fillStates.Keys) { fillDict[(keyo.x + element.pos.x, keyo.y + element.pos.y)] = element.fillStates[keyo]; }
+                    foreach ((int x, int y) keyo in element.fillStates.Keys)
+                    {
+                        (int type, int subType) material = element.fillStates[keyo];
+                        if (element.colorOverrideDict != null && element.colorOverrideDict.ContainsKey(material)) { fillDict[(keyo.x + element.pos.x, keyo.y + element.pos.y)] = element.colorOverrideDict[material]; }
+                        else { fillDict[(keyo.x + element.pos.x, keyo.y + element.pos.y)] = colorDict[material]; }
+                    }
                 }
                 return fillDict;
             }
@@ -358,7 +363,7 @@ namespace Cave
                     foreach (((int type, int subType) type, ColorRange colorRange) item in traits.colorOverrideArray) { tryAddMaterialColor(item.type, item.colorRange); }
                 }
             }
-            public void testDeath(Dictionary<(int x, int y), (int type, int subType)> fillDict)
+            public void testDeath(Dictionary<(int x, int y), Color> fillDict)
             {
                 if (growthLevel > 0 && fillDict.Count == 0)
                 {
@@ -462,6 +467,7 @@ namespace Cave
                 traits = getPlantElementTraits(type);
                 foreach ((int type, int subType) material in traits.materialsPresent) { motherPlant.tryAddMaterialColor(material); }
                 if (traits.lightRadius > 0) { motherPlant.tryAddMaterialColor(traits.lightElement); }
+                makeColorOverrideDict();
             }
             public void getTraitAndAddColorsAndFindMaxGrowth()
             {
@@ -478,6 +484,32 @@ namespace Cave
                 }
                 foreach ((int type, int subType) material in traits.materialsPresent) { motherPlant.tryAddMaterialColor(material); }
                 if (traits.lightRadius > 0) { motherPlant.tryAddMaterialColor(traits.lightElement); }
+                makeColorOverrideDict();
+            }
+            public void makeColorOverrideDict()
+            {
+                if (traits.colorOverrideArray is null) { return; }
+                colorOverrideDict = new Dictionary<(int type, int subType), Color>();
+                foreach (((int type, int subType) type, ColorRange colorRange) tuple in traits.colorOverrideArray)
+                {
+                    ColorRange c = tuple.colorRange;
+                    if (c is null) { c = colorOverrideOfTypeIfPresentInMotherPlant(tuple.type) ?? getMaterialTraits(tuple.type).colorRange; }
+                    float hueVar = (float)((seed % 11) * 0.2f - 1);
+                    float shadeVar = (float)((LCGz(seed) % 11) * 0.2f - 1);
+                    colorOverrideDict[tuple.type] = Color.FromArgb(
+                        ColorClamp(c.r.v + (int)(hueVar * c.r.h) + (int)(shadeVar * c.r.s)),
+                        ColorClamp(c.g.v + (int)(hueVar * c.g.h) + (int)(shadeVar * c.g.s)),
+                        ColorClamp(c.b.v + (int)(hueVar * c.b.h) + (int)(shadeVar * c.b.s))
+                    );
+                }
+            }
+            public ColorRange colorOverrideOfTypeIfPresentInMotherPlant((int type, int subType) type)
+            {
+                foreach (((int type, int subType) type, ColorRange colorRange) tuple in motherPlant.traits.colorOverrideArray)
+                {
+                    if (tuple.type == type) { return tuple.colorRange; }
+                }
+                return null;
             }
             public (int x, int y) absolutePos((int x, int y) position)
             {

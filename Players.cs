@@ -68,15 +68,15 @@ namespace Cave
                 if (settingsJson == null) { initializeInventory(); }
                 else
                 {
-                    realPosX = settingsJson.player.pos.Item1;
+                    realPosX = settingsJson.player.pos.x;
                     posX = (int)realPosX;
-                    realPosY = settingsJson.player.pos.Item2;
+                    realPosY = settingsJson.player.pos.y;
                     posY = (int)realPosY;
                     (Dictionary<(int index, int subType, int typeOfElement), int>, List<(int index, int subType, int typeOfElement)>) returnTuple = arrayToInventory(settingsJson.player.inv);
                     inventoryQuantities = returnTuple.Item1;
                     inventoryElements = returnTuple.Item2;
-                    timeAtLastDig = settingsJson.player.lastDP.Item1;
-                    timeAtLastPlace = settingsJson.player.lastDP.Item2;
+                    timeAtLastDig = settingsJson.player.lastDP.x;
+                    timeAtLastPlace = settingsJson.player.lastDP.y;
                 }
 
                 camPosX = posX;
