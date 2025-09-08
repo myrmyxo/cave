@@ -68,6 +68,7 @@ namespace Cave
 
             public bool isDeadAndShouldDisappear = false;
             public bool isStable = false;
+            public bool hasBeenModified = false;
             public Plant(Screens.Screen screenToPut, PlantJson plantJson)
             {
                 screen = screenToPut;
@@ -101,6 +102,7 @@ namespace Cave
                 timeAtLastGrowth = timeElapsed;
 
                 currentPlantId++;
+                hasBeenModified = true;
             }
             public Plant(Screens.Screen screenToPut, (int, int) posToPut, (int type, int subType) typeToPut)
             {
@@ -121,6 +123,7 @@ namespace Cave
                 timeAtLastGrowth = timeElapsed;
 
                 currentPlantId++;
+                hasBeenModified = true;
             }
             public int getplantRandValue(int mod = -1)
             {
@@ -230,6 +233,7 @@ namespace Cave
                     i++;
                 }
                 if (growthLevel < traits.minGrowthForValidity) { isDeadAndShouldDisappear = true; }
+                hasBeenModified = true; // Might cause bug l8r lol but prolly not
             }
             public bool testPlantGrowth(bool forceGrowth)
             {
@@ -252,8 +256,8 @@ namespace Cave
                     timeAtLastGrowth = timeElapsed;
 
                     if (growthIncreaseInt == 0) { isStable = true; return false; }
-                    if (growthIncreaseInt == 1) { growthLevel++; isStable = true; return false; }
-                    if (growthIncreaseInt == 2) { growthLevel++; isStable = false; return true; }
+                    if (growthIncreaseInt == 1) { isStable = true; growthLevel++; hasBeenModified = true; return false; }
+                    if (growthIncreaseInt == 2) { isStable = false; growthLevel++; hasBeenModified = true; return true; }
                 }
                 return false;
             }
@@ -327,6 +331,7 @@ namespace Cave
                         {
                             element.fillStates.Remove((posToTest.x, posToTest.y));
                             screen.plantsToMakeBitmapsOf[id] = this;
+                            hasBeenModified = true;
                             return value;
                         }
                     }

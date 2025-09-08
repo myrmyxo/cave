@@ -932,5 +932,12 @@ namespace Cave
 
             return dicto;
         }
+        public static Dictionary<T, float> addOrIncrementDict<T>(Dictionary<T, float> dicto, (T key, float value) tupel)
+        {
+            if (dicto.ContainsKey(tupel.key)) { dicto[tupel.key] += tupel.value; }
+            else { dicto[tupel.key] = tupel.value; }
+
+            return dicto;
+        }
     }
 }

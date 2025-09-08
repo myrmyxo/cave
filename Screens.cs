@@ -87,7 +87,7 @@ namespace Cave
                 spawnNests = false;
                 spawnEntitiesBool = true;
                 spawnPlants = true;
-                bool spawnNOTHING = false;
+                bool spawnNOTHING = true;
                 bool spawnEVERYTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
                 if (spawnEVERYTHING) { loadStructuresYesOrNo = true; spawnEntitiesBool = true; spawnPlants = true; }

@@ -1320,6 +1320,7 @@ namespace Cave
 
             public (int one, int two) caveType;
             public (int one, int two) textureType;
+            public int connectionLayer;
             public int separatorType;
             public int antiSeparatorType;
             public float caveWidth;
@@ -1359,7 +1360,7 @@ namespace Cave
             public ((int type, int subType) type, float percentage)[] plantWaterSideSpawnTypes;
 
             public BiomeTraits(string namee, (int r, int g, int b) colorToPut, float[] spawnRates, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes,
-                (int one, int two)? cT = null, (int one, int two)? txT = null, int sT = 0, int aST = 0, float cW = 1, TileTransitionTraits[] tTT = null,
+                (int one, int two)? cT = null, (int one, int two)? txT = null, int cL = 0, int sT = 0, int aST = 0, float cW = 1, TileTransitionTraits[] tTT = null,
                 (int type, int subType)? fT = null, (int type, int subType)? tT = null, ((int type, int subType) type, int chance)? sM = null, (int type, int subType)? lT = null,
                 bool S = false, bool Dg = false, bool Da = false)
             {
@@ -1377,6 +1378,7 @@ namespace Cave
 
                 caveType = cT ?? (1, 2);
                 textureType = txT ?? (0, 1);
+                connectionLayer = cL;
                 separatorType = sT;
                 antiSeparatorType = aST;
                 caveWidth = cW;
@@ -1614,7 +1616,7 @@ namespace Cave
                 new float[]{1, 1, 1, 1,         0, 4, 1, 2, 0, 4, 4, 0}, // Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((4, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ },
-                cT:(0, 3), txT:(0, 0), sT:1, tT:(4, 0), fT:(-7, 0),
+                cT:(0, 3), txT:(0, 0), sT:1, tT:(4, 0), fT:(-7, 0), cL:1,
                 tTT:new TileTransitionTraits[] { famousTTT["Bone"] }) },
             };
 

@@ -239,8 +239,9 @@ namespace Cave
                         float score1 = 0;
                         float score2 = 0;
                         float valueModifier;
-                        float separatorScore = 0;
-                        float antiSeparatorScore = 0;
+                        Dictionary<(int separatorType, int connectionLayer), float> separatorDict = new Dictionary<(int separatorType, int connectionLayer), float>();
+                        Dictionary<(int separatorType, int connectionLayer), float> antiSeparatorDict = new Dictionary<(int separatorType, int connectionLayer), float>();
+
                         foreach ((BiomeTraits traits, int percentage) tupel in biomeIndex[i, j])
                         {
                             mult = tupel.percentage * 0.001f;
@@ -251,11 +252,16 @@ namespace Cave
 
                             score1 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.one, value1, (i, j), mod2) + findTextureScore(tupel.traits.textureType.one, value2) + valueModifier); // Swapping is normal !
                             score2 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.two, value2, (i, j), mod2) + findTextureScore(tupel.traits.textureType.two, value1) + valueModifier); // Cause it needs to be an independant noise !
-                            if (tupel.traits.separatorType != 0) { separatorScore += findSeparatorScore(tupel.traits.separatorType, mult); }
-                            if (tupel.traits.antiSeparatorType != 0) { antiSeparatorScore += findSeparatorScore(tupel.traits.antiSeparatorType, mult); }
+                            if (tupel.traits.separatorType != 0) { addOrIncrementDict(separatorDict, ((tupel.traits.separatorType, tupel.traits.connectionLayer), mult)); }
+                            if (tupel.traits.antiSeparatorType != 0) { addOrIncrementDict(antiSeparatorDict, ((tupel.traits.antiSeparatorType, tupel.traits.connectionLayer), mult)); }
                         }
 
+                        float separatorScore = 0;
+                        foreach ((int separatorType, int connectionLayer) tupel in separatorDict.Keys) { separatorScore += findSeparatorScore(tupel.separatorType, separatorDict[tupel]); }
+                        float antiSeparatorScore = 0;
+                        foreach ((int separatorType, int connectionLayer) tupel in antiSeparatorDict.Keys) { antiSeparatorScore += findSeparatorScore(tupel.separatorType, antiSeparatorDict[tupel]); }
                         separatorScore = Max(0, separatorScore - antiSeparatorScore);
+
                         bool carveTest1 = score1 * (1 - separatorScore * 0.001f) - separatorScore > 0;
                         bool carveTest2 = score2 * (1 - separatorScore * 0.001f) - separatorScore > 0;
 
@@ -1265,7 +1271,7 @@ namespace Cave
                 else if (dimensionType == (2, 0)) // type == 2, living dimension
                 {
                     percentageFree -= calculateAndAddBiome(listo, (22, 1), percentageFree, acidity, (800, 999999)); // acid ocean
-                    percentageFree -= calculateAndAddBiome(listo, (22, 0), percentageFree, temperature, (-999999, 300)); // blood ocean
+                    percentageFree -= calculateAndAddBiome(listo, (22, 0), percentageFree, oceanity, (-999999, 300)); // blood ocean
                     if (humidity > 500)
                     {
                         int fleshiness = calculateBiome(percentageFree, humidity, (500, 999999));

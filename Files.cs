@@ -671,6 +671,7 @@ namespace Cave
         }
         public static void savePlant(Plant plant)
         {
+            if (!plant.hasBeenModified) { return; }
             JsonSerializer serializer = new JsonSerializer();
             serializer.Converters.Add(new JavaScriptDateTimeConverter());
             serializer.NullValueHandling = NullValueHandling.Ignore;
@@ -682,6 +683,7 @@ namespace Cave
             {
                 serializer.Serialize(writer, plantJson);
             }
+            plant.hasBeenModified = false;
         }
         public static void saveEntity(Entity entity)
         {

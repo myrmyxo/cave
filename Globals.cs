@@ -15,6 +15,11 @@ namespace Cave
         public const float _1On255 = 0.00393f;
         public const float _1On17 = 0.0588f;
 
+        public static int debugTestIntOne = 0;
+        public static int debugTestIntTwo = 0;
+        public static int debugTestIntThree = 0;
+        public static int debugTestIntFourth = 0;
+
         public static bool devMode = true;
         public static bool loadStructuresYesOrNo = false;
         public static bool spawnNests = false;
