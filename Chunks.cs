@@ -924,9 +924,9 @@ namespace Cave
                 {
                     if (isExtraGetting) { return screen.extraLoadedMegaChunks[pos]; }
                     MegaChunk megaChunkToGet = screen.extraLoadedMegaChunks[pos];
-                    megaChunkToGet.loadAllStuffInIt();  // Upgrade the extraLoaded MegaChunk to a full MegaChunk, by loading all its contents and putting it in the other dict
                     screen.megaChunks[pos] = megaChunkToGet;
                     screen.extraLoadedMegaChunks.Remove(pos);
+                    megaChunkToGet.promoteFromExtraToFullyLoaded();  // Upgrade the extraLoaded MegaChunk to a full MegaChunk, by loading all its contents and putting it in the other dict
                     return megaChunkToGet;
                 }
                 return loadMegaChunk(screen, pos, isExtraGetting);

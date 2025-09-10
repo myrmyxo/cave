@@ -127,7 +127,7 @@ namespace Cave
             }
             public int getplantRandValue(int mod = -1)
             {
-                randValue = (int)cashInt((seed, 7, 13), 0);
+                randValue = cashInt((seed, 7, 13), 0);
                 if (mod == 0) { return 0; }
                 return mod > 0 ? randValue % mod : randValue;
             }
@@ -463,7 +463,7 @@ namespace Cave
             }
             public int getRandValue(int valueModifier, int modulo = -1)
             {
-                int randy = (int)cashInt((valueModifier, 7, 13), seed);
+                int randy = cashInt((valueModifier, 7, 13), seed);
                 if (modulo == 0) { return 0; }
                 return modulo > 0 ? randy % modulo : randy;
             }

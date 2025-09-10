@@ -233,6 +233,7 @@ namespace Cave
             // Entities exiting chunks seems to disappear still... Fuuuckkk. Not sure tho !
             // Sometimes leakage between ice ocean and ocean, due to antiborder idk thing
             // Vines when arriving on terrain that forces them to move left or right become MONSTRUOUS
+            // Portals... bug again... the dimension doesn't get unloaded anymore when going far from portal... fuuuck
 
             // cool ideas for later !
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
@@ -459,7 +460,7 @@ namespace Cave
             h = (h ^ (h >> 13)) * 1274126177;
             return Abs(h ^ (h >> 16));
         }
-        public static long cashInt((int x, int y, int z) pos, long seed)  // cash stands for chaos hash :D. Thank you soooo much bakkaa on stackoverflow
+        public static int cashInt((int x, int y, int z) pos, long seed)  // cash stands for chaos hash :D. Thank you soooo much bakkaa on stackoverflow
         {
             long h = seed + pos.x * 374761393 + pos.y * 668265263 + pos.z * 39079; // all constants are prime
             h = (h ^ (h >> 13)) * 1274126177;
@@ -502,23 +503,23 @@ namespace Cave
         }
         public static long LCGxPos(long seed) // WARNING the 1073741824 is not 2^32 but it's 2^30 cause... lol
         {
-            return (758267 * seed + 281641) % 4294967291;
+            return Abs((758267 * seed + 281641) % 4294967291);
         }
         public static long LCGxNeg(long seed)
         {
-            return (337651 * seed + 502553) % 4294967291;
+            return Abs((337651 * seed + 502553) % 4294967291);
         }
         public static long LCGyPos(long seed)
         {
-            return (834959 * seed + 545437) % 4294967291;
+            return Abs((834959 * seed + 545437) % 4294967291);
         }
         public static long LCGyNeg(long seed)
         {
-            return (921677 * seed + 766177) % 4294967291;
+            return Abs((921677 * seed + 766177) % 4294967291);
         }
         public static long LCGz(long seed)
         {
-            return (152953 * seed + 845003) % 4294967291;
+            return Abs((152953 * seed + 845003) % 4294967291);
         }
         public static int LCGint1(int seed)
         {
@@ -658,6 +659,12 @@ namespace Cave
             if (value > max) { return max; }
             if (value < min) { return min; }
             return value;
+        }
+        public static int ColorClamp(float value)
+        {
+            if (value > 255) { return 255; }
+            if (value < 0) { return 0; }
+            return (int)value;
         }
         public static int ColorClamp(int value)
         {

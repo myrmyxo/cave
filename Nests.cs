@@ -189,7 +189,7 @@ namespace Cave
             }
             public long findSeed()
             {
-                seed = nest.seed.x * (LCGxNeg(position.x) + LCGyNeg(position.y)) + LCGxPos(position.x) * LCGyPos(position.y);
+                seed = nest.seed * (LCGxNeg(position.x) + LCGyNeg(position.y)) + LCGxPos(position.x) * LCGyPos(position.y);
                 return seed;
             }
             public void findBorders()
@@ -656,7 +656,7 @@ namespace Cave
             public Nest(Screens.Screen screenToPut, (int x, int y) posToPut, long seedToPut)
             {
                 screen = screenToPut;
-                seed = (seedToPut, seedToPut);
+                seed = seedToPut;
                 type = (0, 0, 0);
                 pos = posToPut;
                 isDynamic = true;

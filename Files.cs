@@ -75,11 +75,12 @@ namespace Cave
         public class MegaChunk
         {
             public (int x, int y) pos;
-            public bool generatedStructures = false;
+            public bool doneGeneratingStructures = false;
+            public List<(int x, int y, long seed, ((int type, int subType, int subSubType), bool isNest)? forceType)> structuresLeftToGenerate;
             public List<int> structures = new List<int>();
             [NonSerialized] public bool isImmuneToUnloading = false;
             [NonSerialized] public Screens.Screen screen;
-            public MegaChunk(Screens.Screen screenToPut, (int x, int y) posToPut, bool isExtraLoading)
+            public MegaChunk(Screens.Screen screenToPut, (int x, int y) posToPut)
             {
                 pos = posToPut;
                 screen = screenToPut;
@@ -88,9 +89,25 @@ namespace Cave
             {
 
             }
-            public void loadAllStuffInIt()
+            public bool generateStructuresInTheBackground() // returns true if done generating
             {
-                if (!generatedStructures) { createStructures(); }
+                if (doneGeneratingStructures) { return true; }
+                if (structuresLeftToGenerate == null) { createStructuresToGenerate(); }
+                for (int i = 0; i < 1; i++)
+                {
+                    if (generateNextStructure()) { doneGeneratingStructures = true; break; }
+                }
+                saveMegaChunk(this);
+                return doneGeneratingStructures;
+            }
+            public void promoteFromExtraToFullyLoaded() // Load all stuff in it (structures/nest -> and so their chunks if they're dynamic)
+            {
+                if (!doneGeneratingStructures)
+                {
+                    if (structuresLeftToGenerate == null) { createStructuresToGenerate(); }
+                    forceGenerateAllStructures();
+                    saveMegaChunk(this);
+                }
                 if (loadAllStructures()) { saveMegaChunk(this); }
             }
             public void unloadAllNestsAndStructuresAndChunks(Dictionary<(int x, int y), bool> chunksToRemove)
@@ -118,7 +135,7 @@ namespace Cave
             }
             public bool loadAllStructures()
             {
-                bool triedLoadingErasesStructures = false;
+                bool triedLoadingErasedStructures = false;
                 List<int> structuresToRemove = new List<int>();
                 Structure structure;
                 foreach (int structureId in structures)
@@ -127,61 +144,60 @@ namespace Cave
                     structure = loadStructure(screen.game, structureId); // loadStructure already adds the structure to the right dicto so no need to do it here
                     if (structure.isErasedFromTheWorld)
                     {
-                        triedLoadingErasesStructures = true;    // This happens if structures were incorrectly deleted from MegaChunks. Not a big deal as this takes care of it, but still indicative of a problem somewhere
+                        
+                        triedLoadingErasedStructures = true;    // This happens if structures were incorrectly deleted from MegaChunks. Not a big deal as this takes care of it, but still indicative of a problem somewhere
                         structuresToRemove.Add(structureId);
                     }
                 }
                 foreach(int structureId in structuresToRemove) { structures.Remove(structureId); }
-                return triedLoadingErasesStructures;
+                return triedLoadingErasedStructures;
             }
-            public void createStructures()
+            public void forceGenerateAllStructures() { while (!generateNextStructure()); doneGeneratingStructures = true; }
+            public bool generateNextStructure() // we assume that structuresLeftToGenerate is not null. Returns true is the megaChunk has generated all the structures it needed and is now complete
             {
-                saveMegaChunk(this);
+                if (structuresLeftToGenerate.Count == 0) { structuresLeftToGenerate = null; return true; }
+                (int x, int y, long seed, ((int type, int subType, int subSubType), bool isNest)? forceType) item = structuresLeftToGenerate[0];
+                structuresLeftToGenerate.RemoveAt(0);
+                if (item.forceType is null) { new Structure(screen, (item.x, item.y), item.seed, null); }
+                else if (!item.forceType.Value.isNest) { new Structure(screen, (item.x, item.y), item.seed, item.forceType.Value.Item1); }
+                else { new Nest(screen, (item.x, item.y), item.seed); }
+                return false;
+            }
+            public void createStructuresToGenerate()
+            {
+                structuresLeftToGenerate = new List<(int x, int y, long seed, ((int type, int subType, int subSubType), bool isNest)? forceType)>();
                 if (loadStructuresYesOrNo)
                 {
                     int validatedStructureCount = 0;
                     int totalStructureTestedCount = 0;
 
-                    int x = pos.x % 10 + 15;
-                    long seedX = screen.seed + pos.x;
-                    int y = pos.x % 10 + 15;
-                    long seedY = screen.seed + pos.y;
+                    long seed = LCGxy((pos, screen.id), screen.seed);   // the screen.id might cause stupid shite l8r. . . .. such as dimensions varying depending on ID ?? which might be something good actually idk ??
+                    if (seed > 0) {; }
 
-                    while (x > 0)
-                    {
-                        seedX = LCGxPos(seedX);
-                        x--;
-                    }
-                    while (y > 0)
-                    {
-                        seedY = LCGyPos(seedY);
-                        y--;
-                    }
-
-                    int structuresAmount = (int)((seedX + seedY) % 3 + 1);
+                    int structuresAmount = (int)(seed % 3 + 1);
                     totalStructureTestedCount += structuresAmount;
                     for (int i = 0; i < structuresAmount; i++)
-                    {
-                        seedX = LCGyPos(seedX); // on porpoise x    /\_/\
-                        seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
-                        if (!new Structure(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (false, false), (0, 0, 0)).isErasedFromTheWorld) { validatedStructureCount++; };
+                    {                           // Don't mind    /\_/\
+                        seed = LCGxPos(seed);   // the mogege   ( ^o^ )
+                        // if (!new Structure(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), null).isErasedFromTheWorld) { validatedStructureCount++; };
+                        structuresLeftToGenerate.Add((pos.x * 512 + 32 + (int)(seed % 480), pos.y * 512 + 32 + (int)((seed % 487) % 480), seed, null));
                     }
-                    int waterLakesAmount = (int)(15 + (seedX + seedY) % 150);
+                    int waterLakesAmount = (int)(15 + seed % 150);
                     totalStructureTestedCount += waterLakesAmount;
                     for (int i = 0; i < waterLakesAmount; i++)
-                    {
-                        seedX = LCGyNeg(seedX); // on porpoise x    /\_/\
-                        seedY = LCGxNeg(seedY); // and y switched  ( ^o^ )
-                        if (!new Structure(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (true, false), (0, 0, 0)).isErasedFromTheWorld) { validatedStructureCount++; };
+                    {                           // Don't mind    /\_/\
+                        seed = LCGxPos(seed);   // the mogege   ( ^o^ )
+                        // if (!new Structure(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (0, 0, 0)).isErasedFromTheWorld) { validatedStructureCount++; };
+                        structuresLeftToGenerate.Add((pos.x * 512 + 32 + (int)(seed % 480), pos.y * 512 + 32 + (int)((seed % 487) % 480), seed, ((0, 0, 0), false)));
                     }
-                    int nestAmount = (int)((seedX + seedY) % 3);
+                    int nestAmount = (int)(seed % 3);
                     totalStructureTestedCount += nestAmount;
                     if (!spawnNests) { nestAmount = 0; }
                     for (int i = 0; i < nestAmount; i++)
-                    {
-                        seedX = LCGyPos(seedX); // on porpoise x    /\_/\
-                        seedY = LCGxPos(seedY); // and y switched  ( ^o^ )
-                        if (!new Nest(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (long)(seedX * 0.5f + seedY * 0.5f)).isErasedFromTheWorld) { validatedStructureCount++; }
+                    {                           // Don't mind    /\_/\
+                        seed = LCGxPos(seed);   // the mogege   ( ^o^ )
+                        // if (!new Nest(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (long)(seedX * 0.5f + seedY * 0.5f)).isErasedFromTheWorld) { validatedStructureCount++; }
+                        structuresLeftToGenerate.Add((pos.x * 512 + 32 + (int)(seed % 480), pos.y * 512 + 32 + (int)((seed % 487) % 480), seed, ((0, 0, 0), true)));
                     }
                     /*if (posX == 0 && posY == 0) // to have a nest spawn at (0, 0) for testing shit
                     {
@@ -196,8 +212,6 @@ namespace Cave
                     }*/
                     screen.game.structureGenerationLogs.Add($"-- Created {validatedStructureCount}/{totalStructureTestedCount} structures at Dimension {screen.id}, MegaChunk ({pos.x}, {pos.y}) --\n");
                 }
-                generatedStructures = true;
-                saveMegaChunk(this);
             }
         }
         public class ChunkJson
@@ -393,7 +407,7 @@ namespace Cave
             public (int, int, int) type;
             public bool isD;
             public bool isE;
-            public (long, long) seed;
+            public long seed;
             public (int, int) pos;
             public (int, int) size;
             public string name;
@@ -575,7 +589,7 @@ namespace Cave
             MegaChunk newMegaChunk;
             if (!System.IO.File.Exists($"{currentDirectory}\\CaveData\\{worldSeed}\\MegaChunkData\\{screenToPut.id}\\{pos.x}.{pos.y}.json"))
             {
-                newMegaChunk = new MegaChunk(screenToPut, pos, isExtraLoading);
+                newMegaChunk = new MegaChunk(screenToPut, pos);
                 saveMegaChunk(newMegaChunk);
             }
             else
@@ -588,11 +602,11 @@ namespace Cave
                     newMegaChunk.pos = pos;
                 }
             }
-            if (isExtraLoading) { screenToPut.extraLoadedMegaChunks[pos] = newMegaChunk; }
+            if (isExtraLoading && !screenToPut.megaChunks.ContainsKey(pos)) { screenToPut.extraLoadedMegaChunks[pos] = newMegaChunk; }
             else
             {
                 screenToPut.megaChunks[pos] = newMegaChunk;
-                newMegaChunk.loadAllStuffInIt();
+                newMegaChunk.promoteFromExtraToFullyLoaded();
             }
             return newMegaChunk;
         }

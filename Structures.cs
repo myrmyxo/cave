@@ -87,7 +87,7 @@ namespace Cave
             public int c;   // The "mega" type. If a normal structure, a nest...
             public int id;
             public (int type, int subType, int subSubType) type;
-            public (long x, long y) seed;
+            public long seed;
             public (int x, int y) pos;
             public (int x, int y) size = (0, 0);
             public string name = "";
@@ -139,17 +139,17 @@ namespace Cave
 
                 makeBitmap();
             }
-            public Structure(Screens.Screen screenToPut, (int x, int y) posToPut, (long x, long y) seedToPut, (bool forceType, bool isPlayerGenerated) bools, (int type, int subType, int subSubType) forceType, Dictionary<(int x, int y), (int type, int subType)> forceStructure = null)
+            public Structure(Screens.Screen screenToPut, (int x, int y) posToPut, long seedToPut, (int type, int subType, int subSubType)? forceType, bool isPlayerGenerated = false, Dictionary<(int x, int y), (int type, int subType)> forceStructure = null)
             {
                 seed = seedToPut;
                 screen = screenToPut;
                 pos = posToPut;
                 id = currentStructureId;
 
-                if (bools.forceType) { type = forceType; }
+                if (forceType != null) { type = forceType.Value; }
                 else
                 {
-                    long seedo = (seed.x / 2 + seed.y / 2) % 79461537;
+                    long seedo = seed % 79461537;
                     if (Abs(seedo) % 200 < 50) // cubeAmalgam
                     {
                         type = (1, 0, 0);
@@ -164,14 +164,14 @@ namespace Cave
                     }
                 }
 
-                if (bools.isPlayerGenerated && forceStructure != null) { structureDict = forceStructure; }
-                if (!bools.isPlayerGenerated) { drawStructure(); } // contains imprintChunks()
+                if (isPlayerGenerated && forceStructure != null) { structureDict = forceStructure; }
+                if (!isPlayerGenerated) { drawStructure(); } // contains imprintChunks()
 
                 if (isErasedFromTheWorld) { return; }   // if the structure FAILED, don't do anything. Don't add it or anything else
                 currentStructureId++;
 
                 findChunkPresence();
-                if (bools.isPlayerGenerated) { return; } // if structure is player generated, don't save it and add to dicts YET
+                if (isPlayerGenerated) { return; } // if structure is player generated, don't save it and add to dicts YET
                 saveStructure();
                 addToMegaChunks();
                 addStructureToTheRightDictInTheScreen();
@@ -241,7 +241,7 @@ namespace Cave
                 posToTest = (pos.x + modX, pos.y - modY + 1); // because uh this one was solid lol so need to fill the one ABOVE it
                 int currentY = posToTest.y;
 
-                long seedo = (seed.x / 2 + seed.y / 2) % 79461537;
+                long seedo = seed % 79461537;
                 int megaLake = 0;
                 if (seedo % 250 == 0) { megaLake = 3000; }
                 else if (seedo % 50 == 0) { megaLake = 1500; }
@@ -309,7 +309,7 @@ namespace Cave
             }
             public void drawStructure()
             {
-                long seedo = (seed.x / 2 + seed.y / 2) % 79461537;
+                long seedo = seed % 79461537;
                 name = "";
                 int syllables = 2 + Min((int)(seedo % 13), (int)(seedo % 3));
                 for (int i = 0; i < syllables; i++)
@@ -358,10 +358,10 @@ namespace Cave
             }
             public bool cubeAmalgam()
             {
-                size = ((int)(seed.x % 5) + 1, (int)(seed.y % 5) + 1);
-                int squaresToDig = (int)(seed.x % (10 + (size.Item1 * size.Item2))) + (int)(size.Item1 * size.Item2 * 0.2f) + 1;
-                long seedoX = seed.x;
-                long seedoY = seed.y;
+                size = ((int)(seed % 5) + 1, (int)(LCGxPos(seed) % 5) + 1);
+                int squaresToDig = (int)(seed % (10 + (size.Item1 * size.Item2))) + (int)(size.Item1 * size.Item2 * 0.2f) + 1;
+                long seedoX = seed;
+                long seedoY = seed;
 
                 (int x, int y) posToTest;
                 for (int gu = 0; gu < squaresToDig; gu++)
@@ -385,12 +385,10 @@ namespace Cave
             }
             public bool sawBlade()
             {
-                int sizeX = (int)(seed.x % 5) + 1;
+                int sizeX = (int)(seed % 5) + 1;
                 size = (sizeX, sizeX);
-                long seedoX = seed.x;
-                long seedoY = seed.y;
 
-                int angleOfShape = (int)LCGz(seedoX + seedoY) % 360;
+                int angleOfShape = (int)LCGz(seed) % 360;
                 (int x, int y) posToTest;
 
                 for (int i = -size.Item1 * 16; i < size.Item1 * 16; i++)
@@ -428,12 +426,10 @@ namespace Cave
             }
             public bool star()
             {
-                int sizeX = (int)(seed.x % 5) + 1;
+                int sizeX = (int)(seed % 5) + 1;
                 size = (sizeX, sizeX);
-                long seedoX = seed.x;
-                long seedoY = seed.y;
 
-                int angleOfShape = (int)LCGz(seedoX + seedoY) % 360;
+                int angleOfShape = (int)LCGz(seed) % 360;
                 (int x, int y) posToTest;
 
                 for (int i = -size.Item1 * 16; i < size.Item1 * 16; i++)
@@ -480,7 +476,7 @@ namespace Cave
                     Screens.Screen livingDimensionScreen;
                     if (screen.game.livingDimensionId == -1) { livingDimensionScreen = screen.game.loadDimension(currentDimensionId, false, false, 2, 0); }
                     else { livingDimensionScreen = screen.game.loadDimension(screen.game.livingDimensionId); }
-                    Structure sister = new Structure(livingDimensionScreen, pos, seed, (true, true), (3, 0, 1));
+                    Structure sister = new Structure(livingDimensionScreen, pos, seed, (3, 0, 1), true);
                     screen.game.structuresToAdd[sister.id] = sister;
                     sisterStructure = sister;
                     sister.sisterStructure = this;
@@ -704,7 +700,7 @@ namespace Cave
 
             // AFTER THIS, THE BLOOD ALTAR IS CONSIDERED VALID AND THE STRUCTURE WILL BE GENERATED
 
-            Structure altar = new Structure(screen, startPos, (0, 0), (true, true), (3, 0, 0), dicto);
+            Structure altar = new Structure(screen, startPos, 0, (3, 0, 0), true, dicto);
             screen.game.structuresToAdd[altar.id] = altar;
 
             return true; // blood altar is valid ! yay ! that was suprisingly easy to do. now test if bugs (i hope not i hate bunny (it's a joke i love bunnies yay !))

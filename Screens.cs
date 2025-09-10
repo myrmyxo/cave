@@ -83,12 +83,12 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                loadStructuresYesOrNo = false;
+                loadStructuresYesOrNo = true;
                 spawnNests = false;
-                spawnEntitiesBool = true;
-                spawnPlants = true;
-                bool spawnNOTHING = true;
-                bool spawnEVERYTHING = false;
+                spawnEntitiesBool = false;
+                spawnPlants = false;
+                bool spawnNOTHING = false;
+                bool spawnEVERYTHING = true;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
                 if (spawnEVERYTHING) { loadStructuresYesOrNo = true; spawnEntitiesBool = true; spawnPlants = true; }
 
@@ -359,7 +359,7 @@ namespace Cave
                     structuresToRemove = new Dictionary<int, Structure>();
                 }
                 foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.unloadFarawayChunks(); }
-                foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.manageExtraLoadedChunks(); }
+                foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.manageExtraLoadedChunksAndMegaChunks(); }
                 setUnloadingImmunity(); // Prevent MegaChunks/Chunks/Structures to be unloaded when they should not be
                 foreach (Screen screen in loadedScreens.Values.ToArray())
                 {
@@ -600,6 +600,7 @@ namespace Cave
             public (float x, float y) playerStartPos = (0, 0);
 
             public Dictionary<(int x, int y), int> chunkLoadingPoints = new Dictionary<(int x, int y), int>();
+            public (int x, int y)? generatingMegachunk;
 
             public Dictionary<int, Entity> activeEntities = new Dictionary<int, Entity>();
             public Dictionary<int, Entity> entitesToRemove = new Dictionary<int, Entity>();
@@ -905,15 +906,46 @@ namespace Cave
                     }
                 }
             }
-            public void manageExtraLoadedChunks()
+            public void testToLoadMegaChunkAsExtra(Dictionary<(int x, int y), MegaChunk> newExtraLoadedMegaChunks, (int x, int y) pos)
             {
+                if (megaChunks.ContainsKey(pos)) { return; }
+                newExtraLoadedMegaChunks[pos] = getMegaChunkFromMegaPos(pos);
+            }
+            public void manageExtraLoadedChunksAndMegaChunks()   // and MegaChunks
+            {
+                HashSet<((int x, int y) pos, bool loadNeighbours)> newExtraLoadedMegaChunksPoses = new HashSet<((int x, int y) pos, bool loadNeighbours)>();
                 Dictionary<(int x, int y), bool> extraLoadedChunksToRemove = new Dictionary<(int x, int y), bool>();
                 foreach (Chunk chunk in extraLoadedChunks.Values)
                 {
                     chunk.framesSinceLastExtraGetting += 1;
-                    if (chunk.framesSinceLastExtraGetting > 5) { extraLoadedChunksToRemove[chunk.pos] = true; }
+                    (int x, int y) megaPos = MegaChunkIdxFromChunkPos(chunk.pos);
+                    if (chunk.framesSinceLastExtraGetting > 5 && (generatingMegachunk is null || generatingMegachunk.Value != megaPos)) { extraLoadedChunksToRemove[chunk.pos] = true; continue; }
+                    if (!megaChunks.ContainsKey(megaPos)) { newExtraLoadedMegaChunksPoses.Add((megaPos, false)); }
                 }
                 foreach ((int x, int y) pos in extraLoadedChunksToRemove.Keys) { extraLoadedChunks.Remove(pos); }
+
+
+
+                foreach ((int x, int y) pos in megaChunks.Keys) { newExtraLoadedMegaChunksPoses.Add((pos, true)); }
+                if (generatingMegachunk != null) { newExtraLoadedMegaChunksPoses.Add((generatingMegachunk.Value, false)); }
+                Dictionary<(int x, int y), MegaChunk> newExtraLoadedMegaChunks = new Dictionary<(int x, int y), MegaChunk>();
+                foreach (((int x, int y) pos, bool loadNeighbours) item in newExtraLoadedMegaChunksPoses)
+                {
+                    testToLoadMegaChunkAsExtra(newExtraLoadedMegaChunks, item.pos);
+                    if (item.loadNeighbours) { foreach ((int x, int y) mod in directionPositionArray) { testToLoadMegaChunkAsExtra(newExtraLoadedMegaChunks, (item.pos.x + mod.x, item.pos.y + mod.y)); } }
+                }
+                extraLoadedMegaChunks = newExtraLoadedMegaChunks;
+
+                if (generatingMegachunk is null)
+                {
+                    Player player = game.playerList[0];
+                    foreach (MegaChunk megaChunk in extraLoadedMegaChunks.Values)
+                    {
+                        if (manhattanDistance(megaChunk.pos, MegaChunkIdxFromPixelPos((player.posX, player.posY))) > 4) { continue; }
+                        if (!megaChunk.doneGeneratingStructures) { generatingMegachunk = megaChunk.pos; break; }  // Break is SUPER IMPORTANT !! Need to STOP Because after generating structures it might have extra loaded new megachunks ! ! ! 
+                    }
+                }
+                if (generatingMegachunk != null && getMegaChunkFromMegaPos(generatingMegachunk.Value).generateStructuresInTheBackground()) { generatingMegachunk = null; }
             }
             public void unloadMegaChunks() // megachunk resolution : 512*512
             {
@@ -1109,7 +1141,7 @@ namespace Cave
                 // NOT USED AND WAS NEVER USED but keep in case idk // if (structure.bitmap != null) { pasteImage(gameBitmap, structure.bitmap, (structure.pos.x + structure.posOffset.x, structure.pos.y + structure.posOffset.y), camPos); }
                 if (structure.animation != null)
                 {
-                    int frame = ((int)(timeElapsed * 10) + (int)(structure.seed.x) % 100) % 4;
+                    int frame = ((int)(timeElapsed * 10) + (int)(structure.seed) % 100) % 4;
                     pasteImage(gameBitmap, structure.animation.frames[frame], (structure.pos.x + structure.animation.offset.x, structure.pos.y + structure.animation.offset.y), camPos);
                 }
             }
@@ -1408,6 +1440,18 @@ namespace Cave
                         else { colorToDraw = Color.Crimson; }
                         drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset + playerChunkPos.x * 2, 100 + playerChunkPos.y * 2), (-poso.x, -poso.y), 32 * scaleFactor, true);
                     }
+                    foreach ((int x, int y) poso in screenToDebug.extraLoadedMegaChunks.Keys)
+                    {
+                        if (player.screen == screenToDebug) { colorToDraw = Color.FromArgb(ColorClamp(255 - 1000 * Max(0, 0.25f - Seesaw(timeElapsed, 1))), Color.DarkRed); }
+                        else { colorToDraw = Color.DarkRed; }
+                        drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset + playerChunkPos.x * 2, 100 + playerChunkPos.y * 2), (-poso.x, -poso.y), 32 * scaleFactor, true);
+                    }
+                    if (screenToDebug.generatingMegachunk != null)
+                    {
+                        if (player.screen == screenToDebug) { colorToDraw = Color.FromArgb(ColorClamp(255 - 1000 * Max(0, 0.25f - Seesaw(timeElapsed, 1))), Color.Brown); }
+                        else { colorToDraw = Color.Brown; }
+                        drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset + playerChunkPos.x * 2, 100 + playerChunkPos.y * 2), (-screenToDebug.generatingMegachunk.Value.x, -screenToDebug.generatingMegachunk.Value.y), 32 * scaleFactor, true);
+                    }
                     foreach ((int x, int y) poso in screenToDebug.activeStructureLoadedChunkIndexes.Keys)
                     {
                         colorToDraw = Color.FromArgb(100, 255, 255, 100);
@@ -1415,7 +1459,7 @@ namespace Cave
                     }
                     foreach ((int x, int y) poso in screenToDebug.extraLoadedChunks.Keys)
                     {
-                        colorToDraw = Color.Purple;
+                        colorToDraw = Color.FromArgb(ColorClamp(255 - 1000 * Max(0, 0.25f - Seesaw(timeElapsed, 1))), Color.DarkSeaGreen);
                         drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
                     }
                     foreach ((int x, int y) poso in screenToDebug.loadedChunks.Keys)
@@ -1462,7 +1506,7 @@ namespace Cave
                     }
                     chunkToGet.promoteFromExtraToFullyLoaded(getChunkJson(this, pos));  // Upgrade the extraLoaded Chunk to a full Chunk, by loading all its entities, fog, plants... etc
                     loadedChunks[pos] = chunkToGet;
-                    extraLoadedMegaChunks.Remove(pos);
+                    extraLoadedChunks.Remove(pos);
                     if (extraDict != null) { extraDict[pos] = chunkToGet; }
                     return chunkToGet;
                 }
@@ -1485,9 +1529,9 @@ namespace Cave
                 {
                     if (isExtraGetting) { return extraLoadedMegaChunks[pos]; }
                     MegaChunk megaChunkToGet = extraLoadedMegaChunks[pos];
-                    megaChunkToGet.loadAllStuffInIt();  // Upgrade the extraLoaded MegaChunk to a full MegaChunk, by loading all its contents and putting it in the other dict
                     megaChunks[pos] = megaChunkToGet;
                     extraLoadedMegaChunks.Remove(pos);
+                    megaChunkToGet.promoteFromExtraToFullyLoaded();  // Upgrade the extraLoaded MegaChunk to a full MegaChunk, by loading all its contents and putting it in the other dict
                     return megaChunkToGet;
                 }
                 return loadMegaChunk(this, pos, isExtraGetting);
