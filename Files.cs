@@ -180,7 +180,7 @@ namespace Cave
                     {                           // Don't mind    /\_/\
                         seed = LCGxPos(seed);   // the mogege   ( ^o^ )
                         // if (!new Structure(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), null).isErasedFromTheWorld) { validatedStructureCount++; };
-                        structuresLeftToGenerate.Add((pos.x * 512 + 32 + (int)(seed % 480), pos.y * 512 + 32 + (int)((seed % 487) % 480), seed, null));
+                        structuresLeftToGenerate.Add((pos.x * 512 + 32 + (int)(seed % 480), pos.y * 512 + 32 + (int)(LCGxNeg(seed) % 480), seed, null));
                     }
                     int waterLakesAmount = (int)(15 + seed % 150);
                     totalStructureTestedCount += waterLakesAmount;
@@ -188,7 +188,7 @@ namespace Cave
                     {                           // Don't mind    /\_/\
                         seed = LCGxPos(seed);   // the mogege   ( ^o^ )
                         // if (!new Structure(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (0, 0, 0)).isErasedFromTheWorld) { validatedStructureCount++; };
-                        structuresLeftToGenerate.Add((pos.x * 512 + 32 + (int)(seed % 480), pos.y * 512 + 32 + (int)((seed % 487) % 480), seed, ((0, 0, 0), false)));
+                        structuresLeftToGenerate.Add((pos.x * 512 + 32 + (int)(seed % 480), pos.y * 512 + 32 + (int)(LCGxNeg(seed) % 480), seed, ((0, 0, 0), false)));
                     }
                     int nestAmount = (int)(seed % 3);
                     totalStructureTestedCount += nestAmount;
@@ -197,7 +197,7 @@ namespace Cave
                     {                           // Don't mind    /\_/\
                         seed = LCGxPos(seed);   // the mogege   ( ^o^ )
                         // if (!new Nest(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (long)(seedX * 0.5f + seedY * 0.5f)).isErasedFromTheWorld) { validatedStructureCount++; }
-                        structuresLeftToGenerate.Add((pos.x * 512 + 32 + (int)(seed % 480), pos.y * 512 + 32 + (int)((seed % 487) % 480), seed, ((0, 0, 0), true)));
+                        structuresLeftToGenerate.Add((pos.x * 512 + 32 + (int)(seed % 480), pos.y * 512 + 32 + (int)(LCGxNeg(seed) % 480), seed, ((0, 0, 0), true)));
                     }
                     /*if (posX == 0 && posY == 0) // to have a nest spawn at (0, 0) for testing shit
                     {

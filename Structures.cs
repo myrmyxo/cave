@@ -219,58 +219,71 @@ namespace Cave
             }
             public bool drawLakeNew() // thank you papa still for base code <3
             {
+                BiomeTraits biomeTraitsFirst = screen.getChunkFromPixelPos(pos).biomeIndex[PosMod(pos.x), PosMod(pos.y)][0].traits;
+                bool inverted = biomeTraitsFirst.invertedLakes;
+                int invInt = inverted ? 1 : -1;
+
                 (int x, int y) posToTest;
                 TileTraits tile = screen.getTileContent(pos);
-                if (!tile.isAir) { return false; } // if start tile isn't empty, fail
+                if (inverted ? !tile.isLiquid : !tile.isAir) { return false; } // if start tile isn't empty, fail
 
                 (int type, int subType) forceType = (0, 0);
 
-                int modY = 1;
+                int modY = invInt;
                 int modX = 0;
                 int count = 0;
                 while (true) // go down (can flow left/right) until finding a solid tile.
                 {
                     if (count > 96) { return false; } // If moved more than 96 tiles, fail
-                    tile = screen.getTileContent((pos.x + modX, pos.y - modY));
-                    if (tile.isLiquid) { forceType = tile.type; return false; } // for now if it bumps into already present liquid, do not try to extend the lake... might change in ze futur
-                    if (tile.isAir) { modY++; count++; }
-                    else if (!screen.getTileContent((pos.x + modX - 1, pos.y - modY)).isSolid && screen.getTileContent((pos.x + modX - 1, pos.y - modY + 1)).isAir) { modX--; count++; }
-                    else if (!screen.getTileContent((pos.x + modX + 1, pos.y - modY)).isSolid && screen.getTileContent((pos.x + modX + 1, pos.y - modY + 1)).isAir) { modX++; count++; }
-                    else { break; }
+                    tile = screen.getTileContent((pos.x + modX, pos.y + modY));
+                    if (inverted ? tile.isAir : tile.isLiquid) { forceType = tile.type; return false; } // for now if it bumps into already present liquid, do not try to extend the lake... might change in ze futur
+                    if (inverted ? tile.isLiquid : tile.isAir) { modY += invInt; count++; }
+                    else if (!screen.getTileContent((pos.x + modX - 1, pos.y + modY)).isSolid && screen.getTileContent((pos.x + modX - 1, pos.y + modY - invInt)).isAir) { modX--; count++; }
+                    else if (!screen.getTileContent((pos.x + modX + 1, pos.y + modY)).isSolid && screen.getTileContent((pos.x + modX + 1, pos.y + modY - invInt)).isAir) { modX++; count++; }
+                    else { break; } // Wait a minute. The thing on top is USELESS in the case of going right ?? like it goes right by 1, then left by 1, infinitely... zamn...
                 }
-                posToTest = (pos.x + modX, pos.y - modY + 1); // because uh this one was solid lol so need to fill the one ABOVE it
+                posToTest = (pos.x + modX, pos.y + modY - invInt); // because uh this one was solid lol so need to fill the one ABOVE it
                 int currentY = posToTest.y;
 
-                long seedo = seed % 79461537;
-                int megaLake = 0;
-                if (seedo % 250 == 0) { megaLake = 3000; }
-                else if (seedo % 50 == 0) { megaLake = 1500; }
+                BiomeTraits biomeTraits = screen.getChunkFromPixelPos(posToTest).biomeIndex[PosMod(posToTest.x), PosMod(posToTest.y)][0].traits;
+                (int type, int subType) material = biomeTraits.lakeType;
 
-                int[] tilesFilled = new int[] { 0, 1 + Min((int)(seedo % 1009), (int)(seedo % 1277)) + megaLake}; // just a way to update the amount of tiles filled recursively not to go too high lolol. 2nd is maximum not to go over.
+                long seedo = seed % 79461537;
+                int howManyTilesToFill = 1 + Min((int)(seedo % biomeTraitsFirst.lakeSize.maxTiles), (int)(seedo % (biomeTraitsFirst.lakeSize.maxTiles + 211)));
+                if (seedo % 250 == 0) { howManyTilesToFill += 3000; }
+                else if (seedo % 50 == 0) { howManyTilesToFill += 1500; }
+
+                int[] tilesFilled = new int[] { 0, howManyTilesToFill }; // just a way to update the amount of tiles filled recursively not to go too high lolol. 2nd is maximum not to go over.
                 Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
                 Dictionary<(int x, int y), bool> tilesToFill = new Dictionary<(int x, int y), bool>(); // All tiles added there WILL be filled after no matter what
                 Dictionary<(int x, int y), bool> newTilesToFill = new Dictionary<(int x, int y), bool> { { posToTest, false } }; // New layer of tiles to fill tested this iteration. True means will be added to tilesToFill if the layer is valid, False means it will be tested next row (y was too high)
                 Dictionary<(int x, int y), bool> babyNewTilesToFill; // baby dict. Will become the new newTilesToFill after. Goo goo ga ga
                 bool proceed = true;
+                int lakeHeight = -1;    // due to code below it's NORMAL that's it's -1, to have the correct height !!
                 while (proceed && newTilesToFill.Count > 0) // until he gets a STOP by a floodPixel that bumped into a liquid tile or he filled too much, he continues filling new rows
                 {
                     babyNewTilesToFill = new Dictionary<(int x, int y), bool>();
                     foreach ((int x, int y) key in newTilesToFill.Keys)
                     {
                         if (newTilesToFill[key]) { tilesToFill[key] = true; }
-                        else { proceed = proceed && floodPixel(key, currentY, tilesToFill, babyNewTilesToFill, chunkDict, tilesFilled); }
+                        else { proceed = proceed && floodPixel(key, currentY, biomeTraits.invertedLakes, biomeTraits.invertedLakes, tilesToFill, babyNewTilesToFill, chunkDict, tilesFilled); }
                     }
                     newTilesToFill = babyNewTilesToFill;
-                    currentY++;
+                    currentY -= invInt;
+                    lakeHeight++;
                 }
-                if (tilesToFill.Count == 0) { return false; } // No laketches ?
-
-                Chunk chunkToTest = chunkDict[ChunkIdx(posToTest)];
-                BiomeTraits biomeTraits = chunkToTest.biomeIndex[PosMod(posToTest.x), PosMod(posToTest.y)][0].traits;
-                (int type, int subType) material = biomeTraits.lakeType;
+                if (lakeHeight < biomeTraitsFirst.lakeSize.minHeight && tilesToFill.Count > 0)   // check again if lake too low in height, as it might actually be high enough ! Because lakeHeight is the minimum, as if it floods under the 1st flood point it's not counter as height !
+                {
+                    int mini = getRandomItem(tilesToFill.Keys.ToList()).y;
+                    int maxi = mini;
+                    foreach ((int x, int y) poso in tilesToFill.Keys) { mini = Min(mini, poso.y); maxi = Max(maxi, poso.y); }
+                    lakeHeight = maxi - mini + 1;
+                }
+                if (tilesToFill.Count < biomeTraitsFirst.lakeSize.minTiles || lakeHeight < biomeTraitsFirst.lakeSize.minHeight) { return false; } // No laketches ?
 
                 seedo = LCGyNeg(LCGxNeg(seedo));
-                if (seedo % 1000 == 0) { material = (-1, 0); }
+                if (material == (0, 0)) { } // to not replace accidentally air by smth else lmfao
+                else if (seedo % 1000 == 0) { material = (-1, 0); }
                 else if (seedo % 1000 < 4) { material = (-3, 0); }
 
                 foreach ((int x, int y) poso in tilesToFill.Keys) { structureDict[poso] = material; }
@@ -285,7 +298,7 @@ namespace Cave
 
                 return true;
             }
-            bool floodPixel((int x, int y) pos, int maxY, Dictionary<(int x, int y), bool> tilesToFill, Dictionary<(int x, int y), bool> newTilesToFill, Dictionary<(int x, int y), Chunk> chunkDict, int[] tilesFilled)
+            bool floodPixel((int x, int y) pos, int maxY, bool inverted, bool isAirLake, Dictionary<(int x, int y), bool> tilesToFill, Dictionary<(int x, int y), bool> newTilesToFill, Dictionary<(int x, int y), Chunk> chunkDict, int[] tilesFilled)
             {
                 if (tilesToFill.ContainsKey(pos) || newTilesToFill.ContainsKey(pos)) { return true; } // already tried to filled this one, don't try to fill it but continue the fill
                 if (tilesFilled[0] > tilesFilled[1]) { return false; } // lake tooo biiig, ABORT ABORT
@@ -293,17 +306,17 @@ namespace Cave
                 Chunk chunkToTest = screen.getChunkFromPixelPos(pos, true, false, chunkDict);
                 TileTraits traits = chunkToTest.fillStates[PosMod(pos.x), PosMod(pos.y)];
 
-                if (traits.isLiquid) { return false; } // bumped on a liquid tile, ABORT ABORT
-                if (traits.isAir)
+                if (isAirLake ? traits.isAir : traits.isLiquid) { return false; } // bumped on a liquid tile, ABORT ABORT
+                if (isAirLake ? traits.isLiquid : traits.isAir)
                 {
-                    if (pos.y <= maxY) { newTilesToFill[pos] = true; }
+                    if (inverted ? pos.y >= maxY : pos.y <= maxY) { newTilesToFill[pos] = true; }
                     else { newTilesToFill[pos] = false; return true; } // if too high, keep it as a test for later but don't fill it and try neighbours YET
                     tilesFilled[0]++;
                     return 
-                    floodPixel((pos.x - 1, pos.y), maxY, tilesToFill, newTilesToFill, chunkDict, tilesFilled) &&
-                    floodPixel((pos.x + 1, pos.y), maxY, tilesToFill, newTilesToFill, chunkDict, tilesFilled) &&
-                    floodPixel((pos.x, pos.y - 1), maxY, tilesToFill, newTilesToFill, chunkDict, tilesFilled) &&
-                    floodPixel((pos.x, pos.y + 1), maxY, tilesToFill, newTilesToFill, chunkDict, tilesFilled);
+                    floodPixel((pos.x - 1, pos.y), maxY, inverted, isAirLake, tilesToFill, newTilesToFill, chunkDict, tilesFilled) &&
+                    floodPixel((pos.x + 1, pos.y), maxY, inverted, isAirLake, tilesToFill, newTilesToFill, chunkDict, tilesFilled) &&
+                    floodPixel((pos.x, pos.y - 1), maxY, inverted, isAirLake, tilesToFill, newTilesToFill, chunkDict, tilesFilled) &&
+                    floodPixel((pos.x, pos.y + 1), maxY, inverted, isAirLake, tilesToFill, newTilesToFill, chunkDict, tilesFilled);
                 }
                 return true; // return true even if fill not worked, just stop if tile is liquid or if filled too much
             }
