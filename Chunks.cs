@@ -1209,7 +1209,29 @@ namespace Cave
                     }
 
                     percentageFree -= calculateAndAddBiome(listo, (0, 1), percentageFree, temperature, (-999999, 0));   // add frost
-                    percentageFree -= calculateAndAddBiome(listo, (6, 0), percentageFree, Min(500 - temperature, humidity - 500, acidity - 500), (0, 999999), 5);  // add mold
+                    percentageFree -= calculateAndAddBiome(listo, (6, 0), percentageFree, Min(temperature, 500 - temperature, humidity - 500, acidity - 500), (0, 999999), 5);  // add mold
+
+                    if (illumination > 400 && temperature > 200 && temperature < 850)
+                    {
+                        int forestness = calculateBiome(percentageFree, Min(illumination - 400, temperature - 250, 850 - temperature), (0, 999999));   // normal forest
+                        percentageFree -= forestness;
+                        forestness -= calculateAndAddBiome(listo, (3, 2), forestness, temperature, (-999999, 350));  // conifer forest
+                        forestness -= calculateAndAddBiome(listo, (3, 3), forestness, temperature, (700, 999999));  // jungle
+                        forestness -= calculateAndAddBiome(listo, (3, 4), forestness, salinity, (600, 999999));  // mangrove
+                        forestness -= calculateAndAddBiome(listo, (3, 1), forestness, toxicity + (int)(0.4f * (humidity - temperature)), (300, 999999));  // add flower forest
+                        testAddBiome(listo, (3, 0), forestness);
+
+                        // -> if humidity is TOO LOW, no forests ? but deserts instead ?
+                        // 
+                        // Nothing : normal forest
+                        // Low temp : conifer forest
+                        // High temp : jungle
+                        // High salt : flower forest
+                        // High salt + humidity/oceanity -> mangrove
+
+                        // low humidity : baobab forest ?????? desert ???
+                        // -> Garrigue when alcaline ?
+                    }
 
                     if (percentageFree <= 0) { goto AfterTest; }
 
@@ -1254,12 +1276,8 @@ namespace Cave
                         percentageFree -= testAddBiome(listo, (0, 0), coldness);
                     }
 
-                    if (percentageFree > 0)
-                    {
-                        percentageFree -= calculateAndAddBiome(listo, (4, 0), percentageFree, toxicity, (715, 999999));  // add slime
-                        percentageFree -= calculateAndAddBiome(listo, (3, 1), percentageFree, (500 - toxicity) + (int)(0.4f * (humidity - temperature)), (0, 999999));  // add flower forest
-                        testAddBiome(listo, (3, 0), percentageFree); // add what's remaining as forest
-                    }
+                    testAddBiome(listo, (4, 0), percentageFree);
+                    // percentageFree -= calculateAndAddBiome(listo, (4, 0), percentageFree, toxicity + 100000, (715, 999999));  // add slime
                 }
                 else if (dimensionType == (1, 0)) // type == 1, chandelier dimension
                 {

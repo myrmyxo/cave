@@ -220,6 +220,7 @@ namespace Cave
             // -> Make light sources have varying High intensity/Low intensity circles, so player can have a BIG low intensity light in some cases. Maye have a different size for if in water or not ? Like in water bigger low intensity but smaller high intensity (or the opposite, or just lower in general since water.)).
             // -> Add pufferfish UUUUUUUURRRRRRRRRGHHHHHHHHHHHHHHHHHHHHIHHHHHHHHHHHHHHHHHLHHHHHHHHHHHHHHHHHHHHHYHHHHHHHHHHHHHHHH
             // Swamps AND Mangroves and jungel and uhhh idk taiga and shit
+            // Salt oceans with salt cristals, when there's not little illumination so no algae
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
@@ -258,6 +259,7 @@ namespace Cave
             // Teratoma and Cysts structures in living dimension. Hair forest, eyes ? nails teeth. ADD SKIN ALSO !!! Blood coagulation when exposed to air ???
             // Living dimensions have hair color ??? Like the WHOLE dimension has black hair, or brown hair... idk
             // swarms of locusts that uhhhh go and uh. eat plants idk.
+            // Have some plants be background plants, darker and closer to background color ? Since Stijn (love of my live fr) saw the dark shade trees as background ones for some reason !!! Could be a cool idea to implement a shade/layer system for plants ! to add more depth
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
