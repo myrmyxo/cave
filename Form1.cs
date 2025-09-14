@@ -96,8 +96,9 @@ namespace Cave
                 turnPngIntoString("Honey");
                 turnPngIntoString("Lava");
                 turnPngIntoString("FairyLiquid");
-                turnPngIntoString("Water");
                 turnPngIntoString("Ice");
+                turnPngIntoString("Water");
+                turnPngIntoString("SaltyWater");
                 turnPngIntoString("Piss");
 
                 turnPngIntoString("BasicTile");
@@ -112,6 +113,9 @@ namespace Cave
                 turnPngIntoString("Tulip");
                 turnPngIntoString("Allium");
                 turnPngIntoString("Tree");
+                turnPngIntoString("Fir");
+                turnPngIntoString("JungleTree");
+                turnPngIntoString("MangroveTree");
                 turnPngIntoString("KelpUpwards");
                 turnPngIntoString("KelpDownwards");
                 turnPngIntoString("Reed");

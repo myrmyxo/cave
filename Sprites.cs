@@ -70,7 +70,8 @@ namespace Cave
                 { (-5, 0), new OneSprite("Honey", false) },
                 { (-4, 0), new OneSprite("Lava", false) },
                 { (-3, 0), new OneSprite("FairyLiquid", false) },
-                { (-2, 0), new OneSprite("Water", false) },
+                { (-2, 0), new OneSprite("Water", true) },                  // TO CHANGE
+                { (-2, 2), new OneSprite("SaltyWater", false) },
                 { (-2, -1), new OneSprite("Ice", true) },                   // TO CHANGE
                 { (-1, 0), new OneSprite("Piss", false) },
                 { (0, 0), errorSprite },
@@ -119,9 +120,9 @@ namespace Cave
                 { (0, 2), new OneSprite("Allium", false) },
                 { (0, 3), new OneSprite("Tulip", false) },
                 { (1, 0), new OneSprite("Tree", false) },
-                { (1, 1), new OneSprite("FleshTree1", true) },              // TO CHANGE
-                { (1, 2), new OneSprite("LanternTree", true) },             // TO CHANGE
-                { (1, 3), new OneSprite("FleshTree2", true) },              // TO CHANGE
+                { (1, 1), new OneSprite("Fir", true) },                     // TO CHANGE
+                { (1, 2), new OneSprite("JungleTree", true) },              // TO CHANGE
+                { (1, 3), new OneSprite("MangroveTree", true) },            // TO CHANGE
                 { (2, 0), new OneSprite("KelpUpwards", false) },
                 { (2, 1), new OneSprite("KelpDownwards", false) },
                 { (2, 2), new OneSprite("Reed", false) },
