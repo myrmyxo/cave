@@ -223,8 +223,8 @@ namespace Cave
             // -> Inverted lakes (floating luminescent lily pads spawn there and in lakes also)
             // -> Make light sources have varying High intensity/Low intensity circles, so player can have a BIG low intensity light in some cases. Maye have a different size for if in water or not ? Like in water bigger low intensity but smaller high intensity (or the opposite, or just lower in general since water.)).
             // -> Add pufferfish UUUUUUUURRRRRRRRRGHHHHHHHHHHHHHHHHHHHHIHHHHHHHHHHHHHHHHHLHHHHHHHHHHHHHHHHHHHHHYHHHHHHHHHHHHHHHH
-            // Swamps AND Mangroves and jungel and uhhh idk taiga and shit
             // Salt oceans with salt cristals, when there's not little illumination so no algae
+            // Oysters that grow on the side of mangrove tree roots when in water ? food source ?
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf

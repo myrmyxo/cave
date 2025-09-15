@@ -94,7 +94,7 @@ namespace Cave
                 id = currentPlantId;
                 growthLevel = 0;
                 transformPlant(typeToPut);
-                plantElement = new PlantElement(this, (0, 0), traits.plantElementType, seed, true);
+                plantElement = new PlantElement(this, (0, 0), traits.plantElementType, seed, null, true);
                 if (isDeadAndShouldDisappear) { return; }
                 tryGrowToMaximum();
                 if (isDeadAndShouldDisappear) { return; }
@@ -115,7 +115,7 @@ namespace Cave
                 growthLevel = 0;
                 transformPlant(typeToPut);
                 if (!testIfPlantPositionValid()) { isDeadAndShouldDisappear = true; return; }
-                plantElement = new PlantElement(this, (0, 0), traits.plantElementType, seed, true);
+                plantElement = new PlantElement(this, (0, 0), traits.plantElementType, seed, null, true);
                 if (isDeadAndShouldDisappear) { return; }
                 testPlantGrowth(true);
                 if (isDeadAndShouldDisappear) { return; }
@@ -449,13 +449,13 @@ namespace Cave
 
                 foreach (PlantElementJson baby in plantElementJson.pEs) { childPlantElements.Add(new PlantElement(motherPlant, baby)); }
             }
-            public PlantElement(Plant motherPlantToPut, (int x, int y) posToPut, (int type, int subType, int subSubType) typeToPut, int seedToPut, bool isMainPlantElement = false, (int x, int y)? forceDirection = null)
+            public PlantElement(Plant motherPlantToPut, (int x, int y) posToPut, (int type, int subType, int subSubType) typeToPut, int seedToPut, PlantElement motherPlantElement, bool isMainPlantElement = false, (int x, int y)? forceDirection = null)
             {
                 motherPlant = motherPlantToPut;
                 pos = posToPut;
                 type = typeToPut;
                 seed = seedToPut;
-                getTraitAndAddColorsAndFindMaxGrowth();
+                getTraitAndAddColorsAndFindMaxGrowth(motherPlantElement);
                 fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
                 growthLevel = -1;
                 isDeadAndShouldDisappear = init(isMainPlantElement, forceDirection) == 0;
@@ -468,7 +468,7 @@ namespace Cave
                 return modulo > 0 ? randy % modulo : randy;
             }
             public void transitionToOtherPlantElement((int type, int subType, int subSubType) newType)  // if new plant element doesn't contains a material that the old one did, it might cause bug on reload !
-            {
+            {   // CAREFUL when transitioning, it will NOT be able to add the maxGrowthParentRelatedVariation related to MotherPlantElement cuz it's not passed in the function !!!
                 seed = Abs((int)LCGyNeg(seed));
 
                 currentFrameArrayIdx = 0;
@@ -494,11 +494,16 @@ namespace Cave
                 if (traits.lightRadius > 0) { motherPlant.tryAddMaterialColor(traits.lightElement); }
                 makeColorOverrideDict();
             }
-            public void getTraitAndAddColorsAndFindMaxGrowth()
+            public void getTraitAndAddColorsAndFindMaxGrowth(PlantElement motherPlantElement = null)
             {
                 traits = getPlantElementTraits(type);
                 int maxGrowthLevelVariation = seed % (traits.maxGrowth.range + 1);
                 maxGrowthLevel = traits.maxGrowth.maxLevel + maxGrowthLevelVariation;
+                if (motherPlantElement != null && traits.maxGrowthParentRelatedVariation != null)
+                {
+                    if (traits.maxGrowthParentRelatedVariation.Value.fromEnd) { maxGrowthLevel += traits.maxGrowthParentRelatedVariation.Value.step * (motherPlantElement.maxGrowthLevel - motherPlantElement.growthLevel); }
+                    else { maxGrowthLevel += traits.maxGrowthParentRelatedVariation.Value.step * motherPlantElement.growthLevel; }
+                }
                 growthSpeedVariation = traits.plantGrowthRules is null ? 1 : traits.plantGrowthRules.growthSpeedVariationFactor.baseValue + (float)(rand.NextDouble() * traits.plantGrowthRules.growthSpeedVariationFactor.variation);
                 if (traits.plantGrowthRules != null && traits.plantGrowthRules.offsetMaxGrowthVariation)
                 {
@@ -564,7 +569,7 @@ namespace Cave
                 (int x, int y)? babyDirection = null;
                 if (item.dirType == 1) { babyDirection = item.mod; }
                 else if (item.dirType == 2) { babyDirection = baseDirection; }
-                PlantElement baby = new PlantElement(motherPlant, babyPos, item.child, getRandValue(seed + 923147 * seedMod + offset * 10000), false, babyDirection);
+                PlantElement baby = new PlantElement(motherPlant, babyPos, item.child, getRandValue(seed + 923147 * seedMod + offset * 10000), this, false, babyDirection);
                 if (baby.isDeadAndShouldDisappear)
                 {
                     maxGrowthLevel += item.failMGIncrease;
@@ -579,7 +584,7 @@ namespace Cave
                 (int x, int y)? babyDirection = null;
                 if (item.dirType == 1) { babyDirection = item.mod; }
                 else if (item.dirType == 2) { babyDirection = baseDirection; }
-                PlantElement baby = new PlantElement(motherPlant, babyPos, item.child, getRandValue(seed + 3 * seedMod), false, babyDirection);
+                PlantElement baby = new PlantElement(motherPlant, babyPos, item.child, getRandValue(seed + 3 * seedMod), this, false, babyDirection);
                 if (baby.isDeadAndShouldDisappear)
                 {
                     maxGrowthLevel += item.failMGIncrease;
@@ -588,9 +593,47 @@ namespace Cave
                 childPlantElements.Add(baby);
                 return true;
             }
+            public int findBaseDirection((int x, int y)? forceDirection)
+            {
+                if (traits.plantGrowthRules != null && traits.plantGrowthRules.startDirection != null)
+                {
+                    ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped) dir = traits.plantGrowthRules.startDirection.Value;
+                    baseDirection = (dir.direction.x * (dir.canBeFlipped.x ? (rand.Next(2) * 2 - 1) : 1), dir.direction.y * (dir.canBeFlipped.y ? (rand.Next(2) * 2 - 1) : 1));
+
+                    if (forceDirection != null) { baseDirection = (baseDirection.x == 0 ? forceDirection.Value.x : baseDirection.x, baseDirection.y == 0 ? forceDirection.Value.y : baseDirection.y); }
+                }
+                else if (forceDirection != null) { baseDirection = forceDirection.Value; }
+                else if (motherPlant.traits.isEveryAttach)
+                {
+                    if (!testPositionEmpty((0, -1))) { baseDirection = (baseDirection.x, 1); }
+                    else if (!testPositionEmpty((0, 1))) { baseDirection = (baseDirection.x, -1); }
+                    if (!testPositionEmpty((-1, 0))) { baseDirection = (1, baseDirection.y); }
+                    else if (!testPositionEmpty((1, 0))) { baseDirection = (-1, baseDirection.y); }
+                    if (baseDirection == (0, 0)) { return 0; }  // Plant was floating. Wadafak.
+                }
+                else if (type == (4, 1, 0)) { baseDirection = (0, 0); }  // temp, so mold doesn't get moved lol
+                else if (motherPlant.traits.isCeiling) { baseDirection = (0, -1); }
+                else if (motherPlant.traits.isSide)
+                {
+                    if (testPositionEmpty((-1, 0)))
+                    {
+                        if (testPositionEmpty((1, 0))) { return 0; }    // Both sides were empty, should not happen but in case plant die
+                        baseDirection = (-1, 0);
+                    }
+                    else if (testPositionEmpty((1, 0))) { baseDirection = (1, 0); }
+                    else { return 0; }  // Both sides were not empty, plant sandwiched lol, for now plant die but later might change idk
+                }
+                else { baseDirection = (0, 1); }
+
+                growthDirection = baseDirection;
+                baseDirection = (baseDirection.x == 0 ? getRandValue(seed + 7, 2) * 2 - 1 : baseDirection.x, baseDirection.y == 0 ? getRandValue(seed + 13, 2) * 2 - 1 : baseDirection.y);
+
+                return -1;  // Return -1 to say everything went good lol
+            }
             public int init(bool isMainPlantElement = false, (int x, int y)? forceDirection = null, bool isTransition = false)
             {
                 if (!isTransition) { fillStates = new Dictionary<(int x, int y), (int type, int subType)>(); }
+                if (findBaseDirection(forceDirection) == 0) { return 0; }
                 if (traits.plantGrowthRules != null)
                 {
                     childArrayOffset += traits.plantGrowthRules.childOffset;
@@ -599,43 +642,9 @@ namespace Cave
 
                     if (!isTransition)
                     {
-                        if (traits.plantGrowthRules.startDirection != null)
-                        {
-                            ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped) dir = traits.plantGrowthRules.startDirection.Value;
-                            baseDirection = (dir.direction.x * (dir.canBeFlipped.x ? (rand.Next(2) * 2 - 1) : 1), dir.direction.y * (dir.canBeFlipped.y ? (rand.Next(2) * 2 - 1) : 1));
-
-                            if (forceDirection != null) { baseDirection = (baseDirection.x == 0 ? forceDirection.Value.x : baseDirection.x, baseDirection.y == 0 ? forceDirection.Value.y : baseDirection.y); }
-                        }
-                        else if (forceDirection != null) { baseDirection = forceDirection.Value; }
-                        else if (motherPlant.traits.isEveryAttach)
-                        {
-                            if (!testPositionEmpty((0, -1))) { baseDirection = (baseDirection.x, 1); }
-                            else if (!testPositionEmpty((0, 1))) { baseDirection = (baseDirection.x, -1); }
-                            if (!testPositionEmpty((-1, 0))) { baseDirection = (1, baseDirection.y); }
-                            else if (!testPositionEmpty((1, 0))) { baseDirection = (-1, baseDirection.y); }
-                            if (baseDirection == (0, 0)) { return 0; }  // Plant was floating. Wadafak.
-                        }
-                        else if (type == (4, 1, 0)) { baseDirection = (0, 0); }  // temp, so mold doesn't get moved lol
-                        else if (motherPlant.traits.isCeiling) { baseDirection = (0, -1); }
-                        else if (motherPlant.traits.isSide)
-                        {
-                            if (testPositionEmpty((-1, 0)))
-                            {
-                                if (testPositionEmpty((1, 0))) { return 0; }    // Both sides were empty, should not happen but in case plant die
-                                baseDirection = (-1, 0);
-                            }
-                            else if (testPositionEmpty((1, 0))) { baseDirection = (1, 0); }
-                            else { return 0; }  // Both sides were not empty, plant sandwiched lol, for now plant die but later might change idk
-                        }
-                        else { baseDirection = (0, 1); }
-
-                        growthDirection = baseDirection;
-                        baseDirection = (baseDirection.x == 0 ? getRandValue(seed + 7, 2) * 2 - 1 : baseDirection.x, baseDirection.y == 0 ? getRandValue(seed + 13, 2) * 2 - 1 : baseDirection.y);
-
                         if (!isMainPlantElement) { updatePos(growthDirection); } // if the first plantElement created by the plant (like the trunk of a tree, stem of a flower...)
                         lastDrawPos = (-growthDirection.x, -growthDirection.y);
                     }
-
 
                     if (traits.plantGrowthRules.childrenOnGrowthStart != null && traits.plantGrowthRules.childrenOnGrowthStart.Length > 0)
                     {
@@ -712,7 +721,7 @@ namespace Cave
                             currentFrameArrayIdx++;
 
                             fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
-                            foreach ((int x, int y) pos in frame.frame.elementDict.Keys) { tryFill(pos, frame.frame.elementDict[pos]); }
+                            foreach ((int x, int y) pos in frame.frame.elementDict.Keys) { tryFill((pos.x * (frame.frame.directionalFlip.x ? baseDirection.x : 1), pos.y * (frame.frame.directionalFlip.y ? baseDirection.y : 1)), frame.frame.elementDict[pos]); }
                             // maybe make it so the growth only succceeds if > half of the newly filled fillStates have been successfully filled ? If not it cancels the growth, keep old fillStates, and doesn't increase growthLevel
                         }
                     }
