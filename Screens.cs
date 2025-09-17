@@ -72,7 +72,7 @@ namespace Cave
                 seed = 123456;
 
                 int idToPut = 0;
-                (int type, int subType) forceBiome = (3, 3);
+                (int type, int subType) forceBiome = (0, 0);
                 int PNGsize = 150;
                 PNGsize = 100;
 
@@ -80,12 +80,12 @@ namespace Cave
                 realZoomLevel = zoomLevel;
                 effectiveRadius = chunkLoadMininumRadius;
 
-                bool isMonoeBiomeToPut = true;
+                bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
                 loadStructuresYesOrNo = false;
                 spawnNests = false;
-                spawnEntitiesBool = false;
+                spawnEntitiesBool = true;
                 spawnPlants = true;
                 bool spawnNOTHING = false;
                 bool spawnEVERYTHING = false;
@@ -221,6 +221,8 @@ namespace Cave
             }
             public void runGame(PictureBox gamePictureBox, PictureBox overlayPictureBox)
             {
+                if (pausePress) { return; }
+
                 int framesFastForwarded = 0;
             LoopStart:;
 
@@ -242,7 +244,6 @@ namespace Cave
 
                 Player player = playerList[0];
 
-                if (pausePress) { return; }
                 if (dimensionChangePress)
                 {
                     if (dimensionSelection)
@@ -591,6 +592,7 @@ namespace Cave
             public Dictionary<(int x, int y), MegaChunk> extraLoadedMegaChunks = new Dictionary<(int x, int y), MegaChunk>();
 
             public Dictionary<((int x, int y) pos, int layer), int> LCGCacheDict = new Dictionary<((int x, int y) pos, int layer), int>();
+            public Dictionary<(int x, int y), (int x, int y)> VoronoiCacheDict = new Dictionary<(int x, int y), (int x, int y)>();
 
             public long seed;
             public int id;
@@ -688,6 +690,11 @@ namespace Cave
             {
                 if (!LCGCacheDict.ContainsKey(key)) { LCGCacheDict[key] = (int)(LCGxy(key, seed) % noiseAmplitude); }
                 return LCGCacheDict[key];
+            }
+            public (int x, int y) getVoronoiValue((int x, int y) key, (int x, int y) noiseAmplitude)
+            {
+                if (!VoronoiCacheDict.ContainsKey(key)) { VoronoiCacheDict[key] = ((int)(key.x * noiseAmplitude.x + LCGxy((key, 1234), seed) % noiseAmplitude.x), (int)(key.y * noiseAmplitude.y + LCGxy((key, 12345), seed) % noiseAmplitude.y)); }
+                return VoronoiCacheDict[key];
             }
             public void addPlantsToChunk(Chunk chunk)
             {

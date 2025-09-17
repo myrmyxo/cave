@@ -223,8 +223,10 @@ namespace Cave
             // -> Inverted lakes (floating luminescent lily pads spawn there and in lakes also)
             // -> Make light sources have varying High intensity/Low intensity circles, so player can have a BIG low intensity light in some cases. Maye have a different size for if in water or not ? Like in water bigger low intensity but smaller high intensity (or the opposite, or just lower in general since water.)).
             // -> Add pufferfish UUUUUUUURRRRRRRRRGHHHHHHHHHHHHHHHHHHHHIHHHHHHHHHHHHHHHHHLHHHHHHHHHHHHHHHHHHHHHYHHHHHHHHHHHHHHHH
-            // Salt oceans with salt cristals, when there's not little illumination so no algae
+            // Salt oceans with salt cristals, when there's little illumination so no algae
             // Oysters that grow on the side of mangrove tree roots when in water ? food source ?
+            // Find a way to have the effect of stuff being immerged in liquid be DARKER IN COLOR instead of just being an alpha effect (when plant in water, it's not just closer to water color BUT also darker)
+            // -> Super hard to do bc if the effect is aready darker it will just make the water darker too and thus make change water color and have no effect on the color of the stuff in them... fak
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
@@ -771,13 +773,11 @@ namespace Cave
         }
         public static int Sqrt(int n)
         {
-            int sq = 1;
-            while (sq < n / sq)
-            {
-                sq++;
-            }
-            if (sq > n / sq) return sq - 1;
-            return sq;
+            return (int)Math.Sqrt(n);
+        }
+        public static float Sqrt(float n)
+        {
+            return (float)Math.Sqrt(n);
         }
 
         //star see saw is the function used to make the*... circular blades
@@ -881,9 +881,15 @@ namespace Cave
         }
         public static float Distance((int x, int y) pos1, (int x, int y) pos2)
         {
-            int distX = (pos1.x - pos2.x);
-            int distY = (pos1.y - pos2.y);
-            return Sqrt(distX*distX + distY*distY);
+            int x = (pos1.x - pos2.x);
+            int y = (pos1.y - pos2.y);
+            return Sqrt(x * x + y * y);
+        }
+        public static float Distance((int x, int y) pos1, (int x, int y) pos2, (float x, float y) ponderation)
+        {
+            int x = (pos1.x - pos2.x);
+            int y = (pos1.y - pos2.y);
+            return Sqrt(x * x * ponderation.x + y * y * ponderation.y);
         }
 
         // Coordinate manipulation stuff

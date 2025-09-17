@@ -675,7 +675,7 @@ namespace Cave
                     {
                         foreach (((int x, int y) pos, (bool x, bool y) baseDirectionFlip) item in traits.requiredEmptyTiles)
                         {
-                            if (getTileFromRelPos((item.pos.x * (item.baseDirectionFlip.x && baseDirection.x < 0 ? -1 : 1), item.pos.y * (item.baseDirectionFlip.y && baseDirection.y < 0 ? -1 : 1))).type != traits.plantGrowthRules.tileContentNeededToGrow.Value)
+                            if (!traits.plantGrowthRules.tileContentNeededToGrow.Contains(getTileFromRelPos((item.pos.x * (item.baseDirectionFlip.x && baseDirection.x < 0 ? -1 : 1), item.pos.y * (item.baseDirectionFlip.y && baseDirection.y < 0 ? -1 : 1))).type))
                             {
                                 growthLevel = -1;
                                 return 0;
@@ -897,7 +897,7 @@ namespace Cave
                         goto FailButContinue;
                     }
 
-                    if ((traits.plantGrowthRules.tileContentNeededToGrow is null || traits.plantGrowthRules.tileContentNeededToGrow.Value == motherPlant.screen.getTileContent(motherPlant.getRealPos(drawPos)).type) && tryFill(drawPos, traits.plantGrowthRules.materalToFillWith))
+                    if ((traits.plantGrowthRules.tileContentNeededToGrow is null || traits.plantGrowthRules.tileContentNeededToGrow.Contains(motherPlant.screen.getTileContent(motherPlant.getRealPos(drawPos)).type)) && tryFill(drawPos, traits.plantGrowthRules.materalToFillWith))
                     {
                         updateStickyChildren(drawPos);
                         if (growthLevelToTest >= maxGrowthLevel + (traits.plantGrowthRules.childrenOnGrowthEnd is null ? 0 : 1))
