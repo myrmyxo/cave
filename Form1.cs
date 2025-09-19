@@ -227,6 +227,7 @@ namespace Cave
             // Oysters that grow on the side of mangrove tree roots when in water ? food source ?
             // Find a way to have the effect of stuff being immerged in liquid be DARKER IN COLOR instead of just being an alpha effect (when plant in water, it's not just closer to water color BUT also darker)
             // -> Super hard to do bc if the effect is aready darker it will just make the water darker too and thus make change water color and have no effect on the color of the stuff in them... fak
+            // MAKE THE CACHE DICTS GET REINITIALIZED WHEN THEY GET TOO BIG !!! MEMORY LEAK !!!!!!!
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf

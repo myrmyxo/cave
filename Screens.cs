@@ -592,7 +592,7 @@ namespace Cave
             public Dictionary<(int x, int y), MegaChunk> extraLoadedMegaChunks = new Dictionary<(int x, int y), MegaChunk>();
 
             public Dictionary<((int x, int y) pos, int layer), int> LCGCacheDict = new Dictionary<((int x, int y) pos, int layer), int>();
-            public Dictionary<(int x, int y), (int x, int y)> VoronoiCacheDict = new Dictionary<(int x, int y), (int x, int y)>();
+            public Dictionary<(int x, int y), ((int x, int y) pos, float ponderation)> VoronoiCacheDict = new Dictionary<(int x, int y), ((int x, int y) pos, float ponderation)>();
 
             public long seed;
             public int id;
@@ -691,9 +691,9 @@ namespace Cave
                 if (!LCGCacheDict.ContainsKey(key)) { LCGCacheDict[key] = (int)(LCGxy(key, seed) % noiseAmplitude); }
                 return LCGCacheDict[key];
             }
-            public (int x, int y) getVoronoiValue((int x, int y) key, (int x, int y) noiseAmplitude)
+            public ((int x, int y) pos, float ponderation) getVoronoiValue((int x, int y) key, (int x, int y) noiseAmplitude)
             {
-                if (!VoronoiCacheDict.ContainsKey(key)) { VoronoiCacheDict[key] = ((int)(key.x * noiseAmplitude.x + LCGxy((key, 1234), seed) % noiseAmplitude.x), (int)(key.y * noiseAmplitude.y + LCGxy((key, 12345), seed) % noiseAmplitude.y)); }
+                if (!VoronoiCacheDict.ContainsKey(key)) { VoronoiCacheDict[key] = (((int)(key.x * noiseAmplitude.x + LCGxy((key, 1234), seed) % noiseAmplitude.x), (int)(key.y * noiseAmplitude.y + LCGxy((key, 12345), seed) % noiseAmplitude.y)), 0.8f + ((float)(LCGxy((key, 5324), seed) * 0.01f % 0.45))); }
                 return VoronoiCacheDict[key];
             }
             public void addPlantsToChunk(Chunk chunk)

@@ -927,7 +927,7 @@ namespace Cave
                     lPM:true
                 )) },
 
-                { (1, 3, 0), new PlantElementTraits("MangroveTrunk", rET:(from number in Enumerable.Range(0, 20) select ((0, number), (true, false))).ToArray(),
+                { (1, 3, 0), new PlantElementTraits("MangroveTrunk", rET:(from number in Enumerable.Range(0, 20) select ((0, number), (true, false))).ToArray(), sRET:new ((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip)[] { ((0, 15), (0, 0), (true, false)) },
                 pGR:new PlantGrowthRules(t:(1, 1), mG:(10, 5), hPP:fHPP["LeavesMangrove"],
                     cOGS:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((1, 3, 1), (0, 0), 0, 0, 100) },
                     C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((1, 3, -2), (-1, 0), 1, 0, (1, 1), 90), ((1, 3, -2), (1, 0), 1, 0, (1, 0), 90) },
@@ -1482,6 +1482,7 @@ namespace Cave
             public bool invertedLakes;
 
             public (int one, int two) caveType;
+            public bool isVoronoiCave;
             public (int one, int two) textureType;
             public int connectionLayer;
             public int separatorType;
@@ -1545,6 +1546,7 @@ namespace Cave
                 invertedLakes = lakeType == (0, 0);
 
                 caveType = cT ?? (1, 2);
+                isVoronoiCave = caveType.one == 7 || caveType.two == 7;
                 textureType = txT ?? (0, 1);
                 connectionLayer = cL;
                 separatorType = sT;
@@ -1700,7 +1702,7 @@ namespace Cave
                 new float[]{1, 0.25f, 2, 2,  0, 6, 1, 2, 0, 4, 3, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((1, 3), 100), ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), },
-                cT:(1, 5), lT:(-2, 2), txT:(0, 0)) },                // Base           MangroveTree   Vine           Kelp           CeilingKelp
+                cT:(7, 7), lT:(-2, 2), txT:(0, 0)) },                // Base           MangroveTree   Vine           Kelp           CeilingKelp
 
                 { (4, 0),  new BiomeTraits("Toxic",                 (Color.GreenYellow.R, Color.GreenYellow.G, Color.GreenYellow.B),
                 new float[]{1, 0.25f, 2, 2,  0, 4, 1, 2, 0, 4, 0, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
@@ -1737,7 +1739,7 @@ namespace Cave
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 99), ((8, 0), 0.9f),  ((9, 0), 0.1f), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((2, 3), 85), ((2, 4), 15), ((2, 5), 100), },
                 lT:(0, 0), lS:(3, 50, 3000),                         // Algae 1       Algae Bulbous Algae Ceiling 1
-                cT:(0, 3), txT:(0, 0), fT:(-2, 0), sT:1) },
+                cT:(0, 3), txT:(0, 0), fT:(-2, 2), sT:1, cL:1) },
 
 
                 //      -E- C  G  W  J   -P- E  G  T  C  S  WG WT WC WS  

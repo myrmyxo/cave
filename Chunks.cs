@@ -33,6 +33,7 @@ using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
 using static Cave.Dialogues;
+using System.Runtime.CompilerServices;
 
 namespace Cave
 {
@@ -49,6 +50,7 @@ namespace Cave
             public int framesSinceLastExtraGetting = 0;
 
             public (BiomeTraits traits, int percentage)[,][] biomeIndex;
+            public HashSet<BiomeTraits> allBiomesInTheChunk;
             public BiomeTraits traits;
 
             public TileTraits[,] fillStates = new TileTraits[32, 32];
@@ -159,6 +161,7 @@ namespace Cave
             }
             public (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] determineAllBiomeValues()
             {
+                allBiomesInTheChunk = new HashSet<BiomeTraits>();
                 int[,,] biomeValues = new int[33, 33, 18];
                 if (!screen.isMonoBiome)
                 {
@@ -189,33 +192,82 @@ namespace Cave
                 bitmap = new Bitmap(32, 32);
                 effectsBitmap = new Bitmap(32, 32);
 
-                for (int i = 0; i < 32; i += 1)
+                foreach ((int x, int y) mod in squareModArray)
                 {
-                    for (int j = 0; j < 32; j += 1)
+                    (int x, int y) poso = (mod.x * 31, mod.y * 31);
+                    (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) tileValues;
+                    if (screen.isMonoBiome)
                     {
-                        (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) tileValues;
-                        if (screen.isMonoBiome)
-                        {
-                            tileValues = makeTileBiomeValueArrayMonoBiome(screen.type);
-                            biomeIndex[i, j] = new (BiomeTraits traits, int percentage)[] { (getBiomeTraits(screen.type), 1000) };
-                        }
-                        else
-                        {
-                            tileValues = makeTileBiomeValueArray(biomeValues, i, j);
-                            biomeIndex[i, j] = findBiome(screen.type, tileValues);
-                        }
-                        tileValuesArray[i, j] = tileValues;
-
-                        int[] colorArray = findBiomeColor(biomeIndex[i, j]);
-                        baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
+                        tileValues = makeTileBiomeValueArrayMonoBiome(screen.type);
+                        biomeIndex[poso.x, poso.y] = new (BiomeTraits traits, int percentage)[] { (getBiomeTraits(screen.type), 1000) };
                     }
+                    else
+                    {
+                        tileValues = makeTileBiomeValueArray(biomeValues, poso.x, poso.y);
+                        biomeIndex[poso.x, poso.y] = findBiome(screen.type, tileValues);
+                    }
+                    tileValuesArray[poso.x, poso.y] = tileValues;
+
+                    int[] colorArray = findBiomeColor(biomeIndex[poso.x, poso.y]);
+                    baseColors[poso.x, poso.y] = (colorArray[0], colorArray[1], colorArray[2]);
+                }
+
+                if (biomeIndex[0, 0].Length == 1 && biomeIndex[31, 0].Length == 1 && biomeIndex[0, 31].Length == 1 && biomeIndex[31, 31].Length == 1 &&
+                    biomeIndex[0, 0][0] == biomeIndex[31, 0][0] && biomeIndex[0, 0][0] == biomeIndex[0, 31][0] && biomeIndex[0, 0][0] == biomeIndex[31, 31][0])
+                {
+                    for (int i = 0; i < 32; i += 1)
+                    {
+                        for (int j = 0; j < 32; j += 1)
+                        {
+                            biomeIndex[i, j] = biomeIndex[0, 0];
+                            baseColors[i, j] = baseColors[0, 0];
+                            tileValuesArray[i, j] = tileValuesArray[0, 0];
+                        }
+                    }
+                    allBiomesInTheChunk.Add(biomeIndex[0, 0][0].traits);
+                }
+                else
+                {
+                    for (int i = 0; i < 32; i += 1)
+                    {
+                        for (int j = 0; j < 32; j += 1)
+                        {
+                            (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) tileValues;
+                            if (screen.isMonoBiome)
+                            {
+                                tileValues = makeTileBiomeValueArrayMonoBiome(screen.type);
+                                biomeIndex[i, j] = new (BiomeTraits traits, int percentage)[] { (getBiomeTraits(screen.type), 1000) };
+                            }
+                            else
+                            {
+                                tileValues = makeTileBiomeValueArray(biomeValues, i, j);
+                                biomeIndex[i, j] = findBiome(screen.type, tileValues);
+                                foreach ((BiomeTraits traits, int percentage) item in biomeIndex[i, j]) { allBiomesInTheChunk.Add(item.traits); }
+                            }
+                            tileValuesArray[i, j] = tileValues;
+
+                            int[] colorArray = findBiomeColor(biomeIndex[i, j]);
+                            baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
+                        }
+                    }
+                    if (screen.isMonoBiome) { allBiomesInTheChunk.Add(biomeIndex[0, 0][0].traits); }
                 }
 
                 return tileValuesArray;
             }
-            public int[,] voronoi(int[,,] terrainValues)
+            public (float baseSeparatorScore, float rightScore, bool isLiquid, bool forceSolid)[,] voronoi(int[,,] terrainValues)
             {
-                int[,] stateArray = new int[32, 32];
+                (float baseSeparatorScore, float rightScore, bool isLiquid, bool forceSolid)[,] stateArray = new (float baseSeparatorScore, float rightScore, bool isLiquid, bool forceSolid)[32, 32];
+
+                ((int x, int y) pos, float ponderation)[] basePosArray = new ((int x, int y) pos, float distance)[25];
+
+                (int x, int y) quartile = (Floor(pos.x, 8) / 8, pos.y);
+                int counto = 0;
+                foreach ((int x, int y) mod in bigSquareCenteredModArray)
+                {
+                    basePosArray[counto] = screen.getVoronoiValue((quartile.x + mod.x, quartile.y + mod.y), (256, 32));
+                    counto++;
+                }
 
                 ((int x, int y) pos, float distance)[] posArray = new ((int x, int y) pos, float distance)[25];
                 for (int i = 0; i < 32; i++)
@@ -223,14 +275,11 @@ namespace Cave
                     for (int j = 0; j < 32; j++)
                     {
                         (int x, int y) realPos = (pos.x * 32 + i, pos.y * 32 + j);
-                        (int x, int y) quartile = (Floor(pos.x, 8) / 8, pos.y);
-                        int counto = 0;
-                        foreach ((int x, int y) mod in bigSquareCenteredModArray)
+                        ((int x, int y) pos, float ponderation) item;
+                        for (int k = 0; k < 25; k++)
                         {
-                            (int x, int y) posoToGet = (quartile.x + mod.x, quartile.y + mod.y);
-                            ((int x, int y) pos, float ponderation) item = (screen.getVoronoiValue(posoToGet, (256, 32)), 0.8f + ((float)(LCGxy((posoToGet, 5324), screen.seed) * 0.01f % 0.45)));
-                            posArray[counto] = (item.pos, item.ponderation * Distance(item.pos, realPos, (1, 8)));
-                            counto++;
+                            item = basePosArray[k];
+                            posArray[k] = (item.pos, item.ponderation * Distance(item.pos, realPos, (1, 8)));
                         }
 
                         ((int x, int y) pos, float distance) closestPos = posArray[0];
@@ -247,31 +296,20 @@ namespace Cave
                         int heightDiff = realPos.y - closestPos.pos.y;
 
                         float juncScore1 = - Clamp(0, Max(0, heightDiff * 3), 3 * baseSeparatorScore);
-                        float juncScore2 = secondClosestPos.pos.y > closestPos.pos.y ? 0 : baseSeparatorScore < 20 + heightDiff * 5 ? -100000 : 0 ;
+                        bool juncScore2 = secondClosestPos.pos.y > closestPos.pos.y || baseSeparatorScore >= 20 + heightDiff * 5 ? false : true;
 
                         int depthScoreLOW = - 10 * Min(0, heightDiff + 6) - 10 * Min(0, heightDiff + 3);
                         int noiseScore = (int)(terrainValues[i, j, 1] * 0.05f);
 
-                        float rightScore = noiseScore + junctionScore + depthScoreLOW + juncScore1 + juncScore2 + Max(25, Max(Abs(closestPos.pos.x - realPos.x) * 0.25f, Abs(closestPos.pos.y - realPos.y)) + closestPos.distance * closestPos.distance * 0.003f);
-
+                        float rightScore = juncScore2 ? baseSeparatorScore - 10 : noiseScore + junctionScore + depthScoreLOW + juncScore1 + Max(25, Max(Abs(closestPos.pos.x - realPos.x) * 0.25f, Abs(closestPos.pos.y - realPos.y)) + closestPos.distance * closestPos.distance * 0.003f);
+                        stateArray[i, j] = (baseSeparatorScore, rightScore, !juncScore2 && realPos.y <= closestPos.pos.y && baseSeparatorScore > rightScore, baseSeparatorScore <= rightScore && rightScore - baseSeparatorScore < 30);
+                        /*
                         if (baseSeparatorScore > rightScore)
                         {
                             if (realPos.y > closestPos.pos.y || baseSeparatorScore <= rightScore - juncScore2) { stateArray[i, j] = 0; }
                             else { stateArray[i, j] = 2; }
                         }
-                        /*else if (baseSeparatorScore > noiseScore + junctionScore + depthScoreLOW + juncScore2 + Max(25, Max(Abs(closestPos.pos.x - realPos.x) * 0.25f, Abs(closestPos.pos.y - realPos.y)) + closestPos.distance * closestPos.distance * 0.003f))
-                        {
-                            stateArray[i, j] = 5;
-                        }
-                        else if (baseSeparatorScore > noiseScore + junctionScore + depthScoreLOW + juncScore1 + Max(25, Max(Abs(closestPos.pos.x - realPos.x) * 0.25f, Abs(closestPos.pos.y - realPos.y)) + closestPos.distance * closestPos.distance * 0.003f))
-                        {
-                            stateArray[i, j] = 4;
-                        }
-                        else if (baseSeparatorScore > noiseScore + junctionScore + Max(25, Max(Abs(closestPos.pos.x - realPos.x) * 0.25f, Abs(closestPos.pos.y - realPos.y)) + closestPos.distance * closestPos.distance * 0.003f))
-                        {
-                            stateArray[i, j] = 3;
-                        }*/
-                        else { stateArray[i, j] = 1; }
+                        else { stateArray[i, j] = 1; }*/
                     }
                 }
                 return stateArray;
@@ -280,16 +318,28 @@ namespace Cave
             {
                 fillStates = new TileTraits[32, 32];
 
+                // Find Perlin values when needed (chunk contains at least one biome that isn't mangrove)
                 int[,,] terrainValues = new int[33, 33, 6];
-                findNoiseValues(terrainValues, 0, 1, 64);           // big slither
-                findNoiseValuesQuartile(terrainValues, 1, 2);       // small slither
-                findNoiseValues(terrainValues, 2, 3, 64);           // big bubble
-                findNoiseValuesQuartile(terrainValues, 3, 4);       // small bubble
-                findNoiseValuesQuartile(terrainValues, 4, 5, 2048); // Stuff for minerals (dense rock), not efficient here since it should be one measured for nonfilled tiles, but whatever
-                findNoiseValuesQuartile(terrainValues, 5, 6, 2048); // Stuff for minerals (dense rock), not efficient here since it should be one measured for nonfilled tiles, but whatever
+                findNoiseValuesQuartile(terrainValues, 1, 2);       // small slither        // here bc it's used for voronoi noise shit as a slight terrain variation
+                foreach (BiomeTraits biomeTraits in allBiomesInTheChunk)
+                {
+                    if (!biomeTraits.isVoronoiCave)
+                    {
+                        findNoiseValues(terrainValues, 0, 1, 64);           // big slither
+                        findNoiseValues(terrainValues, 2, 3, 64);           // big bubble
+                        findNoiseValuesQuartile(terrainValues, 3, 4);       // small bubble
+                        findNoiseValuesQuartile(terrainValues, 4, 5, 2048); // Stuff for minerals (dense rock), not efficient here since it should be one measured for nonfilled tiles, but whatever
+                        findNoiseValuesQuartile(terrainValues, 5, 6, 2048); // Stuff for minerals (dense rock), not efficient here since it should be one measured for nonfilled tiles, but whatever
+                        break;
+                    }
+                }
 
-                // Voronoi
-                int[,] stateArray = voronoi(terrainValues);
+                // Find Voronoi values when needed (chunk contains mangrove)
+                (float baseSeparatorScore, float rightScore, bool isLiquid, bool forceSolid)[,] voronoiStateArray = new (float baseSeparatorScore, float rightScore, bool isLiquid, bool forceSolid)[32, 32];
+                foreach (BiomeTraits biomeTraits in allBiomesInTheChunk)
+                {
+                    if (biomeTraits.isVoronoiCave) { voronoiStateArray = voronoi(terrainValues); break; }
+                }
 
                 for (int i = 0; i < 32; i++)
                 {
@@ -297,24 +347,36 @@ namespace Cave
                     {
                         BiomeTraits mainBiomeTraits = biomeIndex[i, j][0].traits;
 
-                        if (stateArray[i, j] == 0) { fillStates[i, j] = getTileTraits((0, 0)); }
-                        else if (stateArray[i, j] == 1) { fillStates[i, j] = getTileTraits((1, 0)); }
-                        else if (stateArray[i, j] == 3) { fillStates[i, j] = getTileTraits((4, 0)); }
-                        else if (stateArray[i, j] == 4) { fillStates[i, j] = getTileTraits((4, 1)); }
-                        else if (stateArray[i, j] == 5) { fillStates[i, j] = getTileTraits((4, 2)); }
-                        else { fillStates[i, j] = getTileTraits(mainBiomeTraits.lakeType); }
-                        continue;
-
                         int value1 = terrainValues[i, j, 0] + (int)(0.25 * terrainValues[i, j, 1]) - 32;
                         int value2 = terrainValues[i, j, 2] + (int)(0.25 * terrainValues[i, j, 3]) - 32;
                         int mod2 = (int)(tileValuesArray[i, j].mod2 * 0.25);
 
                         float mult;
+                        float bound1 = 0;
+                        float bound2 = 0;
                         float score1 = 0;
                         float score2 = 0;
                         float valueModifier;
                         Dictionary<(int separatorType, int connectionLayer), float> separatorDict = new Dictionary<(int separatorType, int connectionLayer), float>();
                         Dictionary<(int separatorType, int connectionLayer), float> antiSeparatorDict = new Dictionary<(int separatorType, int connectionLayer), float>();
+
+                        float separatorScore = 0;
+                        float antiSeparatorScore = 0;
+                        float liquidVoronoiTransition = 0;
+                        (int type, int subType)? liquidVoronoiTransitionType = null;
+
+                        foreach ((BiomeTraits traits, int percentage) tupel in biomeIndex[i, j]) { if (tupel.traits.isVoronoiCave) { liquidVoronoiTransitionType = tupel.traits.lakeType; break; } }
+                        if (liquidVoronoiTransitionType != null)
+                        {
+                            foreach ((BiomeTraits traits, int percentage) tupel in biomeIndex[i, j])
+                            {
+                                if (tupel.traits.isVoronoiCave && tupel.traits.lakeType == liquidVoronoiTransitionType.Value) { liquidVoronoiTransition += tupel.percentage * 0.001f; }
+                                else if (tupel.traits.fillType == liquidVoronoiTransitionType.Value) { liquidVoronoiTransition += tupel.percentage * 0.001f; }
+                            }
+                        }
+
+                        bool isVoronoiLiquidTransitionZone = liquidVoronoiTransition > 0.95f;
+                        bool isVoronoiPool = false;
 
                         foreach ((BiomeTraits traits, int percentage) tupel in biomeIndex[i, j])
                         {
@@ -324,22 +386,43 @@ namespace Cave
                             if (tupel.traits.isDegraded) { valueModifier += 3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value2, 11)); }
                             if (tupel.traits.isSlimy) { valueModifier -= mult * Min(0, 20 * (Sin(i + mod2 * 0.3f + 0.5f, 16) + Sin(j + mod2 * 0.3f + 0.5f, 16)) - 10); }
 
-                            score1 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.one, value1, (i, j), mod2) + findTextureScore(tupel.traits.textureType.one, value2) + valueModifier); // Swapping is normal !
-                            score2 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.two, value2, (i, j), mod2) + findTextureScore(tupel.traits.textureType.two, value1) + valueModifier); // Cause it needs to be an independant noise !
+                            if (tupel.traits.isVoronoiCave)
+                            {
+                                (float baseSeparatorScore, float rightScore, bool isLiquid, bool forceSolid) item = voronoiStateArray[i, j];
+                                score1 += mult * 0.15f * item.baseSeparatorScore;
+                                score2 += mult * 0.15f * item.baseSeparatorScore;
+                                bound1 += mult * 0.15f * item.rightScore;
+                                bound2 += mult * 0.15f * item.rightScore;
+                                if (item.forceSolid && mult < 0.9f && mult > 0.3f) { score1 -= 100000; score2 -= 100000; }
+                                if (item.isLiquid)
+                                {
+                                    isVoronoiPool = true;
+                                    if (Abs(mult - 0.55f) < 0.2f) { separatorScore += 1000 * (0.2f - Abs(mult - 0.55f)); }
+                                }
+                            }
+                            else
+                            {
+                                score1 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.one, value1, (i, j), mod2) + findTextureScore(tupel.traits.textureType.one, value2) + valueModifier);   // Swapping is normal !
+                                score2 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.two, value2, (i, j), mod2) + findTextureScore(tupel.traits.textureType.two, value1) + valueModifier);   // Cause it needs to be an independant noise !
+                            }
+
                             if (tupel.traits.separatorType != 0) { addOrIncrementDict(separatorDict, ((tupel.traits.separatorType, tupel.traits.connectionLayer), mult)); }
                             if (tupel.traits.antiSeparatorType != 0) { addOrIncrementDict(antiSeparatorDict, ((tupel.traits.antiSeparatorType, tupel.traits.connectionLayer), mult)); }
                         }
 
-                        float separatorScore = 0;
                         foreach ((int separatorType, int connectionLayer) tupel in separatorDict.Keys) { separatorScore += findSeparatorScore(tupel.separatorType, separatorDict[tupel]); }
-                        float antiSeparatorScore = 0;
                         foreach ((int separatorType, int connectionLayer) tupel in antiSeparatorDict.Keys) { antiSeparatorScore += findSeparatorScore(tupel.separatorType, antiSeparatorDict[tupel]); }
-                        separatorScore = Max(0, separatorScore - antiSeparatorScore);
+                        separatorScore = Max(0, separatorScore - antiSeparatorScore + (antiSeparatorScore < 10 ? antiSeparatorScore : 0));  // tried to fix the frozen ocean biome border but uhhhh not sure it's gonna work
+                        if (isVoronoiLiquidTransitionZone && isVoronoiPool) { separatorScore = 0; score1 += 10000; score2 += 10000; }
 
-                        bool carveTest1 = score1 * (1 - separatorScore * 0.001f) - separatorScore > 0;
-                        bool carveTest2 = score2 * (1 - separatorScore * 0.001f) - separatorScore > 0;
+                        bool carveTest1 = score1 * (1 - separatorScore * 0.001f) - separatorScore > bound1 * (1 - separatorScore * 0.001f);
+                        bool carveTest2 = score2 * (1 - separatorScore * 0.001f) - separatorScore > bound2 * (1 - separatorScore * 0.001f);
 
-                        if (carveTest1 || carveTest2) { fillStates[i, j] = getTileTraits(mainBiomeTraits.fillType); }
+                        if (carveTest1 || carveTest2)
+                        {
+                            if (mainBiomeTraits.isVoronoiCave && voronoiStateArray[i, j].isLiquid) { fillStates[i, j] = getTileTraits(mainBiomeTraits.lakeType); }
+                            else { fillStates[i, j] = getTileTraits(mainBiomeTraits.fillType); }
+                        }
                         else { fillStates[i, j] = getTileTraits(findMaterialToFillWith(tileValuesArray[i, j], (terrainValues[i, j, 4], terrainValues[i, j, 5]), biomeIndex[i, j])); }
                     }
                 }
@@ -374,7 +457,7 @@ namespace Cave
             public float findSeparatorScore(int type, float mult)
             {
                 if (type == 0) { return 0; }                                                // 0 - nothing
-                if (type == 1) { float a = (0.5f - Abs(mult - 0.5f)) * 30; return a * a; }  // 1 - ocean separator
+                if (type == 1) { float a = (0.5f - Abs(mult - 0.5f)) * 50; return a * a; }  // 1 - ocean separator
                 return 0;
             }
             public (int type, int subType) findMaterialToFillWith((int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) biomeValues, (int, int) values, (BiomeTraits traits, int percentage)[] biomeTraits)
