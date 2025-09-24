@@ -1398,7 +1398,7 @@ namespace Cave
                 if (!forcePlace && !inventoryElements.Contains(elementToPlace)) { return false; } 
                 (int x, int y) tileIndex = PosMod(posToDig);
                 TileTraits traits = chunkToTest.fillStates[tileIndex.x, tileIndex.y];
-                if (traits.isAir || traits.isLiquid && elementToPlace.typeOfElement > 0)
+                if (traits.isAir || traits.isLiquid && elementToPlace.typeOfElement > 0 || (elementToPlace.typeOfElement == 0 && forcePlace))
                 {
                     if (elementToPlace.typeOfElement == 0)
                     {

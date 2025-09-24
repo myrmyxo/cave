@@ -107,6 +107,7 @@ namespace Cave
                 turnPngIntoString("BoneTile");
                 turnPngIntoString("SkinTile");
                 turnPngIntoString("MoldTile");
+                turnPngIntoString("SaltTile");
 
 
                 turnPngIntoString("BasePlant");
@@ -119,6 +120,9 @@ namespace Cave
                 turnPngIntoString("KelpUpwards");
                 turnPngIntoString("KelpDownwards");
                 turnPngIntoString("Reed");
+                turnPngIntoString("Algae");
+                turnPngIntoString("AlgaeTree");
+                turnPngIntoString("AlgaeCeiling");
                 turnPngIntoString("ObsidianPlant");
                 turnPngIntoString("Mushroom");
                 turnPngIntoString("Vines");
@@ -169,6 +173,7 @@ namespace Cave
                 turnPngIntoString("WandFloral");
                 turnPngIntoString("WandTeleport");
                 turnPngIntoString("WandDig");
+                turnPngIntoString("WandPlace");
 
 
                 turnPngIntoString("GoblinHand");
@@ -194,6 +199,7 @@ namespace Cave
             makePlantStructureFramesDict();
             makePlantElementTraitsDict();
             makePlantTraitsDict();
+            makeFamousTerrainFeaturesTraitsDict();
             makeBiomeTraitsDict();
 
             makeTheFilledChunk();
@@ -223,11 +229,16 @@ namespace Cave
             // -> Inverted lakes (floating luminescent lily pads spawn there and in lakes also)
             // -> Make light sources have varying High intensity/Low intensity circles, so player can have a BIG low intensity light in some cases. Maye have a different size for if in water or not ? Like in water bigger low intensity but smaller high intensity (or the opposite, or just lower in general since water.)).
             // -> Add pufferfish UUUUUUUURRRRRRRRRGHHHHHHHHHHHHHHHHHHHHIHHHHHHHHHHHHHHHHHLHHHHHHHHHHHHHHHHHHHHHYHHHHHHHHHHHHHHHH
-            // Salt oceans with salt cristals, when there's little illumination so no algae
             // Oysters that grow on the side of mangrove tree roots when in water ? food source ?
             // Find a way to have the effect of stuff being immerged in liquid be DARKER IN COLOR instead of just being an alpha effect (when plant in water, it's not just closer to water color BUT also darker)
             // -> Super hard to do bc if the effect is aready darker it will just make the water darker too and thus make change water color and have no effect on the color of the stuff in them... fak
             // MAKE THE CACHE DICTS GET REINITIALIZED WHEN THEY GET TOO BIG !!! MEMORY LEAK !!!!!!!
+            // Turn the individual findBiome() LISTS of (traits, ponderation) into a big (traits, ponderation)[32,32,4 or 5] ARRAY. Might actually reduce computation time by a LOT. idk.
+            // Ice plants that only grow on ICE
+            // guuuys i've got such a cool idea it's like a FLOATING ISLANDS fucking biome (or dimension) surely this has NEVER BEEN DONE ever before so ILL PUT IT AS A FUCKING LUDUM DARE THEME FFS
+            // Wait what the fuck ??? Ludum Dare is like cancelled forever ???????? i'm actually shocked what the actual fuck this fucking sucks. Mike i love you pleas come back
+            // Prevent hornet nests from spawning in water lmfaoooo and
+            // -> oceanity impact on mangrove ? so they get bigger close to oceans ?
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
@@ -241,6 +252,7 @@ namespace Cave
             // Sometimes leakage between ice ocean and ocean, due to antiborder idk thing
             // Vines when arriving on terrain that forces them to move left or right become MONSTRUOUS
             // Portals... bug again... the dimension doesn't get unloaded anymore when going far from portal... fuuuck
+            // Transition between Mangrove, Algae Ocean + Salt Ocean is buggy. The individual mangrove/salt and magrove algae work but when it's in the middle of algae/salt transition they get chopped up ??
 
             // cool ideas for later !
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
@@ -267,6 +279,7 @@ namespace Cave
             // Living dimensions have hair color ??? Like the WHOLE dimension has black hair, or brown hair... idk
             // swarms of locusts that uhhhh go and uh. eat plants idk.
             // Have some plants be background plants, darker and closer to background color ? Since Stijn (love of my live fr) saw the dark shade trees as background ones for some reason !!! Could be a cool idea to implement a shade/layer system for plants ! to add more depth
+            // Add fossil structures ??
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
@@ -788,6 +801,14 @@ namespace Cave
             int n2 = n % (mod / 2);
             if (n == n2) { return n; }
             return n - n2;
+        }
+        public static int PosModSeesaw(int n, int mod)
+        {
+            n = PosMod(n, mod);
+            n = n % mod;
+            int n2 = n % (mod / 2);
+            if (n == n2) { return n; }
+            return n - n2 * 2;
         }
         public static int Seesaw(int n, int mod)
         {

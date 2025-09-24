@@ -219,7 +219,7 @@ namespace Cave
 
                     if (state >= 15) { finishAttack(); }
                 }
-                else if (type == (3, 4, 1, 4))  // (WandDig) horizontal bullet that spawns 5 other bullets on death
+                else if (type == (3, 4, 1, 4) || type == (3, 5, 1, 4))  // (WandDig) horizontal bullet that spawns 5 other bullets on death
                 {
                     if (state > 0)
                     {
@@ -240,7 +240,7 @@ namespace Cave
 
                     if (state >= 5) { finishAttack(); }
                 }
-                else if (type == (3, 4, 2, 4))  // (WandDig) horizontal bullet that just exists
+                else if (type == (3, 4, 2, 4) || type == (3, 5, 2, 4))  // (WandDig) horizontal bullet that just exists
                 {
                     if (state > 0)
                     {
@@ -260,7 +260,7 @@ namespace Cave
 
                     if (state >= 10) { finishAttack(); }
                 }
-                else if (type == (3, 4, 3, 4))  // (WandDig) horizontal bullet that just exists
+                else if (type == (3, 4, 3, 4) || type == (3, 5, 3, 4))  // (WandDig) horizontal bullet that just exists
                 {
                     if (state > 0) { pos = (pos.x + Sign(direction.x), pos.y); }
 
@@ -298,6 +298,10 @@ namespace Cave
                     if (!returnTuple.success) { abort++; }
                     digSuccess = returnTuple.success;
                     dugTile = returnTuple.dugTile;
+                }
+                if (traits.isTerrainPlacing)
+                {
+                    motherEntity.Place(attackPos, (6, 0, 0), true);
                 }
                 if (traits.isPlantDigging)
                 {

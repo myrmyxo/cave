@@ -165,25 +165,20 @@ namespace Cave
                 int[,,] biomeValues = new int[33, 33, 18];
                 if (!screen.isMonoBiome)
                 {
-                    findNoiseValues(biomeValues, 0, 100, 512, 1028);    // BIG   Temperature
-                    findNoiseValues(biomeValues, 1, 101, 1024, 512);   // small Temperature
-                    findNoiseValues(biomeValues, 2, 102, 512, 1028);    // BIG   Humidity
-                    findNoiseValues(biomeValues, 3, 103, 1024, 512);   // small Humidity
-                    findNoiseValues(biomeValues, 4, 104, 512, 1028);    // BIG   Acidity
-                    findNoiseValues(biomeValues, 5, 105, 1024, 512);   // small Acidity
-                    findNoiseValues(biomeValues, 6, 106, 512, 1028);    // BIG   Toxicity
-                    findNoiseValues(biomeValues, 7, 107, 1024, 512);   // small Toxicity
-                    findNoiseValues(biomeValues, 8, 108, 512, 1028);    // BIG   Salinity
-                    findNoiseValues(biomeValues, 9, 109, 1024, 512);   // small Salinity
-                    findNoiseValues(biomeValues, 10, 110, 512, 1028);   // BIG   Illumination
-                    findNoiseValues(biomeValues, 11, 111, 1024, 512);  // small Illumination
-                    findNoiseValues(biomeValues, 12, 108, 512, 1028);   // BIG   Oceanity
-                    findNoiseValues(biomeValues, 13, 109, 1024, 512);  // small Oceanity
-
-                    findNoiseValues(biomeValues, 14, 108, 512, 1028);   // BIG   mod1
-                    findNoiseValues(biomeValues, 15, 109, 1024, 512);  // small mod1
-                    findNoiseValues(biomeValues, 16, 110, 512, 1028);   // BIG   mod2
-                    findNoiseValues(biomeValues, 17, 111, 1024, 512);  // small mod2
+                    findNoiseValues(biomeValues, 0, 100, 512, 1028);    // small Temperature
+                    findNoiseValues(biomeValues, 1, 101, 1024, 512);   // BIG Temperature
+                    findNoiseValues(biomeValues, 2, 102, 512, 1028);    // small Humidity
+                    findNoiseValues(biomeValues, 3, 103, 1024, 512);   // BIG Humidity
+                    findNoiseValues(biomeValues, 4, 104, 512, 1028);    // small Acidity
+                    findNoiseValues(biomeValues, 5, 105, 1024, 512);   // BIG Acidity
+                    findNoiseValues(biomeValues, 6, 106, 512, 1028);    // small Toxicity
+                    findNoiseValues(biomeValues, 7, 107, 1024, 512);   // BIG Toxicity
+                    findNoiseValues(biomeValues, 8, 108, 512, 1028);    // small Salinity
+                    findNoiseValues(biomeValues, 9, 109, 1024, 512);   // BIG Salinity
+                    findNoiseValues(biomeValues, 10, 110, 512, 1028);   // small Illumination
+                    findNoiseValues(biomeValues, 11, 111, 1024, 512);  // BIG Illumination
+                    findNoiseValues(biomeValues, 12, 108, 512, 1028);   // small Oceanity
+                    findNoiseValues(biomeValues, 13, 109, 1024, 512);  // BIG Oceanity
                 }
 
                 (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] tileValuesArray = new (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[32, 32];
@@ -192,65 +187,62 @@ namespace Cave
                 bitmap = new Bitmap(32, 32);
                 effectsBitmap = new Bitmap(32, 32);
 
-                foreach ((int x, int y) mod in squareModArray)
+                if (screen.isMonoBiome)
                 {
-                    (int x, int y) poso = (mod.x * 31, mod.y * 31);
-                    (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) tileValues;
-                    if (screen.isMonoBiome)
-                    {
-                        tileValues = makeTileBiomeValueArrayMonoBiome(screen.type);
-                        biomeIndex[poso.x, poso.y] = new (BiomeTraits traits, int percentage)[] { (getBiomeTraits(screen.type), 1000) };
-                    }
-                    else
-                    {
-                        tileValues = makeTileBiomeValueArray(biomeValues, poso.x, poso.y);
-                        biomeIndex[poso.x, poso.y] = findBiome(screen.type, tileValues);
-                    }
-                    tileValuesArray[poso.x, poso.y] = tileValues;
+                    (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) tileValues = makeTileBiomeValueArrayMonoBiome(screen.type);
+                    (BiomeTraits traits, int percentage)[] biomeTraitArray = new (BiomeTraits traits, int percentage)[] { (getBiomeTraits(screen.type), 1000) };
+                    int[] colorArray = findBiomeColor(biomeTraitArray);
+                    (int, int, int) baseColorsTuple = (colorArray[0], colorArray[1], colorArray[2]);
 
-                    int[] colorArray = findBiomeColor(biomeIndex[poso.x, poso.y]);
-                    baseColors[poso.x, poso.y] = (colorArray[0], colorArray[1], colorArray[2]);
+                    allBiomesInTheChunk.Add(biomeTraitArray[0].traits);
+                    for (int i = 0; i < 32; i++)
+                    {
+                        for (int j = 0; j < 32; j++)
+                        {
+                            biomeIndex[i, j] = biomeTraitArray;
+                            baseColors[i, j] = baseColorsTuple;
+                            tileValuesArray[i, j] = tileValues;
+                        }
+                    }
+                    return tileValuesArray;
                 }
+
+
+                // Needed to be put alone to find the correct biome noise values AND still get the next optimization !
+                for (int i = 0; i < 32; i += 1) { for (int j = 0; j < 32; j += 1) { tileValuesArray[i, j] = makeTileBiomeValueArray(biomeValues, i, j); } }
+
+
+                // Optimization for Monobiome CHUNKS
+                foreach ((int x, int y) mod in squareModArray) { biomeIndex[mod.x * 31, mod.y * 31] = findBiome(screen.type, tileValuesArray[mod.x * 31, mod.y * 31]); }
 
                 if (biomeIndex[0, 0].Length == 1 && biomeIndex[31, 0].Length == 1 && biomeIndex[0, 31].Length == 1 && biomeIndex[31, 31].Length == 1 &&
                     biomeIndex[0, 0][0] == biomeIndex[31, 0][0] && biomeIndex[0, 0][0] == biomeIndex[0, 31][0] && biomeIndex[0, 0][0] == biomeIndex[31, 31][0])
                 {
+                    int[] colorArray = findBiomeColor(biomeIndex[0, 0]);
+                    baseColors[0, 0] = (colorArray[0], colorArray[1], colorArray[2]);
+
+                    allBiomesInTheChunk.Add(biomeIndex[0, 0][0].traits);
                     for (int i = 0; i < 32; i += 1)
                     {
                         for (int j = 0; j < 32; j += 1)
                         {
                             biomeIndex[i, j] = biomeIndex[0, 0];
                             baseColors[i, j] = baseColors[0, 0];
-                            tileValuesArray[i, j] = tileValuesArray[0, 0];
                         }
                     }
-                    allBiomesInTheChunk.Add(biomeIndex[0, 0][0].traits);
+                    return tileValuesArray;
                 }
-                else
-                {
-                    for (int i = 0; i < 32; i += 1)
-                    {
-                        for (int j = 0; j < 32; j += 1)
-                        {
-                            (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) tileValues;
-                            if (screen.isMonoBiome)
-                            {
-                                tileValues = makeTileBiomeValueArrayMonoBiome(screen.type);
-                                biomeIndex[i, j] = new (BiomeTraits traits, int percentage)[] { (getBiomeTraits(screen.type), 1000) };
-                            }
-                            else
-                            {
-                                tileValues = makeTileBiomeValueArray(biomeValues, i, j);
-                                biomeIndex[i, j] = findBiome(screen.type, tileValues);
-                                foreach ((BiomeTraits traits, int percentage) item in biomeIndex[i, j]) { allBiomesInTheChunk.Add(item.traits); }
-                            }
-                            tileValuesArray[i, j] = tileValues;
 
-                            int[] colorArray = findBiomeColor(biomeIndex[i, j]);
-                            baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
-                        }
+                for (int i = 0; i < 32; i += 1)
+                {
+                    for (int j = 0; j < 32; j += 1)
+                    {
+                        biomeIndex[i, j] = findBiome(screen.type, tileValuesArray[i, j]);
+                        foreach ((BiomeTraits traits, int percentage) item in biomeIndex[i, j]) { allBiomesInTheChunk.Add(item.traits); }
+
+                        int[] colorArray = findBiomeColor(biomeIndex[i, j]);
+                        baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
                     }
-                    if (screen.isMonoBiome) { allBiomesInTheChunk.Add(biomeIndex[0, 0][0].traits); }
                 }
 
                 return tileValuesArray;
@@ -320,16 +312,19 @@ namespace Cave
 
                 // Find Perlin values when needed (chunk contains at least one biome that isn't mangrove)
                 int[,,] terrainValues = new int[33, 33, 6];
-                findNoiseValuesQuartile(terrainValues, 1, 2);       // small slither        // here bc it's used for voronoi noise shit as a slight terrain variation
+                ((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) derivative2 = ((0, 0), (0, 0), (0, 0), (0, 0));
+                findNoiseValues(terrainValues, 1, 2, 16);   // small slither        // here bc it's used for voronoi noise shit as a slight terrain variation
                 foreach (BiomeTraits biomeTraits in allBiomesInTheChunk)
                 {
                     if (!biomeTraits.isVoronoiCave)
                     {
-                        findNoiseValues(terrainValues, 0, 1, 64);           // big slither
-                        findNoiseValues(terrainValues, 2, 3, 64);           // big bubble
-                        findNoiseValuesQuartile(terrainValues, 3, 4);       // small bubble
-                        findNoiseValuesQuartile(terrainValues, 4, 5, 2048); // Stuff for minerals (dense rock), not efficient here since it should be one measured for nonfilled tiles, but whatever
-                        findNoiseValuesQuartile(terrainValues, 5, 6, 2048); // Stuff for minerals (dense rock), not efficient here since it should be one measured for nonfilled tiles, but whatever
+                        findNoiseValues(terrainValues, 0, 1, 64);   // big slither
+                        findNoiseValues(terrainValues, 2, 3, 64);   // big bubble
+                        findNoiseValues(terrainValues, 3, 4, 16);   // small bubble
+                        
+                        // derivative1 = findPerlinDerivative(terrainValues, (0, 1), (1, 0.25f));
+                        derivative2 = findPerlinDerivative(terrainValues, (2, 3), (1, 0.25f));
+                        
                         break;
                     }
                 }
@@ -340,6 +335,15 @@ namespace Cave
                 {
                     if (biomeTraits.isVoronoiCave) { voronoiStateArray = voronoi(terrainValues); break; }
                 }
+
+                // Find terrainFeatures when needed
+                Dictionary<int, int[,]> terrainFeaturesNoiseDict = new Dictionary<int, int[,]>();
+                foreach (BiomeTraits biomeTraits in allBiomesInTheChunk) { if (biomeTraits.terrainFeaturesTraitsArray != null) { foreach (TerrainFeaturesTraits TFT in biomeTraits.terrainFeaturesTraitsArray) {
+                        if (!terrainFeaturesNoiseDict.ContainsKey(TFT.layer)) { terrainFeaturesNoiseDict[TFT.layer] = findNoiseValues(TFT.layer + 10000, TFT.noiseModulos.one, 2048); }
+                        if (!terrainFeaturesNoiseDict.ContainsKey(TFT.layer + 1)) { terrainFeaturesNoiseDict[TFT.layer + 1] = findNoiseValues(TFT.layer + 10001, TFT.noiseModulos.two, 2048); } } } }
+
+                int[,] scoreArray = new int[32, 32];
+                bool[] quartileFilledArray = new bool[4];
 
                 for (int i = 0; i < 32; i++)
                 {
@@ -412,18 +416,31 @@ namespace Cave
 
                         foreach ((int separatorType, int connectionLayer) tupel in separatorDict.Keys) { separatorScore += findSeparatorScore(tupel.separatorType, separatorDict[tupel]); }
                         foreach ((int separatorType, int connectionLayer) tupel in antiSeparatorDict.Keys) { antiSeparatorScore += findSeparatorScore(tupel.separatorType, antiSeparatorDict[tupel]); }
-                        separatorScore = Max(0, separatorScore - antiSeparatorScore + (antiSeparatorScore < 10 ? antiSeparatorScore : 0));  // tried to fix the frozen ocean biome border but uhhhh not sure it's gonna work
+                        separatorScore = Max(0, separatorScore - (antiSeparatorScore < 10 ? 0 : antiSeparatorScore));  // tried to fix the frozen ocean biome border but uhhhh not sure it's gonna work
+                        float separatorScore2 = Max(0, 1 - separatorScore * 0.001f);
                         if (isVoronoiLiquidTransitionZone && isVoronoiPool) { separatorScore = 0; score1 += 10000; score2 += 10000; }
 
-                        bool carveTest1 = score1 * (1 - separatorScore * 0.001f) - separatorScore > bound1 * (1 - separatorScore * 0.001f);
-                        bool carveTest2 = score2 * (1 - separatorScore * 0.001f) - separatorScore > bound2 * (1 - separatorScore * 0.001f);
+                        bool carveTest1 = score1 * separatorScore2 - separatorScore > bound1 * separatorScore2;
+                        bool carveTest2 = score2 * separatorScore2 - separatorScore > bound2 * separatorScore2;
+
+                        scoreArray[i, j] = (int)Max(
+                            score1 * (1 - separatorScore * 0.001f) - separatorScore - (bound1 * (1 - separatorScore * 0.001f)),
+                            score2 * (1 - separatorScore * 0.001f) - separatorScore - (bound2 * (1 - separatorScore * 0.001f)));
 
                         if (carveTest1 || carveTest2)
                         {
                             if (mainBiomeTraits.isVoronoiCave && voronoiStateArray[i, j].isLiquid) { fillStates[i, j] = getTileTraits(mainBiomeTraits.lakeType); }
                             else { fillStates[i, j] = getTileTraits(mainBiomeTraits.fillType); }
                         }
-                        else { fillStates[i, j] = getTileTraits(findMaterialToFillWith(tileValuesArray[i, j], (terrainValues[i, j, 4], terrainValues[i, j, 5]), biomeIndex[i, j])); }
+                        else { fillStates[i, j] = getTileTraits(mainBiomeTraits.tileType); quartileFilledArray[(i > 16 ? 1 : 0) + (j > 16 ? 2 : 0)] = true; }
+                    }
+                }
+
+                for (int i = 0; i < 32; i++)
+                {
+                    for (int j = 0; j < 32; j++)
+                    {
+                        applyTerrainFeatures(terrainFeaturesNoiseDict, biomeIndex[i, j], tileValuesArray[i, j], derivative2, i, j, scoreArray[i, j], quartileFilledArray[(i > 16 ? 1 : 0) + (j > 16 ? 2 : 0)]);
                     }
                 }
             }
@@ -457,56 +474,96 @@ namespace Cave
             public float findSeparatorScore(int type, float mult)
             {
                 if (type == 0) { return 0; }                                                // 0 - nothing
-                if (type == 1) { float a = (0.5f - Abs(mult - 0.5f)) * 50; return a * a; }  // 1 - ocean separator
+                if (type == 1) { float a = Min(mult, 1 - mult) * 50; return a * a; }        // 1 - ocean separator
                 return 0;
             }
-            public (int type, int subType) findMaterialToFillWith((int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) biomeValues, (int, int) values, (BiomeTraits traits, int percentage)[] biomeTraits)
+            public void applyTerrainFeatures(Dictionary<int, int[,]> terrainFeaturesNoiseDict, (BiomeTraits traits, int percentage)[] biomeTraits,
+                (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) biomeValues,
+                ((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) derivativeToPut,
+                int i, int j, float fillScore, bool quartileWasFilled)
             {
-                Dictionary<TileTransitionTraits, int> transitionDict = new Dictionary<TileTransitionTraits, int>();
+                HashSet<TerrainFeaturesTraits> terrainFeatures = new HashSet<TerrainFeaturesTraits>();
                 foreach ((BiomeTraits traits, int percentage) tupel in biomeTraits)
                 {
-                    if (tupel.traits.tileTransitionTraitsArray is null) { continue; }
-                    foreach (TileTransitionTraits trait in tupel.traits.tileTransitionTraitsArray) { addOrIncrementDict(transitionDict, (trait, tupel.percentage)); }
+                    if (tupel.traits.terrainFeaturesTraitsArray is null) { continue; }
+                    foreach (TerrainFeaturesTraits trait in tupel.traits.terrainFeaturesTraitsArray) { terrainFeatures.Add(trait); }
                 }
-                if (transitionDict.Count == 0) { return biomeTraits[0].traits.tileType; }
 
-                float meanValue = (values.Item1 + values.Item2) * 0.5f;
-                foreach (TileTransitionTraits tTT in transitionDict.Keys)
+                foreach (TerrainFeaturesTraits tFT in terrainFeatures)
                 {
-                    float valueRequired;
-                    if (tTT.meanBasedValueRequired) { valueRequired = meanValue * 0.25f; }
+                    if (tFT.needsQuartileFilled && !quartileWasFilled) { continue; }
+                    TileTraits tileTraits = fillStates[i, j];
+                    if (!tFT.inAir && tileTraits.isAir) { continue; }
+                    if (!tFT.inLiquid && tileTraits.isLiquid) { continue; }
+                    if (!tFT.inSoil && tileTraits.isSolid) { continue; }
+
+                    int noiseValue1 = terrainFeaturesNoiseDict[tFT.layer][i, j];
+                    int noiseValue2 = terrainFeaturesNoiseDict[tFT.layer + 1][i, j];
+                    float meanNoiseValue = (noiseValue1 + noiseValue2) * 0.5f;
+
+                    if (tFT.isBiomeSystem)
+                    {
+                        float valueRequired;
+                        if (tFT.meanBasedValueRequired) { valueRequired = meanNoiseValue * 0.25f; }
+                        else
+                        {
+                            valueRequired = tFT.baseThreshold - Clamp(0, Min(
+                            tFT.temperature is null ? 100000 : (tFT.temperature.Value.reverse ? -1 : 1) * (tFT.temperature.Value.threshold - biomeValues.temp),
+                            tFT.humidity is null ? 100000 : (tFT.humidity.Value.reverse ? -1 : 1) * (tFT.humidity.Value.threshold - biomeValues.humi),
+                            tFT.acidity is null ? 100000 : (tFT.acidity.Value.reverse ? -1 : 1) * (tFT.acidity.Value.threshold - biomeValues.acid),
+                            tFT.toxicity is null ? 100000 : (tFT.toxicity.Value.reverse ? -1 : 1) * (tFT.toxicity.Value.threshold - biomeValues.toxi),
+                            tFT.salinity is null ? 100000 : (tFT.salinity.Value.reverse ? -1 : 1) * (tFT.salinity.Value.threshold - biomeValues.sali),
+                            tFT.illumination is null ? 100000 : (tFT.illumination.Value.reverse ? -1 : 1) * (tFT.illumination.Value.threshold - biomeValues.illu),
+                            tFT.oceanity is null ? 100000 : (tFT.oceanity.Value.reverse ? -1 : 1) * (tFT.oceanity.Value.threshold - biomeValues.ocea)
+                            ), 320) * tFT.biomeValuesScale * 0.003125f;
+                        }
+
+                        int noiseValue;
+                        if (tFT.transitionRules == 0)
+                        {    // Temp !!!!
+                            if (tFT.baseThreshold + meanNoiseValue % 256 + meanNoiseValue * 0.25f - 512 <= 0) { noiseValue = -999999; }
+                            else { noiseValue = Abs(noiseValue1 - noiseValue2); }
+                        }
+                        else if (tFT.transitionRules == 1) // flesh and bone (for acid and blood oceans too since they can have the transition)
+                        {
+                            noiseValue = Max(0, (int)(Abs(Abs(noiseValue1 - 1024) * 0.49f) + noiseValue2 % 256));
+                        }
+                        else if (tFT.transitionRules == 2) // mold
+                        {
+                            noiseValue = Max(0, (int)(Abs(Abs(noiseValue1 - 1024) * 0.49f)));
+                        }
+                        else { noiseValue = -999999; }
+                        
+                        if (noiseValue >= valueRequired) { fillStates[i, j] = getTileTraits(tFT.tileType); }
+                    }
+
                     else
                     {
-                        valueRequired = tTT.baseThreshold - Clamp(0, Min(
-                        tTT.temperature is null ? 100000 : (tTT.temperature.Value.reverse ? -1 : 1) * (tTT.temperature.Value.threshold - biomeValues.temp),
-                        tTT.humidity is null ? 100000 : (tTT.humidity.Value.reverse ? -1 : 1) * (tTT.humidity.Value.threshold - biomeValues.humi),
-                        tTT.acidity is null ? 100000 : (tTT.acidity.Value.reverse ? -1 : 1) * (tTT.acidity.Value.threshold - biomeValues.acid),
-                        tTT.toxicity is null ? 100000 : (tTT.toxicity.Value.reverse ? -1 : 1) * (tTT.toxicity.Value.threshold - biomeValues.toxi),
-                        tTT.salinity is null ? 100000 : (tTT.salinity.Value.reverse ? -1 : 1) * (tTT.salinity.Value.threshold - biomeValues.toxi),
-                        tTT.illumination is null ? 100000 : (tTT.illumination.Value.reverse ? -1 : 1) * (tTT.illumination.Value.threshold - biomeValues.toxi),
-                        tTT.oceanity is null ? 100000 : (tTT.oceanity.Value.reverse ? -1 : 1) * (tTT.oceanity.Value.threshold - biomeValues.toxi)
-                        ) / 320f, 1) * tTT.biomeValuesScale;
-                    }
+                        (int x, int y) derivative;
+                        if (i > 15)
+                        {
+                            if (j > 15) { derivative = derivativeToPut.topRight; }
+                            else { derivative = derivativeToPut.bottomRight; }
+                        }
+                        else
+                        {
+                            if (j > 15) { derivative = derivativeToPut.topLeft; }
+                            else { derivative = derivativeToPut.bottomLeft; }
+                        }
+                        derivative = (derivative.y, -derivative.x);
 
-                    int noiseValue;
-                    if (tTT.transitionRules == 0)
-                    {    // Temp !!!!
-                        if (tTT.baseThreshold + meanValue % 256 + meanValue * 0.25f - 512 <= 0) { noiseValue = -999999; }
-                        else { noiseValue = Abs(values.Item1 - values.Item2); }
-                    }
-                    else if (tTT.transitionRules == 1) // flesh and bone (for acid and blood oceans too since they can have the transition)
-                    {
-                        noiseValue = Max(0, (int)(Abs(Abs(values.Item1 - 1024) * 0.49f) + values.Item2 % 256));
-                    }
-                    else if (tTT.transitionRules == 2) // mold
-                    {
-                        noiseValue = Max(0, (int)(Abs(Abs(values.Item1 - 1024) * 0.49f)));
-                    }
-                    else { noiseValue = -999999; }
+                        int x = 3 * (i + pos.x * 32);
+                        int y = 3 * (j + pos.y * 32);
+                        int top = Abs(derivative.x * x + derivative.y * y);
+                        int bottom = Sqrt(derivative.x * derivative.x + derivative.y * derivative.y);
+                        int c = Seesaw(top / (bottom > 0 ? bottom : 1), 16);
 
-                    if (noiseValue >= valueRequired) { return tTT.tileType; }
+                        if (Abs(4 * c) - 10 < fillScore + Max(0, noiseValue1 - 1200) * 0.125f) { continue; }
+                        // other patches of salt ? that spikes can grow on idk ?
+
+                        fillStates[i, j] = getTileTraits(tFT.tileType);
+                    }
                 }
-                return biomeTraits[0].traits.tileType;
             }
             public void findTileColor(int i, int j)
             {
@@ -525,11 +582,21 @@ namespace Cave
                 colorArray[2] += (int)(materialColor.b * (1 - materialColor.mult)) + rando;
                 colorToSet = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
 
-                /*if (false)  // This was for the csgo missing texture effect when thing is not in the the tha
+                if (traits.type == (0, -1))  // csgo missing texture effect when thing is not in the the tha            SOIL
                 {
                     if ((i + j) % 2 == 0) { colorToSet = Color.Black; }
-                    else { colorToSet = Color.FromArgb(255, 00, 255); }
-                }*/
+                    else { colorToSet = Color.FromArgb(180, 0, 180); }
+                }
+                else if (traits.type == (0, -2))  // csgo missing texture effect when thing is not in the the tha       LIQUID
+                {
+                    if ((i + j) % 2 == 0) { colorToSet = Color.FromArgb(60, 60, 60); }
+                    else { colorToSet = Color.FromArgb(200, 60, 200); }
+                }
+                else if (traits.type == (0, -3))  // csgo missing texture effect when thing is not in the the tha       AIR
+                {
+                    if ((i + j) % 2 == 0) { colorToSet = Color.FromArgb(140, 140, 140); }
+                    else { colorToSet = Color.FromArgb(255, 140, 255); }
+                }
                 bitmap.SetPixel(i, j, colorToSet);
                 effectsBitmap.SetPixel(i, j, traits.isLiquid ? Color.FromArgb(80, ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2])) : Color.Transparent);
             }
@@ -1147,19 +1214,51 @@ namespace Cave
 
 
 
-
-            public int[,,] findNoiseValues(int[,,] noiseValues, int layer, int realLayer, int modulo, int noiseAmplitude = 256)  // noiseValues is int[32, 32, depends]   // layer is the one set in the array, realLayer is the one actually gotten   // Modulo is the resolution : 16 for small terrain noise, 64 for big, 1024 for biome.... for example
+            public int[,] findNoiseValues(int realLayer, int modulo, int noiseAmplitude = 256)  // noiseValues is int[32, 32, depends]   // layer is the one set in the array, realLayer is the one actually gotten   // Modulo is the resolution : 16 for small terrain noise, 64 for big, 1024 for biome.... for example
             {
+                if (modulo < 32) { return findNoiseValuesQuartile(realLayer, modulo, noiseAmplitude); }
+
+                int[,] noiseValues = new int[33, 33];
                 (int x, int y) realPos = (pos.x * 32, pos.y * 32);
                 int scale = Max(32, modulo) / 32;
                 (int x, int y) posToGet = (ChunkIdx(realPos.x / scale), ChunkIdx(realPos.y / scale));
 
-                (int x, int y) mod = PosMod((realPos.x, realPos.y), modulo); 
+                (int x, int y) mod = PosMod((realPos.x, realPos.y), modulo);
                 (int x, int y) modTopRight = PosMod((realPos.x + 31, realPos.y + 31), modulo);
                 (int left, int right) preTopValues = (screen.getLCGValue(((posToGet.x, posToGet.y + 1), realLayer), noiseAmplitude), screen.getLCGValue(((posToGet.x + 1, posToGet.y + 1), realLayer), noiseAmplitude));
                 (int left, int right) prebottomValues = (screen.getLCGValue((posToGet, realLayer), noiseAmplitude), screen.getLCGValue(((posToGet.x + 1, posToGet.y), realLayer), noiseAmplitude));
                 (int left, int right) topValues = ((prebottomValues.left * (modulo - modTopRight.y) + preTopValues.left * modTopRight.y) / modulo, (prebottomValues.right * (modulo - modTopRight.y) + preTopValues.right * modTopRight.y) / modulo);
                 (int left, int right) bottomValues = ((prebottomValues.left * (modulo - mod.y) + preTopValues.left * mod.y) / modulo, (prebottomValues.right * (modulo - mod.y) + preTopValues.right * mod.y) / modulo);
+                for (int i = 0; i < 32; i++)
+                {
+                    mod = PosMod((realPos.x + i, realPos.y), modulo);
+                    noiseValues[i, 0] = (bottomValues.left * (modulo - mod.x) + bottomValues.right * mod.x) / modulo;
+                    noiseValues[i, 32] = (topValues.left * (modulo - mod.x) + topValues.right * mod.x) / modulo;  // ITS NORMAL THAT ITS mod.x in both lines. DONT CHANGEEEEEEEEeeeeeeeee (istg it's true) (ur getting the 2 x bands, THEN with mod.y it makes part of the 2... ITS NORMAL. DONT HCANGE IT. PLS)
+                }
+                for (int i = 0; i < 32; i++)
+                {
+                    for (int j = 1; j < 32; j++)
+                    {
+                        noiseValues[i, j] = (noiseValues[i, 0] * (32 - j) + noiseValues[i, 32] * j) / 32;
+                    }
+                }
+
+                return noiseValues;
+            }
+            public int[,,] findNoiseValues(int[,,] noiseValues, int layer, int realLayer, int modulo, int noiseAmplitude = 256)  // noiseValues is int[32, 32, depends]   // layer is the one set in the array, realLayer is the one actually gotten   // Modulo is the resolution : 16 for small terrain noise, 64 for big, 1024 for biome.... for example
+            {
+                if (modulo < 32) { return findNoiseValuesQuartile(noiseValues, layer, realLayer, modulo, noiseAmplitude); }
+
+                (int x, int y) realPos = (pos.x * 32, pos.y * 32);
+                int scale = Max(32, modulo) / 32;
+                (int x, int y) posToGet = (ChunkIdx(realPos.x / scale), ChunkIdx(realPos.y / scale));
+
+                (int x, int y) mod = PosMod((realPos.x, realPos.y), modulo); 
+                (int x, int y) modTopRight = PosMod((realPos.x + 32, realPos.y + 31), modulo);
+                (int left, int right) preTopValues = (screen.getLCGValue(((posToGet.x, posToGet.y + 1), realLayer), noiseAmplitude), screen.getLCGValue(((posToGet.x + 1, posToGet.y + 1), realLayer), noiseAmplitude));
+                (int left, int right) preBottomValues = (screen.getLCGValue((posToGet, realLayer), noiseAmplitude), screen.getLCGValue(((posToGet.x + 1, posToGet.y), realLayer), noiseAmplitude));
+                (int left, int right) topValues = ((preBottomValues.left * (modulo - modTopRight.y) + preTopValues.left * modTopRight.y) / modulo, (preBottomValues.right * (modulo - modTopRight.y) + preTopValues.right * modTopRight.y) / modulo);
+                (int left, int right) bottomValues = ((preBottomValues.left * (modulo - mod.y) + preTopValues.left * mod.y) / modulo, (preBottomValues.right * (modulo - mod.y) + preTopValues.right * mod.y) / modulo);
                 for (int i = 0; i < 32; i++)
                 {
                     mod = PosMod((realPos.x + i, realPos.y), modulo);
@@ -1177,7 +1276,45 @@ namespace Cave
                 // if (layer == 0) { exportNoiseMap(noiseValues, layer); }
                 return noiseValues;
             }
-            public int[,,] findNoiseValuesQuartile(int[,,] noiseValues, int layer, int realLayer, int noiseAmplitude = 256)  // noiseValues is int[32, 32, depends]   // layer is the one set in the array, realLayer is the one actually gotten   // Modulo is the resolution : 16 for small terrain noise, 64 for big, 1024 for biome.... for example
+            public int[,] findNoiseValuesQuartile(int realLayer, int modulo, int noiseAmplitude = 256)  // noiseValues is int[32, 32, depends]   // layer is the one set in the array, realLayer is the one actually gotten   // Modulo is the resolution : 16 for small terrain noise, 64 for big, 1024 for biome.... for example
+            {
+                int[,] noiseValues = new int[33, 33];
+                (int x, int y) posToGet = ChunkIdx(pos.x * 64, pos.y * 64);
+                (int x, int y) mod;
+                foreach ((int x, int y) modo in bigSquareModArray)
+                {
+                    mod = (modo.x * 16, modo.y * 16);
+                    noiseValues[mod.x, mod.y] = screen.getLCGValue(((posToGet.x + modo.x, posToGet.y + modo.y), realLayer), noiseAmplitude);
+                }
+                foreach ((int x, int y) modo in squareModArray)
+                {
+                    mod = (modo.x * 16, modo.y * 16);
+                    for (int ii = 1; ii < 16; ii++)
+                    {
+                        int i = ii + mod.x;
+                        int j = mod.y;
+                        noiseValues[i, j] = (noiseValues[mod.x, j] * (16 - ii) + noiseValues[mod.x + 16, j] * ii) / 16;
+                        noiseValues[i, j + 16] = (noiseValues[mod.x, j + 16] * (16 - ii) + noiseValues[mod.x + 16, j + 16] * ii) / 16;  // ITS NORMAL THAT ITS mod.x in both lines. DONT CHANGEEEEEEEEeeeeeeeee (istg it's true) (ur getting the 2 x bands, THEN with mod.y it makes part of the 2... ITS NORMAL. DONT HCANGE IT. PLS)
+                    }
+                }
+                foreach ((int x, int y) modo in squareModArray)
+                {
+                    mod = (modo.x * 16, modo.y * 16);
+                    for (int ii = 0; ii < 16; ii++)
+                    {
+                        for (int jj = 1; jj < 16; jj++)
+                        {
+                            int i = ii + mod.x;
+                            int j = jj + mod.y;
+                            noiseValues[i, j] = (noiseValues[i, mod.y] * (16 - jj) + noiseValues[i, 16 + mod.y] * jj) / 16;
+                        }
+                    }
+                }
+
+                // if (layer == 1) { exportNoiseMap(noiseValues, layer); }
+                return noiseValues;
+            }
+            public int[,,] findNoiseValuesQuartile(int[,,] noiseValues, int layer, int realLayer, int modulo, int noiseAmplitude = 256)  // noiseValues is int[32, 32, depends]   // layer is the one set in the array, realLayer is the one actually gotten   // Modulo is the resolution : 16 for small terrain noise, 64 for big, 1024 for biome.... for example
             {
                 (int x, int y) posToGet = ChunkIdx(pos.x * 64, pos.y * 64);
                 (int x, int y) mod;
@@ -1213,6 +1350,82 @@ namespace Cave
 
                 // if (layer == 1) { exportNoiseMap(noiseValues, layer); }
                 return noiseValues;
+            }
+            public ((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) findPerlinDerivative(int[,,] noiseValues, (int one, int two) layers, (float one, float two) ponderation)
+            {
+                (int x, int y) topLeft;
+                (int x, int y) topRight;
+                (int x, int y) bottomLeft;
+                (int x, int y) bottomRight;
+                {
+                    int xTopDerivative = noiseValues[0, 15, layers.one] - noiseValues[15, 15, layers.one];
+                    int xBottomDerivative = noiseValues[0, 0, layers.one] - noiseValues[15, 0, layers.one];
+                    int xDerivative = xTopDerivative + xBottomDerivative;
+                    int yLeftDerivative = noiseValues[0, 0, layers.one] - noiseValues[0, 15, layers.one];
+                    int yRightDerivative = noiseValues[15, 0, layers.one] - noiseValues[15, 15, layers.one];
+                    int yDerivative = yLeftDerivative + yRightDerivative;
+
+                    int xTopDerivative2 = noiseValues[0, 15, layers.two] - noiseValues[15, 15, layers.two];
+                    int xBottomDerivative2 = noiseValues[0, 0, layers.two] - noiseValues[15, 0, layers.two];
+                    int xDerivative2 = xTopDerivative2 + xBottomDerivative2;
+                    int yLeftDerivative2 = noiseValues[0, 0, layers.two] - noiseValues[0, 15, layers.two];
+                    int yRightDerivative2 = noiseValues[15, 0, layers.two] - noiseValues[15, 15, layers.two];
+                    int yDerivative2 = yLeftDerivative2 + yRightDerivative2;
+
+                    bottomLeft = ((int)(xDerivative * ponderation.two + xDerivative2 * ponderation.two), (int)(yDerivative * ponderation.two + yDerivative2 * ponderation.two));
+                }
+                {
+                    int xTopDerivative = noiseValues[16, 15, layers.one] - noiseValues[31, 15, layers.one];
+                    int xBottomDerivative = noiseValues[16, 0, layers.one] - noiseValues[31, 0, layers.one];
+                    int xDerivative = xTopDerivative + xBottomDerivative;
+                    int yLeftDerivative = noiseValues[16, 0, layers.one] - noiseValues[16, 15, layers.one];
+                    int yRightDerivative = noiseValues[31, 0, layers.one] - noiseValues[31, 15, layers.one];
+                    int yDerivative = yLeftDerivative + yRightDerivative;
+
+                    int xTopDerivative2 = noiseValues[16, 15, layers.two] - noiseValues[31, 15, layers.two];
+                    int xBottomDerivative2 = noiseValues[16, 0, layers.two] - noiseValues[31, 0, layers.two];
+                    int xDerivative2 = xTopDerivative2 + xBottomDerivative2;
+                    int yLeftDerivative2 = noiseValues[16, 0, layers.two] - noiseValues[16, 15, layers.two];
+                    int yRightDerivative2 = noiseValues[31, 0, layers.two] - noiseValues[31, 15, layers.two];
+                    int yDerivative2 = yLeftDerivative2 + yRightDerivative2;
+
+                    bottomRight = ((int)(xDerivative * ponderation.two + xDerivative2 * ponderation.two), (int)(yDerivative * ponderation.two + yDerivative2 * ponderation.two));
+                }
+                {
+                    int xTopDerivative = noiseValues[0, 31, layers.one] - noiseValues[15, 31, layers.one];
+                    int xBottomDerivative = noiseValues[0, 16, layers.one] - noiseValues[15, 16, layers.one];
+                    int xDerivative = xTopDerivative + xBottomDerivative;
+                    int yLeftDerivative = noiseValues[0, 16, layers.one] - noiseValues[0, 31, layers.one];
+                    int yRightDerivative = noiseValues[15, 16, layers.one] - noiseValues[15, 31, layers.one];
+                    int yDerivative = yLeftDerivative + yRightDerivative;
+
+                    int xTopDerivative2 = noiseValues[0, 31, layers.two] - noiseValues[15, 31, layers.two];
+                    int xBottomDerivative2 = noiseValues[0, 16, layers.two] - noiseValues[15, 16, layers.two];
+                    int xDerivative2 = xTopDerivative2 + xBottomDerivative2;
+                    int yLeftDerivative2 = noiseValues[0, 16, layers.two] - noiseValues[0, 31, layers.two];
+                    int yRightDerivative2 = noiseValues[15, 16, layers.two] - noiseValues[15, 31, layers.two];
+                    int yDerivative2 = yLeftDerivative2 + yRightDerivative2;
+
+                    topLeft = ((int)(xDerivative * ponderation.two + xDerivative2 * ponderation.two), (int)(yDerivative * ponderation.two + yDerivative2 * ponderation.two));
+                }
+                {
+                    int xTopDerivative = noiseValues[16, 31, layers.one] - noiseValues[31, 31, layers.one];
+                    int xBottomDerivative = noiseValues[16, 16, layers.one] - noiseValues[31, 16, layers.one];
+                    int xDerivative = xTopDerivative + xBottomDerivative;
+                    int yLeftDerivative = noiseValues[16, 16, layers.one] - noiseValues[16, 31, layers.one];
+                    int yRightDerivative = noiseValues[31, 16, layers.one] - noiseValues[31, 31, layers.one];
+                    int yDerivative = yLeftDerivative + yRightDerivative;
+
+                    int xTopDerivative2 = noiseValues[16, 31, layers.two] - noiseValues[31, 31, layers.two];
+                    int xBottomDerivative2 = noiseValues[16, 16, layers.two] - noiseValues[31, 16, layers.two];
+                    int xDerivative2 = xTopDerivative2 + xBottomDerivative2;
+                    int yLeftDerivative2 = noiseValues[16, 16, layers.two] - noiseValues[16, 31, layers.two];
+                    int yRightDerivative2 = noiseValues[31, 16, layers.two] - noiseValues[31, 31, layers.two];
+                    int yDerivative2 = yLeftDerivative2 + yRightDerivative2;
+
+                    topRight = ((int)(xDerivative * ponderation.two + xDerivative2 * ponderation.two), (int)(yDerivative * ponderation.two + yDerivative2 * ponderation.two));
+                }
+                return (topLeft, topRight, bottomLeft, bottomRight);
             }
             public void exportNoiseMap(int[,,] noiseValues, int layer)  // Keep ! Exports the NoiseMap of Chunks. Useful.
             {
@@ -1360,82 +1573,59 @@ namespace Cave
                     if (oceanity > 720)
                     {
                         int oceaness = calculateBiome(percentageFree, oceanity, (720, 999999));   // ocean
-                        int oceanToAdd = oceaness - calculateAndAddBiome(listo, (8, 1), oceaness, temperature, (-999999, 0)); // Frozen ocean
-                        oceanToAdd -= calculateAndAddBiome(listo, (8, 2), oceaness, Min(salinity, illumination) - 512, (0, 999999)); // Algae ocean
-                        testAddBiome(listo, (8, 0), oceanToAdd);
                         percentageFree -= oceaness;
+                        oceaness -= calculateAndAddBiome(listo, (8, 1), oceaness, temperature, (-999999, 0)); // Frozen ocean
+                        int saltness = calculateBiome(oceaness, salinity, (512, 999999)); // Salt ocean;
+                        oceaness -= saltness;
+                        saltness -= calculateAndAddBiome(listo, (8, 2), saltness, illumination, (512, 999999)); // Algae ocean
+                        testAddBiome(listo, (8, 3), saltness);
+                        testAddBiome(listo, (8, 0), oceaness);
                     }
 
+                    if (percentageFree <= 0) { goto AfterTest; }
                     percentageFree -= calculateAndAddBiome(listo, (0, 1), percentageFree, temperature, (-999999, 0));   // add frost
                     percentageFree -= calculateAndAddBiome(listo, (6, 0), percentageFree, Min(temperature, 500 - temperature, humidity - 500, acidity - 500), (0, 999999), 5);  // add mold
 
+                    if (percentageFree <= 0) { goto AfterTest; }
                     if (illumination > 400 && temperature > 200 && temperature < 850)
                     {
-                        int forestness = calculateBiome(percentageFree, Min(illumination - 400, temperature - 200, 850 - temperature), (0, 999999));   // normal forest
+                        int forestness = calculateBiome(percentageFree, Min(illumination - 400, temperature - 200, 850 - temperature), (0, 999999));    // normal forest
                         percentageFree -= forestness;
-                        forestness -= calculateAndAddBiome(listo, (3, 2), forestness, temperature, (-999999, 400));  // conifer forest
-                        forestness -= calculateAndAddBiome(listo, (3, 3), forestness, temperature, (700, 999999));  // jungle
-                        forestness -= calculateAndAddBiome(listo, (3, 4), forestness, salinity, (600, 999999));  // mangrove
-                        forestness -= calculateAndAddBiome(listo, (3, 1), forestness, toxicity + (int)(0.4f * (humidity - temperature)), (300, 999999));  // add flower forest
+                        forestness -= calculateAndAddBiome(listo, (3, 2), forestness, temperature, (-999999, 400)); // conifer forest
+                        forestness -= calculateAndAddBiome(listo, (3, 4), forestness, salinity, (650, 999999));     // mangrove
+                        forestness -= calculateAndAddBiome(listo, (3, 3), forestness, temperature, (650, 999999));  // jungle
+                        forestness -= calculateAndAddBiome(listo, (3, 1), forestness, toxicity + (int)(0.4f * (humidity - temperature)), (300, 999999));    // add flower forest
                         testAddBiome(listo, (3, 0), forestness);
 
                         // -> if humidity is TOO LOW, no forests ? but deserts instead ?
-                        // 
-                        // Nothing : normal forest
-                        // Low temp : conifer forest
-                        // High temp : jungle
-                        // High salt : flower forest
-                        // High salt + humidity/oceanity -> mangrove
 
                         // low humidity : baobab forest ?????? desert ???
                         // -> Garrigue when alcaline ?
                     }
 
                     if (percentageFree <= 0) { goto AfterTest; }
-
                     if (temperature > 720)
                     {
                         int hotness = calculateBiome(percentageFree, temperature, (720, 999999));
-                        if (temperature > 840 && humidity > 600)
-                        {
-                            int obsidianess = calculateAndAddBiome(listo, (2, 2), hotness, Min(temperature - 840, humidity - 600), (0, 999999));
-                            percentageFree -= obsidianess;
-                            hotness -= obsidianess;
-                        }
-                        if (temperature > 920 && oceanity < 512)
-                        {
-                            int lavaness = calculateAndAddBiome(listo, (2, 1), hotness, Min(temperature - 920, 512 - oceanity), (0, 999999));
-                            percentageFree -= lavaness;
-                            hotness -= lavaness;
-                        }
-                        percentageFree -= testAddBiome(listo, (2, 0), hotness);
+                        percentageFree -= hotness;
+                        hotness -= calculateAndAddBiome(listo, (2, 2), hotness, Min(temperature - 840, humidity - 600), (0, 999999));   // obsidian
+                        hotness -= calculateAndAddBiome(listo, (2, 1), hotness, Min(temperature - 920, 512 - oceanity), (0, 999999));   // lava ocean
+                        testAddBiome(listo, (2, 0), hotness);
                     }
 
-                    if (temperature < 440 && percentageFree > 0)
+                    if (percentageFree <= 0) { goto AfterTest; }
+                    if (temperature < 440)
                     {
                         int coldness = calculateBiome(percentageFree, temperature, (-999999, 440));
-                        int savedColdness = calculateBiome(coldness, temperature, (-999999, 120));
+                        percentageFree -= coldness;
+                        int savedColdness = calculateBiome(coldness, temperature, (-999999, 120));  // save coldness to have an ringe of ALWAYS cold biome around frost biomes
                         coldness -= savedColdness;
-
-                        if (acidity > 700)
-                        {
-                            int acidness = calculateAndAddBiome(listo, (1, 0), coldness, acidity, (700, 999999));
-                            percentageFree -= acidness;
-                            coldness -= acidness;
-                        }
-                        if (humidity > toxicity)
-                        {
-                            int fairyness = calculateAndAddBiome(listo, (5, 0), coldness, humidity - toxicity, (0, 999999));
-                            percentageFree -= fairyness;
-                            coldness -= fairyness;
-                        }
-
-                        coldness += savedColdness;
-                        percentageFree -= testAddBiome(listo, (0, 0), coldness);
+                        coldness -= calculateAndAddBiome(listo, (1, 0), coldness, acidity, (700, 999999));  // acid
+                        coldness -= calculateAndAddBiome(listo, (5, 0), coldness, humidity - toxicity, (0, 999999));    // fairy
+                        testAddBiome(listo, (0, 0), coldness + savedColdness);  // cold
                     }
 
-                    testAddBiome(listo, (4, 0), percentageFree);
-                    // percentageFree -= calculateAndAddBiome(listo, (4, 0), percentageFree, toxicity + 100000, (715, 999999));  // add slime
+                    testAddBiome(listo, (4, 0), percentageFree);    // add slime
                 }
                 else if (dimensionType == (1, 0)) // type == 1, chandelier dimension
                 {
@@ -1451,18 +1641,16 @@ namespace Cave
                     if (humidity > 500)
                     {
                         int fleshiness = calculateBiome(percentageFree, humidity, (500, 999999));
-                        int hairiness = 0;
+                        percentageFree -= fleshiness;
                         if (toxicity >= 700)
                         {
-                            hairiness = calculateBiome(fleshiness, toxicity, (700, 999999));
-                            int longHairToAdd = hairiness - calculateAndAddBiome(listo, (20, 3), hairiness, temperature + acidity, (1024, 999999)); // hair forest
-                            testAddBiome(listo, (20, 4), longHairToAdd); // long hair forest
+                            int hairiness = calculateBiome(fleshiness, toxicity, (700, 999999));
                             fleshiness -= hairiness;
+                            hairiness -= calculateAndAddBiome(listo, (20, 3), hairiness, temperature + acidity, (1024, 999999));    // hair forest
+                            testAddBiome(listo, (20, 4), hairiness);    // long hair forest
                         }
-                        int forestness = calculateAndAddBiome(listo, (20, 1), fleshiness, toxicity, (-999999, 350)); // flesh forest
-                        fleshiness -= forestness;
-                        percentageFree -= forestness + hairiness;
-                        percentageFree -= testAddBiome(listo, (20, 0), fleshiness); // add what's remaining as normal flesh
+                        fleshiness -= calculateAndAddBiome(listo, (20, 1), fleshiness, toxicity, (-999999, 350)); // flesh forest;
+                        testAddBiome(listo, (20, 0), fleshiness);   // add what's remaining as normal flesh
                     }
                     percentageFree -= calculateAndAddBiome(listo, (21, 0), percentageFree, humidity, (-999999, 300)); // bone
                     testAddBiome(listo, (20, 2), percentageFree); // flesh and bone

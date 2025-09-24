@@ -26,7 +26,7 @@ namespace Cave
         public static bool spawnEntitiesBool = false;
         public static bool spawnPlants = false;
 
-        public static int chunkLoadMininumRadius = 8;
+        public static int chunkLoadMininumRadius = 6;
 
         public static Bitmap black32Bitmap = new Bitmap(32, 32);
         public static Bitmap transBlue32Bitmap = new Bitmap(32, 32);

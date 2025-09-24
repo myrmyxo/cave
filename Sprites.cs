@@ -62,7 +62,7 @@ namespace Cave
         public static void loadSpriteDictionaries()
         {
             errorSprite = new OneSprite("Error", true);                     // TO CHANGE
-            tileSprites = new Dictionary<(int, int), OneSprite>
+            tileSprites = new Dictionary<(int type, int subType), OneSprite>
             {
                 { (-7, 0), new OneSprite("Acid", true) },                   // TO CHANGE
                 { (-6, 1), new OneSprite("DeoxygenatedBlood", true) },      // TO CHANGE
@@ -74,6 +74,9 @@ namespace Cave
                 { (-2, 2), new OneSprite("SaltyWater", false) },
                 { (-2, -1), new OneSprite("Ice", true) },                   // TO CHANGE
                 { (-1, 0), new OneSprite("Piss", false) },
+                { (0, -3), errorSprite },
+                { (0, -2), errorSprite },
+                { (0, -1), errorSprite },
                 { (0, 0), errorSprite },
                 { (1, 0), new OneSprite("BasicTile", false) },
                 { (1, 1), new OneSprite("DenseRockTile", true) },           // TO CHANGE
@@ -83,9 +86,9 @@ namespace Cave
                 { (4, 1), new OneSprite("BoneTile", true) },                // TO CHANGE
                 { (4, 2), new OneSprite("SkinTile", true) },                // TO CHANGE
                 { (5, 0), new OneSprite("MoldTile", true) },                // TO CHANGE          
-                { (6, 0), new OneSprite("BasicTile", false) }
+                { (6, 0), new OneSprite("SaltTile", true) },                // TO CHANGE
             };                                                               
-            entitySprites = new Dictionary<(int, int), OneSprite>
+            entitySprites = new Dictionary<(int type, int subType), OneSprite>
             {
                 { (-1, 0), errorSprite },
                 { (0, 0), new OneSprite("Fairy", false) },                    
@@ -112,7 +115,7 @@ namespace Cave
                 { (9, 0), new OneSprite("WaterDog", true) },                // TO CHANGE
                 { (10, 0), new OneSprite("Dragonfly", true) },              // TO CHANGE
             };                                                               
-            plantSprites = new Dictionary<(int, int), OneSprite>
+            plantSprites = new Dictionary<(int type, int subType), OneSprite>
             {
                 { (-1, 0), errorSprite },
                 { (0, 0), new OneSprite("BasePlant", false) },
@@ -126,9 +129,9 @@ namespace Cave
                 { (2, 0), new OneSprite("KelpUpwards", false) },
                 { (2, 1), new OneSprite("KelpDownwards", false) },
                 { (2, 2), new OneSprite("Reed", false) },
-                { (2, 3), new OneSprite("KelpDownwards", false) },
-                { (2, 4), new OneSprite("KelpUpwards", false) },
-                { (2, 5), new OneSprite("KelpDownwards", false) },
+                { (2, 3), new OneSprite("Algae", false) },
+                { (2, 4), new OneSprite("AlgaeTree", false) },
+                { (2, 5), new OneSprite("AlgaeCeiling", false) },
                 { (3, 0), new OneSprite("ObsidianPlant", false) },
                 { (4, 0), new OneSprite("Mushroom", false) },
                 { (4, 1), new OneSprite("Mold", true) },                    // TO CHANGE
@@ -149,7 +152,7 @@ namespace Cave
                 { (22, 0), new OneSprite("HairBody", true) },                // TO CHANGE
                 { (22, 1), new OneSprite("HairLong", true) },                // TO CHANGE
             };
-            materialSprites = new Dictionary<(int, int), OneSprite>
+            materialSprites = new Dictionary<(int type, int subType), OneSprite>
             {
                 { (-1, 0), errorSprite },
                 { (1, 0), new OneSprite("PlantMatter", false) },
@@ -170,7 +173,7 @@ namespace Cave
                 { (11, 1), new OneSprite("LightBulb", true ) },             // TO CHANGE
                 { (12, 0), new OneSprite("Wax", true ) },                   // TO CHANGE
             };
-            toolsSprites = new Dictionary<(int, int), OneSprite>
+            toolsSprites = new Dictionary<(int type, int subType), OneSprite>
             {
                 { (-1, 0), errorSprite },
                 { (0, 0), new OneSprite("Sword", true) },                   // TO CHANGE
@@ -181,9 +184,10 @@ namespace Cave
                 { (3, 2), new OneSprite("WandFloral", true) },              // TO CHANGE
                 { (3, 3), new OneSprite("WandTeleport", true) },            // TO CHANGE
                 { (3, 4), new OneSprite("WandDig", true) },                 // TO CHANGE
+                { (3, 5), new OneSprite("WandPlace", true) },               // TO CHANGE
                 { (4, 0), new OneSprite("Axe", true) },                     // TO CHANGE
             };
-            attacksSprites = new Dictionary<(int, int), OneSprite>
+            attacksSprites = new Dictionary<(int type, int subType), OneSprite>
             {
                 { (-1, 0), errorSprite },
                 { (3, 0), new OneSprite("HornetPortrait", true) },          // TO CHANGE
@@ -191,27 +195,17 @@ namespace Cave
                 { (3, 2), new OneSprite("Stinger", true) },                 // TO CHANGE
                 { (6, 0), new OneSprite("GoblinHand", true) },              // TO CHANGE
             };
-            portraitSprites = new Dictionary<(int, int), OneSprite>
+            portraitSprites = new Dictionary<(int type, int subType), OneSprite>
             {
                 { (-1, 0), errorSprite },
                 { (0, 0), new OneSprite("FairyPortrait", true) },           // TO CHANGE
                 { (0, 1), new OneSprite("FairyPortrait", true) },           // TO CHANGE
                 { (0, 2), new OneSprite("FairyPortrait", true) },           // TO CHANGE
                 { (0, 3), new OneSprite("FairyPortrait", true) },           // TO CHANGE
-                { (1, 0), new OneSprite("Frog", false) },
-                { (1, 1), new OneSprite("Carnal", true) },                  // TO CHANGE
-                { (1, 2), new OneSprite("Skeletal", true) },                // TO CHANGE
-                { (2, 0), new OneSprite("Fish", false) },
-                { (2, 1), new OneSprite("SkeletonFish", true) },            // TO CHANGE
-                { (3, 0), new OneSprite("HornetEgg", true) },               // TO CHANGE 
-                { (3, 1), new OneSprite("HornetLarva", true) },             // TO CHANGE
-                { (3, 2), new OneSprite("HornetCocoon", true) },            // TO CHANGE
                 { (3, 3), new OneSprite("HornetPortrait", true) },          // TO CHANGE
-                { (4, 0), new OneSprite("Worm", true) },                    // TO CHANGE
-                { (4, 1), new OneSprite("Nematode", true) },                // TO CHANGE
-                { (5, 0), new OneSprite("WaterSkipper", true) },            // TO CHANGE
                 { (6, 0), new OneSprite("GoblinPortrait", true) },          // TO CHANGE
             };
+            foreach ((int type, int subType) key in entitySprites.Keys) { if (!portraitSprites.ContainsKey(key)) { portraitSprites[key] = entitySprites[key]; } }
             overlayBackground = new OneSprite("OverlayBackground", false);
 
             numbersSprite = new OneSprite("Numbers", false);

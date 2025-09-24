@@ -412,6 +412,7 @@ namespace Cave
                     else if (currentItem == (3, 2, 4)) { currentAttack = tryLaunchSingleAttack((3, 2, 0, 4)); }
                     else if (currentItem == (3, 3, 4)) { currentAttack = tryLaunchSingleAttack((3, 3, 0, 4)); }
                     else if (currentItem == (3, 4, 4)) { currentAttack = tryLaunchSingleAttack((3, 4, 0, 4)); }
+                    else if (currentItem == (3, 5, 4)) { currentAttack = tryLaunchSingleAttack((3, 5, 0, 4)); }
 
                     else if (currentItem == (4, 0, 4)) { currentAttack = tryLaunchSingleAttack((4, 0, 0, 4)); }
                     else if (currentItem == (6, 0, 5)) { currentAttack = tryLaunchSingleAttack((6, 0, 0, 5)); }
