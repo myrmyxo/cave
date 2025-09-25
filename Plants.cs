@@ -50,6 +50,7 @@ namespace Cave
             public int posX = 0;
             public int posY = 0;
             public int attachPoint; // 0 ground, 1 leftWall, 2 rightWall, 3 ceiling
+            public (int r, int g, int b) fullPlantShade;
             public Dictionary<(int type, int subType), Color> colorDict = new Dictionary<(int type, int subType), Color>();
 
             public float timeAtLastGrowth = timeElapsed;
@@ -133,6 +134,12 @@ namespace Cave
             }
             public (int x, int y) getRealPos((int x, int y) pos) { return (posX + pos.x, posY + pos.y); }
             public (int x, int y) getRelativePos((int x, int y) pos) { return (pos.x - posX, pos.y - posY); }
+            public void findFullPlantShade()
+            {
+                if (traits.fullPlantShade is null) { fullPlantShade = (0, 0, 0); return; }
+                float shadeVar = (float)((LCGxPos(seed) % 11) * 0.2f - 1);
+                fullPlantShade = ((int)(shadeVar * traits.fullPlantShade.Value.r), (int)(shadeVar * traits.fullPlantShade.Value.g), (int)(shadeVar * traits.fullPlantShade.Value.b));
+            }
             public void tryAddMaterialColor((int type, int subType) materialToAdd, ColorRange forceColorRange = null)
             {
                 if (colorDict.ContainsKey(materialToAdd)) { return; }
@@ -140,9 +147,9 @@ namespace Cave
                 float hueVar = (float)((seed % 11) * 0.2f - 1);
                 float shadeVar = (float)((LCGz(seed) % 11) * 0.2f - 1);
                 colorDict[materialToAdd] = Color.FromArgb(
-                    ColorClamp(c.r.v + (int)(hueVar * c.r.h) + (int)(shadeVar * c.r.s)),
-                    ColorClamp(c.g.v + (int)(hueVar * c.g.h) + (int)(shadeVar * c.g.s)),
-                    ColorClamp(c.b.v + (int)(hueVar * c.b.h) + (int)(shadeVar * c.b.s))
+                    ColorClamp(c.r.v + (int)(hueVar * c.r.h) + fullPlantShade.r + (traits.doesFullPlantShadeOverride ? 0 : (int)(shadeVar * c.r.s))),
+                    ColorClamp(c.g.v + (int)(hueVar * c.g.h) + fullPlantShade.g + (traits.doesFullPlantShadeOverride ? 0 : (int)(shadeVar * c.g.s))),
+                    ColorClamp(c.b.v + (int)(hueVar * c.b.h) + fullPlantShade.b + (traits.doesFullPlantShadeOverride ? 0 : (int)(shadeVar * c.b.s)))
                 );
             }
             public void makeBitmap()
@@ -363,6 +370,7 @@ namespace Cave
                 type = newType;
                 traits = plantTraitsDict.ContainsKey(type) ? plantTraitsDict[type] : plantTraitsDict[(-1, 0)];
                 if (traits.isCeiling) { attachPoint = 1; }
+                findFullPlantShade();
                 if (traits.colorOverrideArray != null)
                 {
                     foreach (((int type, int subType) type, ColorRange colorRange) item in traits.colorOverrideArray) { tryAddMaterialColor(item.type, item.colorRange); }
@@ -527,14 +535,15 @@ namespace Cave
                     float hueVar = (float)((seed % 11) * 0.2f - 1);
                     float shadeVar = (float)((LCGz(seed) % 11) * 0.2f - 1);
                     colorOverrideDict[tuple.type] = Color.FromArgb(
-                        ColorClamp(c.r.v + (int)(hueVar * c.r.h) + (int)(shadeVar * c.r.s)),
-                        ColorClamp(c.g.v + (int)(hueVar * c.g.h) + (int)(shadeVar * c.g.s)),
-                        ColorClamp(c.b.v + (int)(hueVar * c.b.h) + (int)(shadeVar * c.b.s))
+                        ColorClamp(c.r.v + (int)(hueVar * c.r.h) + motherPlant.fullPlantShade.r + (motherPlant.traits.doesFullPlantShadeOverride ? 0 : (int)(shadeVar * c.r.s))),
+                        ColorClamp(c.g.v + (int)(hueVar * c.g.h) + motherPlant.fullPlantShade.g + (motherPlant.traits.doesFullPlantShadeOverride ? 0 : (int)(shadeVar * c.g.s))),
+                        ColorClamp(c.b.v + (int)(hueVar * c.b.h) + motherPlant.fullPlantShade.b + (motherPlant.traits.doesFullPlantShadeOverride ? 0 : (int)(shadeVar * c.b.s)))
                     );
                 }
             }
             public ColorRange colorOverrideOfTypeIfPresentInMotherPlant((int type, int subType) type)
             {
+                if (motherPlant.traits.colorOverrideArray is null) { return null; }
                 foreach (((int type, int subType) type, ColorRange colorRange) tuple in motherPlant.traits.colorOverrideArray)
                 {
                     if (tuple.type == type) { return tuple.colorRange; }
@@ -569,6 +578,8 @@ namespace Cave
                 (int x, int y)? babyDirection = null;
                 if (item.dirType == 1) { babyDirection = item.mod; }
                 else if (item.dirType == 2) { babyDirection = baseDirection; }
+                else if (item.dirType == 3) { babyDirection = directionPositionArray[PosMod(directionPositionDictionary[growthDirection] + item.mod.x, 8)]; }
+                else if (item.dirType == 4) { babyDirection = directionPositionArray[PosMod(directionPositionDictionary[growthDirection] + item.mod.x * baseDirection.x, 8)]; }
                 PlantElement baby = new PlantElement(motherPlant, babyPos, item.child, getRandValue(seed + 923147 * seedMod + offset * 10000), this, false, babyDirection);
                 if (baby.isDeadAndShouldDisappear)
                 {
@@ -584,6 +595,8 @@ namespace Cave
                 (int x, int y)? babyDirection = null;
                 if (item.dirType == 1) { babyDirection = item.mod; }
                 else if (item.dirType == 2) { babyDirection = baseDirection; }
+                else if (item.dirType == 3) { babyDirection = directionPositionArray[PosMod(directionPositionDictionary[growthDirection] + item.mod.x, 8)]; }
+                else if (item.dirType == 4) { babyDirection = directionPositionArray[PosMod(directionPositionDictionary[growthDirection] + item.mod.x * baseDirection.x, 8)]; }
                 PlantElement baby = new PlantElement(motherPlant, babyPos, item.child, getRandValue(seed + 3 * seedMod), this, false, babyDirection);
                 if (baby.isDeadAndShouldDisappear)
                 {
@@ -633,7 +646,7 @@ namespace Cave
             public int init(bool isMainPlantElement = false, (int x, int y)? forceDirection = null, bool isTransition = false)
             {
                 if (!isTransition) { fillStates = new Dictionary<(int x, int y), (int type, int subType)>(); }
-                if (findBaseDirection(forceDirection) == 0) { return 0; }
+                if (!isTransition || forceDirection != null) { if (findBaseDirection(forceDirection) == 0) { return 0; } }
                 if (traits.plantGrowthRules != null)
                 {
                     childArrayOffset += traits.plantGrowthRules.childOffset;
@@ -897,8 +910,9 @@ namespace Cave
                         goto FailButContinue;
                     }
 
-                    if ((traits.plantGrowthRules.tileContentNeededToGrow is null || traits.plantGrowthRules.tileContentNeededToGrow.Contains(motherPlant.screen.getTileContent(motherPlant.getRealPos(drawPos)).type)) && tryFill(drawPos, traits.plantGrowthRules.materalToFillWith))
-                    {
+                    if ((traits.plantGrowthRules.tileContentNeededToGrow is null || traits.plantGrowthRules.tileContentNeededToGrow.Contains(motherPlant.screen.getTileContent(motherPlant.getRealPos(drawPos)).type)) &&
+                        (tryFill(drawPos, traits.plantGrowthRules.materalToFillWith) | (traits.plantGrowthRules.elementWidening != null && tryFill((drawPos.x + traits.plantGrowthRules.elementWidening.Value.mod.x * (traits.plantGrowthRules.elementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y + traits.plantGrowthRules.elementWidening.Value.mod.y * (traits.plantGrowthRules.elementWidening.Value.canBeFlipped.y && baseDirection.y < 0 ? -1 : 1)), traits.plantGrowthRules.materalToFillWith))))
+                    {                                           //   VERY IMPORTANT "|" not "||" so it tries to do both fillings and doesn't stop if the first one suceeds !!!
                         updateStickyChildren(drawPos);
                         if (growthLevelToTest >= maxGrowthLevel + (traits.plantGrowthRules.childrenOnGrowthEnd is null ? 0 : 1))
                         {

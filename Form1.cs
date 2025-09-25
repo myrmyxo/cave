@@ -117,6 +117,7 @@ namespace Cave
                 turnPngIntoString("Fir");
                 turnPngIntoString("JungleTree");
                 turnPngIntoString("MangroveTree");
+                turnPngIntoString("WeepingWillow");
                 turnPngIntoString("KelpUpwards");
                 turnPngIntoString("KelpDownwards");
                 turnPngIntoString("Reed");
@@ -211,7 +212,6 @@ namespace Cave
             // Optimize/functionalize lake maker function
             // EntityCemetary and PlantCemetary folders, putting the files of dead Entities/Plants there
             // Hornet nests -> search for point of interests in plants should take place with SPIRAL function
-            // Optimization of biome getting -> if all 4 corners of a chunk are Monobiome of the same biome, no need to computer all the other ones inside ! thank you noiseposti.ng 
             // Hornets : 3 types of attack. Warning sting (first attack, to tell to fuk off, scares creatures off the den, second attack, actual stings that deal poison, third attack, mandible slash that can cause bleeding)
             // Message from player character portrait (LMFAO LIKE IF THERE WAS ONE) : "I feel like i'm very much not wanted here..." to tell player that hornet did a warning attack. "I should really get out before they get angry" on the second one.
             // They a loud BUZZ and every hornet aggroes on the player
@@ -239,6 +239,9 @@ namespace Cave
             // Wait what the fuck ??? Ludum Dare is like cancelled forever ???????? i'm actually shocked what the actual fuck this fucking sucks. Mike i love you pleas come back
             // Prevent hornet nests from spawning in water lmfaoooo and
             // -> oceanity impact on mangrove ? so they get bigger close to oceans ?
+            // Improve spawn rate shite for entity/plants to make the percentage system better idk (make the percentage be ABSOLUTE, not relative to the biome's frequency).
+            // TerrainFeatureTraits : possibility to make them like, fade away on biome edge ? for mold
+            // Better willow spawn
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
@@ -260,6 +263,7 @@ namespace Cave
             // make it possible to visit entities/players inventories lmfao
             // looping dimensions ???? Could be cool. And serve as TELEPORT HUBS ???
             // maybe depending on a parameter of the dimension, some living world dimensions would be more dead or not dead at all.
+            // -> rotten biome in living dimension ?? Like the corpse in isaac LMFAO
             // Lolitadimension ?? ? ? or CANDYDIMENSION ???? idk ? ? ? sugar cane trees would be poggers. Or a candy dimension with candies... yeah and uh idk a lolita biome and a super rare variant being a gothic lolita biome ??? idk wtf i'm on ngl
             // Whipped cream biome, chocolate biome... idk
             // Add a portal that is inside lava oceans; in a structure (obsidian city ?), that needs to be turned on with maybe liquid obsidian or oil, and teleports to like hell, or an obsidian dimension made ouf of only obsidian shit ?.
@@ -284,7 +288,6 @@ namespace Cave
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
             // Ocean biome -> in some patches, have the normal cave system thing get added on top, so that there are kinds of small caves and shit in the ocean biome too (but only in some parts)
-            // Salt biomes ?
             // Bone marrow biome in living dimension ?
 
             // Entities ideas !
@@ -303,6 +306,7 @@ namespace Cave
             // Tunicates in oceans
             // Squirrels that climb trees and have a tail ?
             // flying fish ?
+            // embrios in living dim
 
             // Plants ideas !
             // bone trees and shrubs... like ribs.
@@ -311,10 +315,8 @@ namespace Cave
             // Rice ? In salt biomes ?
             // Roots for trees, that can grow out the soil under the plant and be exposed if there's a cave under them
             // Branching wax plants ?
-            // Weeping willows !
             // Snowflake plants ??
             // Glycine
-            // algae (floatting ?)
             // Douce-Amère/Bittersweet/Solanum Dulcamara (my beloved)                                                                                               ^  ^  ^
             // --> maybe for plants who change direction rotationally, make a list of forbidden orientations ? or like a "moves upwards" thing, so that it can go <- \ | / -> upwards but not downards idk. Could be cool for hair.
             // WIND TURBINE PLANTS LMAOOOOOOOOOOOOo

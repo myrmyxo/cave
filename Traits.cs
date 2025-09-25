@@ -720,6 +720,8 @@ namespace Cave
             public (int type, int subType)[] tileContentNeededToGrow;
             public ((int x, int y, bool stopGrowth)[] left, (int x, int y, bool stopGrowth)[] right, (int x, int y, bool stopGrowth)[] down, (int x, int y, bool stopGrowth)[] up)? hindrancePreventionPositions;
 
+            public ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped)? elementWidening;
+
             public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] childrenOnGrowthStart;
             public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] childrenOnGrowthEnd;
             public ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] childArray;
@@ -741,6 +743,7 @@ namespace Cave
             public bool isMold;
             public PlantGrowthRules((int type, int subType) t, (int type, int subType)[] tCNTG = null, (int frame, int range)? mG = null, (float step, bool fromEnd)? mGPRV = null, bool oMGV = false, (float baseValue, float variation)? gSVF = null,
                 ((int x, int y, bool stopGrowth)[] left, (int x, int y, bool stopGrowth)[] right, (int x, int y, bool stopGrowth)[] down, (int x, int y, bool stopGrowth)[] up)? hPP = null,
+                ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped)? eW = null,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] cOGS = null,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] cOGE = null,
                 ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] C = null, int cO = 0, bool lC = false, bool mTC = false,    // O O OOOO I. WANT A HEN-
@@ -756,6 +759,8 @@ namespace Cave
                 materalToFillWith = t;
                 tileContentNeededToGrow = tCNTG;
                 hindrancePreventionPositions = hPP;
+
+                elementWidening = eW;
 
                 childrenOnGrowthStart = cOGS;
                 childrenOnGrowthEnd = cOGE;
@@ -837,20 +842,25 @@ namespace Cave
                 name = namee;
                 isRegenerative = isReg;
                 isSticky = stick;
+
                 isClimbable = iC;
+
                 animation = anm;
                 frames = framez;
                 deathChild = dC;
-                colorOverrideArray = cOverride;
                 plantGrowthRules = pGR;
                 transitionToOtherPlantElementOnGrowthEnd = tTOPEOGE;
-                forceLightAtPos = fLAP;
-                lightElement = lE ?? (0, 0);
-                lightRadius = lR;
+
                 requiredEmptyTiles = rET;
                 specificRequiredEmptyTiles = sRET;
 
+                forceLightAtPos = fLAP;
+                lightRadius = lR;
+                lightElement = lE ?? (0, 0);
+                colorOverrideArray = cOverride;
+
                 materialsPresent = new HashSet<(int type, int subType)>();
+
                 if (plantGrowthRules != null)
                 {
                     maxGrowth = fMG ?? plantGrowthRules.maxGrowth;  // fMG is forceMaxGrowth
@@ -948,6 +958,21 @@ namespace Cave
                 pGR:new PlantGrowthRules(t:(1, 1), mG:(12, 8), hPP:fHPP["LeavesMangrove"],
                     C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((1, 3, -4), (-1, 0), 1, 0, (1, 2), 66), ((1, 3, -4), (1, 0), 1, 0, (1, 2), 66) },
                     cO:3, lC:true
+                )) },
+
+                { (1, 4, 0), new PlantElementTraits("WeepingWillowTrunk", rET:(from number in Enumerable.Range(0, 20) select ((0, number), (true, false))).Concat(from number in Enumerable.Range(7, 12) select ((4, number), (true, false))).Concat(from number in Enumerable.Range(7, 12) select ((-4, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(16, 3), eW:((-1, 0), (true, false, false)),
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((1, 4, -2), (1, 0), 1, 0, (3, 2), 85), ((1, 4, -2), (-1, 0), 1, 0, (2, 1), 85) },
+                    cO:7,
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 1), (true, false, false), (6, 3), 100), ((0, 1), (true, false, false), (4, 2), 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (3, 2), 100), ((1, 0), (true, false, false), (2, 0), 100), ((1, 0), (true, false, false), (2, 0), 100) }
+                    ), tTOPEOGE:(1, 4, -1)) },
+                { (1, 4, -1), new PlantElementTraits("WeepingWillowTrunkSecondPart",
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(16, 4),
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((1, 4, -3), (1, 1), 1, 0, 100)  },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((1, 4, -3), (1, 1), 1, 0, (1, 1), 90), ((1, 4, -3), (-1, 1), 1, 0, (1, 1), 90)  },
+                    lC:true, cO:5,
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((-1, 1), (true, false, false), (9, 4), 100), ((-1, 0), (true, false, false), (2, 1), 100) }
                 )) },
 
                 { (2, 0, 0), new PlantElementTraits("Kelp", rET:(from number in Enumerable.Range(0, 5) select ((number % 2, number), (true, false))).ToArray(),
@@ -1135,6 +1160,23 @@ namespace Cave
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((0, 1), (true, false, true), (3, 0), 45) }
                 )) },
 
+                { (1, 4, -2), new PlantElementTraits("WeepingWillowBranch",
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(14, 4),
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((1, 4, -3), (1, 1), 1, 0, 100)  },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((1, 4, -3), (1, 1), 1, 0, (1, 1), 90), ((1, 4, -3), (-1, 1), 1, 0, (1, 1), 90)  },
+                    lC:true, cO:3,
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 1), (true, false, false), (3, 2), 100), ((0, 1), (true, false, false), (2, 1), 100), ((1, 1), (true, false, false), (5, 1), 100), ((1, 0), (true, false, false), (2, 1), 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((0, 1), (true, false, true), (3, 0), 45) }
+                )) },
+                { (1, 4, -3), new PlantElementTraits("WeepingWillowBranchWeeping",
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(8, 4),
+                    cOGS:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((1, 4, 1), (0, 1), 0, 0, 100) },
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((1, 4, 1), (0, 1), 0, 0, 100) },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((1, 4, 1), (0, 1), 0, 0, (1, 0), 90) },
+                    lC:true,
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (0, 2), 100), ((1, -1), (true, false, false), (5, 2), 100) }
+                )) },
+
                 { (2, 3, -1), new PlantElementTraits("Algae 1 branch",
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(4, 2), hPP:fHPP["Up1Gap"],
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 1), (true, false, false), (1, 1), 100), ((0, 1), (false, false, false), (1, 1), 100) }
@@ -1252,6 +1294,12 @@ namespace Cave
                 { (1, 3, 1), new PlantElementTraits("MangroveLeaves", stick:((0, 0), (false, false)),
                 framez:makeStructureFrameArray(null, "MangroveLeaves1", "MangroveLeaves2", "MangroveLeaves3", "MangroveLeaves4", "MangroveLeaves5")
                 ) },
+                { (1, 4, 1), new PlantElementTraits("WeepingWillowLeaves",
+                pGR:new PlantGrowthRules(t:(1, 0), sD:((0, -1), (true, false, false)), mG:(1, 5), mGPRV:(0.35f, true)
+                    //PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 0), 100), ((-1, 0), (true, false, false), (1, 0), 100) },
+                    //lPM:true
+                ), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), null) }
+                ) },
 
                 { (2, 2, 1), new PlantElementTraits("ReedFlower", stick:((0, 1), (false, false)),
                 framez:makeStructureFrameArray(null, "ReedFlower1", "ReedFlower2", "ReedFlower3")
@@ -1306,25 +1354,35 @@ namespace Cave
 
             public (int type, int subType)[] soilType;
             public int minGrowthForValidity;
+            public bool needsWaterInChunk;
 
+            public (int r, int g, int b)? fullPlantShade;
+            public bool doesFullPlantShadeOverride;
             public ((int type, int subType) type, ColorRange colorRange)[] colorOverrideArray;
             public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? iFT = null, (int type, int subType)[] sT = null, int mGFV = 1,
-                ((int type, int subType) type, ColorRange colorRange)[] cOverride = null,
-                bool T = false, bool C = false, bool S = false, bool EA = false, bool W = false, bool lum = false, bool cl = false)
+                ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, (int r, int g, int b)? fPS = null, bool dFPSO = false,
+                bool T = false, bool C = false, bool S = false, bool EA = false, bool W = false, bool lum = false, bool cl = false, bool nWIC = false)
             {
                 name = namee;
+
                 isTree = T;
                 isCeiling = C;
                 isSide = S;
                 isEveryAttach = EA;
                 isWater = W;
-                soilType = sT;
                 isLuminous = lum;
                 isClimbable  = cl;
-                colorOverrideArray = cOverride;
-                minGrowthForValidity = mGFV;
+
                 plantElementType = t ?? (-1, 0, 0);
                 initFailType = iFT;
+
+                soilType = sT;
+                minGrowthForValidity = mGFV;
+                needsWaterInChunk = nWIC;
+
+                fullPlantShade = fPS;
+                doesFullPlantShadeOverride = fullPlantShade != null && dFPSO;
+                colorOverrideArray = cOverride;
             }
         }
 
@@ -1353,6 +1411,8 @@ namespace Cave
                 t:(1, 2, 0)) },
                 { (1, 3), new PlantTraits("Mangrove Tree",                          T:true, W:true,
                 t:(1, 3, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 1), new ColorRange((115, -10, 20), (85, 10, 20), (65, -10, 20))) }) },
+                { (1, 4), new PlantTraits("Weeping Willow",                         T:true, nWIC:true,
+                t:(1, 4, 0), fPS:(35, 35, 35), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((60, -10, 20), (145, 20, 20), (80, -15, 20))), ((1, 1), new ColorRange((100, -10, 15), (85, 5, 15), (80, 10, 15))) }) },
 
                 { (2, 0), new PlantTraits("KelpUpwards",                                    W:true,
                 t:(2, 0, 0), iFT:(2, 2)) },
@@ -1557,7 +1617,9 @@ namespace Cave
             public ((int type, int subType) type, float percentage)[] plantWaterCeilingSpawnTypes;
             public ((int type, int subType) type, float percentage)[] plantWaterSideSpawnTypes;
 
-            public BiomeTraits(string namee, (int r, int g, int b) colorToPut, float[] spawnRates, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes,
+            public ((int type, int subType) type, int percentage)[] extraPlantsSpawning;
+
+            public BiomeTraits(string namee, (int r, int g, int b) colorToPut, float[] spawnRates, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes, ((int type, int subType) type, int percentage)[] ePS = null,
                 (int one, int two)? cT = null, (int one, int two)? txT = null, int cL = 0, int sT = 0, int aST = 0, float cW = 1, TerrainFeaturesTraits[] tFT = null,
                 (int type, int subType)? fT = null, (int type, int subType)? tT = null, ((int type, int subType) type, int chance)? sM = null, (int type, int subType)? lT = null, (int minHeight, int minTiles, int maxTiles)? lS = null,
                 bool S = false, bool Dg = false, bool Da = false)
@@ -1662,6 +1724,8 @@ namespace Cave
                 plantWaterTreeSpawnRate = plantWaterTreeSpawnTypes.Length == 0 ? 0 : spawnRates[10];
                 plantWaterCeilingSpawnRate = plantWaterCeilingSpawnTypes.Length == 0 ? 0 : spawnRates[11];
                 plantWaterSideSpawnRate = plantWaterSideSpawnTypes.Length == 0 ? 0 : spawnRates[12];
+
+                extraPlantsSpawning = ePS;
             }
             public void setType((int type, int subType) typeToSet) { type = typeToSet; }
         }
@@ -1670,6 +1734,8 @@ namespace Cave
         public static Dictionary<(int type, int subType), BiomeTraits> biomeTraitsDict;
         public static void makeBiomeTraitsDict()
         {
+            ((int type, int subType) type, int percentage)[] WILLOW = new ((int type, int subType) type, int percentage)[] { ((1, 4), 100) };
+
             biomeTraitsDict = new Dictionary<(int type, int subType), BiomeTraits>()
             {   //      -E- C  G  W  J   -P- E  G  T  C  S  WG WT WC WS
                 { (-1, 0), new BiomeTraits("Error",                 (1200, -100, 1200),
@@ -1715,22 +1781,26 @@ namespace Cave
                 new float[]{1, 0.25f, 2, 2,  0, 6, 2, 2, 0, 4, 0, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((1, 0), 96),  ((1, 1), 4),   ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), },
-                cT:(1, 5), txT:(0, 0)) },                            // Base           Tree           Fir            Vine           Kelp           CeilingKelp
+                cT:(1, 5), txT:(0, 0),                               // Base           Tree           Fir            Vine           Kelp           CeilingKelp
+                ePS:WILLOW) },
                 { (3, 1),  new BiomeTraits("Flower Forest",         (Color.Green.R, Color.Green.G + 40, Color.Green.B + 80),
                 new float[]{1, 0.25f, 2, 2, 0, 16, 1, 3, 0, 4, 0, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 10), ((0, 1), 20), ((0, 2), 20), ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), },
-                txT:(0, 0)) },                                       // Base          Tulip         Allium        Vine           Kelp           CeilingKelp
+                txT:(0, 0),                                          // Base          Tulip         Allium        Vine           Kelp           CeilingKelp
+                ePS:WILLOW) },
                 { (3, 2),  new BiomeTraits("Conifer Forest",        (Color.Green.R - 120, Color.Green.G - 40, Color.Green.B + 40),
                 new float[]{1, 0.25f, 2, 2,  0, 6, 3, 2, 0, 4, 0, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((1, 1), 100), ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), },
-                cT:(1, 5), txT:(0, 0)) },                            // Base           Fir            Vine           Kelp           CeilingKelp
+                cT:(1, 5), txT:(0, 0),                               // Base           Fir            Vine           Kelp           CeilingKelp
+                ePS:WILLOW) },
                 { (3, 3),  new BiomeTraits("Jungle",                (Color.Green.R + 80, Color.Green.G + 160, Color.Green.B + 40),
                 new float[]{1, 0.25f, 2, 2,  0, 6, 4, 2, 0, 4, 0, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((1, 2), 100), ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), },
-                cT:(1, 5), txT:(0, 0)) },                            // Base           JungleTree     Vine           Kelp           CeilingKelp
+                cT:(1, 5), txT:(0, 0),                               // Base           JungleTree     Vine           Kelp           CeilingKelp
+                ePS:WILLOW) },
                 { (3, 4),  new BiomeTraits("Mangrove",                (Color.DarkSeaGreen.R + 20, Color.DarkSeaGreen.G + 60, Color.DarkSeaGreen.B + 30),
                 new float[]{1, 0.25f, 2, 2,  0, 6, 1, 2, 0, 4, 3, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
@@ -1741,13 +1811,15 @@ namespace Cave
                 new float[]{1, 0.25f, 2, 2,  0, 4, 1, 2, 0, 4, 0, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), },
-                txT:(0, 0), S:true) },                               // Base           Vine           Kelp           CeilingKelp
+                txT:(0, 0), S:true,                                  // Base           Vine           Kelp           CeilingKelp
+                ePS:WILLOW) },
 
                 { (5, 0),  new BiomeTraits("Fairy",                 (Color.LightPink.R, Color.LightPink.G, Color.LightPink.B),
                 new float[]{1, 0.25f, 2, 2,  0, 4, 1, 2, 0, 4, 0, 4, 0}, // Fairy       Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 100), ((10, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 100), ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), },
-                lT:(-3, 0), lS:(2, 6, 100)) },                       // Mushroom       Vine           Kelp           CeilingKelp
+                lT:(-3, 0), lS:(2, 6, 100),                          // Mushroom       Vine           Kelp           CeilingKelp
+                ePS:WILLOW) },
 
                 { (6, 0),  new BiomeTraits("Mold",                  (Color.DarkBlue.R, Color.DarkBlue.G + 20, Color.DarkBlue.B + 40),
                 new float[]{1, 0.25f, 2, 2,  4, 1, 2, 0, 4, 4, 0, 0}, // Worm

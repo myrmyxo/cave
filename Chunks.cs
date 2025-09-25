@@ -65,6 +65,7 @@ namespace Cave
             public int modificationCount = 0;
             public int unstableLiquidCount = 1;
             public bool isMature = false;
+            public bool containsLiquidOnLoading;
 
             public int explorationLevel = 0; // set fog : 0 for not visible, 1 for cremebetweens, 2 for fully visible
             public bool[,] fogOfWar = null;
@@ -148,14 +149,9 @@ namespace Cave
                         darkness = Max(0, 255 - darkness);
                         Color colorToDraw = Color.FromArgb(255, darkness, darkness, darkness);
                         lightBitmap.SetPixel(i, j, colorToDraw);
-                    }
-                }
 
-                for (int i = 0; i < 32; i++)
-                {
-                    for (int j = 0; j < 32; j++)
-                    {
                         findTileColor(i, j);
+                        if (fillStates[i, j].isLiquid) { containsLiquidOnLoading = true; }
                     }
                 }
             }
@@ -594,7 +590,7 @@ namespace Cave
                 }
                 else if (traits.type == (0, -3))  // csgo missing texture effect when thing is not in the the tha       AIR
                 {
-                    if ((i + j) % 2 == 0) { colorToSet = Color.FromArgb(140, 140, 140); }
+                    if ((i + j) % 2 == 0) { colorToSet = Color.FromArgb(110, 110, 110); }
                     else { colorToSet = Color.FromArgb(255, 140, 255); }
                 }
                 bitmap.SetPixel(i, j, colorToSet);
@@ -679,6 +675,37 @@ namespace Cave
                     }
                 }
             }
+            public void spawnExtraPlants(BiomeTraits traits, Dictionary<(int x, int y), bool> forbiddenPositions)
+            {
+                if (traits.extraPlantsSpawning is null) { return; }
+                foreach (((int type, int subType) type, int percentage) tupelo in traits.extraPlantsSpawning)
+                {
+                    PlantTraits plantTraits = plantTraitsDict.ContainsKey(tupelo.type) ? plantTraitsDict[tupelo.type] : plantTraitsDict[(-1, 0)];
+                    if (plantTraits.needsWaterInChunk && !containsLiquidOnLoading) { continue; }
+
+                    int plantsToSpawn = tupelo.percentage / 100;
+                    if ((float)rand.NextDouble() * 100 < tupelo.percentage % 100) { plantsToSpawn++; }
+
+                    while (plantsToSpawn > 0)
+                    {
+                        plantsToSpawn--;
+                        int tries = 0;
+                    plantInvalidTryAgain:;
+                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, plantTraits.isWater, plantTraits.isCeiling, plantTraits.isSide, soilType: plantTraits.soilType, isEveryAttach: plantTraits.isEveryAttach);
+                        if (!returnTuple.valid) { continue; }
+                        Plant newPlant = new Plant(this, returnTuple.pos, tupelo.type);
+                        while (newPlant.isDeadAndShouldDisappear)
+                        {
+                            if (tries > 10) { goto finalFail; }
+                            tries++;
+                            if (newPlant.traits.initFailType != null) { newPlant = new Plant(this, returnTuple.pos, newPlant.traits.initFailType.Value); }
+                            else { goto plantInvalidTryAgain; }
+                        }
+                        screen.activePlants[newPlant.id] = newPlant;
+                    finalFail:;
+                    }
+                }
+            }
             public void matureChunk()
             {
                 BiomeTraits traits = biomeIndex[16, 16][0].traits;  // Middle of chunk
@@ -706,6 +733,7 @@ namespace Cave
                     spawnOnePlants(traits.plantWaterCeilingSpawnRate, traits.plantWaterCeilingSpawnTypes, forbiddenPositions);
                     spawnOnePlants(traits.plantWaterSideSpawnRate, traits.plantWaterSideSpawnTypes, forbiddenPositions);
                     spawnOnePlants(traits.plantEveryAttachSpawnRate, traits.plantEveryAttachSpawnTypes, forbiddenPositions);
+                    spawnExtraPlants(traits, forbiddenPositions);
                 }
                 isMature = true;
                 if (modified) { saveChunk(this); }
@@ -1592,7 +1620,7 @@ namespace Cave
                         int forestness = calculateBiome(percentageFree, Min(illumination - 400, temperature - 200, 850 - temperature), (0, 999999));    // normal forest
                         percentageFree -= forestness;
                         forestness -= calculateAndAddBiome(listo, (3, 2), forestness, temperature, (-999999, 400)); // conifer forest
-                        forestness -= calculateAndAddBiome(listo, (3, 4), forestness, salinity, (650, 999999));     // mangrove
+                        forestness -= calculateAndAddBiome(listo, (3, 4), forestness, salinity, (650 - Max(0, (int)(0.74f * (oceanity - 512))), 999999));    // mangrove
                         forestness -= calculateAndAddBiome(listo, (3, 3), forestness, temperature, (650, 999999));  // jungle
                         forestness -= calculateAndAddBiome(listo, (3, 1), forestness, toxicity + (int)(0.4f * (humidity - temperature)), (300, 999999));    // add flower forest
                         testAddBiome(listo, (3, 0), forestness);
