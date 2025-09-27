@@ -33,7 +33,6 @@ using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
 using static Cave.Dialogues;
-using System.Diagnostics;
 
 namespace Cave
 {
@@ -974,6 +973,20 @@ namespace Cave
                     lC:true, cO:5,
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((-1, 1), (true, false, false), (9, 4), 100), ((-1, 0), (true, false, false), (2, 1), 100) }
                 )) },
+                { (1, 5, 0), new PlantElementTraits("CheeringWillowTrunk", rET:(from number in Enumerable.Range(0, 20) select ((0, number), (true, false))).Concat(from number in Enumerable.Range(7, 12) select ((4, number), (true, false))).Concat(from number in Enumerable.Range(7, 12) select ((-4, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(16, 3), eW:((-1, 0), (true, false, false)),
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((1, 5, -2), (1, 0), 1, 0, (3, 2), 85), ((1, 5, -2), (-1, 0), 1, 0, (2, 1), 85) },
+                    cO:7,
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 1), (true, false, false), (6, 3), 100), ((0, 1), (true, false, false), (4, 2), 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (3, 2), 100), ((1, 0), (true, false, false), (2, 0), 100), ((1, 0), (true, false, false), (2, 0), 100) }
+                    ), tTOPEOGE:(1, 5, -1)) },
+                { (1, 5, -1), new PlantElementTraits("CheeringWillowTrunkSecondPart",
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(16, 4),
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((1, 5, -3), (1, 1), 1, 0, 100)  },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((1, 5, -3), (1, 1), 1, 0, (1, 1), 90), ((1, 5, -3), (-1, 1), 1, 0, (1, 1), 90)  },
+                    lC:true, cO:5,
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((-1, 1), (true, false, false), (9, 4), 100), ((-1, 0), (true, false, false), (2, 1), 100) }
+                )) },
 
                 { (2, 0, 0), new PlantElementTraits("Kelp", rET:(from number in Enumerable.Range(0, 5) select ((number % 2, number), (true, false))).ToArray(),
                 pGR:new PlantGrowthRules(t:(1, 2), mG:(3, 8), tCNTG:new (int type, int subType)[]{ (-2, 0), (-2, 2) },
@@ -1176,6 +1189,22 @@ namespace Cave
                     lC:true,
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (0, 2), 100), ((1, -1), (true, false, false), (5, 2), 100) }
                 )) },
+                { (1, 5, -2), new PlantElementTraits("CheeringWillowBranch",
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(14, 4),
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((1, 5, -3), (1, 1), 1, 0, 100)  },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((1, 5, -3), (1, 1), 1, 0, (1, 1), 90), ((1, 5, -3), (-1, 1), 1, 0, (1, 1), 90)  },
+                    lC:true, cO:3,
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 1), (true, false, false), (3, 2), 100), ((0, 1), (true, false, false), (2, 1), 100), ((1, 1), (true, false, false), (5, 1), 100), ((1, 0), (true, false, false), (2, 1), 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((0, 1), (true, false, true), (3, 0), 45) }
+                )) },
+                { (1, 5, -3), new PlantElementTraits("CheeringWillowBranchCheering",
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(8, 4),
+                    cOGS:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((1, 5, 1), (0, -1), 0, 0, 100) },
+                    cOGE:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, int chance)[] { ((1, 5, 1), (0, -1), 0, 0, 100) },
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((1, 5, 1), (0, -1), 0, 0, (1, 0), 90) },
+                    lC:true,
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (0, 2), 100), ((1, 1), (true, false, false), (3, 3), 100) }
+                )) },
 
                 { (2, 3, -1), new PlantElementTraits("Algae 1 branch",
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(4, 2), hPP:fHPP["Up1Gap"],
@@ -1300,6 +1329,12 @@ namespace Cave
                     //lPM:true
                 ), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), null) }
                 ) },
+                { (1, 5, 1), new PlantElementTraits("CheeringWillowLeaves",
+                pGR:new PlantGrowthRules(t:(1, 0), sD:((0, 1), (true, false, false)), mG:(1, 5), mGPRV:(0.35f, true)
+                    //PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 0), 100), ((-1, 0), (true, false, false), (1, 0), 100) },
+                    //lPM:true
+                ), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), null) }
+                ) },
 
                 { (2, 2, 1), new PlantElementTraits("ReedFlower", stick:((0, 1), (false, false)),
                 framez:makeStructureFrameArray(null, "ReedFlower1", "ReedFlower2", "ReedFlower3")
@@ -1341,6 +1376,17 @@ namespace Cave
         {
             public string name;
 
+            public (int type, int subType, int subSubType) plantElementType;
+            public (int type, int subType)? initFailType;
+            public int minGrowthForValidity;
+
+            public (int type, int subType)[] soilType;
+            public ((int type, int subType) tile, (int x, int y) range)? tileNeededClose;
+
+            public (int r, int g, int b)? fullPlantShade;
+            public bool doesFullPlantShadeOverride;
+            public ((int type, int subType) type, ColorRange colorRange)[] colorOverrideArray;
+
             public bool isTree;
             public bool isCeiling;
             public bool isSide;
@@ -1348,22 +1394,23 @@ namespace Cave
             public bool isWater;
             public bool isLuminous;
             public bool isClimbable;
-
-            public (int type, int subType, int subSubType) plantElementType;
-            public (int type, int subType)? initFailType;
-
-            public (int type, int subType)[] soilType;
-            public int minGrowthForValidity;
-            public bool needsWaterInChunk;
-
-            public (int r, int g, int b)? fullPlantShade;
-            public bool doesFullPlantShadeOverride;
-            public ((int type, int subType) type, ColorRange colorRange)[] colorOverrideArray;
-            public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? iFT = null, (int type, int subType)[] sT = null, int mGFV = 1,
+            public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? iFT = null, int mGFV = 1,
+                (int type, int subType)[] sT = null, ((int type, int subType) tile, (int x, int y) range)? tNC = null,
                 ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, (int r, int g, int b)? fPS = null, bool dFPSO = false,
-                bool T = false, bool C = false, bool S = false, bool EA = false, bool W = false, bool lum = false, bool cl = false, bool nWIC = false)
+                bool T = false, bool C = false, bool S = false, bool EA = false, bool W = false, bool lum = false, bool cl = false)
             {
                 name = namee;
+
+                plantElementType = t ?? (-1, 0, 0);
+                initFailType = iFT;
+                minGrowthForValidity = mGFV;
+
+                soilType = sT;
+                tileNeededClose = tNC;
+
+                colorOverrideArray = cOverride;
+                fullPlantShade = fPS;
+                doesFullPlantShadeOverride = fullPlantShade != null && dFPSO;
 
                 isTree = T;
                 isCeiling = C;
@@ -1372,17 +1419,6 @@ namespace Cave
                 isWater = W;
                 isLuminous = lum;
                 isClimbable  = cl;
-
-                plantElementType = t ?? (-1, 0, 0);
-                initFailType = iFT;
-
-                soilType = sT;
-                minGrowthForValidity = mGFV;
-                needsWaterInChunk = nWIC;
-
-                fullPlantShade = fPS;
-                doesFullPlantShadeOverride = fullPlantShade != null && dFPSO;
-                colorOverrideArray = cOverride;
             }
         }
 
@@ -1411,8 +1447,11 @@ namespace Cave
                 t:(1, 2, 0)) },
                 { (1, 3), new PlantTraits("Mangrove Tree",                          T:true, W:true,
                 t:(1, 3, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 1), new ColorRange((115, -10, 20), (85, 10, 20), (65, -10, 20))) }) },
-                { (1, 4), new PlantTraits("Weeping Willow",                         T:true, nWIC:true,
+                { (1, 4), new PlantTraits("Weeping Willow",                         T:true, tNC:((-2, 0), (3, 3)),
                 t:(1, 4, 0), fPS:(35, 35, 35), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((60, -10, 20), (145, 20, 20), (80, -15, 20))), ((1, 1), new ColorRange((100, -10, 15), (85, 5, 15), (80, 10, 15))) }) },
+                { (1, 5), new PlantTraits("Cheering Willow",                        T:true, tNC:((-3, 0), (3, 3)),
+                t:(1, 5, 0), fPS:(50, 50, 50), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((220, -10, 20), (140, 20, 20), (180, -15, 20))), ((1, 1), new ColorRange((100, -10, 15), (85, 5, 15), (80, 10, 15))) }) },
+
 
                 { (2, 0), new PlantTraits("KelpUpwards",                                    W:true,
                 t:(2, 0, 0), iFT:(2, 2)) },
@@ -1498,6 +1537,7 @@ namespace Cave
 
             public int baseThreshold;
             public (int one, int two) noiseModulos;
+            public (bool one, bool two) makeNoiseMaps;
 
             public bool isBiomeSystem;
             public (int threshold, bool reverse)? temperature;
@@ -1508,10 +1548,11 @@ namespace Cave
             public (int threshold, bool reverse)? illumination;
             public (int threshold, bool reverse)? oceanity;
             public int biomeValuesScale;
-            public TerrainFeaturesTraits((int type, int subType) tT, int tR, bool mBVR = false, int bT = 512, (int one, int two)? nM = null,
+            public (int strength, int threshold)? biomeEdgeReduction;
+            public TerrainFeaturesTraits((int type, int subType) tT, int tR, bool mBVR = false, int bT = 512, (int? one, int? two)? nM = null,
                 (int threshold, bool reverse)? T = null, (int threshold, bool reverse)? H = null, (int threshold, bool reverse)? A = null,
                 (int threshold, bool reverse)? TX = null, (int threshold, bool reverse)? S = null, (int threshold, bool reverse)? I = null,
-                (int threshold, bool reverse)? O = null, int bVS = 512, bool fBS = false, bool iS = false, bool iL = false, bool iA = false, bool nQF = false)
+                (int threshold, bool reverse)? O = null, int bVS = 512, (int strength, int threshold)? bER = null, bool fBS = false, bool iS = false, bool iL = false, bool iA = false, bool nQF = false)
             {
                 tileType = tT;
 
@@ -1524,7 +1565,8 @@ namespace Cave
                 needsQuartileFilled = nQF;
 
                 baseThreshold = bT;
-                noiseModulos = nM ?? (16, 16);
+                noiseModulos = nM is null ? (16, 16) : (nM.Value.one ?? 16, nM.Value.two ?? 16);
+                makeNoiseMaps = nM is null ? (true, true) : (nM.Value.one != null, nM.Value.two != null);
 
                 if (fBS || T != null || H != null || A != null || TX != null || S != null || I != null || O != null) { isBiomeSystem = true; }
                 else { isBiomeSystem = false; }
@@ -1536,6 +1578,7 @@ namespace Cave
                 illumination = I;
                 oceanity = O;
                 biomeValuesScale = bVS;
+                biomeEdgeReduction = bER;
             }
         }
         public static Dictionary<string, TerrainFeaturesTraits> famousTFT;
@@ -1543,10 +1586,12 @@ namespace Cave
         {
             famousTFT = new Dictionary<string, TerrainFeaturesTraits>
             {
-                { "HardRock", new TerrainFeaturesTraits((1, 1), 0, iS:true, mBVR:true, bT:0, fBS:true) },    // This one is particular but uuuuuuuuuhHHHHHHHHHH
+                { "HardRock", new TerrainFeaturesTraits((1, 1), 0, iS:true, mBVR:true, bT:0) },
                 { "Bone", new TerrainFeaturesTraits((4, 1), 1, iS:true, bT:512, H:(500, false), bVS:1024) },
-                { "Mold", new TerrainFeaturesTraits((5, 0), 2, iS:true, bT:1024, T:(500, false), H:(500, true), A:(500, true), bVS:1024) },
-                { "Salt", new TerrainFeaturesTraits((6, 0), 0, iL:true, mBVR:true, bT:0, iS: false, nQF:true) },
+                { "Mold", new TerrainFeaturesTraits((5, 0), 2, iS:true, bT:1024, bER:(2000, 0), bVS:1024, nM:(32, 16)) },
+                { "Salt Terrain", new TerrainFeaturesTraits((6, 0), 3, iS:true, bT:0, bER:(10000, 700), S:(650, true), nM:(256, 64)) },
+                { "Salt Filling", new TerrainFeaturesTraits((6, 0), 4, iL:true, bT:0, fBS:true, bER:(10000, 700), nM:(null, null)) },
+                { "Salt Spikes", new TerrainFeaturesTraits((6, 0), 5, iL:true, bT:0, bER:(10000, 700), nQF:true) },
             };
             int counto = 0;
             foreach (TerrainFeaturesTraits tTT in famousTFT.Values) { tTT.layer = counto * 2; counto++; }
@@ -1735,6 +1780,7 @@ namespace Cave
         public static void makeBiomeTraitsDict()
         {
             ((int type, int subType) type, int percentage)[] WILLOW = new ((int type, int subType) type, int percentage)[] { ((1, 4), 100) };
+            ((int type, int subType) type, int percentage)[] CHEERINGWILLOW = new ((int type, int subType) type, int percentage)[] { ((1, 5), 100) };
 
             biomeTraitsDict = new Dictionary<(int type, int subType), BiomeTraits>()
             {   //      -E- C  G  W  J   -P- E  G  T  C  S  WG WT WC WS
@@ -1819,7 +1865,7 @@ namespace Cave
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 100), ((10, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 100), ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), },
                 lT:(-3, 0), lS:(2, 6, 100),                          // Mushroom       Vine           Kelp           CeilingKelp
-                ePS:WILLOW) },
+                ePS:CHEERINGWILLOW) },
 
                 { (6, 0),  new BiomeTraits("Mold",                  (Color.DarkBlue.R, Color.DarkBlue.G + 20, Color.DarkBlue.B + 40),
                 new float[]{1, 0.25f, 2, 2,  4, 1, 2, 0, 4, 4, 0, 0}, // Worm
@@ -1849,8 +1895,8 @@ namespace Cave
                 new float[]{1, 0.25f, 15, 6, 0, 4, 1, 2, 0, 8, 0, 8, 0},
                 new ((int type, int subType) type, float percentage)[]{ },
                 new ((int type, int subType) type, float percentage)[]{ },
-                lT:(0, 0), lS:(3, 50, 3000), tFT:new TerrainFeaturesTraits[]{ famousTFT["Salt"] },
-                cT:(0, 3), txT:(0, 0), fT:(-2, 2), sT:1, cL:1) },
+                lT:(-2, 2), lS:(3, 50, 3000), tFT:new TerrainFeaturesTraits[]{ famousTFT["Salt Terrain"], famousTFT["Salt Filling"], famousTFT["Salt Spikes"] },
+                cT:(1, 3), txT:(0, 0), fT:(-2, 2), sT:1, cL:1) },
 
 
                 //      -E- C  G  W  J   -P- E  G  T  C  S  WG WT WC WS  

@@ -127,6 +127,7 @@ namespace Cave
                 { (1, 2), new OneSprite("JungleTree", true) },              // TO CHANGE
                 { (1, 3), new OneSprite("MangroveTree", true) },            // TO CHANGE
                 { (1, 4), new OneSprite("WeepingWillow", true) },           // TO CHANGE
+                { (1, 5), new OneSprite("CheeringWillow", true) },          // TO CHANGE
                 { (2, 0), new OneSprite("KelpUpwards", false) },
                 { (2, 1), new OneSprite("KelpDownwards", false) },
                 { (2, 2), new OneSprite("Reed", false) },

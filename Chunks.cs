@@ -33,7 +33,6 @@ using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
 using static Cave.Dialogues;
-using System.Runtime.CompilerServices;
 
 namespace Cave
 {
@@ -65,7 +64,7 @@ namespace Cave
             public int modificationCount = 0;
             public int unstableLiquidCount = 1;
             public bool isMature = false;
-            public bool containsLiquidOnLoading;
+            public HashSet<(int type, int subType)> tileTypesContainedOnGeneration = new HashSet<(int type, int subType)>();
 
             public int explorationLevel = 0; // set fog : 0 for not visible, 1 for cremebetweens, 2 for fully visible
             public bool[,] fogOfWar = null;
@@ -151,7 +150,7 @@ namespace Cave
                         lightBitmap.SetPixel(i, j, colorToDraw);
 
                         findTileColor(i, j);
-                        if (fillStates[i, j].isLiquid) { containsLiquidOnLoading = true; }
+                        tileTypesContainedOnGeneration.Add(fillStates[i, j].type);
                     }
                 }
             }
@@ -335,10 +334,10 @@ namespace Cave
                 // Find terrainFeatures when needed
                 Dictionary<int, int[,]> terrainFeaturesNoiseDict = new Dictionary<int, int[,]>();
                 foreach (BiomeTraits biomeTraits in allBiomesInTheChunk) { if (biomeTraits.terrainFeaturesTraitsArray != null) { foreach (TerrainFeaturesTraits TFT in biomeTraits.terrainFeaturesTraitsArray) {
-                        if (!terrainFeaturesNoiseDict.ContainsKey(TFT.layer)) { terrainFeaturesNoiseDict[TFT.layer] = findNoiseValues(TFT.layer + 10000, TFT.noiseModulos.one, 2048); }
-                        if (!terrainFeaturesNoiseDict.ContainsKey(TFT.layer + 1)) { terrainFeaturesNoiseDict[TFT.layer + 1] = findNoiseValues(TFT.layer + 10001, TFT.noiseModulos.two, 2048); } } } }
+                        if (TFT.makeNoiseMaps.one && !terrainFeaturesNoiseDict.ContainsKey(TFT.layer)) { terrainFeaturesNoiseDict[TFT.layer] = findNoiseValues(TFT.layer + 10000, TFT.noiseModulos.one, 2048); }
+                        if (TFT.makeNoiseMaps.two && !terrainFeaturesNoiseDict.ContainsKey(TFT.layer + 1)) { terrainFeaturesNoiseDict[TFT.layer + 1] = findNoiseValues(TFT.layer + 10001, TFT.noiseModulos.two, 2048); } } } }
 
-                int[,] scoreArray = new int[32, 32];
+                (float baseScore1, float baseScore2, float separatorScore)[,] scoreArray = new (float baseScore1, float baseScore2, float separatorScore)[32, 32];
                 bool[] quartileFilledArray = new bool[4];
 
                 for (int i = 0; i < 32; i++)
@@ -416,14 +415,11 @@ namespace Cave
                         float separatorScore2 = Max(0, 1 - separatorScore * 0.001f);
                         if (isVoronoiLiquidTransitionZone && isVoronoiPool) { separatorScore = 0; score1 += 10000; score2 += 10000; }
 
-                        bool carveTest1 = score1 * separatorScore2 - separatorScore > bound1 * separatorScore2;
-                        bool carveTest2 = score2 * separatorScore2 - separatorScore > bound2 * separatorScore2;
+                        float carveScore1 = score1 * separatorScore2 - separatorScore - bound1 * separatorScore2;
+                        float carveScore2 = score2 * separatorScore2 - separatorScore - bound2 * separatorScore2;
+                        scoreArray[i, j] = (carveScore1, carveScore2, separatorScore);
 
-                        scoreArray[i, j] = (int)Max(
-                            score1 * (1 - separatorScore * 0.001f) - separatorScore - (bound1 * (1 - separatorScore * 0.001f)),
-                            score2 * (1 - separatorScore * 0.001f) - separatorScore - (bound2 * (1 - separatorScore * 0.001f)));
-
-                        if (carveTest1 || carveTest2)
+                        if (carveScore1 > 0 || carveScore2 > 0)
                         {
                             if (mainBiomeTraits.isVoronoiCave && voronoiStateArray[i, j].isLiquid) { fillStates[i, j] = getTileTraits(mainBiomeTraits.lakeType); }
                             else { fillStates[i, j] = getTileTraits(mainBiomeTraits.fillType); }
@@ -476,16 +472,18 @@ namespace Cave
             public void applyTerrainFeatures(Dictionary<int, int[,]> terrainFeaturesNoiseDict, (BiomeTraits traits, int percentage)[] biomeTraits,
                 (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) biomeValues,
                 ((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) derivativeToPut,
-                int i, int j, float fillScore, bool quartileWasFilled)
+                int i, int j, (float baseScore1, float baseScore2, float separatorScore) fillScore, bool quartileWasFilled)
             {
-                HashSet<TerrainFeaturesTraits> terrainFeatures = new HashSet<TerrainFeaturesTraits>();
+                Dictionary<TerrainFeaturesTraits, int> terrainFeatures = new Dictionary<TerrainFeaturesTraits, int>();
                 foreach ((BiomeTraits traits, int percentage) tupel in biomeTraits)
                 {
                     if (tupel.traits.terrainFeaturesTraitsArray is null) { continue; }
-                    foreach (TerrainFeaturesTraits trait in tupel.traits.terrainFeaturesTraitsArray) { terrainFeatures.Add(trait); }
+                    foreach (TerrainFeaturesTraits trait in tupel.traits.terrainFeaturesTraitsArray) { addOrIncrementDict(terrainFeatures, (trait, tupel.percentage)); }
                 }
 
-                foreach (TerrainFeaturesTraits tFT in terrainFeatures)
+                float baseScore = Max(fillScore.baseScore1, fillScore.baseScore2);
+
+                foreach (TerrainFeaturesTraits tFT in terrainFeatures.Keys)
                 {
                     if (tFT.needsQuartileFilled && !quartileWasFilled) { continue; }
                     TileTraits tileTraits = fillStates[i, j];
@@ -493,47 +491,51 @@ namespace Cave
                     if (!tFT.inLiquid && tileTraits.isLiquid) { continue; }
                     if (!tFT.inSoil && tileTraits.isSolid) { continue; }
 
-                    int noiseValue1 = terrainFeaturesNoiseDict[tFT.layer][i, j];
-                    int noiseValue2 = terrainFeaturesNoiseDict[tFT.layer + 1][i, j];
+                    int noiseValue1 = tFT.makeNoiseMaps.one ? terrainFeaturesNoiseDict[tFT.layer][i, j] : 0;
+                    int noiseValue2 = tFT.makeNoiseMaps.two ? terrainFeaturesNoiseDict[tFT.layer + 1][i, j] : 0;
                     float meanNoiseValue = (noiseValue1 + noiseValue2) * 0.5f;
 
-                    if (tFT.isBiomeSystem)
+                    float valueRequired = 0;
+                    if (tFT.biomeEdgeReduction != null) { valueRequired += tFT.biomeEdgeReduction.Value.strength * 0.001f * Max(0, 1000 - tFT.biomeEdgeReduction.Value.threshold - terrainFeatures[tFT]); }
+                    if (tFT.meanBasedValueRequired) { valueRequired += meanNoiseValue * 0.25f; }
+                    if (tFT.isBiomeSystem)   // ugly asf, just to get it if the 2 above are false while still doing the 2 if the 2 are true
                     {
-                        float valueRequired;
-                        if (tFT.meanBasedValueRequired) { valueRequired = meanNoiseValue * 0.25f; }
-                        else
-                        {
-                            valueRequired = tFT.baseThreshold - Clamp(0, Min(
-                            tFT.temperature is null ? 100000 : (tFT.temperature.Value.reverse ? -1 : 1) * (tFT.temperature.Value.threshold - biomeValues.temp),
-                            tFT.humidity is null ? 100000 : (tFT.humidity.Value.reverse ? -1 : 1) * (tFT.humidity.Value.threshold - biomeValues.humi),
-                            tFT.acidity is null ? 100000 : (tFT.acidity.Value.reverse ? -1 : 1) * (tFT.acidity.Value.threshold - biomeValues.acid),
-                            tFT.toxicity is null ? 100000 : (tFT.toxicity.Value.reverse ? -1 : 1) * (tFT.toxicity.Value.threshold - biomeValues.toxi),
-                            tFT.salinity is null ? 100000 : (tFT.salinity.Value.reverse ? -1 : 1) * (tFT.salinity.Value.threshold - biomeValues.sali),
-                            tFT.illumination is null ? 100000 : (tFT.illumination.Value.reverse ? -1 : 1) * (tFT.illumination.Value.threshold - biomeValues.illu),
-                            tFT.oceanity is null ? 100000 : (tFT.oceanity.Value.reverse ? -1 : 1) * (tFT.oceanity.Value.threshold - biomeValues.ocea)
-                            ), 320) * tFT.biomeValuesScale * 0.003125f;
-                        }
-
-                        int noiseValue;
-                        if (tFT.transitionRules == 0)
-                        {    // Temp !!!!
-                            if (tFT.baseThreshold + meanNoiseValue % 256 + meanNoiseValue * 0.25f - 512 <= 0) { noiseValue = -999999; }
-                            else { noiseValue = Abs(noiseValue1 - noiseValue2); }
-                        }
-                        else if (tFT.transitionRules == 1) // flesh and bone (for acid and blood oceans too since they can have the transition)
-                        {
-                            noiseValue = Max(0, (int)(Abs(Abs(noiseValue1 - 1024) * 0.49f) + noiseValue2 % 256));
-                        }
-                        else if (tFT.transitionRules == 2) // mold
-                        {
-                            noiseValue = Max(0, (int)(Abs(Abs(noiseValue1 - 1024) * 0.49f)));
-                        }
-                        else { noiseValue = -999999; }
-                        
-                        if (noiseValue >= valueRequired) { fillStates[i, j] = getTileTraits(tFT.tileType); }
+                        valueRequired += tFT.baseThreshold - Clamp(0, Min(
+                        tFT.temperature is null ? 100000 : (tFT.temperature.Value.reverse ? -1 : 1) * (tFT.temperature.Value.threshold - biomeValues.temp),
+                        tFT.humidity is null ? 100000 : (tFT.humidity.Value.reverse ? -1 : 1) * (tFT.humidity.Value.threshold - biomeValues.humi),
+                        tFT.acidity is null ? 100000 : (tFT.acidity.Value.reverse ? -1 : 1) * (tFT.acidity.Value.threshold - biomeValues.acid),
+                        tFT.toxicity is null ? 100000 : (tFT.toxicity.Value.reverse ? -1 : 1) * (tFT.toxicity.Value.threshold - biomeValues.toxi),
+                        tFT.salinity is null ? 100000 : (tFT.salinity.Value.reverse ? -1 : 1) * (tFT.salinity.Value.threshold - biomeValues.sali),
+                        tFT.illumination is null ? 100000 : (tFT.illumination.Value.reverse ? -1 : 1) * (tFT.illumination.Value.threshold - biomeValues.illu),
+                        tFT.oceanity is null ? 100000 : (tFT.oceanity.Value.reverse ? -1 : 1) * (tFT.oceanity.Value.threshold - biomeValues.ocea)
+                        ), 320) * tFT.biomeValuesScale * 0.003125f;
                     }
 
-                    else
+                    int noiseValue;
+                    if (tFT.transitionRules == 0)
+                    {    // Temp !!!!
+                        if (tFT.baseThreshold + meanNoiseValue % 256 + meanNoiseValue * 0.25f - 512 <= 0) { noiseValue = -999999; }
+                        else { noiseValue = Abs(noiseValue1 - noiseValue2); }
+                    }
+                    else if (tFT.transitionRules == 1) // flesh and bone (for acid and blood oceans too since they can have the transition)
+                    {
+                        noiseValue = Max(0, (int)(Abs(Abs(noiseValue1 - 1024) * 0.49f) + noiseValue2 % 256));
+                    }
+                    else if (tFT.transitionRules == 2) // mold
+                    {
+                        valueRequired += Min(500 - biomeValues.illu, biomeValues.humi - 500) + (int)(0.1f * (biomeValues.acid + biomeValues.sali)) - (int)(0.2f * biomeValues.temp);
+                        noiseValue = Max(0, (int)(Abs(Abs(noiseValue2 * 0.25f + noiseValue1 - 1280) * 0.49f)));
+                    }
+                    else if (tFT.transitionRules == 3) // salt terrain
+                    {
+                        noiseValue = noiseValue1 + noiseValue2 - 2048 + (int)(fillScore.baseScore2 * 25);
+                    }
+                    else if (tFT.transitionRules == 4) // salt filling
+                    {
+                        noiseValue = 1000;// -(int)fillScore.baseScore1;
+                        valueRequired = fillScore.baseScore2 > 0 ? 999999 : 0;
+                    }
+                    else if (tFT.transitionRules == 5) // salt spikes
                     {
                         (int x, int y) derivative;
                         if (i > 15)
@@ -554,11 +556,11 @@ namespace Cave
                         int bottom = Sqrt(derivative.x * derivative.x + derivative.y * derivative.y);
                         int c = Seesaw(top / (bottom > 0 ? bottom : 1), 16);
 
-                        if (Abs(4 * c) - 10 < fillScore + Max(0, noiseValue1 - 1200) * 0.125f) { continue; }
-                        // other patches of salt ? that spikes can grow on idk ?
-
-                        fillStates[i, j] = getTileTraits(tFT.tileType);
+                        noiseValue = (int)(Abs(4 * c) - 10 - (Max(fillScore.baseScore2, fillScore.separatorScore) + Max(0, noiseValue1 - 1200) * 0.125f));
                     }
+                    else { noiseValue = -999999; }
+                        
+                    if (noiseValue >= valueRequired) { fillStates[i, j] = getTileTraits(tFT.tileType); }
                 }
             }
             public void findTileColor(int i, int j)
@@ -681,7 +683,7 @@ namespace Cave
                 foreach (((int type, int subType) type, int percentage) tupelo in traits.extraPlantsSpawning)
                 {
                     PlantTraits plantTraits = plantTraitsDict.ContainsKey(tupelo.type) ? plantTraitsDict[tupelo.type] : plantTraitsDict[(-1, 0)];
-                    if (plantTraits.needsWaterInChunk && !containsLiquidOnLoading) { continue; }
+                    if (plantTraits.tileNeededClose != null && !tileTypesContainedOnGeneration.Contains(plantTraits.tileNeededClose.Value.tile)) { continue; }
 
                     int plantsToSpawn = tupelo.percentage / 100;
                     if ((float)rand.NextDouble() * 100 < tupelo.percentage % 100) { plantsToSpawn++; }
@@ -691,7 +693,7 @@ namespace Cave
                         plantsToSpawn--;
                         int tries = 0;
                     plantInvalidTryAgain:;
-                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, plantTraits.isWater, plantTraits.isCeiling, plantTraits.isSide, soilType: plantTraits.soilType, isEveryAttach: plantTraits.isEveryAttach);
+                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, plantTraits.isWater, plantTraits.isCeiling, plantTraits.isSide, soilType:plantTraits.soilType, tileNeededClose:plantTraits.tileNeededClose, isEveryAttach: plantTraits.isEveryAttach);
                         if (!returnTuple.valid) { continue; }
                         Plant newPlant = new Plant(this, returnTuple.pos, tupelo.type);
                         while (newPlant.isDeadAndShouldDisappear)
@@ -776,7 +778,7 @@ namespace Cave
                 }
                 return modified;
             }
-            public ((int x, int y), bool valid) findSuitablePosition(Dictionary<(int x, int y), bool> forbiddenPositions, bool isEntity, bool isWater, bool isCeiling = false, bool isSide = false, bool isDigging = false, bool isJesus = false, (int type, int subType)[] soilType = null, bool isEveryAttach = false)
+            public ((int x, int y), bool valid) findSuitablePosition(Dictionary<(int x, int y), bool> forbiddenPositions, bool isEntity, bool isWater, bool isCeiling = false, bool isSide = false, bool isDigging = false, bool isJesus = false, (int type, int subType)[] soilType = null, ((int type, int subType) tile, (int x, int y) range)? tileNeededClose = null, bool isEveryAttach = false)
             {
                 int counto = 0;
                 (int x, int y) posToTest;
@@ -797,9 +799,21 @@ namespace Cave
                     tileTraits = screen.getTileContent(posToTest);
 
                     if (soilType != null && !soilType.Contains(tileTraits.type)) { continue; }
+                    if (tileNeededClose != null)
+                    {
+                        for (int i = -tileNeededClose.Value.range.x; i <= tileNeededClose.Value.range.x; i++)
+                        {
+                            for (int j = -tileNeededClose.Value.range.y; j <= tileNeededClose.Value.range.y; j++)
+                            {
+                                if (screen.getTileContent((posToTest.x + i, posToTest.y + j)).type == tileNeededClose.Value.tile) { goto tileNeededFound; }
+                            }
+                        }
+                        continue;
+                    }
+                tileNeededFound:;
                     if (isJesus)
                     {
-                        if (!tileTraits.isLiquid) { continue ; }
+                        if (!tileTraits.isLiquid) { continue; }
                     }
                     else if (!tileTraits.isSolid) { continue; }
                     goto success;
@@ -1513,14 +1527,17 @@ namespace Cave
             if (biomeness > 0) { biomeList.Add((biomeToTest, biomeness)); }
             return biomeness;
         }
-        public static int calculateBiome(int percentageFree, int valueToTest, (int min, int max) bounds, int transitionSpeed = 25) // transitionSpeed : the higher, the faster the transition
+        public static int calculateBiome(ref int percentageFree, int valueToTest, (int min, int max) bounds, int transitionSpeed = 25) // transitionSpeed : the higher, the faster the transition
         {
-            return (int)(Clamp(0, Min(valueToTest - bounds.min, bounds.max - valueToTest) * transitionSpeed, 1000) * percentageFree * 0.001f);
+            int biomeness = (int)(Clamp(0, Min(valueToTest - bounds.min, bounds.max - valueToTest) * transitionSpeed, 1000) * percentageFree * 0.001f);
+            percentageFree -= biomeness;
+            return biomeness;
         }
-        public static int calculateAndAddBiome(List<((int biome, int subBiome), int)> biomeList, (int biome, int subBiome) biomeToTest, int percentageFree, int valueToTest, (int min, int max) bounds, int transitionSpeed = 25) // transitionSpeed : the higher, the faster the transition
+        public static int calculateAndAddBiome(List<((int biome, int subBiome), int)> biomeList, (int biome, int subBiome) biomeToTest, ref int percentageFree, int valueToTest, (int min, int max) bounds, int transitionSpeed = 25) // transitionSpeed : the higher, the faster the transition
         {
             int biomeness = (int)(Clamp(0, Min(valueToTest - bounds.min, bounds.max - valueToTest) * transitionSpeed, 1000) * percentageFree * 0.001f);
             if (biomeness > 0) { biomeList.Add((biomeToTest, biomeness)); }
+            percentageFree -= biomeness;
             return biomeness;
         }
         public static (BiomeTraits traits, int percentage)[] findBiome((int, int) dimensionType, int[] values)
@@ -1600,29 +1617,26 @@ namespace Cave
 
                     if (oceanity > 720)
                     {
-                        int oceaness = calculateBiome(percentageFree, oceanity, (720, 999999));   // ocean
-                        percentageFree -= oceaness;
-                        oceaness -= calculateAndAddBiome(listo, (8, 1), oceaness, temperature, (-999999, 0)); // Frozen ocean
-                        int saltness = calculateBiome(oceaness, salinity, (512, 999999)); // Salt ocean;
-                        oceaness -= saltness;
-                        saltness -= calculateAndAddBiome(listo, (8, 2), saltness, illumination, (512, 999999)); // Algae ocean
+                        int oceaness = calculateBiome(ref percentageFree, oceanity, (720, 999999));   // ocean
+                        calculateAndAddBiome(listo, (8, 1), ref oceaness, temperature, (-999999, 0)); // Frozen ocean
+                        int saltness = calculateBiome(ref oceaness, salinity, (512, 999999)); // Salt ocean;
+                        calculateAndAddBiome(listo, (8, 2), ref saltness, illumination, (512, 999999)); // Algae ocean
                         testAddBiome(listo, (8, 3), saltness);
                         testAddBiome(listo, (8, 0), oceaness);
                     }
 
                     if (percentageFree <= 0) { goto AfterTest; }
-                    percentageFree -= calculateAndAddBiome(listo, (0, 1), percentageFree, temperature, (-999999, 0));   // add frost
-                    percentageFree -= calculateAndAddBiome(listo, (6, 0), percentageFree, Min(temperature, 500 - temperature, humidity - 500, acidity - 500), (0, 999999), 5);  // add mold
+                    calculateAndAddBiome(listo, (0, 1), ref percentageFree, temperature, (-999999, 0));   // add frost
+                    calculateAndAddBiome(listo, (6, 0), ref percentageFree, Min(500 - illumination, humidity - 500) + (int)(0.1f * (acidity + salinity)) - (int)(0.2f * temperature), (0, 999999), 5);  // add mold
 
                     if (percentageFree <= 0) { goto AfterTest; }
                     if (illumination > 400 && temperature > 200 && temperature < 850)
                     {
-                        int forestness = calculateBiome(percentageFree, Min(illumination - 400, temperature - 200, 850 - temperature), (0, 999999));    // normal forest
-                        percentageFree -= forestness;
-                        forestness -= calculateAndAddBiome(listo, (3, 2), forestness, temperature, (-999999, 400)); // conifer forest
-                        forestness -= calculateAndAddBiome(listo, (3, 4), forestness, salinity, (650 - Max(0, (int)(0.74f * (oceanity - 512))), 999999));    // mangrove
-                        forestness -= calculateAndAddBiome(listo, (3, 3), forestness, temperature, (650, 999999));  // jungle
-                        forestness -= calculateAndAddBiome(listo, (3, 1), forestness, toxicity + (int)(0.4f * (humidity - temperature)), (300, 999999));    // add flower forest
+                        int forestness = calculateBiome(ref percentageFree, Min(illumination - 400, temperature - 200, 850 - temperature), (0, 999999));    // normal forest
+                        calculateAndAddBiome(listo, (3, 2), ref forestness, temperature, (-999999, 400)); // conifer forest
+                        calculateAndAddBiome(listo, (3, 4), ref forestness, salinity, (650 - Max(0, (int)(0.74f * (oceanity - 512))), 999999));    // mangrove
+                        calculateAndAddBiome(listo, (3, 3), ref forestness, temperature, (650, 999999));  // jungle
+                        calculateAndAddBiome(listo, (3, 1), ref forestness, toxicity + (int)(0.4f * (humidity - temperature)), (300, 999999));    // add flower forest
                         testAddBiome(listo, (3, 0), forestness);
 
                         // -> if humidity is TOO LOW, no forests ? but deserts instead ?
@@ -1634,22 +1648,19 @@ namespace Cave
                     if (percentageFree <= 0) { goto AfterTest; }
                     if (temperature > 720)
                     {
-                        int hotness = calculateBiome(percentageFree, temperature, (720, 999999));
-                        percentageFree -= hotness;
-                        hotness -= calculateAndAddBiome(listo, (2, 2), hotness, Min(temperature - 840, humidity - 600), (0, 999999));   // obsidian
-                        hotness -= calculateAndAddBiome(listo, (2, 1), hotness, Min(temperature - 920, 512 - oceanity), (0, 999999));   // lava ocean
+                        int hotness = calculateBiome(ref percentageFree, temperature, (720, 999999));
+                        calculateAndAddBiome(listo, (2, 2), ref hotness, Min(temperature - 840, humidity - 600), (0, 999999));   // obsidian
+                        calculateAndAddBiome(listo, (2, 1), ref hotness, Min(temperature - 920, 512 - oceanity), (0, 999999));   // lava ocean
                         testAddBiome(listo, (2, 0), hotness);
                     }
 
                     if (percentageFree <= 0) { goto AfterTest; }
                     if (temperature < 440)
                     {
-                        int coldness = calculateBiome(percentageFree, temperature, (-999999, 440));
-                        percentageFree -= coldness;
-                        int savedColdness = calculateBiome(coldness, temperature, (-999999, 120));  // save coldness to have an ringe of ALWAYS cold biome around frost biomes
-                        coldness -= savedColdness;
-                        coldness -= calculateAndAddBiome(listo, (1, 0), coldness, acidity, (700, 999999));  // acid
-                        coldness -= calculateAndAddBiome(listo, (5, 0), coldness, humidity - toxicity, (0, 999999));    // fairy
+                        int coldness = calculateBiome(ref percentageFree, temperature, (-999999, 440));
+                        int savedColdness = calculateBiome(ref coldness, temperature, (-999999, 120));  // save coldness to have an ringe of ALWAYS cold biome around frost biomes
+                        calculateAndAddBiome(listo, (1, 0), ref coldness, acidity, (700, 999999));  // acid
+                        calculateAndAddBiome(listo, (5, 0), ref coldness, humidity - toxicity, (0, 999999));    // fairy
                         testAddBiome(listo, (0, 0), coldness + savedColdness);  // cold
                     }
 
@@ -1657,30 +1668,28 @@ namespace Cave
                 }
                 else if (dimensionType == (1, 0)) // type == 1, chandelier dimension
                 {
-                    percentageFree -= calculateAndAddBiome(listo, (11, 0), percentageFree, oceanity, (720, 999999)); // Dark ocean...
-                    percentageFree -= calculateAndAddBiome(listo, (10, 0), percentageFree, temperature, (700, 999999)); // Lantern
-                    percentageFree -= calculateAndAddBiome(listo, (10, 2), percentageFree, temperature, (-999999, 300)); // Chandelier
+                    calculateAndAddBiome(listo, (11, 0), ref percentageFree, oceanity, (720, 999999)); // Dark ocean...
+                    calculateAndAddBiome(listo, (10, 0), ref percentageFree, temperature, (700, 999999)); // Lantern
+                    calculateAndAddBiome(listo, (10, 2), ref percentageFree, temperature, (-999999, 300)); // Chandelier
                     testAddBiome(listo, (10, 1), percentageFree); // MixedLuminous
                 }
                 else if (dimensionType == (2, 0)) // type == 2, living dimension
                 {
-                    percentageFree -= calculateAndAddBiome(listo, (22, 1), percentageFree, acidity, (800, 999999)); // acid ocean
-                    percentageFree -= calculateAndAddBiome(listo, (22, 0), percentageFree, oceanity, (-999999, 300)); // blood ocean
+                    calculateAndAddBiome(listo, (22, 1), ref percentageFree, acidity, (800, 999999)); // acid ocean
+                    calculateAndAddBiome(listo, (22, 0), ref percentageFree, oceanity, (-999999, 300)); // blood ocean
                     if (humidity > 500)
                     {
-                        int fleshiness = calculateBiome(percentageFree, humidity, (500, 999999));
-                        percentageFree -= fleshiness;
+                        int fleshiness = calculateBiome(ref percentageFree, humidity, (500, 999999));
                         if (toxicity >= 700)
                         {
-                            int hairiness = calculateBiome(fleshiness, toxicity, (700, 999999));
-                            fleshiness -= hairiness;
-                            hairiness -= calculateAndAddBiome(listo, (20, 3), hairiness, temperature + acidity, (1024, 999999));    // hair forest
+                            int hairiness = calculateBiome(ref fleshiness, toxicity, (700, 999999));
+                            calculateAndAddBiome(listo, (20, 3), ref hairiness, temperature + acidity, (1024, 999999));    // hair forest
                             testAddBiome(listo, (20, 4), hairiness);    // long hair forest
                         }
-                        fleshiness -= calculateAndAddBiome(listo, (20, 1), fleshiness, toxicity, (-999999, 350)); // flesh forest;
+                        calculateAndAddBiome(listo, (20, 1), ref fleshiness, toxicity, (-999999, 350)); // flesh forest;
                         testAddBiome(listo, (20, 0), fleshiness);   // add what's remaining as normal flesh
                     }
-                    percentageFree -= calculateAndAddBiome(listo, (21, 0), percentageFree, humidity, (-999999, 300)); // bone
+                    calculateAndAddBiome(listo, (21, 0), ref percentageFree, humidity, (-999999, 300)); // bone
                     testAddBiome(listo, (20, 2), percentageFree); // flesh and bone
                 }
             }

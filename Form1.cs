@@ -118,6 +118,7 @@ namespace Cave
                 turnPngIntoString("JungleTree");
                 turnPngIntoString("MangroveTree");
                 turnPngIntoString("WeepingWillow");
+                turnPngIntoString("CheeringWillow");
                 turnPngIntoString("KelpUpwards");
                 turnPngIntoString("KelpDownwards");
                 turnPngIntoString("Reed");
@@ -240,8 +241,9 @@ namespace Cave
             // Prevent hornet nests from spawning in water lmfaoooo and
             // -> oceanity impact on mangrove ? so they get bigger close to oceans ?
             // Improve spawn rate shite for entity/plants to make the percentage system better idk (make the percentage be ABSOLUTE, not relative to the biome's frequency).
-            // TerrainFeatureTraits : possibility to make them like, fade away on biome edge ? for mold
-            // Better willow spawn
+            // SALT SWIMMERS !!
+
+            // Candy dimension !! Candy Cane trees, Lollipop trees, Whipped Cream biome, Chocolate Biome
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
