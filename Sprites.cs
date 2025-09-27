@@ -107,6 +107,7 @@ namespace Cave
                 { (3, 3), new OneSprite("Hornet", false) },                   
                 { (4, 0), new OneSprite("Worm", true) },                    // TO CHANGE
                 { (4, 1), new OneSprite("Nematode", true) },                // TO CHANGE
+                { (4, 2), new OneSprite("SaltWorm", true) },                // TO CHANGE
                 { (5, 0), new OneSprite("WaterSkipper", true) },            // TO CHANGE
                 { (6, 0), new OneSprite("Goblin", true) },                  // TO CHANGE
                 { (7, 0), new OneSprite("Louse", true) },                   // TO CHANGE

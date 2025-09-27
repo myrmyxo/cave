@@ -160,20 +160,20 @@ namespace Cave
                 int[,,] biomeValues = new int[33, 33, 18];
                 if (!screen.isMonoBiome)
                 {
-                    findNoiseValues(biomeValues, 0, 100, 512, 1028);    // small Temperature
+                    findNoiseValues(biomeValues, 0, 100, 512, 1024);    // small Temperature
                     findNoiseValues(biomeValues, 1, 101, 1024, 512);   // BIG Temperature
-                    findNoiseValues(biomeValues, 2, 102, 512, 1028);    // small Humidity
+                    findNoiseValues(biomeValues, 2, 102, 512, 1024);    // small Humidity
                     findNoiseValues(biomeValues, 3, 103, 1024, 512);   // BIG Humidity
-                    findNoiseValues(biomeValues, 4, 104, 512, 1028);    // small Acidity
+                    findNoiseValues(biomeValues, 4, 104, 512, 1024);    // small Acidity
                     findNoiseValues(biomeValues, 5, 105, 1024, 512);   // BIG Acidity
-                    findNoiseValues(biomeValues, 6, 106, 512, 1028);    // small Toxicity
+                    findNoiseValues(biomeValues, 6, 106, 512, 1024);    // small Toxicity
                     findNoiseValues(biomeValues, 7, 107, 1024, 512);   // BIG Toxicity
-                    findNoiseValues(biomeValues, 8, 108, 512, 1028);    // small Salinity
+                    findNoiseValues(biomeValues, 8, 108, 512, 1024);    // small Salinity
                     findNoiseValues(biomeValues, 9, 109, 1024, 512);   // BIG Salinity
-                    findNoiseValues(biomeValues, 10, 110, 512, 1028);   // small Illumination
+                    findNoiseValues(biomeValues, 10, 110, 512, 1024);   // small Illumination
                     findNoiseValues(biomeValues, 11, 111, 1024, 512);  // BIG Illumination
-                    findNoiseValues(biomeValues, 12, 108, 512, 1028);   // small Oceanity
-                    findNoiseValues(biomeValues, 13, 109, 1024, 512);  // BIG Oceanity
+                    findNoiseValues(biomeValues, 12, 112, 512, 1024);   // small Oceanity
+                    findNoiseValues(biomeValues, 13, 113, 1024, 512);  // BIG Oceanity
                 }
 
                 (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] tileValuesArray = new (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[32, 32];
@@ -635,7 +635,7 @@ namespace Cave
                     }
                 }
             }
-            public void spawnOneEntities(float spawnRate, ((int type, int subType) type, float percentage)[] spawnTypes, Dictionary<(int x, int y), bool> forbiddenPositions)
+            public void spawnOneEntities(float spawnRate, ((int type, int subType) type, float percentage)[] spawnTypes, HashSet<(int x, int y)> forbiddenPositions)
             {
                 for (float i = (float)rand.NextDouble(); i < spawnRate; i++)
                 {
@@ -644,14 +644,14 @@ namespace Cave
                     {
                         if (rando > tupelo.percentage) { rando -= tupelo.percentage; continue; }
                         EntityTraits traits = entityTraitsDict.ContainsKey(tupelo.type) ? entityTraitsDict[tupelo.type] : entityTraitsDict[(-1, 0)];
-                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, true, traits.isSwimming, false, false, traits.isDigging, traits.isJesus);
+                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePositionEntity(forbiddenPositions, traits);
                         if (!returnTuple.valid) { break; }
                         Entity newEntity = new Entity(this, tupelo.type, returnTuple.pos);
                         if (!newEntity.isDeadAndShouldDisappear) { screen.activeEntities[newEntity.id] = newEntity; }
                     }
                 }
             }
-            public void spawnOnePlants(float spawnRate, ((int type, int subType) type, float percentage)[] spawnTypes, Dictionary<(int x, int y), bool> forbiddenPositions)
+            public void spawnOnePlants(float spawnRate, ((int type, int subType) type, float percentage)[] spawnTypes, HashSet<(int x, int y)> forbiddenPositions)
             {
                 for (float i = (float)rand.NextDouble(); i < spawnRate; i++)
                 {
@@ -662,7 +662,7 @@ namespace Cave
                         if (rando > tupelo.percentage) { rando -= tupelo.percentage; continue; }
                         PlantTraits traits = plantTraitsDict.ContainsKey(tupelo.type) ? plantTraitsDict[tupelo.type] : plantTraitsDict[(-1, 0)];
                     plantInvalidTryAgain:;
-                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, traits.isWater, traits.isCeiling, traits.isSide, soilType: traits.soilType, isEveryAttach: traits.isEveryAttach);
+                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePositionPlant(forbiddenPositions, traits);
                         if (!returnTuple.valid) { break; }
                         Plant newPlant = new Plant(this, returnTuple.pos, tupelo.type);
                         while (newPlant.isDeadAndShouldDisappear)
@@ -677,7 +677,7 @@ namespace Cave
                     }
                 }
             }
-            public void spawnExtraPlants(BiomeTraits traits, Dictionary<(int x, int y), bool> forbiddenPositions)
+            public void spawnExtraPlants(BiomeTraits traits, HashSet<(int x, int y)> forbiddenPositions)
             {
                 if (traits.extraPlantsSpawning is null) { return; }
                 foreach (((int type, int subType) type, int percentage) tupelo in traits.extraPlantsSpawning)
@@ -693,7 +693,7 @@ namespace Cave
                         plantsToSpawn--;
                         int tries = 0;
                     plantInvalidTryAgain:;
-                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePosition(forbiddenPositions, false, plantTraits.isWater, plantTraits.isCeiling, plantTraits.isSide, soilType:plantTraits.soilType, tileNeededClose:plantTraits.tileNeededClose, isEveryAttach: plantTraits.isEveryAttach);
+                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePositionPlant(forbiddenPositions, plantTraits);
                         if (!returnTuple.valid) { continue; }
                         Plant newPlant = new Plant(this, returnTuple.pos, tupelo.type);
                         while (newPlant.isDeadAndShouldDisappear)
@@ -716,7 +716,7 @@ namespace Cave
 
                 if (spawnEntitiesBool)
                 {
-                    Dictionary<(int x, int y), bool> forbiddenPositions = new Dictionary<(int x, int y), bool>();
+                    HashSet<(int x, int y)> forbiddenPositions = new HashSet<(int x, int y)>();
                     spawnOneEntities(traits.entityBaseSpawnRate, traits.entityBaseSpawnTypes, forbiddenPositions);
                     spawnOneEntities(traits.entityGroundSpawnRate, traits.entityGroundSpawnTypes, forbiddenPositions);
                     spawnOneEntities(traits.entityWaterSpawnRate, traits.entityWaterSpawnTypes, forbiddenPositions);
@@ -725,7 +725,7 @@ namespace Cave
 
                 if (spawnPlants)
                 {
-                    Dictionary<(int x, int y), bool> forbiddenPositions = new Dictionary<(int x, int y), bool>();
+                    HashSet<(int x, int y)> forbiddenPositions = new HashSet<(int x, int y)>();
                     spawnOnePlants(traits.plantGroundSpawnRate, traits.plantGroundSpawnTypes, forbiddenPositions);
                     spawnOnePlants(traits.plantCeilingSpawnRate, traits.plantCeilingSpawnTypes, forbiddenPositions);
                     spawnOnePlants(traits.plantSideSpawnRate, traits.plantSideSpawnTypes, forbiddenPositions);
@@ -778,7 +778,7 @@ namespace Cave
                 }
                 return modified;
             }
-            public ((int x, int y), bool valid) findSuitablePosition(Dictionary<(int x, int y), bool> forbiddenPositions, bool isEntity, bool isWater, bool isCeiling = false, bool isSide = false, bool isDigging = false, bool isJesus = false, (int type, int subType)[] soilType = null, ((int type, int subType) tile, (int x, int y) range)? tileNeededClose = null, bool isEveryAttach = false)
+            public ((int x, int y), bool valid) findSuitablePositionPlant(HashSet<(int x, int y)> forbiddenPositions, PlantTraits plantTraits)
             {
                 int counto = 0;
                 (int x, int y) posToTest;
@@ -787,40 +787,59 @@ namespace Cave
                 {
                     counto++;
                     randPos = (pos.x * 32 + rand.Next(32), pos.y * 32 + rand.Next(32));
-                    if (forbiddenPositions.ContainsKey(randPos)) { continue; }
+                    if (forbiddenPositions.Contains(randPos)) { continue; }
                     TileTraits tileTraits = fillStates[PosMod(randPos.x), PosMod(randPos.y)];
-                    if (tileTraits.isSolid != isDigging) { forbiddenPositions[randPos] = true; continue; }
-                    if (tileTraits.isAir == (isWater && !isJesus) && !isDigging) { continue; };    // If water plant and liquid tile, yay, if normal plant and empty tile, yay, else no
-                    if (isEntity && !isJesus) { goto success; }   // For entities, no need to test if ceiling or ground shit
+                    if (tileTraits.isSolid) { forbiddenPositions.Add(randPos); continue; }
+                    if (tileTraits.isAir == plantTraits.isWater) { continue; };    // If Water plant and AIR, skip, if Normal plant and LIQUID, skip
 
-                    if (isEveryAttach) { (int x, int y) mod = neighbourArray[rand.Next(4)]; posToTest = (randPos.x + mod.x, randPos.y + mod.y); }
-                    else if (isSide) { posToTest = (randPos.x + (isSide && !isCeiling ? (counto % 2) * 2 - 1 : 0), randPos.y); }
-                    else { posToTest = (randPos.x, randPos.y + (isCeiling ? 1 : -1)); }
+                    if (plantTraits.isEveryAttach) { (int x, int y) mod = neighbourArray[rand.Next(4)]; posToTest = (randPos.x + mod.x, randPos.y + mod.y); }
+                    else if (plantTraits.isSide) { posToTest = (randPos.x + (plantTraits.isSide && !plantTraits.isCeiling ? (counto % 2) * 2 - 1 : 0), randPos.y); }
+                    else { posToTest = (randPos.x, randPos.y + (plantTraits.isCeiling ? 1 : -1)); }
+
                     tileTraits = screen.getTileContent(posToTest);
+                    if (!tileTraits.isSolid) { continue; }
 
-                    if (soilType != null && !soilType.Contains(tileTraits.type)) { continue; }
-                    if (tileNeededClose != null)
+                    if (plantTraits.soilType != null && !plantTraits.soilType.Contains(tileTraits.type)) { continue; }
+                    if (plantTraits.tileNeededClose != null)
                     {
-                        for (int i = -tileNeededClose.Value.range.x; i <= tileNeededClose.Value.range.x; i++)
+                        for (int i = -plantTraits.tileNeededClose.Value.range.x; i <= plantTraits.tileNeededClose.Value.range.x; i++)
                         {
-                            for (int j = -tileNeededClose.Value.range.y; j <= tileNeededClose.Value.range.y; j++)
+                            for (int j = -plantTraits.tileNeededClose.Value.range.y; j <= plantTraits.tileNeededClose.Value.range.y; j++)
                             {
-                                if (screen.getTileContent((posToTest.x + i, posToTest.y + j)).type == tileNeededClose.Value.tile) { goto tileNeededFound; }
+                                if (screen.getTileContent((posToTest.x + i, posToTest.y + j)).type == plantTraits.tileNeededClose.Value.tile) { goto tileNeededFound; }
                             }
                         }
                         continue;
                     }
                 tileNeededFound:;
-                    if (isJesus)
-                    {
-                        if (!tileTraits.isLiquid) { continue; }
-                    }
-                    else if (!tileTraits.isSolid) { continue; }
                     goto success;
                 }
                 return ((0, 0), false);
             success:;
-                forbiddenPositions[randPos] = true; // if spawn succeeded, prevent spawning in the same tile
+                forbiddenPositions.Add(randPos); // if spawn succeeded, prevent spawning in the same tile
+                return (randPos, true);
+            }
+            public ((int x, int y), bool valid) findSuitablePositionEntity(HashSet<(int x, int y)> forbiddenPositions, EntityTraits entityTraits)
+            {
+                int counto = 0;
+                (int x, int y) randPos;
+                while (counto < 100)
+                {
+                    counto++;
+                    randPos = (pos.x * 32 + rand.Next(32), pos.y * 32 + rand.Next(32));
+                    TileTraits tileTraits = fillStates[PosMod(randPos.x), PosMod(randPos.y)];
+                    if (tileTraits.isSolid) { if (entityTraits.spawnsInSolid && entityTraits.diggableTiles.Contains(tileTraits.type)) { goto success; } }
+                    else if (tileTraits.isAir) { if (entityTraits.spawnsInAir)
+                        {
+                            if (entityTraits.isJesus) { if (!screen.getTileContent((randPos.x, randPos.y - 1)).isLiquid) { continue; } }
+                            goto success;
+                        } }
+                    else if (tileTraits.isLiquid) { if (entityTraits.spawnsInLiquid) { goto success; } }
+                    continue;
+                }
+                return ((0, 0), false);
+            success:;
+                forbiddenPositions.Add(randPos); // if spawn succeeded, prevent spawning in the same tile
                 return (randPos, true);
             }
             public void moveLiquids()
@@ -1502,9 +1521,9 @@ namespace Cave
             int humidity = values.humi;
             int acidity = values.acid;
             int toxicity = values.toxi;
-            int salinity = values.toxi;
-            int illumination = values.toxi;
-            int oceanity = values.toxi;
+            int salinity = values.sali;
+            int illumination = values.illu;
+            int oceanity = values.ocea;
             int mod1 = 0;
             int mod2 = 0;
             return (temperature, humidity, acidity, toxicity, salinity, illumination, oceanity, mod1, mod2);

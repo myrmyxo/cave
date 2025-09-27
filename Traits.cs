@@ -272,6 +272,11 @@ namespace Cave
             public bool isJesus;
             public bool isCliming;
 
+            // Spawn conditions
+            public bool spawnsInAir;
+            public bool spawnsInLiquid;
+            public bool spawnsInSolid;
+
             // Behaviors
             public int inWaterBehavior;     // -> 0: nothing, 1: float upwards, 2: move randomly in water, 3:drift towards land
             public int onWaterBehavior;     // -> 0: nothing, 1: skip, 2: drift towards land
@@ -287,6 +292,7 @@ namespace Cave
             public (float x, float y) jumpStrength;
             public float jumpChance;
             public int goHomeDistance;
+            public HashSet<(int type, int subType)> diggableTiles;
             public EntityTraits(string namee, int hp, ((int type, int subType, int megaType) element, int count) drps,
                 ColorRange colRange, int? lR = null, (int baseLength, int variation)? L = null, float? tAR = null, bool tT = false,
                 (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[] tM = null,
@@ -295,7 +301,8 @@ namespace Cave
                 ((int x, int y)[] up, (int x, int y)[] side, (int x, int y)[] down)? cP = null,
                 int iW = 0, int oW = 0, int iA = 0, int oG = 0, int iG = 0, int oP = 0,
                 bool fIF = false, bool fIS = false, bool fID = false, bool fIJ = false, bool fIC = false,
-                float sS = 0.1f, float sMS = 0.5f, (float x, float y)? jS = null, float jC = 0, float mC = 0, int gHD = 50)
+                float sS = 0.1f, float sMS = 0.5f, (float x, float y)? jS = null, float jC = 0, float mC = 0, int gHD = 50,
+                HashSet<(int type, int subType)> dT = null)
             {
                 name = namee;
                 startingHp = hp;
@@ -310,7 +317,8 @@ namespace Cave
                 if (tM2 != null)
                 {
                     List<(int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)> newTailMap = new List<(int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)>();
-                    foreach (((bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color, (int segment, bool fromEnd, (int x, int y) pos)[] array) subArray in tM2) {
+                    foreach (((bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color, (int segment, bool fromEnd, (int x, int y) pos)[] array) subArray in tM2)
+                    {
                         foreach ((int segment, bool fromEnd, (int x, int y) pos) element in subArray.array) { newTailMap.Add((element.segment, element.fromEnd, false, 0, element.pos, subArray.color)); }
                     }
                     if (tailMap != null) { foreach ((int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color) element in tailMap) { newTailMap.Add(element); } }
@@ -326,6 +334,11 @@ namespace Cave
                 isDigging = fID || iG == 2 ? true : false;
                 isJesus = fIJ || oW == 1 ? true : false;
                 isCliming = fIC || oP != 0 ? true : false;
+
+                spawnsInAir = isFlying;
+                spawnsInLiquid = isSwimming;
+                spawnsInSolid = isDigging;
+                if (!(spawnsInLiquid || spawnsInSolid)) { spawnsInAir = true; }
 
                 inWaterBehavior = iW;
                 onWaterBehavior = oW;
@@ -343,6 +356,7 @@ namespace Cave
                 jumpChance = jC;
 
                 goHomeDistance = gHD;
+                diggableTiles = dT ?? new HashSet<(int type, int subType)>();
             }
         }
         public static Dictionary<(int type, int subType), EntityTraits> entityTraitsDict;
@@ -402,9 +416,15 @@ namespace Cave
 
                 { (4, 0), new EntityTraits("Worm",            7,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((210, 0, 30), (140, 20, 30), (140, 20, 30)), L:(2, 4),
+                dT:new HashSet<(int type, int subType)>{ (1, 0), (2, 0), (3, 2) },
                 iW:3, oW:2, iA:0, oG:3, iG:2) },
                 { (4, 1), new EntityTraits("Nematode",        3,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((210, -20, 30), (210, 20, 30), (235, 0, 30)), L:(2, 8),
+                dT:new HashSet<(int type, int subType)>{ (4, 0), (4, 1), (4, 2) },
+                iW:2, oW:2, iA:0, oG:3, iG:2) },
+                { (4, 2), new EntityTraits("Salt Worm",        3,  ((8, 0, 3), 1),      //  --> Flesh
+                new ColorRange((170, -5, 5), (120, 5, 5), (140, 5, 5)), L:(3, 3), tM:new (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[]{ (0, false, true, -1, (1, 0), (true, null, (0, -15, -15, -20))), (0, false, true, 1, (1, 0), (true, null, (0, -15, -15, -20))),   (0, false, true, -1, (2, 0), (true, null, (-128, -30, -30, -35))), (0, false, true, 1, (2, 0), (true, null, (-128, -30, -30, -35)))    },
+                dT:new HashSet<(int type, int subType)>{ (6, 0) },
                 iW:2, oW:2, iA:0, oG:3, iG:2) },
 
                 { (5, 0), new EntityTraits("WaterSkipper",    3,  ((8, 0, 3), 1),       //  --> Flesh
@@ -1380,7 +1400,7 @@ namespace Cave
             public (int type, int subType)? initFailType;
             public int minGrowthForValidity;
 
-            public (int type, int subType)[] soilType;
+            public HashSet<(int type, int subType)> soilType;
             public ((int type, int subType) tile, (int x, int y) range)? tileNeededClose;
 
             public (int r, int g, int b)? fullPlantShade;
@@ -1395,7 +1415,7 @@ namespace Cave
             public bool isLuminous;
             public bool isClimbable;
             public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? iFT = null, int mGFV = 1,
-                (int type, int subType)[] sT = null, ((int type, int subType) tile, (int x, int y) range)? tNC = null,
+                HashSet<(int type, int subType)> sT = null, ((int type, int subType) tile, (int x, int y) range)? tNC = null,
                 ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, (int r, int g, int b)? fPS = null, bool dFPSO = false,
                 bool T = false, bool C = false, bool S = false, bool EA = false, bool W = false, bool lum = false, bool cl = false)
             {
@@ -1471,7 +1491,7 @@ namespace Cave
 
                 { (4, 0), new PlantTraits("Mushroom",
                 t:(4, 0, 0)) },
-                { (4, 1), new PlantTraits("Mold",
+                { (4, 1), new PlantTraits("Mold",                                  EA:true,
                 t:(4, 1, 0)) },
 
                 { (5, 0), new PlantTraits("Vine",                                   C:true,
@@ -1496,24 +1516,24 @@ namespace Cave
 
 
                 { (20, 0), new PlantTraits("FleshVine",                             C:true,
-                t:(20, 0, 0), mGFV:4, sT:new (int type, int subType)[] { (4, 0), (4, 2) }) },
+                t:(20, 0, 0), mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
                 { (20, 1), new PlantTraits("FleshTendril",
-                t:(20, 1, 0), mGFV:4, sT:new (int type, int subType)[] { (4, 0), (4, 2) }) },
+                t:(20, 1, 0), mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
                 { (20, 2), new PlantTraits("FleshTree1",                            T:true,
-                t:(20, 2, 0), mGFV:1, sT:new (int type, int subType)[] { (4, 0), (4, 2) }) },
+                t:(20, 2, 0), mGFV:1, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
                 { (20, 3), new PlantTraits("FleshTree2",                            T:true,
-                t:(20, 3, 0), mGFV:1, sT:new (int type, int subType)[] { (4, 0), (4, 2) }) },
+                t:(20, 3, 0), mGFV:1, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
 
 
                 { (21, 0), new PlantTraits("BoneStalactite",                        C:true,
-                t:(21, 0, 0), mGFV:4, sT:new (int type, int subType)[] { (4, 1) }) },
+                t:(21, 0, 0), mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 1) }) },
                 { (21, 1), new PlantTraits("BoneStalagmite",
-                t:(21, 1, 0), mGFV:4, sT:new (int type, int subType)[] { (4, 1) }) },
+                t:(21, 1, 0), mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 1) }) },
 
                 { (22, 0), new PlantTraits("Body Hair",                            EA:true, cl:true,
-                t:(22, 0, 0), mGFV:4, sT:new (int type, int subType)[] { (4, 0), (4, 2) }) },
+                t:(22, 0, 0), mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
                 { (22, 1), new PlantTraits("Long Hair",                             C:true, cl:true,
-                t:(22, 1, 0), mGFV:4, sT:new (int type, int subType)[] { (4, 0), (4, 2) }) },
+                t:(22, 1, 0), mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
             };
         }
 
@@ -1868,7 +1888,7 @@ namespace Cave
                 ePS:CHEERINGWILLOW) },
 
                 { (6, 0),  new BiomeTraits("Mold",                  (Color.DarkBlue.R, Color.DarkBlue.G + 20, Color.DarkBlue.B + 40),
-                new float[]{1, 0.25f, 2, 2,  4, 1, 2, 0, 4, 4, 0, 0}, // Worm
+                new float[]{1, 0.25f, 2, 2,  1, 1, 2, 0, 4, 4, 0, 0}, // Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((4, 1), 100), },
                 txT:(0, 0), tFT:new TerrainFeaturesTraits[]{ famousTFT["Mold"] }) }, // Mold
@@ -1892,8 +1912,8 @@ namespace Cave
                 lT:(0, 0), lS:(3, 50, 3000),                         // Algae 1       Algae Bulbous Algae Ceiling 1
                 cT:(0, 3), txT:(0, 0), fT:(-2, 2), sT:1, cL:1) },
                 { (8, 3),  new BiomeTraits("Salt Ocean",            (Color.DeepPink.R, Color.DeepPink.G, Color.DeepPink.B),
-                new float[]{1, 0.25f, 15, 6, 0, 4, 1, 2, 0, 8, 0, 8, 0},
-                new ((int type, int subType) type, float percentage)[]{ },
+                new float[]{1, 0.25f, 15, 6, 0, 4, 1, 2, 0, 8, 0, 8, 0}, // Salt Worms
+                new ((int type, int subType) type, float percentage)[]{ ((4, 2), 100) },
                 new ((int type, int subType) type, float percentage)[]{ },
                 lT:(-2, 2), lS:(3, 50, 3000), tFT:new TerrainFeaturesTraits[]{ famousTFT["Salt Terrain"], famousTFT["Salt Filling"], famousTFT["Salt Spikes"] },
                 cT:(1, 3), txT:(0, 0), fT:(-2, 2), sT:1, cL:1) },

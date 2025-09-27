@@ -88,7 +88,7 @@ namespace Cave
                 spawnEntitiesBool = true;
                 spawnPlants = true;
                 bool spawnNOTHING = true;
-                bool spawnEVERYTHING = false;
+                bool spawnEVERYTHING = true;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
                 if (spawnEVERYTHING) { loadStructuresYesOrNo = true; spawnEntitiesBool = true; spawnPlants = true; }
 
@@ -128,7 +128,7 @@ namespace Cave
                     makeBiomeDiagram((0, 0), (a, b), new int[]{ c, d, 512, 512, 512 }, "-");
                 }
                 int counti = 0;
-                for (int i = -512; i < /*-1000*/1536; i += 64)
+                for (int i = -512; i < -1000/*1536*/; i += 64)
                 {
                     makeBiomeDiagram((0, 0), (0, 1), new int[]{ 512, 512, 512, 512, i }, counti.ToString());
                     counti++;

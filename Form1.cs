@@ -81,6 +81,7 @@ namespace Cave
                 turnPngIntoString("Hornet");
                 turnPngIntoString("Worm");
                 turnPngIntoString("Nematode");
+                turnPngIntoString("SaltWorm");
                 turnPngIntoString("WaterSkipper");
                 turnPngIntoString("Goblin");
                 turnPngIntoString("Louse");
@@ -239,9 +240,8 @@ namespace Cave
             // guuuys i've got such a cool idea it's like a FLOATING ISLANDS fucking biome (or dimension) surely this has NEVER BEEN DONE ever before so ILL PUT IT AS A FUCKING LUDUM DARE THEME FFS
             // Wait what the fuck ??? Ludum Dare is like cancelled forever ???????? i'm actually shocked what the actual fuck this fucking sucks. Mike i love you pleas come back
             // Prevent hornet nests from spawning in water lmfaoooo and
-            // -> oceanity impact on mangrove ? so they get bigger close to oceans ?
             // Improve spawn rate shite for entity/plants to make the percentage system better idk (make the percentage be ABSOLUTE, not relative to the biome's frequency).
-            // SALT SWIMMERS !!
+            // STERILE tiles to prevent plants from growing on them when it's not specified they can (like Ice idk)
 
             // Candy dimension !! Candy Cane trees, Lollipop trees, Whipped Cream biome, Chocolate Biome
 
@@ -334,6 +334,7 @@ namespace Cave
             // Day and night cycle (that... doesn't exist yet lmfao) due to huge influx of light from another dimension. Like in all points of the dimension photons just happen to be transferred during the day, but it stops during the nigh
             // Same reason for the seasons(?) and shit, but over a long period of time
             // In living dimension, bone plants are acutally bone tumors ? And flesh plants parasitic ?? idk
+            // Salt worms are chemotrophic and take energy from the salt ! Stfu istg it makes sense
 
             //
             // cool seeds !!!! DO NOT DELETE      yeah actually since world gen keeps on changing they're fucking useless LMFAO

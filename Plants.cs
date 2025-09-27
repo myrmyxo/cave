@@ -897,7 +897,7 @@ namespace Cave
 
                         for (int i = 0; i < 1 + (int)(fillStates.Count * 0.2f); i++)
                         {
-                            if (fillStates.Count == 0) { drawPos = lastDrawPos; }
+                            if (fillStates.Count == 0) { drawPos = (0, 0); }
                             else
                             {
                                 drawPos = getRandomItem(fillStates.Keys.ToList());
