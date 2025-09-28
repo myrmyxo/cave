@@ -60,38 +60,45 @@ namespace Cave
             public (int type, int subType) type;
             public string name;
 
-            public bool isSolid;
             public bool isAir;
             public bool isLiquid;
-            public bool isAcidic;
-            public bool isLava;         // H for hot
-            public bool isTransformant; // Fairy liquid
+            public bool isSolid;
 
-            public bool isTransparent;
+            public bool isLava;         // H for hot
+            public bool isAcidic;
+            public bool isTransformant; // Fairy liquid
             public bool isSlippery;
+
+            public bool isSterile;
+            public bool ignoreTileFeatures;
 
             public int hardness;
             public int viscosity = 0;
 
             public ColorRange colorRange;
             public float biomeColorBlend;
-            public bool isTextured;     // For mold for now
-            public TileTraits(string namee, float biomeColorBlendToPut, ColorRange colRange, bool Air = false, bool Tex = false, bool L = false, bool H = false, bool A = false, bool T = false, bool S = false, bool Tr = false)
+            public bool isTextured;     // For mold and salt crystals
+            public bool isTransparent;
+            public TileTraits(string namee, ColorRange cR = null, bool Air = false, bool Liq = false, bool L = false, bool A = false, bool T = false, bool S = false, bool St = false, bool iTF = false, float bCB = 0.1f, bool Tex = false, bool Tr = false)
             {
                 name = namee;
-                colorRange = colRange;
-                biomeColorBlend = biomeColorBlendToPut;
-                isTextured = Tex;
 
                 isAir = Air;
-                isLiquid = L;
+                isLiquid = Liq;
                 isSolid = !(isAir || isLiquid);
 
-                isLava = H;
+                isLava = L;
                 isAcidic = A;
                 isTransformant = T;
                 isSlippery = S;
-                isTransparent = Tr || isLiquid || isAir ;
+
+                isSterile = St;
+                ignoreTileFeatures = iTF;
+
+                colorRange = cR;
+                biomeColorBlend = bCB;
+                isTextured = Tex;
+                isTransparent = Tr || isLiquid || isAir;
             }
             public void setType((int type, int subType) typeToSet) { type = typeToSet; }
         }
@@ -102,67 +109,67 @@ namespace Cave
         {
             tileTraitsDict = new Dictionary<(int type, int subType), TileTraits>()
             {
-                { (-7, 0), new TileTraits("Acid", 0.2f,
-                new ColorRange((120, 0, 0), (180, 0, 0), (60, 0, 0)),       L:true, A:true                              ) },
+                { (-7, 0), new TileTraits("Acid", bCB:0.2f,
+                cR:new ColorRange((120, 0, 0), (180, 0, 0), (60, 0, 0)),          Liq:true, A:true                          ) },
 
-                { (-6, 0), new TileTraits("Blood", 0.2f,
-                new ColorRange((100, 0, 0), (15, 0, 0), (25, 0, 0)),        L:true                                      ) },
-                { (-6, 1), new TileTraits("Deoxygenated Blood", 0.2f,
-                new ColorRange((65, 0, 0), (5, 0, 0), (35, 0, 0)),          L:true                                      ) },
+                { (-6, 0), new TileTraits("Blood", bCB:0.2f,
+                cR:new ColorRange((100, 0, 0), (15, 0, 0), (25, 0, 0)),           Liq:true                                  ) },
+                { (-6, 1), new TileTraits("Deoxygenated Blood", bCB:0.2f,
+                cR:new ColorRange((65, 0, 0), (5, 0, 0), (35, 0, 0)),             Liq:true                                  ) },
 
-                { (-5, 0), new TileTraits("Honey", 0.2f,
-                new ColorRange((160, 0, 0), (120, 0, 0), (70, 0, 0)),       L:true                                      ) },
+                { (-5, 0), new TileTraits("Honey", bCB:0.2f,
+                cR:new ColorRange((160, 0, 0), (120, 0, 0), (70, 0, 0)),          Liq:true                                  ) },
 
-                { (-4, 0), new TileTraits("Lava", 0.05f,
-                new ColorRange((255, 0, 0), (90, 0, 0), (0, 0, 0)),         L:true, H:true                              ) },
+                { (-4, 0), new TileTraits("Lava", bCB:0.05f,
+                cR:new ColorRange((255, 0, 0), (90, 0, 0), (0, 0, 0)),            Liq:true, L:true                          ) },
 
-                { (-3, 0), new TileTraits("Fairy Liquid", 0.2f,
-                new ColorRange((105, 0, 0), (80, 0, 0), (120, 0, 0)),       L:true, T:true                              ) },
+                { (-3, 0), new TileTraits("Fairy Liquid", bCB:0.2f,
+                cR:new ColorRange((105, 0, 0), (80, 0, 0), (120, 0, 0)),          Liq:true, T:true                          ) },
 
-                { (-2, -1), new TileTraits("Ice", 0.2f,
-                new ColorRange((160, 0, 0), (160, 0, 0), (200, 0, 0)),      S:true, Tr:true                             ) },
-                { (-2, 0), new TileTraits("Water", 0.2f,
-                new ColorRange((80, 0, 0), (80, 0, 0), (120, 0, 0)),        L:true                                      ) },
-                { (-2, 2), new TileTraits("SaltyWater", 0.2f,
-                new ColorRange((100, 0, 0), (100, 0, 0), (110, 0, 0)),      L:true                                      ) },
+                { (-2, -1), new TileTraits("Ice", bCB:0.2f,
+                cR:new ColorRange((160, 0, 0), (160, 0, 0), (200, 0, 0)),          Tr:true, S:true, St:true, iTF:true       ) },
+                { (-2, 0), new TileTraits("Water", bCB:0.2f,
+                cR:new ColorRange((80, 0, 0), (80, 0, 0), (120, 0, 0)),           Liq:true                                  ) },
+                { (-2, 2), new TileTraits("SaltyWater", bCB:0.2f,
+                cR:new ColorRange((100, 0, 0), (100, 0, 0), (110, 0, 0)),         Liq:true                                  ) },
 
-                { (-1, 0), new TileTraits("Piss", 0.2f,                                                      
-                new ColorRange((120, 0, 0), (120, 0, 0), (80, 0, 0)),       L:true                                      ) },
-
-
-                { (0, -3), new TileTraits("Airror", 0.5f,
-                new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0)),      Air:true                                    ) },
-                { (0, -2), new TileTraits("Erroil", 0.5f,
-                new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0)),      L:true                                      ) },
-                { (0, -1), new TileTraits("Errore", 0.5f,
-                new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                                   ) },
-                { (0, 0), new TileTraits("Air", 0.5f,
-                new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0)),      Air:true                                    ) },
+                { (-1, 0), new TileTraits("Piss", bCB:0.2f,
+                cR:new ColorRange((120, 0, 0), (120, 0, 0), (80, 0, 0)),          Liq:true                                  ) },
 
 
-                { (1, 0), new TileTraits("Rock", 0.5f,
-                new ColorRange((30, 0, 0), (30, 0, 0), (30, 0, 0))                                                      ) },
-                { (1, 1), new TileTraits("Dense Rock", 0.2f,
-                new ColorRange((10, 0, 0), (10, 0, 0), (10, 0, 0))                                                      ) },
+                { (0, -3), new TileTraits("Airror", bCB:0.5f,
+                cR:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0)),         Air:true                                  ) },
+                { (0, -2), new TileTraits("Erroil", bCB:0.5f,
+                cR:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0)),         Liq:true                                  ) },
+                { (0, -1), new TileTraits("Errore", bCB:0.5f,
+                cR:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0))                                                    ) },
+                { (0, 0), new TileTraits("Air", bCB:0.5f,
+                cR:new ColorRange((140, 0, 0), (140, 0, 0), (140, 0, 0)),         Air:true                                  ) },
 
-                { (2, 0), new TileTraits("Dirt", 0.5f,
-                new ColorRange((80, 0, 0), (60, 0, 0), (20, 0, 0))                                                      ) },
 
-                { (3, 0), new TileTraits("Plant Matter", 0.35f,
-                new ColorRange((10, 0, 0), (60, 0, 0), (30, 0, 0))                                                      ) },
+                { (1, 0), new TileTraits("Rock", bCB:0.5f,
+                cR:new ColorRange((30, 0, 0), (30, 0, 0), (30, 0, 0))                                                       ) },
+                { (1, 1), new TileTraits("Dense Rock", bCB:0.2f,
+                cR:new ColorRange((10, 0, 0), (10, 0, 0), (10, 0, 0))                                                       ) },
 
-                { (4, 0), new TileTraits("Flesh Tile", 0.2f,
-                new ColorRange((135, 0, 0), (55, 0, 0), (55, 0, 0))                                                     ) },
-                { (4, 1), new TileTraits("Bone Tile", 0.2f,
-                new ColorRange((240, 0, 0), (230, 0, 0), (245, 0, 0))                                                   ) },
-                { (4, 2), new TileTraits("Skin Tile", 0.2f,
-                new ColorRange((200, 0, 0), (150, 0, 0), (130, 0, 0))                                                   ) },
+                { (2, 0), new TileTraits("Dirt", bCB:0.5f,
+                cR:new ColorRange((80, 0, 0), (60, 0, 0), (20, 0, 0))                                                       ) },
 
-                { (5, 0), new TileTraits("Mold Tile", 0.1f,
-                new ColorRange((50, 0, 0), (50, 0, 0), (100, 0, 0)),        Tex:true                                    ) },
+                { (3, 0), new TileTraits("Plant Matter", bCB:0.35f,
+                cR:new ColorRange((10, 0, 0), (60, 0, 0), (30, 0, 0))                                                       ) },
 
-                { (6, 0), new TileTraits("Salt Tile", 0.1f,
-                new ColorRange((170, 0, 0), (120, 0, 0), (140, 0, 0)),      Tex:true, Tr:true                           ) },
+                { (4, 0), new TileTraits("Flesh Tile", bCB:0.2f,
+                cR:new ColorRange((135, 0, 0), (55, 0, 0), (55, 0, 0))                                                      ) },
+                { (4, 1), new TileTraits("Bone Tile", bCB:0.2f,
+                cR:new ColorRange((240, 0, 0), (230, 0, 0), (245, 0, 0))                                                    ) },
+                { (4, 2), new TileTraits("Skin Tile", bCB:0.2f,
+                cR:new ColorRange((200, 0, 0), (150, 0, 0), (130, 0, 0))                                                    ) },
+
+                { (5, 0), new TileTraits("Mold Tile", bCB:0.1f,
+                cR:new ColorRange((50, 0, 0), (50, 0, 0), (100, 0, 0)),           Tex:true                                  ) },
+
+                { (6, 0), new TileTraits("Salt Tile", bCB:0.1f,
+                cR:new ColorRange((170, 0, 0), (120, 0, 0), (140, 0, 0)),         Tex:true, Tr:true, St:true                ) },
             };
 
             foreach ((int type, int subType) typeToSet in tileTraitsDict.Keys) { tileTraitsDict[typeToSet].setType(typeToSet); }
@@ -276,6 +283,8 @@ namespace Cave
             public bool spawnsInAir;
             public bool spawnsInLiquid;
             public bool spawnsInSolid;
+            public bool forceSpawnOnSolid;
+            public HashSet<(int type, int subType)> tilesItCanSpawnOn;
 
             // Behaviors
             public int inWaterBehavior;     // -> 0: nothing, 1: float upwards, 2: move randomly in water, 3:drift towards land
@@ -298,7 +307,7 @@ namespace Cave
                 (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[] tM = null,
                 ((bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color, (int segment, bool fromEnd, (int x, int y) pos)[] array)[] tM2 = null,
                 (int type, (int x, int y) pos, float period, float turningSpeed, (bool isVariation, (int a, int r, int g, int b) value) color)? wT = null,
-                ((int x, int y)[] up, (int x, int y)[] side, (int x, int y)[] down)? cP = null,
+                ((int x, int y)[] up, (int x, int y)[] side, (int x, int y)[] down)? cP = null, HashSet<(int type, int subType)> tICSO = null,
                 int iW = 0, int oW = 0, int iA = 0, int oG = 0, int iG = 0, int oP = 0,
                 bool fIF = false, bool fIS = false, bool fID = false, bool fIJ = false, bool fIC = false,
                 float sS = 0.1f, float sMS = 0.5f, (float x, float y)? jS = null, float jC = 0, float mC = 0, int gHD = 50,
@@ -339,6 +348,8 @@ namespace Cave
                 spawnsInLiquid = isSwimming;
                 spawnsInSolid = isDigging;
                 if (!(spawnsInLiquid || spawnsInSolid)) { spawnsInAir = true; }
+                if (!isFlying && spawnsInAir && !isJesus && !isCliming) { forceSpawnOnSolid = true; }
+                tilesItCanSpawnOn = tICSO;
 
                 inWaterBehavior = iW;
                 onWaterBehavior = oW;
@@ -429,7 +440,7 @@ namespace Cave
 
                 { (5, 0), new EntityTraits("WaterSkipper",    3,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((110, 0, 30), (110, 0, 30), (140, 20, 30)),
-                iW:1, oW:1, iA:0, oG:1, iG:1, jC:0.05f) },
+                iW:1, oW:1, iA:0, oG:1, iG:1, jC:0.05f, tICSO:new HashSet<(int type, int subType)>{ (-2, 0) }) },
 
                 { (6, 0), new EntityTraits("Goblin",          3,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((80, 50, 30), (175, 50, 30), (80, 50, 30)),
@@ -481,7 +492,7 @@ namespace Cave
 
                 { (10, 0), new EntityTraits("Dragonfly",      2,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((50, -30, 20), (70, 30, 25), (110, 15, 30)), L:(2, 0), wT:(0, (0, 0), 0.007132f, 1.5f, (false, (50, 220, 220, 200))),
-                iW:1, iA:2, iG:3, tAR:2, mC:0.02f, fIJ:true) },
+                iW:1, iA:2, iG:3, tAR:2, mC:0.02f, fIJ:true, tICSO:new HashSet<(int type, int subType)>{ (-2, 0), (-2, 2) }) },
             };
         }
 

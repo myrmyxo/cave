@@ -241,7 +241,7 @@ namespace Cave
             // Wait what the fuck ??? Ludum Dare is like cancelled forever ???????? i'm actually shocked what the actual fuck this fucking sucks. Mike i love you pleas come back
             // Prevent hornet nests from spawning in water lmfaoooo and
             // Improve spawn rate shite for entity/plants to make the percentage system better idk (make the percentage be ABSOLUTE, not relative to the biome's frequency).
-            // STERILE tiles to prevent plants from growing on them when it's not specified they can (like Ice idk)
+            // Breathability noise ???
 
             // Candy dimension !! Candy Cane trees, Lollipop trees, Whipped Cream biome, Chocolate Biome
 

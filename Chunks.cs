@@ -487,6 +487,7 @@ namespace Cave
                 {
                     if (tFT.needsQuartileFilled && !quartileWasFilled) { continue; }
                     TileTraits tileTraits = fillStates[i, j];
+                    if (tileTraits.ignoreTileFeatures) { continue; }
                     if (!tFT.inAir && tileTraits.isAir) { continue; }
                     if (!tFT.inLiquid && tileTraits.isLiquid) { continue; }
                     if (!tFT.inSoil && tileTraits.isSolid) { continue; }
@@ -799,7 +800,7 @@ namespace Cave
                     tileTraits = screen.getTileContent(posToTest);
                     if (!tileTraits.isSolid) { continue; }
 
-                    if (plantTraits.soilType != null && !plantTraits.soilType.Contains(tileTraits.type)) { continue; }
+                    if (plantTraits.soilType is null ? tileTraits.isSterile : !plantTraits.soilType.Contains(tileTraits.type)) { continue; }
                     if (plantTraits.tileNeededClose != null)
                     {
                         for (int i = -plantTraits.tileNeededClose.Value.range.x; i <= plantTraits.tileNeededClose.Value.range.x; i++)
@@ -831,7 +832,9 @@ namespace Cave
                     if (tileTraits.isSolid) { if (entityTraits.spawnsInSolid && entityTraits.diggableTiles.Contains(tileTraits.type)) { goto success; } }
                     else if (tileTraits.isAir) { if (entityTraits.spawnsInAir)
                         {
-                            if (entityTraits.isJesus) { if (!screen.getTileContent((randPos.x, randPos.y - 1)).isLiquid) { continue; } }
+                            tileTraits = screen.getTileContent((randPos.x, randPos.y - 1));
+                            if (entityTraits.forceSpawnOnSolid && !tileTraits.isSolid) { continue; }
+                            if (entityTraits.tilesItCanSpawnOn != null && !entityTraits.tilesItCanSpawnOn.Contains(tileTraits.type)) { continue; }
                             goto success;
                         } }
                     else if (tileTraits.isLiquid) { if (entityTraits.spawnsInLiquid) { goto success; } }
@@ -1565,10 +1568,6 @@ namespace Cave
         }
         public static (BiomeTraits traits, int percentage)[] findBiome((int, int) dimensionType, (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) values)
         {
-            //return new (int, int)[]{ (8, 1000) }; // use this to force a biome for debug (infite biome)
-
-
-            // arrite so... 0 is temperature, 1 is humidity, 2 is acidity, 3 is toxicity, 4 is terrain modifier1, 5 is terrain modifier 2
             List<((int biome, int subBiome), int)> listo = new List<((int biome, int subBiome), int)>();
             int percentageFree = 1000;
             int currentInt;
