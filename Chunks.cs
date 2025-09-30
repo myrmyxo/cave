@@ -107,6 +107,7 @@ namespace Cave
                 if (explorationLevel == 1)
                 {
                     fogOfWar = chunkJson.fog;
+                    if (fogOfWar == null) { fogOfWar = new bool[32, 32]; }  // It bugged for some reason due to chunks loading when nest loading extra chunk s ????
                     fogBitmap = new Bitmap(32, 32);
                     for (int i = 0; i < 32; i++)
                     {
@@ -118,7 +119,7 @@ namespace Cave
                 }
                 else { fogOfWar = null; }
 
-                if (!isMature) { screen.chunksToMature[pos] = true; }
+                if (!isMature) { screen.chunksToMature.Add(pos); }
             }
             public void demoteToExtra()
             {
@@ -525,7 +526,7 @@ namespace Cave
                     else if (tFT.transitionRules == 2) // mold
                     {
                         valueRequired += Min(500 - biomeValues.illu, biomeValues.humi - 500) + (int)(0.1f * (biomeValues.acid + biomeValues.sali)) - (int)(0.2f * biomeValues.temp);
-                        noiseValue = Max(0, (int)(Abs(Abs(noiseValue2 * 0.25f + noiseValue1 - 1280) * 0.49f)));
+                        noiseValue = noiseValue1 + noiseValue2 - 1500 + (int)(Max(fillScore.baseScore1, fillScore.baseScore2) * 100);
                     }
                     else if (tFT.transitionRules == 3) // salt terrain
                     {
@@ -997,7 +998,7 @@ namespace Cave
                     }
                     posToTest = (absChunkX * 32 + iTested, absChunkY * 32 + jTested);
                     TileTraits traits = chunkToTest.fillStates[iTested, jTested];
-                    if (traits.isSolid || screen.liquidsThatCantGoRight.ContainsKey(posToTest)) { break; }
+                    if (traits.isSolid || screen.liquidsThatCantGoRight.Contains(posToTest)) { break; }
                     if (traits.isAir)
                     {
                         chunkToTest.tileModification(iTested, jTested, tileModification(i, j, (0, 0)));
@@ -1007,10 +1008,7 @@ namespace Cave
                     liquidSlideCount++;
                     repeatCounter++;
                 }
-                foreach ((int x, int y) pos in posVisited)
-                {
-                    screen.liquidsThatCantGoRight[pos] = true;
-                }
+                foreach ((int x, int y) pos in posVisited) { screen.liquidsThatCantGoRight.Add(pos); }
                 return false;
             }
             public bool testLiquidPushLeft(int i, int j)
@@ -1040,7 +1038,7 @@ namespace Cave
                     }
                     posToTest = (absChunkX * 32 + iTested, absChunkY * 32 + jTested);
                     TileTraits traits = chunkToTest.fillStates[iTested, jTested];
-                    if (traits.isSolid || screen.liquidsThatCantGoRight.ContainsKey(posToTest)) { break; }
+                    if (traits.isSolid || screen.liquidsThatCantGoRight.Contains(posToTest)) { break; }
                     if (traits.isAir)
                     {
                         chunkToTest.tileModification(iTested, jTested, tileModification(i, j, (0, 0)));
@@ -1050,10 +1048,7 @@ namespace Cave
                     liquidSlideCount++;
                     repeatCounter++;
                 }
-                foreach ((int x, int y) pos in posVisited)
-                {
-                    screen.liquidsThatCantGoLeft[pos] = true;
-                }
+                foreach ((int x, int y) pos in posVisited) { screen.liquidsThatCantGoLeft.Add(pos); }
                 return false;
             }
             public void testLiquidUnstableNonspecific(int posX, int posY)
@@ -1237,20 +1232,20 @@ namespace Cave
                     }
                 }
             }
-            public void updateFogOfWarOneTile(Dictionary<Chunk, bool> chunkDict, (int x, int y) posToTest)
+            public void updateFogOfWarOneTile(HashSet<Chunk> chunkDict, (int x, int y) posToTest)
             {
                 if (explorationLevel == 2) { return; }
                 if (explorationLevel == 0)
                 {
                     createFogOfWar();
-                    chunkDict[this] = true;
+                    chunkDict.Add(this);
                 }
                 (int x, int y) tileIndex = PosMod(posToTest);
                 if (!fogOfWar[tileIndex.x, tileIndex.y])
                 {
                     fogOfWar[tileIndex.x, tileIndex.y] = true;
                     fogBitmap.SetPixel(tileIndex.x, tileIndex.y, Color.Transparent);
-                    chunkDict[this] = true;
+                    chunkDict.Add(this);
                 }
             }
             public void updateFogOfWarFull()

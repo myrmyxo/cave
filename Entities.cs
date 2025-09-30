@@ -775,8 +775,8 @@ namespace Cave
                     {
                         if (inventoryElements.Contains((-5, 0, 0)) && nest.availableHoneyRooms.Count > 0)
                         {
-                            Room targetRoom = nest.rooms[nest.availableHoneyRooms[rand.Next(nest.availableHoneyRooms.Count)]];
-                            targetPos = targetRoom.dropPositions[rand.Next(targetRoom.dropPositions.Count)];
+                            Room targetRoom = getRandomValue(nest.rooms);
+                            targetPos = getRandomItem(targetRoom.dropPositions);
 
                             if (pathfindToLocation(targetPos)) { state = 10007; }
                             else
@@ -801,8 +801,8 @@ namespace Cave
                         }
                         else if (rand.Next(3) > 0 && nest.eggsToLay > 0 && nest.availableNurseries.Count > 0)
                         {
-                            Room targetRoom = nest.rooms[nest.availableNurseries[rand.Next(nest.availableNurseries.Count)]];
-                            targetPos = targetRoom.dropPositions[rand.Next(targetRoom.dropPositions.Count)];
+                            Room targetRoom = nest.rooms[getRandomItem(nest.availableNurseries)];
+                            targetPos = getRandomItem(targetRoom.dropPositions);
 
                             if (pathfindToLocation(targetPos)) { state = 10008; }
                             else
@@ -822,7 +822,7 @@ namespace Cave
                         }
                         else if (nest.digErrands.Count > 0)
                         {
-                            targetPos = nest.digErrands[rand.Next(nest.digErrands.Count)];
+                            targetPos = getRandomItem(nest.digErrands);
                             if (pathfindToLocation(targetPos)) { state = 10006; }
                             else
                             {
@@ -864,7 +864,7 @@ namespace Cave
                         if (currentAttack.dugTile.type >= 0) { nest.digErrands.Remove(targetPos); }
                         if (currentAttack.dugTile.type == -5 && nest.hungryLarvae.Count > 0)
                         {
-                            targetEntity = nest.hungryLarvae[rand.Next(nest.hungryLarvae.Count)];
+                            targetEntity = getRandomItem(nest.hungryLarvae);
                             targetPos = (targetEntity.posX, targetEntity.posY);
 
                             if (pathfindToLocation(targetPos)) { state = 10009; }
@@ -1142,6 +1142,13 @@ namespace Cave
                 ((int type, int subType, int megaType) element, int count) entityDrop = traits.drops;
                 if (length > 0) { entityDrop = (entityDrop.element, length); }
                 entityToGive.addElementToInventory(entityDrop.element, entityDrop.count);
+                isDeadAndShouldDisappear = true;
+                if (nest != null) { nest.adults.Remove(this); nest.larvae.Remove(this); nest.outsideEntities.Remove(id); }
+                else if (nestId != -1)
+                {
+                    if(screen.activeStructures.ContainsKey(nestId)) { screen.activeStructures[nestId].addEntityToStructure(this); }
+                    nest.adults.Remove(this); nest.larvae.Remove(this); nest.outsideEntities.Remove(id);
+                }
                 screen.entitesToRemove[id] = this;
             }
             public void findLength()
@@ -1224,7 +1231,7 @@ namespace Cave
                             {
                                 if (isPlayer && arrowKeysState[3] && onGround && !climbing && speedY <= 0 && traits.collisionPoints.side.Length == 1)  // Make players able to move 1 tile upwards (not get stuck on small slopes cuz it's annoying)
                                 {
-                                    if (!screen.getTileContent((posToTest.x, posToTest.y + 1)).isSolid) { realPosY++; posY++; goto Proceed; }
+                                    if (!screen.getTileContent((posToTest.x, posToTest.y + 1)).isSolid && !screen.getTileContent((posX, posToTest.y + 1)).isSolid) { realPosY++; posY++; goto Proceed; }
                                 }
                                 proceed = false; break;
                             }

@@ -332,7 +332,7 @@ namespace Cave
             {
                 (float x, float y) poso = (posX + 0.5f, posY + 0.5f);
                 (int lives, bool lifeLoss) life = (3, false);
-                Dictionary<Chunk, bool> visitedChunks = new Dictionary<Chunk, bool>();
+                HashSet<Chunk> visitedChunks = new HashSet<Chunk>();
                 screen.getChunkFromPixelPos((posX, posY)).updateFogOfWarOneTile(visitedChunks, (posX, posY)); // Useful if player stuck in solid terrain only, but to make sure that the pixel the player is on is tested
                 List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)> modsToTest = new List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)>();
                 for (float i = -24; i < 25; i++)
@@ -346,9 +346,9 @@ namespace Cave
                 rayCastsToContinue = new List<((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life)>();
 
                 foreach (((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life) value in modsToTest) { rayCast(visitedChunks, value, 25); }
-                foreach (Chunk chunk in visitedChunks.Keys) { chunk.updateFogOfWarFull(); }
+                foreach (Chunk chunk in visitedChunks) { chunk.updateFogOfWarFull(); }
             }
-            public void rayCast(Dictionary<Chunk, bool> chunkDict, ((float x, float y) startPos, (float x, float y) angle, (int lives, bool lifeLoss) life) values, int limit = 45)
+            public void rayCast(HashSet<Chunk> chunkDict, ((float x, float y) startPos, (float x, float y) angle, (int lives, bool lifeLoss) life) values, int limit = 45)
             {
                 float xRatio = (values.angle.x) / (Abs(values.angle.y) + 0.0000001f);
                 float yRatio = (values.angle.y) / (Abs(values.angle.x) + 0.0000001f);

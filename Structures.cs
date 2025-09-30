@@ -95,8 +95,8 @@ namespace Cave
             public int state = 0;
             public Structure sisterStructure = null;
             public Dictionary<(int x, int y), (int type, int subType)> structureDict = new Dictionary<(int x, int y), (int type, int subType)>();
-            public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>();
-            public Dictionary<(int x, int y), bool> megaChunkPresence = new Dictionary<(int x, int y), bool>();
+            public HashSet<(int x, int y)> chunkPresence = new HashSet<(int x, int y)>();
+            public HashSet<(int x, int y)> megaChunkPresence = new HashSet<(int x, int y)>();
 
             public float timeAtBirth = -999;
 
@@ -195,10 +195,7 @@ namespace Cave
             {
                 if (isDynamic)
                 {
-                    foreach ((int, int) chunkPos in chunkPresence.Keys)
-                    {
-                        screen.getChunkFromChunkPos(chunkPos, false);
-                    }
+                    foreach ((int, int) chunkPos in chunkPresence) { screen.getChunkFromChunkPos(chunkPos, false); }
                     screen.activeStructures[id] = this;
                     isImmuneToUnloading = false;
                 }
@@ -206,16 +203,10 @@ namespace Cave
             }
             public void findChunkPresence()
             {
-                chunkPresence = new Dictionary<(int x, int y), bool>();
-                foreach ((int x, int y) posToTest in structureDict.Keys)
-                {
-                    chunkPresence[ChunkIdx(posToTest)] = true;
-                }
-                megaChunkPresence = new Dictionary<(int x, int y), bool>();
-                foreach ((int x, int y) poso in chunkPresence.Keys)
-                {
-                    megaChunkPresence[MegaChunkIdxFromChunkPos(poso)] = true;
-                }
+                chunkPresence = new HashSet<(int x, int y)>();
+                foreach ((int x, int y) posToTest in structureDict.Keys) { chunkPresence.Add(ChunkIdx(posToTest)); }
+                megaChunkPresence = new HashSet<(int x, int y)>();
+                foreach ((int x, int y) poso in chunkPresence) { megaChunkPresence.Add(MegaChunkIdxFromChunkPos(poso)); }
             }
             public bool drawLakeNew() // thank you papa still for base code <3
             {
@@ -274,7 +265,7 @@ namespace Cave
                 }
                 if (lakeHeight < biomeTraitsFirst.lakeSize.minHeight && tilesToFill.Count > 0)   // check again if lake too low in height, as it might actually be high enough ! Because lakeHeight is the minimum, as if it floods under the 1st flood point it's not counter as height !
                 {
-                    int mini = getRandomItem(tilesToFill.Keys.ToList()).y;
+                    int mini = getRandomKey(tilesToFill).y;
                     int maxi = mini;
                     foreach ((int x, int y) poso in tilesToFill.Keys) { mini = Min(mini, poso.y); maxi = Max(maxi, poso.y); }
                     lakeHeight = maxi - mini + 1;
@@ -356,13 +347,13 @@ namespace Cave
             public void addToMegaChunks()
             {
                 MegaChunk megaChunk;
-                foreach ((int x, int y) pos in megaChunkPresence.Keys)
+                foreach ((int x, int y) pos in megaChunkPresence)
                 {
                     megaChunk = screen.getMegaChunkFromMegaPos(pos);
                     if (!megaChunk.structures.Contains(id)) // should always be the case but whatever
                     {
                         megaChunk.structures.Add(id);
-                        screen.megaChunksToSave[pos] = true;
+                        screen.megaChunksToSave.Add(pos);
                         (int dim, int x, int y) location = (megaChunk.screen.id, pos.x, pos.y);
                         if (!screen.game.structureGenerationLogsStructureUpdateCount.ContainsKey(location)) { screen.game.structureGenerationLogsStructureUpdateCount[location] = 0; }
                         screen.game.structureGenerationLogsStructureUpdateCount[location] += 1;
@@ -620,7 +611,7 @@ namespace Cave
             public void EraseFromTheWorld()
             {
                 if (isErasedFromTheWorld) { return; }
-                foreach ((int x, int y) pos in megaChunkPresence.Keys)
+                foreach ((int x, int y) pos in megaChunkPresence)
                 {
                     MegaChunk megaChunk = screen.getMegaChunkFromMegaPos(pos);
                     megaChunk.structures.Remove(id);

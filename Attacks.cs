@@ -50,7 +50,7 @@ namespace Cave
             public (int x, int y) direction = (0, 0);
             public int state = -1;
 
-            public Dictionary<int, bool> entitiesAlreadyHitByCurrentAttack = new Dictionary<int, bool>();
+            public HashSet<int> entitiesAlreadyHitByCurrentAttack = new HashSet<int>();
 
             public bool isDone = false;
             public bool digSuccess = false;
@@ -330,7 +330,7 @@ namespace Cave
                 if (chunkToTest is null) { chunkToTest = screen.getChunkFromPixelPos(attackPos); }
                 foreach (Entity entity in chunkToTest.entityList)
                 {
-                    if ((entity.posX, entity.posY) == attackPos && !entitiesAlreadyHitByCurrentAttack.ContainsKey(entity.id)) { entityList.Add(entity); }
+                    if ((entity.posX, entity.posY) == attackPos && !entitiesAlreadyHitByCurrentAttack.Contains(entity.id)) { entityList.Add(entity); }
                 }
                 return entityList;
             }
@@ -340,7 +340,7 @@ namespace Cave
                 {
                     if (entity.type != motherEntity.type)
                     {
-                        entitiesAlreadyHitByCurrentAttack[entity.id] = true;
+                        entitiesAlreadyHitByCurrentAttack.Add(entity.id);
                         entity.hp -= traits.damage;
                         entity.timeAtLastGottenHit = timeElapsed;
                         if (entity.hp <= 0) { entity.dieAndDrop(motherEntity); }
@@ -358,7 +358,7 @@ namespace Cave
             public void finishAttack()
             {
                 isDone = true;
-                screen.attacksToRemove[this] = true;
+                screen.attacksToRemove.Add(this);
             }
         }
     }

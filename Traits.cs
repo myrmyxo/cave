@@ -1619,7 +1619,7 @@ namespace Cave
             {
                 { "HardRock", new TerrainFeaturesTraits((1, 1), 0, iS:true, mBVR:true, bT:0) },
                 { "Bone", new TerrainFeaturesTraits((4, 1), 1, iS:true, bT:512, H:(500, false), bVS:1024) },
-                { "Mold", new TerrainFeaturesTraits((5, 0), 2, iS:true, bT:1024, bER:(2000, 0), bVS:1024, nM:(32, 16)) },
+                { "Mold", new TerrainFeaturesTraits((5, 0), 2, iS:true, bT:1024, bER:(2000, 0), bVS:1024, nM:(64, 16)) },
                 { "Salt Terrain", new TerrainFeaturesTraits((6, 0), 3, iS:true, bT:0, bER:(10000, 700), S:(650, true), nM:(256, 64)) },
                 { "Salt Filling", new TerrainFeaturesTraits((6, 0), 4, iL:true, bT:0, fBS:true, bER:(10000, 700), nM:(null, null)) },
                 { "Salt Spikes", new TerrainFeaturesTraits((6, 0), 5, iL:true, bT:0, bER:(10000, 700), nQF:true) },

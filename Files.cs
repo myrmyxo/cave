@@ -110,7 +110,7 @@ namespace Cave
                 }
                 if (loadAllStructures()) { saveMegaChunk(this); }
             }
-            public void unloadAllNestsAndStructuresAndChunks(Dictionary<(int x, int y), bool> chunksToRemove)
+            public void unloadAllNestsAndStructuresAndChunks(HashSet<(int x, int y)> chunksToRemove)
             {
                 (int x, int y) playerPos = (ChunkIdx(screen.game.playerList[0].posX), ChunkIdx(screen.game.playerList[0].posY));
                 Structure structure;
@@ -121,16 +121,13 @@ namespace Cave
                         structure = screen.activeStructures[structureId];
                         structure.isImmuneToUnloading = false;
                         structure.saveStructure();
-                        foreach ((int x, int y) pososo in screen.activeStructures[structureId].chunkPresence.Keys) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
+                        foreach ((int x, int y) pososo in screen.activeStructures[structureId].chunkPresence) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
                         {
-                            if (Distance(pososo, playerPos) * 32 > 1.6f * screen.game.effectiveRadius) { chunksToRemove[pososo] = true; }
+                            if (Distance(pososo, playerPos) * 32 > 1.6f * screen.game.effectiveRadius) { chunksToRemove.Add(pososo); }
                         }
                         screen.activeStructures.Remove(structureId);
                     }
-                    if (screen.inertStructures.ContainsKey(structureId))
-                    {
-                        screen.inertStructures.Remove(structureId);
-                    }
+                    if (screen.inertStructures.ContainsKey(structureId)) { screen.inertStructures.Remove(structureId); }
                 }
             }
             public bool loadAllStructures()
@@ -392,10 +389,8 @@ namespace Cave
                 pos = room.position;
                 tiles = tileListToArray(room.tiles);
                 ent = new int[room.assignedEntities.Count];
-                for (int i = 0; i < room.assignedEntities.Count; i++)
-                {
-                    ent[i] = room.assignedEntities[i].id;
-                }
+                int idx = 0;
+                foreach (Entity entity in room.assignedEntities) { ent[idx] = entity.id; idx++; }
             }
             public RoomJson() { }
         }
@@ -453,32 +448,17 @@ namespace Cave
 
                 Room[] allRooms = nest.rooms.Values.ToArray();
                 rooms = new RoomJson[allRooms.Length];
-                for (int i = 0; i < allRooms.Length; i++)
-                {
-                    rooms[i] = new RoomJson(allRooms[i]);
-                }
+                for (int i = 0; i < allRooms.Length; i++) { rooms[i] = new RoomJson(allRooms[i]); }
 
                 ent = new int[nest.outsideEntities.Count + nest.adults.Count + nest.larvae.Count];
                 int idx = 0;
-                for (int i = 0; i < nest.outsideEntities.Count; i++)
-                {
-                    ent[idx] = nest.outsideEntities[i];
-                    idx++;
-                }
-                for (int i = 0; i < nest.adults.Count; i++)
-                {
-                    ent[idx] = nest.adults[i].id;
-                    idx++;
-                }
-                for (int i = 0; i < nest.larvae.Count; i++)
-                {
-                    ent[idx] = nest.larvae[i].id;
-                    idx++;
-                }
+                foreach (int entityID in nest.outsideEntities) { ent[idx] = entityID; idx++; }
+                foreach (Entity entity in nest.adults) { ent[idx] = entity.id; idx++; }
+                foreach (Entity entity in nest.larvae) { ent[idx] = entity.id; idx++; }
             }
             public NestJson() { }
         }
-        public static int[,] tileListToArray(List<(int x, int y)> listo)
+        public static int[,] tileListToArray(HashSet<(int x, int y)> listo)
         {
             int[,] arrayo = new int[listo.Count, 2];
             (int x, int y)[] keyo = listo.ToArray();
@@ -525,9 +505,9 @@ namespace Cave
             }
             return dicto;
         }
-        public static List<(int x, int y)> arrayToTileList(int[,] arrayo)
+        public static HashSet<(int x, int y)> arrayToTileHashSet(int[,] arrayo)
         {
-            List<(int x, int y)> listo = new List<(int x, int y)>();
+            HashSet<(int x, int y)> listo = new HashSet<(int x, int y)>();
             for (int i = 0; i < arrayo.GetLength(0); i++)
             {
                 listo.Add((arrayo[i, 0], arrayo[i, 1]));
@@ -625,10 +605,7 @@ namespace Cave
         }
         public static void saveAllChunks(Screens.Screen screen)
         {
-            foreach (Chunk chunko in screen.loadedChunks.Values)
-            {
-                saveChunk(chunko);
-            }
+            foreach (Chunk chunko in screen.loadedChunks.Values) { saveChunk(chunko); }
         }
         public static ChunkJson getChunkJson(Screens.Screen screen, (int x, int y) pos)
         {
@@ -788,55 +765,24 @@ namespace Cave
         }
         public static void createDimensionFolders(Game game, int id)
         {
-            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{game.seed}\\MegaChunkData\\{id}"))
-            {
-                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{game.seed}\\MegaChunkData\\{id}");
-            }
-            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{game.seed}\\ChunkData\\{id}"))
-            {
-                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{game.seed}\\ChunkData\\{id}");
-            }
+            testCreateOneFolder($"{currentDirectory}\\CaveData\\{game.seed}\\MegaChunkData\\{id}");
+            testCreateOneFolder($"{currentDirectory}\\CaveData\\{game.seed}\\ChunkData\\{id}");
         }
         public static void createFolders(long seed)
         {
-            if (!Directory.Exists($"{currentDirectory}\\BiomeDiagrams"))
-            {
-                Directory.CreateDirectory($"{currentDirectory}\\BiomeDiagrams");
-            }
-            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\ChunkNoise"))
-            {
-                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\ChunkNoise");
-            }
-
-
-            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\DimensionData"))
-            {
-                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\DimensionData");
-            }
-            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\MegaChunkData"))
-            {
-                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\MegaChunkData");
-            }
-            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\ChunkData"))
-            {
-                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\ChunkData");
-            }
-            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\StructureData"))
-            {
-                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\StructureData");
-            }
-            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\PlantData"))
-            {
-                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\PlantData");
-            }
-            if (!Directory.Exists($"{currentDirectory}\\CaveData\\{seed}\\EntityData"))
-            {
-                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\{seed}\\EntityData");
-            }
-            if (!Directory.Exists($"{currentDirectory}\\CaveData\\bitmapos"))
-            {
-                Directory.CreateDirectory($"{currentDirectory}\\CaveData\\bitmapos");
-            }
+            testCreateOneFolder($"{currentDirectory}\\BiomeDiagrams");
+            testCreateOneFolder($"{currentDirectory}\\bitmapos");
+            testCreateOneFolder($"{currentDirectory}\\CaveData\\{seed}\\ChunkNoise");
+            testCreateOneFolder($"{currentDirectory}\\CaveData\\{seed}\\DimensionData");
+            testCreateOneFolder($"{currentDirectory}\\CaveData\\{seed}\\MegaChunkData");
+            testCreateOneFolder($"{currentDirectory}\\CaveData\\{seed}\\ChunkData");
+            testCreateOneFolder($"{currentDirectory}\\CaveData\\{seed}\\StructureData");
+            testCreateOneFolder($"{currentDirectory}\\CaveData\\{seed}\\PlantData");
+            testCreateOneFolder($"{currentDirectory}\\CaveData\\{seed}\\EntityData");
+        }
+        public static void testCreateOneFolder(string path)
+        {
+            if (!Directory.Exists(path)) { Directory.CreateDirectory(path); }
         }
         public static string getSingleValueFromPath(string path, string valueToGet)
         {

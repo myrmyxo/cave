@@ -65,7 +65,7 @@ namespace Cave
             public (int x, int y) posOffset = (0, 0);
             public ((int min, int max) x, (int min, int max) y) bounds = ((0, 0), (0, 0));
 
-            public Dictionary<(int x, int y), bool> chunkPresence = new Dictionary<(int x, int y), bool>();
+            public HashSet<(int x, int y)> chunkPresence = new HashSet<(int x, int y)>();
 
             public bool isDeadAndShouldDisappear = false;
             public bool isStable = false;
@@ -198,11 +198,11 @@ namespace Cave
             }
             public void findChunkPresence(Dictionary<(int x, int y), Color> fillDict)
             {
-                chunkPresence = new Dictionary<(int x, int y), bool>();
-                if (fillDict.Count == 0) { chunkPresence[ChunkIdx(posX, posY)] = true; }    // Needed if plant at stage 0 so it doesn't disappear forever lmfao !
+                chunkPresence = new HashSet<(int x, int y)>();
+                if (fillDict.Count == 0) { chunkPresence.Add(ChunkIdx(posX, posY)); }    // Needed if plant at stage 0 so it doesn't disappear forever lmfao !
                 foreach ((int x, int y) posToTest in fillDict.Keys)
                 {
-                    chunkPresence[ChunkIdx(getRealPos(posToTest))] = true;
+                    chunkPresence.Add(ChunkIdx(getRealPos(posToTest)));
                 }
             }
             public void findLightPositions(List<PlantElement> plantElements)
@@ -900,7 +900,7 @@ namespace Cave
                             if (fillStates.Count == 0) { drawPos = (0, 0); }
                             else
                             {
-                                drawPos = getRandomItem(fillStates.Keys.ToList());
+                                drawPos = getRandomKey(fillStates);
                                 int rando = rand.Next(5);
                                 if (rando != 4) { drawPos = (drawPos.x + neighbourArray[rando].Item1, drawPos.y + neighbourArray[rando].Item2); }
                             }

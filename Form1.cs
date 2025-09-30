@@ -239,9 +239,9 @@ namespace Cave
             // Ice plants that only grow on ICE
             // guuuys i've got such a cool idea it's like a FLOATING ISLANDS fucking biome (or dimension) surely this has NEVER BEEN DONE ever before so ILL PUT IT AS A FUCKING LUDUM DARE THEME FFS
             // Wait what the fuck ??? Ludum Dare is like cancelled forever ???????? i'm actually shocked what the actual fuck this fucking sucks. Mike i love you pleas come back
-            // Prevent hornet nests from spawning in water lmfaoooo and
             // Improve spawn rate shite for entity/plants to make the percentage system better idk (make the percentage be ABSOLUTE, not relative to the biome's frequency).
             // Breathability noise ???
+            // Backrooms dimension ???
 
             // Candy dimension !! Candy Cane trees, Lollipop trees, Whipped Cream biome, Chocolate Biome
 
@@ -277,9 +277,7 @@ namespace Cave
             // Different fonts for different personalities ? Or tones of speaking ?
             // Unidirectional teleporters. Some abilities can temporarly open a unidirectional one both ways ?
             // Have living dimension plants flower in specific seasons (don't happen often). All flesh plants flower at the same time, and all bone plants flower at the same time, but these 2 flowering seasons are separate (bone and flesh don't flower at the same time).
-            // Salinity noise ?
-            // -> sweat/salt glands structures in living dimension, that spawn more and more as salinity increases.
-            // -> Make Mold biomes dependant on Salinity too to make their spawning better.
+            // sweat/salt glands structures in living dimension, that spawn more and more as salinity increases.
             // Params in the findBiome functions ? To make them serializable yes yes
             // Teratoma and Cysts structures in living dimension. Hair forest, eyes ? nails teeth. ADD SKIN ALSO !!! Blood coagulation when exposed to air ???
             // Living dimensions have hair color ??? Like the WHOLE dimension has black hair, or brown hair... idk
@@ -309,6 +307,7 @@ namespace Cave
             // Squirrels that climb trees and have a tail ?
             // flying fish ?
             // embrios in living dim
+            // mermaids (i forgor) spawn only in normal ocean ??
 
             // Plants ideas !
             // bone trees and shrubs... like ribs.
@@ -602,18 +601,10 @@ namespace Cave
                 idx = Max(0, idx + 1);
             }
         }
-        public static T getRandomItem<T>(List<T> collection)
-        {
-            return collection[rand.Next(collection.Count)];
-        }
-        public static T getRandomKey<T>(Dictionary<T, T> collection)
-        {
-            return collection.Keys.ToList()[rand.Next(collection.Count)];
-        }
-        public static T getRandomValue<T>(Dictionary<T, T> collection)
-        {
-            return collection.Values.ToList()[rand.Next(collection.Count)];
-        }
+        public static T getRandomItem<T>(List<T> collection) { return collection[rand.Next(collection.Count)]; }
+        public static T getRandomItem<T>(HashSet<T> collection) { return collection.ToArray()[rand.Next(collection.Count)]; }
+        public static T getRandomKey<T, V>(Dictionary<T, V> collection) { return collection.Keys.ToArray()[rand.Next(collection.Count)]; }
+        public static V getRandomValue<T, V>(Dictionary<T, V> collection) { return collection.Values.ToArray()[rand.Next(collection.Count)]; }
         public static void insertIntoListSorted<T>(List<(T t, int cost)> l, (T t, int cost) e, bool priorityToSmallerValues = true)
         {
             for (int i = 0; i < l.Count; i++) { if (priorityToSmallerValues ? (e.cost < l[i].cost) : (e.cost > l[i].cost)) { l.Insert(i, e); return; } }
@@ -874,30 +865,24 @@ namespace Cave
             if (pos < 0) { return pos + modulo; }
             return pos;
         }
-        public static int getBound(List<(int x, int y)> listo, bool testY, bool testMax)
+        public static int getBound(HashSet<(int x, int y)> listo, bool testY, bool testMax)
         {
             if (listo.Count == 0) { return 0; }
             int result;
             if (testY)
             {
-                result = listo[0].y;
+                result = getRandomItem(listo).y;
                 foreach ((int x, int y) pos in listo)
                 {
-                    if ((testMax && pos.y > result) || (!testMax && pos.y < result))
-                    {
-                        result = pos.y;
-                    }
+                    if ((testMax && pos.y > result) || (!testMax && pos.y < result)) { result = pos.y; }
                 }
             }
             else
             {
-                result = listo[0].x;
+                result = getRandomItem(listo).x;
                 foreach ((int x, int y) pos in listo)
                 {
-                    if ((testMax && pos.x > result) || (!testMax && pos.x < result))
-                    {
-                        result = pos.x;
-                    }
+                    if ((testMax && pos.x > result) || (!testMax && pos.x < result)) { result = pos.x; }
                 }
             }
             return result;

@@ -122,7 +122,7 @@ namespace Cave
                     if (screen.activePlants.ContainsKey(refId))
                     {
                         Plant motherPlant = screen.activePlants[refId];
-                        if (motherPlant.type != (3, 2)) { return getRandomItem(motherPlant.colorDict.Values.ToList()); }
+                        if (motherPlant.type != (3, 2)) { return getRandomValue(motherPlant.colorDict); }
                         return motherPlant.colorDict[(type.subType, type.subSubType)];
                     }
                 }
@@ -149,8 +149,8 @@ namespace Cave
             public bool testDeath()
             {
                 (int x, int y) chunkPos = ChunkIdx(posX, posY);
-                if (!screen.loadedChunks.ContainsKey(chunkPos)) { screen.particlesToRemove[this] = true; return true; }
-                if (timeElapsed > timeAtBirth + lifeExpectancy) { screen.particlesToRemove[this] = true; return true; }
+                if (!screen.loadedChunks.ContainsKey(chunkPos)) { screen.particlesToRemove.Add(this); return true; }
+                if (timeElapsed > timeAtBirth + lifeExpectancy) { screen.particlesToRemove.Add(this); return true; }
                 return false;
             }
             public void changeSpeedRandom(float range)
