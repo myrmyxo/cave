@@ -43,17 +43,15 @@ namespace Cave
             public (int v, int h, int s) r;
             public (int v, int h, int s) g;
             public (int v, int h, int s) b;
-            public ColorRange((int v, int h, int s) red, (int v, int h, int s) green, (int v, int h, int s) blue)
-            {
-                r = red;
-                g = green;
-                b = blue;
-            }
+            public ColorRange((int v, int h, int s) red, (int v, int h, int s) green, (int v, int h, int s) blue) { r = red; g = green; b = blue; }
         }
         public static Dictionary<string, ColorRange> famousColorRanges = new Dictionary<string, ColorRange>
         {
             { "Obsidian", new ColorRange((30, 0, 0), (30, 0, 0), (40, 0, 10)) },
             { "ObsidianPollen", new ColorRange((220, 0, 0), (220, 0, 0), (230, 0, 10)) },
+            { "IceStem", new ColorRange((175, 10, 15), (175, 10, 15), (215, -10, 15)) },
+            { "IcePetal", new ColorRange((195, 10, 10), (195, 10, 10), (235, -10, 10)) },
+            { "IcePollen", new ColorRange((235, 10, 10), (230, 0, 10), (255, 0, 0)) },
         };
         public class TileTraits
         {
@@ -109,6 +107,9 @@ namespace Cave
         {
             tileTraitsDict = new Dictionary<(int type, int subType), TileTraits>()
             {
+                { (-8, 0), new TileTraits("Slime", bCB:0.2f,
+                cR:new ColorRange((145, 0, 0), (175, 0, 0), (115, 0, 0)),         Liq:true                                  ) },
+
                 { (-7, 0), new TileTraits("Acid", bCB:0.2f,
                 cR:new ColorRange((120, 0, 0), (180, 0, 0), (60, 0, 0)),          Liq:true, A:true                          ) },
 
@@ -527,211 +528,304 @@ namespace Cave
         {
             plantStructureFramesDict = new Dictionary<string, PlantStructureFrame>()
             {
-                { "Error", new PlantStructureFrame(                                                                  ) },
+                { "Error", new PlantStructureFrame() },
 
-                { "TulipFlower1", new PlantStructureFrame(
+
+
+                { "PlusFlower-1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0) } } }
                 ) },
-                { "TulipFlower2", new PlantStructureFrame(
+                { "PlusFlower-2", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -1), (-1, 0), (0, 0), (1, 0), (0, 1) } } }
+                ) },
+                { "PlusFlower-3", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -1), (-1, 0), (1, 0), (0, 1) } },     { (2, 1), new (int x, int y)[] { (0, 0) } } }
+                ) },
+
+                { "CrossFlower-1", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0) } } }
+                ) },
+                { "CrossFlower-2", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-1, -1), (-1, 1), (0, 0), (1, -1), (1, 1) } } }
+                ) },
+                { "CrossFlower-3", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-1, -1), (-1, 1), (1, -1), (1, 1) } },   { (2, 1), new (int x, int y)[] { (0, 0) } } }
+                ) },
+
+                { "BigFlower-1", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0) } } }
+                ) },
+                { "BigFlower-2", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -1), (-1, 0), (0, 0), (1, 0), (0, 1) } } }
+                ) },
+                { "BigFlower-3", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -2), (0, -1), (-2, 0), (-1, 0), (0, 0), (2, 0), (1, 0), (0, 2), (0, 1), (1, 1), (-1, 1), (1, -1), (-1, -1), } } }
+                ) },
+                { "BigFlower-4", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -3), (0, -2), (0, -1), (-3, 0), (-2, 0), (-1, 0), (0, 0), (3, 0), (2, 0), (1, 0), (0, 3), (0, 2), (0, 1),     (2, 2), (1, 1), (-2, 2), (-1, 1), (2, -2), (1, -1), (-2, -2), (-1, -1), } } }
+                ) },
+                { "BigFlower-5", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -3), (0, -2), (0, -1), (-3, 0), (-2, 0), (-1, 0), (3, 0), (2, 0), (1, 0), (0, 3), (0, 2), (0, 1),     (2, 2), (1, 1), (-2, 2), (-1, 1), (2, -2), (1, -1), (-2, -2), (-1, -1), } }, { (2, 1), new (int x, int y)[] { (0, 0) } } }
+                ) },
+
+
+                { "TulipFlower-1", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0) } } }
+                ) },
+                { "TulipFlower-2", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0), (0, 1) } } }
                 ) },
-                { "TulipFlower3", new PlantStructureFrame(
+                { "TulipFlower-3", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0), (0, 1), (0, 2) } } }
                 ) },
-                { "TulipFlower4", new PlantStructureFrame(
+                { "TulipFlower-4", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0), (-1, 1), (0, 1), (1, 1), (0, 2) } } }
                 ) },
-                { "TulipFlower5", new PlantStructureFrame(
+                { "TulipFlower-5", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0), (-1, 1), (0, 1), (1, 1), (-1, 2), (1, 2) } } }
                 ) },
 
-                { "AlliumFlower1", new PlantStructureFrame(
+                { "AlliumFlower-1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0) } } }
                 ) },
-                { "AlliumFlower2", new PlantStructureFrame(
+                { "AlliumFlower-2", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-1, 0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1) } } }
                 ) },
-                { "AlliumFlower3", new PlantStructureFrame(
+                { "AlliumFlower-3", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-1, 0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1), (-1, 2), (0, 2), (1, 2) } } }
                 ) },
-                { "AlliumFlower4", new PlantStructureFrame(
+                { "AlliumFlower-4", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-1, 0), (0, 0), (1, 0), (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1), (-2, 2), (-1, 2), (0, 2), (1, 2), (2, 2), (-1, 3), (0, 3), (1, 3) } } }
                 ) },
 
 
 
-                { "TreeLeaves1", new PlantStructureFrame(
+                { "TreeLeaves-1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, 0) } } }
                 ) },
-                { "TreeLeaves2", new PlantStructureFrame(
+                { "TreeLeaves-2", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, -1), (-1, 0), (0, 0), (1, 0), (0, 1) } } }
                 ) },
-                { "TreeLeaves3", new PlantStructureFrame(
+                { "TreeLeaves-3", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1) } } }
                 ) },
-                { "TreeLeaves4", new PlantStructureFrame(
+                { "TreeLeaves-4", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-1, -2), (0, -2), (1, -2), (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -1), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1), (-1, 2), (0, 2), (1, 2) } } }
                 ) },
 
-                { "FirLeaves1", new PlantStructureFrame(
+                { "FirLeaves-1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, 0) } } }
                 ) },
-                { "FirLeaves2", new PlantStructureFrame(
+                { "FirLeaves-2", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-1, 0), (0, 0), (0, 1), (1, 1) } } }
                 ) },
-                { "FirLeaves3", new PlantStructureFrame(
+                { "FirLeaves-3", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-2, 0), (-1, 0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1), (2, 1) } } }
                 ) },
-                { "FirLeaves4", new PlantStructureFrame(
+                { "FirLeaves-4", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-3, 0), (-2, 0), (-1, 0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1), (2, 1), (3, 1) } } }
                 ) },
-                { "FirLeaves5", new PlantStructureFrame(
+                { "FirLeaves-5", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, -1), (1, -1), (2, -1), (3, -1), (4, -1),  (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0),  (-4, 1), (-3, 1), (-2, 1), (-1, 1), (0, 1) } } }
                 ) },
 
-                { "FirLeavesTop1", new PlantStructureFrame(
+                { "FirLeavesTop-1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, 0) } } }
                 ) },
-                { "FirLeavesTop2", new PlantStructureFrame(
+                { "FirLeavesTop-2", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, -1),  (-1, 0), (0, 0), (1, 0),  (1, 1) } } }
                 ) },
-                { "FirLeavesTop3", new PlantStructureFrame(
+                { "FirLeavesTop-3", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0),  (0, 1), } } }
                 ) },
-                { "FirLeavesTop4", new PlantStructureFrame(
+                { "FirLeavesTop-4", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -2),  (2, 0), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0),  (0, 1) } } }
                 ) },
-                { "FirLeavesTop5", new PlantStructureFrame(
+                { "FirLeavesTop-5", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-4, -1), (-3, -1), (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -1), (3, -1), (4, -1),  (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0),  (0, 1) } } }
                 ) },
 
-                { "JungleLeaves1", new PlantStructureFrame(
+                { "JungleLeaves-1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, 0) } } }
                 ) },
-                { "JungleLeaves2", new PlantStructureFrame(
+                { "JungleLeaves-2", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-1, 0), (0, 0), (1, 0) } } }
                 ) },
-                { "JungleLeaves3", new PlantStructureFrame(
+                { "JungleLeaves-3", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0),  (-1, 1), (0, 1), (1, 1) } } }
                 ) },
-                { "JungleLeaves4", new PlantStructureFrame(
+                { "JungleLeaves-4", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-1, -1), (0, -1), (1, -1),  (-3, 0), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (3, 0),  (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1) } } }
                 ) },
-                { "JungleLeaves5", new PlantStructureFrame(
+                { "JungleLeaves-5", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -1),  (-4, 0), (-3, 0), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (3, 0), (4, 0),  (-3, 1), (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1), (3, 1),  (-1, 2), (0, 2), (1, 2) } } }
                 ) },
 
-                { "MangroveLeaves1", new PlantStructureFrame(
+                { "MangroveLeaves-1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, 0) } } }
                 ) },
-                { "MangroveLeaves2", new PlantStructureFrame(
+                { "MangroveLeaves-2", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, 0), (0, 1) } } }
                 ) },
-                { "MangroveLeaves3", new PlantStructureFrame(
+                { "MangroveLeaves-3", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-1, 0), (0, 0), (1, 0),  (-1, 1), (0, 1), (1, 1) } } }
                 ) },
-                { "MangroveLeaves4", new PlantStructureFrame(
+                { "MangroveLeaves-4", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-1, 0), (0, 0), (1, 0),  (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1),  (-2, 2), (-1, 2), (0, 2), (1, 2), (2, 2) } } }
                 ) },
-                { "MangroveLeaves5", new PlantStructureFrame(
+                { "MangroveLeaves-5", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (-1, 0), (0, 0), (1, 0),  (-3, 1), (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1), (3, 1),  (-3, 2), (-2, 2), (-1, 2), (0, 2), (1, 2), (2, 2), (3, 2),  (-2, 3), (-1, 3), (0, 3), (1, 3), (2, 3) } } }
                 ) },
 
 
-                { "BulbousAlgaeLeaves1", new PlantStructureFrame(
+
+                { "ReedFlower-1", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0) } } }
+                ) },
+                { "ReedFlower-2", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0), (0, 1) } } }
+                ) },
+                { "ReedFlower-3", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0), (0, 1) } }, { (2, 1), new (int x, int y)[] { (0, 2) } } }
+                ) },
+
+                { "BulbousAlgaeLeaves-1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, 0) } } }
                 ) },
-                { "BulbousAlgaeLeaves2", new PlantStructureFrame(
+                { "BulbousAlgaeLeaves-2", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, -1), (-1, 0), (0, 0), (1, 0), (0, 1) } } }
                 ) },
-                { "BulbousAlgaeLeaves3", new PlantStructureFrame(
+                { "BulbousAlgaeLeaves-3", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, -2), (-1, -1), (0, -1), (-1, 0), (0, 0), (1, 0), (0, 1), (1, 1), (0, 2) } } }
                 ) },
-                { "BulbousAlgaeLeaves4", new PlantStructureFrame(
+                { "BulbousAlgaeLeaves-4", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (1, 0), new (int x, int y)[] { (0, -3), (-1, -2), (0, -2), (-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1), (0, 2), (1, 2), (0, 3) } } }
                 ) },
 
 
-                { "Lantern1", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 1), new (int x, int y)[] { (0, 0) } } }
-                ) },
-                { "Lantern2", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 1), new (int x, int y)[] { (0, 0) } },  { (11, 0), new (int x, int y)[] { (0, 1) } } }
-                ) },
-                { "Lantern3", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 1), new (int x, int y)[] { (0, 0) } },  { (11, 0), new (int x, int y)[] { (-1, 1), (0, 1), (1, 1) } } }
-                ) },
-                { "Lantern4", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 1), new (int x, int y)[] { (0, 0) } },  { (11, 0), new (int x, int y)[] { (-1, 1), (0, 1), (1, 1), (0, 2) } } }
-                ) },
-                { "Lantern5", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 1), new (int x, int y)[] { (0, 0) } },  { (11, 0), new (int x, int y)[] { (-1, -1), (0, -1), (1, -1), (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1), (0, 2) } } }
-                ) },
 
-                { "CandleHolder1", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 0), new (int x, int y)[] { (0, 0) } } }
-                ) },
-                { "CandleHolder2", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 0), new (int x, int y)[] { (-1, 0), (0, 0), (1, 0) } } }
-                ) },
-
-
-                { "MushroomCap1", new PlantStructureFrame(
+                { "MushroomCap-1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (3, 1), new (int x, int y)[] { (-1, 0), (0, 0), (1, 0) } } }
                 ) },
-                { "MushroomCap2", new PlantStructureFrame(
+                { "MushroomCap-2", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (3, 1), new (int x, int y)[] { (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0) } } }
                 ) },
-                { "MushroomCap3", new PlantStructureFrame(
+                { "MushroomCap-3", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (3, 1), new (int x, int y)[] { (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (1, 1), (-1, 1), (0, 1), (1, 1) } } }
                 ) },
 
 
 
-                { "PlusFlower1", new PlantStructureFrame(
+                { "IceTromel-1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0) } } }
                 ) },
-                { "PlusFlower2", new PlantStructureFrame(
+                { "IceTromel-2", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -1), (-1, 0), (0, 0), (1, 0), (0, 1) } } }
                 ) },
-                { "PlusFlower3", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -1), (-1, 0), (1, 0), (0, 1) } },     { (2, 1), new (int x, int y)[] { (0, 0) } } }
+                { "IceTromel-3", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -2), (0, -1), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (0, 1), (0, 2) } } }
+                ) },
+                { "IceTromel-4", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-1, -3), (1, -3), (0, -2), (0, -1),  (-1, 3), (1, 3), (0, 2), (0, 1),  (-3, -1), (-3, 1), (-2, 0), (-1, 0),  (3, -1), (3, 1), (2, 0), (1, 0),  (0, 0) } } }
+                ) },
+                { "IceTromel-5", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-1, -3), (1, -3), (0, -2), (0, -1),  (-1, 3), (1, 3), (0, 2), (0, 1),  (-3, -1), (-3, 1), (-2, 0), (-1, 0),  (3, -1), (3, 1), (2, 0), (1, 0) } }, { (2, 1), new (int x, int y)[] { (0, 0) } } }
                 ) },
 
-                { "CrossFlower1", new PlantStructureFrame(
+                { "IceKital-1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0) } } }
                 ) },
-                { "CrossFlower2", new PlantStructureFrame(
+                { "IceKital-2", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-1, -1), (-1, 1), (0, 0), (1, -1), (1, 1) } } }
                 ) },
-                { "CrossFlower3", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-1, -1), (-1, 1), (1, -1), (1, 1) } },   { (2, 1), new (int x, int y)[] { (0, 0) } } }
+                { "IceKital-3", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-2, -2), (-2, 2), (-2, 2), (2, 2),  (-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1),  (0, 0) } } }
+                ) },
+                { "IceKital-4", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-3, -3), (3, -3), (-3, 3), (3, 3),  (-2, -2), (-1, -2), (-2, -1),  (2, -2), (1, -2), (2, -1),  (-2, 2), (-1, 2), (-2, 1),  (2, 2), (1, 2), (2, 1),  (-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1),  (0, 0) } } }
+                ) },
+                { "IceKital-5", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-3, -3), (3, -3), (-3, 3), (3, 3),  (-2, -2), (-1, -2), (-2, -1),  (2, -2), (1, -2), (2, -1),  (-2, 2), (-1, 2), (-2, 1),  (2, 2), (1, 2), (2, 1),  (-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1) } }, { (2, 1), new (int x, int y)[] { (0, 0) } } }
                 ) },
 
-                { "BigFlower1", new PlantStructureFrame(
+                { "IceFlokan-1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0) } } }
                 ) },
-                { "BigFlower2", new PlantStructureFrame(
+                { "IceFlokan-2", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -1), (-1, 0), (0, 0), (1, 0), (0, 1) } } }
                 ) },
-                { "BigFlower3", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -2), (0, -1), (-2, 0), (-1, 0), (0, 0), (2, 0), (1, 0), (0, 2), (0, 1), (1, 1), (-1, 1), (1, -1), (-1, -1), } } }
+                { "IceFlokan-3", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-1, -1), (0, -1), (1, -1),  (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0),  (-1, 1), (0, 1), (1, 1) } } }
                 ) },
-                { "BigFlower4", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -3), (0, -2), (0, -1), (-3, 0), (-2, 0), (-1, 0), (0, 0), (3, 0), (2, 0), (1, 0), (0, 3), (0, 2), (0, 1),     (2, 2), (1, 1), (-2, 2), (-1, 1), (2, -2), (1, -1), (-2, -2), (-1, -1), } } }
+                { "IceFlokan-4", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -2),  (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -1),  (-3, 0), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (3, 0),  (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1),  (0, 2) } } }
                 ) },
-                { "BigFlower5", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -3), (0, -2), (0, -1), (-3, 0), (-2, 0), (-1, 0), (3, 0), (2, 0), (1, 0), (0, 3), (0, 2), (0, 1),     (2, 2), (1, 1), (-2, 2), (-1, 1), (2, -2), (1, -1), (-2, -2), (-1, -1), } }, { (2, 1), new (int x, int y)[] { (0, 0) } } }
+                { "IceFlokan-5", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -3),  (-3, -2), (0, -2), (3, -2),  (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -1),  (-4, 0), (-3, 0), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (3, 0), (4, 0),  (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1),  (-3, 2), (0, 2), (3, 2),  (0, 3) } } }
+                ) },
+                { "IceFlokan-6", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-1, -4), (1, -4),  (-3, -3), (0, -3), (3, -3),  (-4, -2), (-3, -2), (-1, -2), (0, -2), (1, -2), (4, -2), (3, -2),  (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -1),  (-5, 0), (-4, 0), (-3, 0), (-2, 0), (-1, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0),  (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1),  (-4, 2), (-3, 2), (-1, 2), (0, 2), (1, 2), (3, 2), (4, 2),  (-3, 3), (0, 3), (3, 3),  (-1, 4), (1, 4) } }, { (2, 1), new (int x, int y)[] { (0, 0) } } }
+                ) },
+                { "IceFlokan-7", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (-1, -4), (1, -4),  (-3, -3), (0, -3), (3, -3),  (-4, -2), (-3, -2), (-1, -2), (0, -2), (1, -2), (4, -2), (3, -2),  (-2, -1), (-1, -1), (1, -1), (2, -1),  (-5, 0), (-4, 0), (-3, 0), (-2, 0), (2, 0), (3, 0), (4, 0), (5, 0),  (-2, 1), (-1, 1), (1, 1), (2, 1),  (-4, 2), (-3, 2), (-1, 2), (0, 2), (1, 2), (3, 2), (4, 2),  (-3, 3), (0, 3), (3, 3),  (-1, 4), (1, 4) } }, { (2, 1), new (int x, int y)[] { (0, -1), (-1, 0), (0, 0), (1, 0), (0, 1) } } }
                 ) },
 
-                { "ReedFlower1", new PlantStructureFrame(
+                { "IceOctam-1", new PlantStructureFrame(
                 dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0) } } }
                 ) },
-                { "ReedFlower2", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0), (0, 1) } } }
+                { "IceOctam-2", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -1),  (-1, 0), (0, 0), (1, 0),  (0, 1) } } }
                 ) },
-                { "ReedFlower3", new PlantStructureFrame(
-                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, 0), (0, 1) } }, { (2, 1), new (int x, int y)[] { (0, 2) } } }
+                { "IceOctam-3", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -2),  (0, -1), (1, -1),  (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0),  (-1, 1), (0, 1),  (0, 2) } } }
+                ) },
+                { "IceOctam-4", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -3),  (0, -2),  (-1, -1), (0, -1), (1, -1),  (-3, 0), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (3, 0),  (-1, 1), (0, 1), (1, 1),  (0, 2),  (0, 3) } } }
+                ) },
+                { "IceOctam-5", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -4),  (-1, -3), (0, -3), (1, -3),  (0, -2),  (-1, -1), (0, -1), (1, -1),  (-4, 0), (-3, 0), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (3, 0), (4, 0),  (-1, 1), (0, 1), (1, 1),  (0, 2),  (-1, 3), (0, 3), (1, 3),  (0, 4) } } }
+                ) },
+                { "IceOctam-6", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -5),  (-1, -4), (1, -4),  (0, -3),  (-2, -2), (0, -2), (2, -2),  (-4, -1), (-1, -1), (0, -1), (1, -1), (4, -1),  (-5, 0), (-4, 0), (-3, 0), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0),  (-4, 1), (-1, 1), (0, 1), (1, 1), (4, 1),  (-2, 2), (0, 2), (2, 2),  (0, 3),  (-1, 4), (1, 4),  (0, 5) } } }
+                ) },
+                { "IceOctam-7", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -6),  (-1, -5), (1, -5),  (0, -4),  (-3, -3), (-2, -3), (0, -3), (2, -3), (3, -3),  (-2, -2), (0, -2), (2, -2),  (-4, -1), (-1, -1), (0, -1), (1, -1), (4, -1),  (-5, 0), (-3, 0), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (3, 0), (5, 0),  (-4, 1), (-1, 1), (0, 1), (1, 1), (4, 1),  (-2, 2), (0, 2), (2, 2),  (-3, 3), (-2, 3), (0, 3), (2, 3), (3, 3),  (0, 4),  (-1, 5), (1, 5),  (0, 6) } } }
+                ) },
+                { "IceOctam-8", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -7),  (-1, -6), (1, -6),  (0, -5),  (-4, -4), (-3, -4), (0, -4), (3, -4), (4, -4),  (-3, -3), (-2, -3), (0, -3), (2, -3), (3, -3),  (-2, -2), (0, -2), (2, -2),  (-5, -1), (-4, -1), (-1, -1), (0, -1), (1, -1), (4, -1), (5, -1),  (-6, 0), (-5, 0), (-3, 0), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (3, 0), (5, 0), (6, 0),  (-5, 1), (-4, 1), (-1, 1), (0, 1), (1, 1), (4, 1), (5, 1),  (-2, 2), (0, 2), (2, 2),  (-3, 3), (-2, 3), (0, 3), (2, 3), (3, 3),  (-4, 4), (-3, 4), (0, 4), (3, 4), (4, 4),  (0, 5),  (-1, 6), (1, 6),  (0, 7) } } }
+                ) },
+                { "IceOctam-9", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -8),  (-1, -7), (0, -7), (1, -7),  (-1, -6), (1, -6),  (-4, -5), (-3, -5), (0, -5), (3, -5), (4, -5),  (-4, -4), (-2, -4), (0, -4), (2, -4), (4, -4),  (-3, -3), (-2, -3), (0, -3), (2, -3), (3, -3),  (-2, -2), (0, -2), (2, -2),  (-5, -1), (-4, -1), (-1, -1), (0, -1), (1, -1), (4, -1), (5, -1),  (-6, 0), (-5, 0), (-3, 0), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (3, 0), (5, 0), (6, 0),  (-5, 1), (-4, 1), (-1, 1), (0, 1), (1, 1), (4, 1), (5, 1),  (-2, 2), (0, 2), (2, 2),  (-3, 3), (-2, 3), (0, 3), (2, 3), (3, 3),  (-4, 4), (-2, 4), (0, 4), (2, 4), (4, 4),  (-4, 5), (-3, 5), (0, 5), (3, 5), (4, 5),  (-1, 6), (1, 6),  (-1, 7), (0, 7), (1, 7),  (0, 8) } } }
+                ) },
+                { "IceOctam-10", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (2, 0), new (int x, int y)[] { (0, -8),  (-1, -7), (0, -7), (1, -7),  (-1, -6), (1, -6),  (-4, -5), (-3, -5), (0, -5), (3, -5), (4, -5),  (-4, -4), (-2, -4), (0, -4), (2, -4), (4, -4),  (-3, -3), (-2, -3), (0, -3), (2, -3), (3, -3),  (-2, -2), (0, -2), (2, -2),  (-5, -1), (-4, -1), (-1, -1), (0, -1), (1, -1), (4, -1), (5, -1),  (-6, 0), (-5, 0), (-3, 0), (-2, 0), (-1, 0), (1, 0), (2, 0), (3, 0), (5, 0), (6, 0),  (-5, 1), (-4, 1), (-1, 1), (0, 1), (1, 1), (4, 1), (5, 1),  (-2, 2), (0, 2), (2, 2),  (-3, 3), (-2, 3), (0, 3), (2, 3), (3, 3),  (-4, 4), (-2, 4), (0, 4), (2, 4), (4, 4),  (-4, 5), (-3, 5), (0, 5), (3, 5), (4, 5),  (-1, 6), (1, 6),  (-1, 7), (0, 7), (1, 7),  (0, 8) } }, { (2, 1), new (int x, int y)[] { (0, 0) } } }
+                ) },
+
+
+
+
+
+                { "Lantern-1", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 1), new (int x, int y)[] { (0, 0) } } }
+                ) },
+                { "Lantern-2", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 1), new (int x, int y)[] { (0, 0) } },  { (11, 0), new (int x, int y)[] { (0, 1) } } }
+                ) },
+                { "Lantern-3", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 1), new (int x, int y)[] { (0, 0) } },  { (11, 0), new (int x, int y)[] { (-1, 1), (0, 1), (1, 1) } } }
+                ) },
+                { "Lantern-4", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 1), new (int x, int y)[] { (0, 0) } },  { (11, 0), new (int x, int y)[] { (-1, 1), (0, 1), (1, 1), (0, 2) } } }
+                ) },
+                { "Lantern-5", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 1), new (int x, int y)[] { (0, 0) } },  { (11, 0), new (int x, int y)[] { (-1, -1), (0, -1), (1, -1), (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1), (0, 2) } } }
+                ) },
+
+                { "CandleHolder-1", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 0), new (int x, int y)[] { (0, 0) } } }
+                ) },
+                { "CandleHolder-2", new PlantStructureFrame(
+                dict:new Dictionary<(int type, int subType), (int x, int y)[]> { { (11, 0), new (int x, int y)[] { (-1, 0), (0, 0), (1, 0) } } }
                 ) },
 
             };
@@ -818,7 +912,9 @@ namespace Cave
             { "Leaves", (new (int x, int y, bool stopGrowth)[]{ (-1, -2, false), (-2, -1, true), (-2, 0, true), (-2, 1, true), (-1, 2, false) }, new (int x, int y, bool stopGrowth)[]{ (1, -2, false), (2, -1, true), (2, 0, true), (2, 1, true), (1, 2, false) }, new (int x, int y, bool stopGrowth)[]{ (-2, -1, false), (-1, -2, true), (0, -2, true), (1, -2, true), (2, -1, false) }, new (int x, int y, bool stopGrowth)[]{ (-2, 1, false), (-1, 2, true), (0, 2, true), (1, 2, true), (2, 1, false) }) },
             { "LeavesMangrove", (new (int x, int y, bool stopGrowth)[]{ (-1, 0, true), (-3, 1, true), (-3, 2, true), (-2, 3, true) }, new (int x, int y, bool stopGrowth)[]{ (1, 0, true), (3, 1, true), (3, 2, true), (2, 3, true) }, new (int x, int y, bool stopGrowth)[]{ (-3, 1, false), (-2, 1, true), (-1, 0, true), (0, 0, true), (1, 0, true), (2, 1, true), (3, 1, false) }, new (int x, int y, bool stopGrowth)[]{ (-3, 2, false), (-2, 3, true), (-1, 3, true), (0, 3, true), (1, 3, true), (2, 3, true), (3, 2, false) }) },
             { "Fire", (new (int x, int y, bool stopGrowth)[]{ (-1, 1, true), (-1, 2, true), (-1, 3, true), (-1, 4, true) }, new (int x, int y, bool stopGrowth)[]{ (1, 1, true), (1, 2, true), (1, 3, true), (1, 4, true) }, new (int x, int y, bool stopGrowth)[]{ (-1, 0, true), (0, 0, true), (1, 0, true) }, new (int x, int y, bool stopGrowth)[]{ (-1, 4, true), (0, 4, true), (1, 4, true) }) },
-            
+
+            { "Side1Gap", (new (int x, int y, bool stopGrowth)[]{ (-1, 0, true) }, new (int x, int y, bool stopGrowth)[]{ (1, 0, true) }, null, null) },
+
             { "Up1Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 1, true) }) },
             { "Up2Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 2, true) }) },
             { "Up3Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 3, true) }) },
@@ -832,6 +928,8 @@ namespace Cave
             { "Up10Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 10, true) }) },
             { "Up11Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 11, true) }) },
             { "Up12Gap", (null, null, null, new (int x, int y, bool stopGrowth)[]{ (0, 12, true) }) },
+
+            { "Y12GapX7Gap", (new (int x, int y, bool stopGrowth)[]{ (-8, 0, true) }, new (int x, int y, bool stopGrowth)[]{ (8, 0, true) }, new (int x, int y, bool stopGrowth)[]{ (0, -12, true) }, new (int x, int y, bool stopGrowth)[]{ (0, 12, true) }) },
 
             { "Down1Gap", (null, null, new (int x, int y, bool stopGrowth)[]{ (0, -1, true) }, null) },
             { "Down2Gap", (null, null, new (int x, int y, bool stopGrowth)[]{ (0, -2, true) }, null) },
@@ -1078,6 +1176,49 @@ namespace Cave
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (2, 0), 100), ((-1, 0), (true, false, false), (2, 0), 100) },
                     lPM:true
                 )) },
+                { (5, 2, 0), new PlantElementTraits("IceVine", rET:(from number in Enumerable.Range(0, 20) select ((0, -number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(15, 85),
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((0, 0, 1), (0, 0), 0, 0, (3, 4), 100) },
+                    lC:true,
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (2, 0), 100), ((-1, 0), (true, false, false), (2, 0), 100) },
+                    lPM:true
+                )) },
+
+                { (6, 0, 0), new PlantElementTraits("IceGrass", rET:(from number in Enumerable.Range(0, 12) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(1, 5), hPP:fHPP["Up1Gap"],
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, true), (2, 1), 25) }
+                )) },
+                { (6, 1, 0), new PlantElementTraits("IceBruticStem", rET:(from number in Enumerable.Range(0, 6) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(4, 5), hPP:fHPP["Up1Gap"],
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((0, 0, 4), (0, 0), 0, 0, (0, 0), 100), ((6, 1, -1), (-1, 0), 1, 0, (3, 1), 100), ((6, 1, -1), (1, 0), 1, 0, (1, 1), 75), ((6, 1, -1), (-1, 0), 1, 0, (1, 1), 50) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, true), (2, 2), 33) }
+                )) },
+                { (6, 10, 0), new PlantElementTraits("IceTromelStem", rET:(from number in Enumerable.Range(0, 12) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(9, 4), hPP:fHPP["Up5Gap"],
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((6, 10, 1), (0, 0), 0, 0, (1, 1), 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (2, 0), 100) },
+                    lPM:true, pMO:4
+                )) },
+                { (6, 11, 0), new PlantElementTraits("IceKitalStem", rET:(from number in Enumerable.Range(0, 12) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(6, 3), hPP:fHPP["Up4Gap"],
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((6, 11, 1), (0, 0), 0, 0, (1, 1), 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (3, 1), 100) },
+                    lPM:true, pMO:2
+                )) },
+                { (6, 20, 0), new PlantElementTraits("IceFlokanStem", rET:(from number in Enumerable.Range(0, 20) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(16, 4), hPP:fHPP["Up4Gap"],
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((6, 20, 1), (0, 0), 0, 0, (1, 1), 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (4, 0), 100) },
+                    lPM:true, pMO:4
+                )) },
+                { (6, 21, 0), new PlantElementTraits("IceOctamStem", rET:(from number in Enumerable.Range(0, 20) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(26, 12), hPP:fHPP["Y12GapX7Gap"],
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((6, 21, 1), (0, 0), 0, 0, (1, 1), 100) },
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, true, false), (19, 0), 100), ((1, 0), (true, true, false), (3, 1), 100), ((1, 0), (true, true, false), (2, 1), 100), ((1, 0), (true, true, false), (2, 1), 100) },
+                    rDG:true,
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (6, 0), 100) },
+                    lPM:true, pMO:3
+                )) },
 
 
 
@@ -1256,6 +1397,12 @@ namespace Cave
                 pGR:new PlantGrowthRules(t:(1, 3), mG:(2, 1), hPP:fHPP["Up1Gap"]
                 )) },
 
+                { (6, 1, -1), new PlantElementTraits("IceBruticBranch",
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(1, 1), hPP:fHPP["Side1Gap"],
+                    C:new ((int type, int subType, int subSubType) child, (int x, int y) mod, int dirType, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((0, 0, 4), (0, 0), 0, 0, (0, 0), 100) }
+                    // PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, true), (2, 2), 33) }
+                )) },
+
 
                 { (10, 0, -1), new PlantElementTraits("LanternTreeBranch",
                 pGR:new PlantGrowthRules(t:(11, 0), mG:(8, 8), sD:((1, 0), (true, false, true)), hPP:fHPP["Leaves"],
@@ -1320,39 +1467,45 @@ namespace Cave
                 
                 //(0, 0, x) are elements shared between many plants. Since (0, 0, 0) is just normal grass it has no flowers and branches
                 { (0, 0, 1), new PlantElementTraits("PlusFlower",
-                framez:makeStructureFrameArray(null, "PlusFlower1", "PlusFlower2", "PlusFlower3")
+                framez:makeStructureFrameArray(null, "PlusFlower-1", "PlusFlower-2", "PlusFlower-3")
                 ) },
-                { (0, 0, 2), new PlantElementTraits("CrossFlower",
-                framez:makeStructureFrameArray(null, "CrossFlower1", "CrossFlower2", "CrossFlower3")
+                { (0, 0, 2), new PlantElementTraits("PlusFlowerSticky", stick:((0, 0), (false, false)),
+                framez:makeStructureFrameArray(null, "PlusFlower-1", "PlusFlower-2", "PlusFlower-3")
+                ) },
+                { (0, 0, 3), new PlantElementTraits("CrossFlower",
+                framez:makeStructureFrameArray(null, "CrossFlower-1", "CrossFlower-2", "CrossFlower-3")
+                ) },
+                { (0, 0, 4), new PlantElementTraits("CrossFlowerSticky", stick:((0, 0), (false, false)),
+                framez:makeStructureFrameArray(null, "CrossFlower-1", "CrossFlower-2", "CrossFlower-3")
                 ) },
 
                 { (0, 1, 1), new PlantElementTraits("TulipFlower", stick:((0, 1), (false, false)),
-                framez:makeStructureFrameArray(null, "TulipFlower1", "TulipFlower2", "TulipFlower3", "TulipFlower4", "TulipFlower5")
+                framez:makeStructureFrameArray(null, "TulipFlower-1", "TulipFlower-2", "TulipFlower-3", "TulipFlower-4", "TulipFlower-5")
                 ) },
                 { (0, 2, 1), new PlantElementTraits("AlliumFlower", stick:((0, 1), (false, false)),
-                framez:makeStructureFrameArray(null, "AlliumFlower1", "AlliumFlower2", "AlliumFlower3", "AlliumFlower4")
+                framez:makeStructureFrameArray(null, "AlliumFlower-1", "AlliumFlower-2", "AlliumFlower-3", "AlliumFlower-4")
                 ) },
                 { (0, 3, 1), new PlantElementTraits("BigFlower", stick:((0, 1), (false, false)),
-                framez:makeStructureFrameArray(null, "BigFlower1", "BigFlower2", "BigFlower3", "BigFlower4", "BigFlower5")
+                framez:makeStructureFrameArray(null, "BigFlower-1", "BigFlower-2", "BigFlower-3", "BigFlower-4", "BigFlower-5")
                 ) },
 
                 { (1, 0, 1), new PlantElementTraits("TreeLeaves", stick:((0, 0), (false, false)),
-                framez:makeStructureFrameArray(null, "TreeLeaves1", "TreeLeaves2", "TreeLeaves3", "TreeLeaves4")
+                framez:makeStructureFrameArray(null, "TreeLeaves-1", "TreeLeaves-2", "TreeLeaves-3", "TreeLeaves-4")
                 ) },
                 { (1, 1, 1), new PlantElementTraits("FirLeaves", stick:((0, 0), (false, false)),
-                framez:makeStructureFrameArray(null, "FirLeaves1", "FirLeaves2", "FirLeaves3", "FirLeaves4", "FirLeaves5")
+                framez:makeStructureFrameArray(null, "FirLeaves-1", "FirLeaves-2", "FirLeaves-3", "FirLeaves-4", "FirLeaves-5")
                 ) },
                 { (1, 1, 2), new PlantElementTraits("FirLeavesNotSticky",
-                framez:makeStructureFrameArray(null, "FirLeaves1", "FirLeaves2", "FirLeaves3", "FirLeaves4", "FirLeaves5")
+                framez:makeStructureFrameArray(null, "FirLeaves-1", "FirLeaves-2", "FirLeaves-3", "FirLeaves-4", "FirLeaves-5")
                 ) },
                 { (1, 1, 3), new PlantElementTraits("FirLeavesTop", stick:((0, 0), (false, false)),
-                framez:makeStructureFrameArray(null, "FirLeavesTop1", "FirLeavesTop2", "FirLeavesTop3", "FirLeavesTop4", "FirLeavesTop5")
+                framez:makeStructureFrameArray(null, "FirLeavesTop-1", "FirLeavesTop-2", "FirLeavesTop-3", "FirLeavesTop-4", "FirLeavesTop-5")
                 ) },
                 { (1, 2, 1), new PlantElementTraits("JungleLeaves", stick:((0, 0), (false, false)),
-                framez:makeStructureFrameArray(null, "JungleLeaves1", "JungleLeaves2", "JungleLeaves3", "JungleLeaves4", "JungleLeaves5")
+                framez:makeStructureFrameArray(null, "JungleLeaves-1", "JungleLeaves-2", "JungleLeaves-3", "JungleLeaves-4", "JungleLeaves-5")
                 ) },
                 { (1, 3, 1), new PlantElementTraits("MangroveLeaves", stick:((0, 0), (false, false)),
-                framez:makeStructureFrameArray(null, "MangroveLeaves1", "MangroveLeaves2", "MangroveLeaves3", "MangroveLeaves4", "MangroveLeaves5")
+                framez:makeStructureFrameArray(null, "MangroveLeaves-1", "MangroveLeaves-2", "MangroveLeaves-3", "MangroveLeaves-4", "MangroveLeaves-5")
                 ) },
                 { (1, 4, 1), new PlantElementTraits("WeepingWillowLeaves",
                 pGR:new PlantGrowthRules(t:(1, 0), sD:((0, -1), (true, false, false)), mG:(1, 5), mGPRV:(0.35f, true)
@@ -1367,25 +1520,38 @@ namespace Cave
                 ), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), null) }
                 ) },
 
+                { (6, 10, 1), new PlantElementTraits("IceTromel", stick:((0, 1), (false, false)),
+                framez:makeStructureFrameArray(null, "IceTromel-1", "IceTromel-2", "IceTromel-3", "IceTromel-4", "IceTromel-5")
+                ) },
+                { (6, 11, 1), new PlantElementTraits("IceKital", stick:((0, 1), (false, false)),
+                framez:makeStructureFrameArray(null, "IceKital-1", "IceKital-2", "IceKital-3", "IceKital-4", "IceKital-5")
+                ) },
+                { (6, 20, 1), new PlantElementTraits("IceFlokan", stick:((0, 1), (false, false)),
+                framez:makeStructureFrameArray(null, "IceFlokan-1", "IceFlokan-2", "IceFlokan-3", "IceFlokan-4", "IceFlokan-5", "IceFlokan-6", "IceFlokan-7")
+                ) },
+                { (6, 21, 1), new PlantElementTraits("IceOctam", stick:((0, 1), (false, false)),
+                framez:makeStructureFrameArray(null, "IceOctam-1", "IceOctam-2", "IceOctam-3", "IceOctam-4", "IceOctam-5", "IceOctam-6", "IceOctam-7", "IceOctam-8", "IceOctam-9", "IceOctam-10")
+                ) },
+
                 { (2, 2, 1), new PlantElementTraits("ReedFlower", stick:((0, 1), (false, false)),
-                framez:makeStructureFrameArray(null, "ReedFlower1", "ReedFlower2", "ReedFlower3")
+                framez:makeStructureFrameArray(null, "ReedFlower-1", "ReedFlower2-", "ReedFlower3-")
                 ) },
                 { (2, 4, 1), new PlantElementTraits("BulbousAlgaeLeaves", stick:((0, 0), (false, false)),
-                framez:makeStructureFrameArray(null, "BulbousAlgaeLeaves1", "BulbousAlgaeLeaves2", "BulbousAlgaeLeaves3", "BulbousAlgaeLeaves4"),
+                framez:makeStructureFrameArray(null, "BulbousAlgaeLeaves-1", "BulbousAlgaeLeaves-2", "BulbousAlgaeLeaves-3", "BulbousAlgaeLeaves-4"),
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), null) }
                 ) },
 
                 { (4, 0, 1), new PlantElementTraits("MushroomCap", stick:((0, 1), (false, false)),
-                framez:makeStructureFrameArray(new (int value, int range)[]{ (1, 0), (2, 3), (1, 3) }, "MushroomCap1", "MushroomCap2", "MushroomCap3")
+                framez:makeStructureFrameArray(new (int value, int range)[]{ (1, 0), (2, 3), (1, 3) }, "MushroomCap-1", "MushroomCap-2", "MushroomCap-3")
                 ) },
 
                 { (10, 0, 1), new PlantElementTraits("Lantern", stick:((0, 0), (false, false)), lE:(11, 1), lR:13,
-                framez:makeStructureFrameArray(null, "Lantern1", "Lantern2", "Lantern3", "Lantern4", "Lantern5")
+                framez:makeStructureFrameArray(null, "Lantern-1", "Lantern-2", "Lantern-3", "Lantern-4", "Lantern-5")
                 ) },
 
                 { (11, 0, 1), new PlantElementTraits("CandleFlower", stick:((0, 1), (false, false)), fLAP:true, anm:fireAnimation, lE:(11, 1), lR:9) },
                 { (11, 1, 1), new PlantElementTraits("CandleHolder", stick:((0, 1), (false, false)), dC:((11, 0, -1), (0, 0), 100),  // dC is WaxFruitShit
-                framez:makeStructureFrameArray(null, "CandleHolder1", "CandleHolder2")
+                framez:makeStructureFrameArray(null, "CandleHolder-1", "CandleHolder-2")
                 ) },
             };
         }
@@ -1425,10 +1591,12 @@ namespace Cave
             public bool isWater;
             public bool isLuminous;
             public bool isClimbable;
+
+            public ((int baseValue, int variation) chance, (int x, int y) range)? propagateOnSuccess;
             public PlantTraits(string namee, (int type, int subType, int subSubType)? t = null, (int type, int subType)? iFT = null, int mGFV = 1,
                 HashSet<(int type, int subType)> sT = null, ((int type, int subType) tile, (int x, int y) range)? tNC = null,
                 ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, (int r, int g, int b)? fPS = null, bool dFPSO = false,
-                bool T = false, bool C = false, bool S = false, bool EA = false, bool W = false, bool lum = false, bool cl = false)
+                bool T = false, bool C = false, bool S = false, bool EA = false, bool W = false, bool lum = false, bool cl = false, ((int baseValue, int variation) chance, (int x, int y) range)? pOS = null)
             {
                 name = namee;
 
@@ -1450,6 +1618,8 @@ namespace Cave
                 isWater = W;
                 isLuminous = lum;
                 isClimbable  = cl;
+
+                propagateOnSuccess = pOS;
             }
         }
 
@@ -1506,9 +1676,31 @@ namespace Cave
                 t:(4, 1, 0)) },
 
                 { (5, 0), new PlantTraits("Vine",                                   C:true,
-                t:(5, 0, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((50, 0, 30), (120, 50, 30), (50, 0, 30))) } ) },
+                t:(5, 0, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((50, 0, 30), (120, 50, 30), (50, 0, 30))) }) },
                 { (5, 1), new PlantTraits("ObsidianVine",                           C:true,
-                t:(5, 1, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), famousColorRanges["Obsidian"]), ((2, 1), famousColorRanges["ObsidianPollen"]) } ) },
+                t:(5, 1, 0), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), famousColorRanges["Obsidian"]), ((2, 1), famousColorRanges["ObsidianPollen"]) }) },
+                { (5, 2), new PlantTraits("IceVine",                                C:true,
+                t:(5, 2, 0), sT:new HashSet<(int type, int subType)> { (-2, -1) },
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
+
+                { (6, 0), new PlantTraits("IceGrass",
+                t:(6, 0, 0), pOS:((7, 17), (15, 10)), sT:new HashSet<(int type, int subType)> { (-2, -1) },
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
+                { (6, 1), new PlantTraits("IceBrutic",
+                t:(6, 1, 0), pOS:((0, 4), (8, 5)), sT:new HashSet<(int type, int subType)> { (-2, -1) },
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
+                { (6, 10), new PlantTraits("IceTromel",
+                t:(6, 10, 0), sT:new HashSet<(int type, int subType)> { (-2, -1) },
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
+                { (6, 11), new PlantTraits("IceKital",
+                t:(6, 11, 0), sT:new HashSet<(int type, int subType)> { (-2, -1) },
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
+                { (6, 20), new PlantTraits("IceFlokan",
+                t:(6, 20, 0), sT:new HashSet<(int type, int subType)> { (-2, -1) },
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
+                { (6, 21), new PlantTraits("IceOctam",
+                t:(6, 21, 0), sT:new HashSet<(int type, int subType)> { (-2, -1) },
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
 
 
                 { (10, 0), new PlantTraits("LanternTree",                           T:true, lum:true,
@@ -1565,6 +1757,7 @@ namespace Cave
             public bool inLiquid;
             public bool inAir;
             public bool needsQuartileFilled;
+            public bool ignoreIgnore;
 
             public int baseThreshold;
             public (int one, int two) noiseModulos;
@@ -1583,7 +1776,7 @@ namespace Cave
             public TerrainFeaturesTraits((int type, int subType) tT, int tR, bool mBVR = false, int bT = 512, (int? one, int? two)? nM = null,
                 (int threshold, bool reverse)? T = null, (int threshold, bool reverse)? H = null, (int threshold, bool reverse)? A = null,
                 (int threshold, bool reverse)? TX = null, (int threshold, bool reverse)? S = null, (int threshold, bool reverse)? I = null,
-                (int threshold, bool reverse)? O = null, int bVS = 512, (int strength, int threshold)? bER = null, bool fBS = false, bool iS = false, bool iL = false, bool iA = false, bool nQF = false)
+                (int threshold, bool reverse)? O = null, int bVS = 512, (int strength, int threshold)? bER = null, bool fBS = false, bool iS = false, bool iL = false, bool iA = false, bool nQF = false, bool iI = false)
             {
                 tileType = tT;
 
@@ -1594,6 +1787,7 @@ namespace Cave
                 inLiquid = iL;
                 inAir = iA;
                 needsQuartileFilled = nQF;
+                ignoreIgnore = iI;
 
                 baseThreshold = bT;
                 noiseModulos = nM is null ? (16, 16) : (nM.Value.one ?? 16, nM.Value.two ?? 16);
@@ -1623,6 +1817,7 @@ namespace Cave
                 { "Salt Terrain", new TerrainFeaturesTraits((6, 0), 3, iS:true, bT:0, bER:(10000, 700), S:(650, true), nM:(256, 64)) },
                 { "Salt Filling", new TerrainFeaturesTraits((6, 0), 4, iL:true, bT:0, fBS:true, bER:(10000, 700), nM:(null, null)) },
                 { "Salt Spikes", new TerrainFeaturesTraits((6, 0), 5, iL:true, bT:0, bER:(10000, 700), nQF:true) },
+                { "Frost Carving", new TerrainFeaturesTraits((0, 0), 6, iS:true, bT:0, bER:(100, 0), nM:(null, null), iI:true) },
             };
             int counto = 0;
             foreach (TerrainFeaturesTraits tTT in famousTFT.Values) { tTT.layer = counto * 2; counto++; }
@@ -1888,7 +2083,7 @@ namespace Cave
                 new float[]{1, 0.25f, 2, 2,  0, 4, 1, 2, 0, 4, 0, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((5, 0), 100), ((2, 0), 100), ((2, 1), 100), },
-                txT:(0, 0), S:true,                                  // Base           Vine           Kelp           CeilingKelp
+                lT:(-8, 0), txT:(0, 0), S:true,                      // Base           Vine           Kelp           CeilingKelp
                 ePS:WILLOW) },
 
                 { (5, 0),  new BiomeTraits("Fairy",                 (Color.LightPink.R, Color.LightPink.G, Color.LightPink.B),
@@ -1911,11 +2106,11 @@ namespace Cave
                 lT:(0, 0), lS:(3, 50, 3000),                         // Kelp          CeilingKelp
                 cT:(0, 3), txT:(0, 0), fT:(-2, 0), sT:1) },
                 { (8, 1),  new BiomeTraits("Frozen Ocean",          (Color.LightBlue.R + 60, Color.LightBlue.G + 90, Color.LightBlue.B + 150),
-                new float[]{1, 0.25f, 3, 6,  0, 4, 1, 2, 0, 8, 0, 8, 0}, // Fish       WaterSkipper   Dragonfly
-                new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
-                new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((2, 1), 100), },
-                lT:(0, 0), lS:(3, 50, 3000),                         // Kelp        CeilingKelp
-                cT:(0, 3), txT:(0, 0), fT:(-2, -1), aST:1) },
+                new float[]{1, 0.25f, 3, 6,  0, 2, 1, 2, 0, 8, 0, 8, 0}, // Frost Fairy
+                new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100) },
+                new ((int type, int subType) type, float percentage)[]{ ((6, 0), 60), ((6, 1), 15), ((6, 10), 8), ((6, 11), 10), ((6, 20), 5), ((6, 21), 2), ((5, 2), 100) },
+                lT:(0, 0), lS:(3, 50, 3000),                         // IceGrass      IceBrutic     IceTromel     IceKital       IceFlokan     IceOctam      IceVines
+                cT:(3, 3), txT:(0, 0), fT:(-2, -1), aST:1, tFT:new TerrainFeaturesTraits[]{ famousTFT["Frost Carving"] }) },
                 { (8, 2),  new BiomeTraits("Algae Ocean",           (Color.DarkSeaGreen.R, Color.DarkSeaGreen.G, Color.DarkSeaGreen.B),
                 new float[]{1, 0.25f, 15, 6, 0, 4, 1, 2, 0, 8, 0, 8, 0}, // Fish      Shark           Waterdog        WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 99), ((8, 0), 0.9f),  ((9, 0), 0.1f), ((5, 0), 75), ((10, 0), 25), },

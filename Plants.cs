@@ -283,7 +283,6 @@ namespace Cave
                 if (traits.isEveryAttach)
                 {
                     foreach ((int x, int y) mod in neighbourArray) { if (screen.getTileContent((posX + mod.x, posY + mod.y)).isSolid) { return true; } }
-                    return false;
                 }
                 else if (traits.isSide) { if (!screen.getChunkFromPixelPos((posX - 1, posY)).fillStates[PosMod(posX - 1), PosMod(posY)].isAir || !screen.getChunkFromPixelPos((posX + 1, posY)).fillStates[PosMod(posX + 1), PosMod(posY)].isAir) { return true; } }   // tile left XOR right full -> Success
                 else if (screen.getChunkFromPixelPos((posX, posY + (traits.isCeiling ? 1 : -1))).fillStates[PosMod(posX), PosMod(posY + (traits.isCeiling ? 1 : -1))].isSolid) { return true; }    // tile under/over full -> Success

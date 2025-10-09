@@ -1231,7 +1231,7 @@ namespace Cave
                             {
                                 if (isPlayer && arrowKeysState[3] && onGround && !climbing && speedY <= 0 && traits.collisionPoints.side.Length == 1)  // Make players able to move 1 tile upwards (not get stuck on small slopes cuz it's annoying)
                                 {
-                                    if (!screen.getTileContent((posToTest.x, posToTest.y + 1)).isSolid && !screen.getTileContent((posX, posToTest.y + 1)).isSolid) { realPosY++; posY++; goto Proceed; }
+                                    if (!screen.getTileContent((posToTest.x, posToTest.y + 1)).isSolid && !screen.getTileContent((posX, posToTest.y + 1)).isSolid) { realPosY++; posY++; speedY = Max(speedY, 0); goto Proceed; }
                                 }
                                 proceed = false; break;
                             }

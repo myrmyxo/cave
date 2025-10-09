@@ -488,7 +488,7 @@ namespace Cave
                 {
                     if (tFT.needsQuartileFilled && !quartileWasFilled) { continue; }
                     TileTraits tileTraits = fillStates[i, j];
-                    if (tileTraits.ignoreTileFeatures) { continue; }
+                    if (tileTraits.ignoreTileFeatures && !tFT.ignoreIgnore) { continue; }
                     if (!tFT.inAir && tileTraits.isAir) { continue; }
                     if (!tFT.inLiquid && tileTraits.isLiquid) { continue; }
                     if (!tFT.inSoil && tileTraits.isSolid) { continue; }
@@ -513,7 +513,7 @@ namespace Cave
                         ), 320) * tFT.biomeValuesScale * 0.003125f;
                     }
 
-                    int noiseValue;
+                    float noiseValue;
                     if (tFT.transitionRules == 0)
                     {    // Temp !!!!
                         if (tFT.baseThreshold + meanNoiseValue % 256 + meanNoiseValue * 0.25f - 512 <= 0) { noiseValue = -999999; }
@@ -521,16 +521,16 @@ namespace Cave
                     }
                     else if (tFT.transitionRules == 1) // flesh and bone (for acid and blood oceans too since they can have the transition)
                     {
-                        noiseValue = Max(0, (int)(Abs(Abs(noiseValue1 - 1024) * 0.49f) + noiseValue2 % 256));
+                        noiseValue = Max(0, (Abs(Abs(noiseValue1 - 1024) * 0.49f) + noiseValue2 % 256));
                     }
                     else if (tFT.transitionRules == 2) // mold
                     {
-                        valueRequired += Min(500 - biomeValues.illu, biomeValues.humi - 500) + (int)(0.1f * (biomeValues.acid + biomeValues.sali)) - (int)(0.2f * biomeValues.temp);
-                        noiseValue = noiseValue1 + noiseValue2 - 1500 + (int)(Max(fillScore.baseScore1, fillScore.baseScore2) * 100);
+                        valueRequired += Min(500 - biomeValues.illu, biomeValues.humi - 500) + 0.1f * (biomeValues.acid + biomeValues.sali) - 0.2f * biomeValues.temp;
+                        noiseValue = noiseValue1 + noiseValue2 - 1500 + (Max(fillScore.baseScore1, fillScore.baseScore2) * 100);
                     }
                     else if (tFT.transitionRules == 3) // salt terrain
                     {
-                        noiseValue = noiseValue1 + noiseValue2 - 2048 + (int)(fillScore.baseScore2 * 25);
+                        noiseValue = noiseValue1 + noiseValue2 - 2048 + fillScore.baseScore2 * 25;
                     }
                     else if (tFT.transitionRules == 4) // salt filling
                     {
@@ -558,7 +558,11 @@ namespace Cave
                         int bottom = Sqrt(derivative.x * derivative.x + derivative.y * derivative.y);
                         int c = Seesaw(top / (bottom > 0 ? bottom : 1), 16);
 
-                        noiseValue = (int)(Abs(4 * c) - 10 - (Max(fillScore.baseScore2, fillScore.separatorScore) + Max(0, noiseValue1 - 1200) * 0.125f));
+                        noiseValue = Abs(4 * c) - 10 - (Max(fillScore.baseScore2, fillScore.separatorScore) + Max(0, noiseValue1 - 1200) * 0.125f);
+                    }
+                    else if (tFT.transitionRules == 6) // frost carving
+                    {
+                        noiseValue = Min(fillScore.baseScore1, fillScore.baseScore2 - 10);
                     }
                     else { noiseValue = -999999; }
                         
@@ -653,30 +657,37 @@ namespace Cave
                     }
                 }
             }
-            public void spawnOnePlants(float spawnRate, ((int type, int subType) type, float percentage)[] spawnTypes, HashSet<(int x, int y)> forbiddenPositions)
+            public void spawnOnePlants(float spawnRate, ((int type, int subType) type, float percentage)[] spawnTypes, HashSet<(int x, int y)> forbiddenPositions, bool isPropagation = false)
             {
                 for (float i = (float)rand.NextDouble(); i < spawnRate; i++)
                 {
                     float rando = ((float)rand.NextDouble()) * 100;
-                    int tries = 0;
                     foreach (((int type, int subType) type, float percentage) tupelo in spawnTypes)
                     {
                         if (rando > tupelo.percentage) { rando -= tupelo.percentage; continue; }
-                        PlantTraits traits = plantTraitsDict.ContainsKey(tupelo.type) ? plantTraitsDict[tupelo.type] : plantTraitsDict[(-1, 0)];
-                    plantInvalidTryAgain:;
-                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePositionPlant(forbiddenPositions, traits);
-                        if (!returnTuple.valid) { break; }
-                        Plant newPlant = new Plant(this, returnTuple.pos, tupelo.type);
-                        while (newPlant.isDeadAndShouldDisappear)
-                        {
-                            if (tries > 10) { goto finalFail; }
-                            tries++;
-                            if (newPlant.traits.initFailType != null) { newPlant = new Plant(this, returnTuple.pos, newPlant.traits.initFailType.Value); }
-                            else { goto plantInvalidTryAgain; }
-                        }
-                        screen.activePlants[newPlant.id] = newPlant;
-                    finalFail:;
+                        trySpawnOnePlant(tupelo.type, forbiddenPositions);
                     }
+                }
+            }
+            public void trySpawnOnePlant((int type, int subType) typeToSpawn, HashSet<(int x, int y)> forbiddenPositions, bool isPropagation = false, ((int x, int y) motherPos, (int x, int y) range)? propagationRange = null)
+            {
+                int tries = 0;
+                PlantTraits traits = plantTraitsDict.ContainsKey(typeToSpawn) ? plantTraitsDict[typeToSpawn] : plantTraitsDict[(-1, 0)];
+            plantInvalidTryAgain:;
+                ((int x, int y) pos, bool valid) returnTuple = findSuitablePositionPlant(forbiddenPositions, traits, isPropagation, propagationRange);
+                if (!returnTuple.valid) { return; }
+                Plant newPlant = new Plant(this, returnTuple.pos, typeToSpawn);
+                while (newPlant.isDeadAndShouldDisappear)
+                {
+                    if (tries > 10) { return; }
+                    tries++;
+                    if (newPlant.traits.initFailType != null) { newPlant = new Plant(this, returnTuple.pos, newPlant.traits.initFailType.Value); }
+                    else { goto plantInvalidTryAgain; }
+                }
+                screen.activePlants[newPlant.id] = newPlant;
+                if (!isPropagation && traits.propagateOnSuccess != null)
+                {
+                    for (int i = traits.propagateOnSuccess.Value.chance.baseValue + rand.Next(traits.propagateOnSuccess.Value.chance.variation + 1); i >= 0; i--) { trySpawnOnePlant(typeToSpawn, forbiddenPositions, true, (returnTuple.pos, traits.propagateOnSuccess.Value.range)); }
                 }
             }
             public void spawnExtraPlants(BiomeTraits traits, HashSet<(int x, int y)> forbiddenPositions)
@@ -695,7 +706,7 @@ namespace Cave
                         plantsToSpawn--;
                         int tries = 0;
                     plantInvalidTryAgain:;
-                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePositionPlant(forbiddenPositions, plantTraits);
+                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePositionPlant(forbiddenPositions, plantTraits, false, null);
                         if (!returnTuple.valid) { continue; }
                         Plant newPlant = new Plant(this, returnTuple.pos, tupelo.type);
                         while (newPlant.isDeadAndShouldDisappear)
@@ -780,7 +791,7 @@ namespace Cave
                 }
                 return modified;
             }
-            public ((int x, int y), bool valid) findSuitablePositionPlant(HashSet<(int x, int y)> forbiddenPositions, PlantTraits plantTraits)
+            public ((int x, int y), bool valid) findSuitablePositionPlant(HashSet<(int x, int y)> forbiddenPositions, PlantTraits plantTraits, bool isPropagation, ((int x, int y) motherPos, (int x, int y) range)? propagationRange)
             {
                 int counto = 0;
                 (int x, int y) posToTest;
@@ -789,6 +800,7 @@ namespace Cave
                 {
                     counto++;
                     randPos = (pos.x * 32 + rand.Next(32), pos.y * 32 + rand.Next(32));
+                    if (isPropagation && (Abs(randPos.x - propagationRange.Value.motherPos.x) > propagationRange.Value.range.x || Abs(randPos.y - propagationRange.Value.motherPos.y) > propagationRange.Value.range.y)) { continue; }
                     if (forbiddenPositions.Contains(randPos)) { continue; }
                     TileTraits tileTraits = fillStates[PosMod(randPos.x), PosMod(randPos.y)];
                     if (tileTraits.isSolid) { forbiddenPositions.Add(randPos); continue; }
@@ -1567,13 +1579,13 @@ namespace Cave
             int percentageFree = 1000;
             int currentInt;
 
-            int temperature = values.temp;
+            int temperature = values.temp - 512;
             int humidity = values.humi;
             int acidity = values.acid;
             int toxicity = values.toxi;
-            int salinity = values.sali;
-            int illumination = values.illu;
-            int oceanity = values.ocea;
+            int salinity = values.sali + 1000;
+            int illumination = values.illu - 10000;
+            int oceanity = values.ocea + 10000;
 
             bool expensiveUglyBlending = false;
             if (expensiveUglyBlending) // distance shit that's slow asf and bad asf

@@ -83,12 +83,12 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                loadStructuresYesOrNo = true;
-                spawnNests = true;
-                spawnEntitiesBool = false;
-                spawnPlants = false;
+                loadStructuresYesOrNo = false;
+                spawnNests = false;
+                spawnEntitiesBool = true;
+                spawnPlants = true;
                 bool spawnNOTHING = false;
-                bool spawnEVERYTHING = true;
+                bool spawnEVERYTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
                 if (spawnEVERYTHING) { loadStructuresYesOrNo = true; spawnEntitiesBool = true; spawnPlants = true; }
 

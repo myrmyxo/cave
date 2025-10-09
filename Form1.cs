@@ -91,6 +91,7 @@ namespace Cave
                 turnPngIntoString("Dragonfly");
 
 
+                turnPngIntoString("Slime");
                 turnPngIntoString("Acid");
                 turnPngIntoString("DeoxygenatedBlood");
                 turnPngIntoString("Blood");
@@ -130,6 +131,13 @@ namespace Cave
                 turnPngIntoString("Mushroom");
                 turnPngIntoString("Vines");
                 turnPngIntoString("ObsidianVines");
+                turnPngIntoString("IceVines");
+                turnPngIntoString("IceGrass");
+                turnPngIntoString("IceBrutic");
+                turnPngIntoString("IceTromel");
+                turnPngIntoString("IceKital");
+                turnPngIntoString("IceFlokan");
+                turnPngIntoString("IceOctam");
 
                 turnPngIntoString("FleshVine");
                 turnPngIntoString("FleshTendril");
@@ -221,7 +229,7 @@ namespace Cave
             // Upside down trees ! And other plants like that !
             // Fix the fucking mold... or make it interesting. Make that, on mold conversion, it Digs ALL tiles in plants present. As an ATTACK like all diggings will be made.
             // The uh... menu... and uh text... and uh dialogues... and uh villages... and uhhhhhhh make an actual fucking game uhhh
-            // nornet nests disappear when they empty
+            // nornet nests disappear when they empty, FIX THE OUTSIDE ENTITY SHIT FFS
             // Hornet larvae climbing up to the ceiling to go pupate ?
             // Bubble effects in water ?
             // Fishing rod
@@ -242,6 +250,9 @@ namespace Cave
             // Improve spawn rate shite for entity/plants to make the percentage system better idk (make the percentage be ABSOLUTE, not relative to the biome's frequency).
             // Breathability noise ???
             // Backrooms dimension ???
+            // Salty Frozen Ocean biome !!! With different plants. More ANGULAR, like cristals ?? salt cristals ?? Idk --> No actually due to BRINE REJECTION it's not the case ! Salt water freezing expells the salt out !
+            // Ice worms, that can hybridize with salt worms ?
+            // --> Danger/Breathability noise, that makes dangerous biome spawn like. SLIME. MOLD.
 
             // Candy dimension !! Candy Cane trees, Lollipop trees, Whipped Cream biome, Chocolate Biome
 
@@ -252,7 +263,6 @@ namespace Cave
             // When worms are on solid ground, like in air on top of a solid... they stop moving lol
             // An ocean biome was leaking out in a slime biome ??? the fuck
             // When making portal, it FUCKING EATS THE PLANTS AROUND IT ????????? LIKE DUDE ??? STOP ???
-            // Weird transition between mold and ocean has appeared after ice ocean update
             // Entities exiting chunks seems to disappear still... Fuuuckkk. Not sure tho !
             // Sometimes leakage between ice ocean and ocean, due to antiborder idk thing
             // Vines when arriving on terrain that forces them to move left or right become MONSTRUOUS
@@ -291,7 +301,7 @@ namespace Cave
             // Bone marrow biome in living dimension ?
 
             // Entities ideas !
-            // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. Add sharks that eat fish ? And add LITHOPEDIONS
+            // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. And add LITHOPEDIONS
             // Make it so fairies and other creatures have songs. Like maybe in a fairy village there's a village theme song that's procedurally generated. Idk. ANd they can teach u the song and u can sing it with instrument or voice idk.
             // Add winged waterSkipper : when the population in a lake is too high, or food is too scarse, some old enough waterSkippers can become winged, and fly around to lakes with none or few waterSkippers/lots of food. Migration patterns ? idk
             // add tribes of snowmen ! lmao
@@ -308,6 +318,7 @@ namespace Cave
             // flying fish ?
             // embrios in living dim
             // mermaids (i forgor) spawn only in normal ocean ??
+            // add tamanoirs ?? tamanoir people ??
 
             // Plants ideas !
             // bone trees and shrubs... like ribs.
@@ -323,6 +334,7 @@ namespace Cave
             // WIND TURBINE PLANTS LMAOOOOOOOOOOOOo
             // Have poppy and other plants growing in wheat fields. Like before.
             // Colored guirelandes in chandeliers dimension !!!
+            // ---> Pass child on growth end ! Make it possible to pass the first child element flower to the COGE branch in trees and stuff. So the first flower grows till the beginning and not just a the last branch (which is ugly)
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.

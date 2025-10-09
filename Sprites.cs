@@ -64,6 +64,7 @@ namespace Cave
             errorSprite = new OneSprite("Error", true);                     // TO CHANGE
             tileSprites = new Dictionary<(int type, int subType), OneSprite>
             {
+                { (-8, 0), new OneSprite("Slime", true) },                  // TO CHANGE
                 { (-7, 0), new OneSprite("Acid", true) },                   // TO CHANGE
                 { (-6, 1), new OneSprite("DeoxygenatedBlood", true) },      // TO CHANGE
                 { (-6, 0), new OneSprite("Blood", true) },                  // TO CHANGE
@@ -140,20 +141,27 @@ namespace Cave
                 { (4, 1), new OneSprite("Mold", true) },                    // TO CHANGE
                 { (5, 0), new OneSprite("Vines", false) },
                 { (5, 1), new OneSprite("ObsidianVines", false ) },
+                { (5, 2), new OneSprite("IceVines", false ) },              // TO CHANGE
+                { (6, 0), new OneSprite("IceGrass", false) },               // TO CHANGE
+                { (6, 1), new OneSprite("IceBrutic", false) },              // TO CHANGE
+                { (6, 10), new OneSprite("IceTromel", false) },             // TO CHANGE
+                { (6, 11), new OneSprite("IceKital", false) },              // TO CHANGE
+                { (6, 20), new OneSprite("IceFlokan", false) },             // TO CHANGE
+                { (6, 21), new OneSprite("IceOctam", false) },              // TO CHANGE
                 { (10, 0), new OneSprite("LanternTree", false) },
                 { (10, 1), new OneSprite("LanternVine", false) },
                 { (10, 2), new OneSprite("LanternSide", false) },
                 { (11, 0), new OneSprite("Candle", false) },
                 { (11, 1), new OneSprite("Chandelier", false) },
                 { (11, 2), new OneSprite("Candelabrum", false) },
-                { (20, 0), new OneSprite("FleshVine", true) },               // TO CHANGE
-                { (20, 1), new OneSprite("FleshTendril", true) },            // TO CHANGE
-                { (20, 2), new OneSprite("FleshTree1", true) },              // TO CHANGE
-                { (20, 3), new OneSprite("FleshTree2", true) },              // TO CHANGE
-                { (21, 0), new OneSprite("BoneStalactite", true) },          // TO CHANGE
-                { (21, 1), new OneSprite("BoneStalagmite", true) },          // TO CHANGE
-                { (22, 0), new OneSprite("HairBody", true) },                // TO CHANGE
-                { (22, 1), new OneSprite("HairLong", true) },                // TO CHANGE
+                { (20, 0), new OneSprite("FleshVine", true) },              // TO CHANGE
+                { (20, 1), new OneSprite("FleshTendril", true) },           // TO CHANGE
+                { (20, 2), new OneSprite("FleshTree1", true) },             // TO CHANGE
+                { (20, 3), new OneSprite("FleshTree2", true) },             // TO CHANGE
+                { (21, 0), new OneSprite("BoneStalactite", true) },         // TO CHANGE
+                { (21, 1), new OneSprite("BoneStalagmite", true) },         // TO CHANGE
+                { (22, 0), new OneSprite("HairBody", true) },               // TO CHANGE
+                { (22, 1), new OneSprite("HairLong", true) },               // TO CHANGE
             };
             materialSprites = new Dictionary<(int type, int subType), OneSprite>
             {
