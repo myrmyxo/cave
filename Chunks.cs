@@ -1579,13 +1579,13 @@ namespace Cave
             int percentageFree = 1000;
             int currentInt;
 
-            int temperature = values.temp - 512;
+            int temperature = values.temp;
             int humidity = values.humi;
             int acidity = values.acid;
             int toxicity = values.toxi;
-            int salinity = values.sali + 1000;
-            int illumination = values.illu - 10000;
-            int oceanity = values.ocea + 10000;
+            int salinity = values.sali;
+            int illumination = values.illu;
+            int oceanity = values.ocea;
 
             bool expensiveUglyBlending = false;
             if (expensiveUglyBlending) // distance shit that's slow asf and bad asf

@@ -82,6 +82,8 @@ namespace Cave
                 turnPngIntoString("Worm");
                 turnPngIntoString("Nematode");
                 turnPngIntoString("SaltWorm");
+                turnPngIntoString("IceWorm");
+                turnPngIntoString("IcealtWorm");
                 turnPngIntoString("WaterSkipper");
                 turnPngIntoString("Goblin");
                 turnPngIntoString("Louse");
@@ -346,6 +348,7 @@ namespace Cave
             // Same reason for the seasons(?) and shit, but over a long period of time
             // In living dimension, bone plants are acutally bone tumors ? And flesh plants parasitic ?? idk
             // Salt worms are chemotrophic and take energy from the salt ! Stfu istg it makes sense
+            // Icealt worms are sterile. Because they're a hybrid. Wow this is insane lore fr fr
 
             //
             // cool seeds !!!! DO NOT DELETE      yeah actually since world gen keeps on changing they're fucking useless LMFAO
