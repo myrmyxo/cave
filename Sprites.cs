@@ -123,10 +123,12 @@ namespace Cave
             {
                 { (-1, 0), errorSprite },
                 { (0, 0), new OneSprite("Grass", false) },
+                { (0, 1), new OneSprite("Wheat", false) },
                 { (1, 0), new OneSprite("Tulip", false) },
                 { (1, 1), new OneSprite("Allium", false) },
                 { (1, 2), new OneSprite("Tulip", false) },
                 { (2, 0), new OneSprite("Cattail", false) },
+                { (2, 1), new OneSprite("Rice", false) },
                 { (10, 0), new OneSprite("Tree", false) },
                 { (10, 1), new OneSprite("JungleTree", true) },              // TO CHANGE
                 { (10, 2), new OneSprite("WeepingWillow", true) },           // TO CHANGE
@@ -172,6 +174,7 @@ namespace Cave
                 { (1, 1), new OneSprite("Wood", false) },
                 { (1, 2), new OneSprite("Kelp", false) },
                 { (1, 3), new OneSprite("ObsidianPlantMatter", true) },     // TO CHANGE
+                { (1, 4), new OneSprite("Grain", true) },                   // TO CHANGE
                 { (2, 0), new OneSprite("FlowerPetal", false) },
                 { (2, 1), new OneSprite("Pollen", false) },
                 { (3, 0), new OneSprite("MushroomStem", false) },

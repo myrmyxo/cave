@@ -254,10 +254,7 @@ namespace Cave
                     {
                         PlantElement currentPlant = plantElementsToGrow[i];
                         growthIncreaseInt = Max(growthIncreaseInt, currentPlant.tryGrowth());
-                        foreach (PlantElement plantElementToAdd in currentPlant.childPlantElements)
-                        {
-                            plantElementsToGrow.Add(plantElementToAdd);
-                        }
+                        foreach (PlantElement plantElementToAdd in currentPlant.childPlantElements) { plantElementsToGrow.Add(plantElementToAdd); }
                     }
                     if (!forceGrowth) { makeBitmap(); }   // not to make bitmap when it's not needed (growing to max)
                     timeAtLastGrowth = timeElapsed;
@@ -753,15 +750,18 @@ namespace Cave
                 {
                     (int x, int y) drawPos = lastDrawPos;
                     int growthLevelToTest = growthLevel + 1;
+                    if (traits.plantGrowthRules.liquidIncreasesMaxGrowth && getTileFromRelPos(lastDrawPos).isLiquid) { maxGrowthLevel++; }
                     if (growthLevelToTest > maxGrowthLevel + (traits.plantGrowthRules.childrenOnGrowthEnd is null ? 0 : 1)) { goto SuccessButStop; }
 
-                    if (traits.plantGrowthRules.directionGrowthArray != null && traits.plantGrowthRules.directionGrowthArray.Length > 0 && (traits.plantGrowthRules.loopDG || currentDirectionArrayIdx + 1 < traits.plantGrowthRules.directionGrowthArray.Length))
+                    if (traits.plantGrowthRules.directionGrowthArray != null && traits.plantGrowthRules.directionGrowthArray.Length > 0)
                     {
-                        ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance) item = traits.plantGrowthRules.directionGrowthArray[(currentDirectionArrayIdx + 1) % traits.plantGrowthRules.directionGrowthArray.Length];
-
-                        int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue(directionArrayOffset + 10000, item.changeFrame.range + 1)));
-                        if (growthLevelToTest - directionArrayOffset >= cost)
+                        while (traits.plantGrowthRules.loopDG || currentDirectionArrayIdx + 1 < traits.plantGrowthRules.directionGrowthArray.Length)
                         {
+                            ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance) item = traits.plantGrowthRules.directionGrowthArray[(currentDirectionArrayIdx + 1) % traits.plantGrowthRules.directionGrowthArray.Length];
+
+                            int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue(directionArrayOffset + 10000, item.changeFrame.range + 1)));
+                            if (growthLevelToTest - directionArrayOffset < cost) { break; }
+
                             directionArrayOffset += cost;
                             currentDirectionArrayIdx++;
 

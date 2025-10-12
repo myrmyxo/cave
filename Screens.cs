@@ -95,12 +95,7 @@ namespace Cave
                 if (randomSeed)
                 {
                     seed = rand.Next(1000000);
-                    int counto = rand.Next(1000);
-                    while (counto > 0)
-                    {
-                        seed = LCGxPos(seed);
-                        counto -= 1;
-                    }
+                    for (int i = rand.Next(1000); i > 0; i--) { seed = LCGxPos(seed); }
                 }
                 worldSeed = seed;
                 Files.createFolders(seed);
@@ -134,10 +129,7 @@ namespace Cave
                     counti++;
                 }
 
-                if (settings != null)
-                {
-                    idToPut = settings.player.currentDimension;
-                }
+                if (settings != null) { idToPut = settings.player.currentDimension; }
 
                 if (isPngToExport)
                 {
