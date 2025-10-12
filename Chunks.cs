@@ -1693,29 +1693,29 @@ namespace Cave
                 }
                 else if (dimensionType == (1, 0)) // type == 1, chandelier dimension
                 {
-                    calculateAndAddBiome(listo, (11, 0), ref percentageFree, oceanity, (720, 999999)); // Dark ocean...
-                    calculateAndAddBiome(listo, (10, 0), ref percentageFree, temperature, (700, 999999)); // Lantern
-                    calculateAndAddBiome(listo, (10, 2), ref percentageFree, temperature, (-999999, 300)); // Chandelier
-                    testAddBiome(listo, (10, 1), percentageFree); // MixedLuminous
+                    calculateAndAddBiome(listo, (101, 0), ref percentageFree, oceanity, (720, 999999)); // Dark ocean...
+                    calculateAndAddBiome(listo, (100, 0), ref percentageFree, temperature, (700, 999999)); // Lantern
+                    calculateAndAddBiome(listo, (100, 2), ref percentageFree, temperature, (-999999, 300)); // Chandelier
+                    testAddBiome(listo, (100, 1), percentageFree); // MixedLuminous
                 }
                 else if (dimensionType == (2, 0)) // type == 2, living dimension
                 {
-                    calculateAndAddBiome(listo, (22, 1), ref percentageFree, acidity, (800, 999999)); // acid ocean
-                    calculateAndAddBiome(listo, (22, 0), ref percentageFree, oceanity, (-999999, 300)); // blood ocean
+                    calculateAndAddBiome(listo, (202, 1), ref percentageFree, acidity, (800, 999999)); // acid ocean
+                    calculateAndAddBiome(listo, (202, 0), ref percentageFree, oceanity, (-999999, 300)); // blood ocean
                     if (humidity > 500)
                     {
                         int fleshiness = calculateBiome(ref percentageFree, humidity, (500, 999999));
                         if (toxicity >= 700)
                         {
                             int hairiness = calculateBiome(ref fleshiness, toxicity, (700, 999999));
-                            calculateAndAddBiome(listo, (20, 3), ref hairiness, temperature + acidity, (1024, 999999));    // hair forest
-                            testAddBiome(listo, (20, 4), hairiness);    // long hair forest
+                            calculateAndAddBiome(listo, (200, 3), ref hairiness, temperature + acidity, (1024, 999999));    // hair forest
+                            testAddBiome(listo, (200, 4), hairiness);    // long hair forest
                         }
-                        calculateAndAddBiome(listo, (20, 1), ref fleshiness, toxicity, (-999999, 350)); // flesh forest;
-                        testAddBiome(listo, (20, 0), fleshiness);   // add what's remaining as normal flesh
+                        calculateAndAddBiome(listo, (200, 1), ref fleshiness, toxicity, (-999999, 350)); // flesh forest;
+                        testAddBiome(listo, (200, 0), fleshiness);   // add what's remaining as normal flesh
                     }
-                    calculateAndAddBiome(listo, (21, 0), ref percentageFree, humidity, (-999999, 300)); // bone
-                    testAddBiome(listo, (20, 2), percentageFree); // flesh and bone
+                    calculateAndAddBiome(listo, (201, 0), ref percentageFree, humidity, (-999999, 300)); // bone
+                    testAddBiome(listo, (200, 2), percentageFree); // flesh and bone
                 }
             }
 

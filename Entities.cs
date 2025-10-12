@@ -1106,26 +1106,14 @@ namespace Cave
             }
             public void testTileEffects(TileTraits tile)
             {
-                if (tile.isTransformant && type.type != 0 && tile.type == (-3, 0))
+                if (tile.isTransformant && type.type != 0 && rand.Next(10) == 0)
                 {
-                    if (rand.Next(10) == 0)
-                    {
-                        if (type.type == 2 && type.subType == 1) { transformEntity((0, 3), true); }
-                        else { transformEntity((0, 0), true); }
-                    }
+                    if (type == (2, 1)) { transformEntity((0, 3), true); }
+                    else { transformEntity((0, 0), true); }
                 }
-                if (type.type == 2 && tile.isAcidic)
-                {
-                    if (rand.Next(10) == 0) { transformEntity((2, 1), true); }
-                }
-                if (tile.isLava && type.type != 2 && type != (0, 3))
-                {
-                    if (rand.Next(10) == 0) { screen.entitesToRemove[id] = this; }
-                }
-                if (tile.isAcidic && type.type != 2 && type != (0, 3) && type != (4, 1) && type != (1, 1) && type != (1, 2))
-                {
-                    if (rand.Next(10) == 0) { screen.entitesToRemove[id] = this; }
-                }
+                if (type.type == 2 && tile.isAcidic && rand.Next(10) == 0) { transformEntity((2, 1), true); }
+                if (tile.isLava && !traits.lavaResistant && rand.Next(10) == 0) { dieAndDrop(); }
+                if (tile.isAcidic && !traits.acidResistant && rand.Next(10) == 0) { dieAndDrop(); }
             }
             public void transformEntity((int type, int subType) newType, bool setHp = true)
             {
@@ -1137,12 +1125,15 @@ namespace Cave
                 color = findColor();
                 findLightColor();
             }
-            public void dieAndDrop(Entity entityToGive)
+            public void dieAndDrop(Entity entityToGive = null)
             {
-                ((int type, int subType, int megaType) element, int count) entityDrop = traits.drops;
-                if (length > 0) { entityDrop = (entityDrop.element, length); }
-                entityToGive.addElementToInventory(entityDrop.element, entityDrop.count);
                 isDeadAndShouldDisappear = true;
+                if (entityToGive != null)
+                {
+                    ((int type, int subType, int megaType) element, int count) entityDrop = traits.drops;
+                    if (length > 0) { entityDrop = (entityDrop.element, length); }
+                    entityToGive.addElementToInventory(entityDrop.element, entityDrop.count);
+                }
                 if (nest != null) { nest.adults.Remove(this); nest.larvae.Remove(this); nest.outsideEntities.Remove(id); }
                 else if (nestId != -1)
                 {

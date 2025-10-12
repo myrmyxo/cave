@@ -125,7 +125,7 @@ namespace Cave
                 turnPngIntoString("CheeringWillow");
                 turnPngIntoString("KelpUpwards");
                 turnPngIntoString("KelpDownwards");
-                turnPngIntoString("Reed");
+                turnPngIntoString("Cattail");
                 turnPngIntoString("Algae");
                 turnPngIntoString("AlgaeTree");
                 turnPngIntoString("AlgaeCeiling");
@@ -217,7 +217,11 @@ namespace Cave
 
             makeTheFilledChunk();
 
+            //      ----- - - CURRENTLY DOING - - -----
+            // Rice, wheat, mud, dirt, make grass propagate, make other cereals, make chunk maturation TFT
+
             //      --- - TO DO LIST - ---
+            //
             // Make nests not appear in certain biomes.
             // Fix plants spawning. Make megaChunks priority loading (to stop overlaps and weird generation).
             // Player fairy transfo when in fairy liquid. Craft tools. Auto sorting in inventory. Blood breathing ? Extract o2 from blood.
@@ -240,20 +244,18 @@ namespace Cave
             // A luminous liquid ocean in the chandelier dimension ? idk.
             // -> Inverted lakes (floating luminescent lily pads spawn there and in lakes also)
             // -> Make light sources have varying High intensity/Low intensity circles, so player can have a BIG low intensity light in some cases. Maye have a different size for if in water or not ? Like in water bigger low intensity but smaller high intensity (or the opposite, or just lower in general since water.)).
-            // -> Add pufferfish UUUUUUUURRRRRRRRRGHHHHHHHHHHHHHHHHHHHHIHHHHHHHHHHHHHHHHHLHHHHHHHHHHHHHHHHHHHHHYHHHHHHHHHHHHHHHH
+            // -> Add pufferfish UUUUUUUURRRRRRRRRGHHHHHHHHHHHHHHHHHHHHIHHHHHHHHHHHHHHHHHLHHHHHHHHHHHHHHHHHHHHHYHHHHHHHHHHHHHHHH <33333333333333333333
             // Oysters that grow on the side of mangrove tree roots when in water ? food source ?
             // Find a way to have the effect of stuff being immerged in liquid be DARKER IN COLOR instead of just being an alpha effect (when plant in water, it's not just closer to water color BUT also darker)
             // -> Super hard to do bc if the effect is aready darker it will just make the water darker too and thus make change water color and have no effect on the color of the stuff in them... fak
             // MAKE THE CACHE DICTS GET REINITIALIZED WHEN THEY GET TOO BIG !!! MEMORY LEAK !!!!!!!
             // Turn the individual findBiome() LISTS of (traits, ponderation) into a big (traits, ponderation)[32,32,4 or 5] ARRAY. Might actually reduce computation time by a LOT. idk.
-            // Ice plants that only grow on ICE
             // guuuys i've got such a cool idea it's like a FLOATING ISLANDS fucking biome (or dimension) surely this has NEVER BEEN DONE ever before so ILL PUT IT AS A FUCKING LUDUM DARE THEME FFS
             // Wait what the fuck ??? Ludum Dare is like cancelled forever ???????? i'm actually shocked what the actual fuck this fucking sucks. Mike i love you pleas come back
             // Improve spawn rate shite for entity/plants to make the percentage system better idk (make the percentage be ABSOLUTE, not relative to the biome's frequency).
             // Breathability noise ???
             // Backrooms dimension ???
             // Salty Frozen Ocean biome !!! With different plants. More ANGULAR, like cristals ?? salt cristals ?? Idk --> No actually due to BRINE REJECTION it's not the case ! Salt water freezing expells the salt out !
-            // Ice worms, that can hybridize with salt worms ?
             // --> Danger/Breathability noise, that makes dangerous biome spawn like. SLIME. MOLD.
 
             // Candy dimension !! Candy Cane trees, Lollipop trees, Whipped Cream biome, Chocolate Biome
@@ -277,7 +279,7 @@ namespace Cave
             // make it possible to visit entities/players inventories lmfao
             // looping dimensions ???? Could be cool. And serve as TELEPORT HUBS ???
             // maybe depending on a parameter of the dimension, some living world dimensions would be more dead or not dead at all.
-            // -> rotten biome in living dimension ?? Like the corpse in isaac LMFAO
+            // -> rotten biomes in living dimension ?? Like the corpse in isaac LMFAO. Like dead bone, dead flesh and bone, dead flesh, pus/dead ocean...
             // Lolitadimension ?? ? ? or CANDYDIMENSION ???? idk ? ? ? sugar cane trees would be poggers. Or a candy dimension with candies... yeah and uh idk a lolita biome and a super rare variant being a gothic lolita biome ??? idk wtf i'm on ngl
             // Whipped cream biome, chocolate biome... idk
             // Add a portal that is inside lava oceans; in a structure (obsidian city ?), that needs to be turned on with maybe liquid obsidian or oil, and teleports to like hell, or an obsidian dimension made ouf of only obsidian shit ?.
@@ -300,7 +302,7 @@ namespace Cave
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
             // Ocean biome -> in some patches, have the normal cave system thing get added on top, so that there are kinds of small caves and shit in the ocean biome too (but only in some parts)
-            // Bone marrow biome in living dimension ?
+            // Bone marrow biome in living dimension ? With voronoi
 
             // Entities ideas !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. And add LITHOPEDIONS
@@ -329,7 +331,6 @@ namespace Cave
             // Rice ? In salt biomes ?
             // Roots for trees, that can grow out the soil under the plant and be exposed if there's a cave under them
             // Branching wax plants ?
-            // Snowflake plants ??
             // Glycine
             // Douce-Amère/Bittersweet/Solanum Dulcamara (my beloved)                                                                                               ^  ^  ^
             // --> maybe for plants who change direction rotationally, make a list of forbidden orientations ? or like a "moves upwards" thing, so that it can go <- \ | / -> upwards but not downards idk. Could be cool for hair.
@@ -337,6 +338,7 @@ namespace Cave
             // Have poppy and other plants growing in wheat fields. Like before.
             // Colored guirelandes in chandeliers dimension !!!
             // ---> Pass child on growth end ! Make it possible to pass the first child element flower to the COGE branch in trees and stuff. So the first flower grows till the beginning and not just a the last branch (which is ugly)
+            // Shit dimension weeping willow called the WIPING WILLOW and it has toilet paper leaves LMFAOOOOOOOOOOOOOOOOOOOO i am a comedic genius
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.

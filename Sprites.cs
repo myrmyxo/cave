@@ -97,8 +97,6 @@ namespace Cave
                 { (0, 2), new OneSprite("FrostFairy", false) },               
                 { (0, 3), new OneSprite("SkeletonFairy", true) },           // TO CHANGE
                 { (1, 0), new OneSprite("Frog", false) },                     
-                { (1, 1), new OneSprite("Carnal", true) },                  // TO CHANGE
-                { (1, 2), new OneSprite("Skeletal", true) },                // TO CHANGE
                 { (2, 0), new OneSprite("Fish", false) },                     
                 { (2, 1), new OneSprite("SkeletonFish", true) },            // TO CHANGE
                 { (2, 2), new OneSprite("Pufferfish", true) },              // TO CHANGE
@@ -107,63 +105,65 @@ namespace Cave
                 { (3, 2), new OneSprite("HornetCocoon", true) },            // TO CHANGE
                 { (3, 3), new OneSprite("Hornet", false) },                   
                 { (4, 0), new OneSprite("Worm", true) },                    // TO CHANGE
-                { (4, 1), new OneSprite("Nematode", true) },                // TO CHANGE
                 { (4, 2), new OneSprite("SaltWorm", true) },                // TO CHANGE
                 { (4, 3), new OneSprite("IceWorm", true) },                 // TO CHANGE
                 { (4, 4), new OneSprite("IcealtWorm", true) },              // TO CHANGE
                 { (5, 0), new OneSprite("WaterSkipper", true) },            // TO CHANGE
                 { (6, 0), new OneSprite("Goblin", true) },                  // TO CHANGE
-                { (7, 0), new OneSprite("Louse", true) },                   // TO CHANGE
                 { (8, 0), new OneSprite("Shark", true) },                   // TO CHANGE
-                { (8, 1), new OneSprite("Anglerfish", true) },              // TO CHANGE
                 { (9, 0), new OneSprite("WaterDog", true) },                // TO CHANGE
-                { (10, 0), new OneSprite("Dragonfly", true) },              // TO CHANGE
+                { (10, 0), new OneSprite("Dragonfly", true) },             // TO CHANGE
+                { (100, 0), new OneSprite("Anglerfish", true) },           // TO CHANGE
+                { (200, 0), new OneSprite("Carnal", true) },               // TO CHANGE
+                { (200, 1), new OneSprite("Skeletal", true) },             // TO CHANGE
+                { (201, 0), new OneSprite("Nematode", true) },             // TO CHANGE
+                { (202, 0), new OneSprite("Louse", true) },                // TO CHANGE
             };                                                               
             plantSprites = new Dictionary<(int type, int subType), OneSprite>
             {
                 { (-1, 0), errorSprite },
-                { (0, 0), new OneSprite("BasePlant", false) },
-                { (0, 1), new OneSprite("Tulip", false) },
-                { (0, 2), new OneSprite("Allium", false) },
-                { (0, 3), new OneSprite("Tulip", false) },
-                { (1, 0), new OneSprite("Tree", false) },
-                { (1, 1), new OneSprite("Fir", true) },                     // TO CHANGE
-                { (1, 2), new OneSprite("JungleTree", true) },              // TO CHANGE
-                { (1, 3), new OneSprite("MangroveTree", true) },            // TO CHANGE
-                { (1, 4), new OneSprite("WeepingWillow", true) },           // TO CHANGE
-                { (1, 5), new OneSprite("CheeringWillow", true) },          // TO CHANGE
-                { (2, 0), new OneSprite("KelpUpwards", false) },
-                { (2, 1), new OneSprite("KelpDownwards", false) },
-                { (2, 2), new OneSprite("Reed", false) },
-                { (2, 3), new OneSprite("Algae", false) },
-                { (2, 4), new OneSprite("AlgaeTree", false) },
-                { (2, 5), new OneSprite("AlgaeCeiling", false) },
-                { (3, 0), new OneSprite("ObsidianPlant", false) },
-                { (4, 0), new OneSprite("Mushroom", false) },
-                { (4, 1), new OneSprite("Mold", true) },                    // TO CHANGE
-                { (5, 0), new OneSprite("Vines", false) },
-                { (5, 1), new OneSprite("ObsidianVines", false ) },
-                { (5, 2), new OneSprite("IceVines", false ) },              // TO CHANGE
-                { (6, 0), new OneSprite("IceGrass", false) },               // TO CHANGE
-                { (6, 1), new OneSprite("IceBrutic", false) },              // TO CHANGE
-                { (6, 10), new OneSprite("IceTromel", false) },             // TO CHANGE
-                { (6, 11), new OneSprite("IceKital", false) },              // TO CHANGE
-                { (6, 20), new OneSprite("IceFlokan", false) },             // TO CHANGE
-                { (6, 21), new OneSprite("IceOctam", false) },              // TO CHANGE
-                { (10, 0), new OneSprite("LanternTree", false) },
-                { (10, 1), new OneSprite("LanternVine", false) },
-                { (10, 2), new OneSprite("LanternSide", false) },
-                { (11, 0), new OneSprite("Candle", false) },
-                { (11, 1), new OneSprite("Chandelier", false) },
-                { (11, 2), new OneSprite("Candelabrum", false) },
-                { (20, 0), new OneSprite("FleshVine", true) },              // TO CHANGE
-                { (20, 1), new OneSprite("FleshTendril", true) },           // TO CHANGE
-                { (20, 2), new OneSprite("FleshTree1", true) },             // TO CHANGE
-                { (20, 3), new OneSprite("FleshTree2", true) },             // TO CHANGE
-                { (21, 0), new OneSprite("BoneStalactite", true) },         // TO CHANGE
-                { (21, 1), new OneSprite("BoneStalagmite", true) },         // TO CHANGE
-                { (22, 0), new OneSprite("HairBody", true) },               // TO CHANGE
-                { (22, 1), new OneSprite("HairLong", true) },               // TO CHANGE
+                { (0, 0), new OneSprite("Grass", false) },
+                { (1, 0), new OneSprite("Tulip", false) },
+                { (1, 1), new OneSprite("Allium", false) },
+                { (1, 2), new OneSprite("Tulip", false) },
+                { (2, 0), new OneSprite("Cattail", false) },
+                { (10, 0), new OneSprite("Tree", false) },
+                { (10, 1), new OneSprite("JungleTree", true) },              // TO CHANGE
+                { (10, 2), new OneSprite("WeepingWillow", true) },           // TO CHANGE
+                { (11, 0), new OneSprite("Fir", true) },                     // TO CHANGE
+                { (12, 0), new OneSprite("MangroveTree", true) },            // TO CHANGE
+                { (13, 0), new OneSprite("CheeringWillow", true) },          // TO CHANGE
+                { (20, 0), new OneSprite("Vines", false) },
+                { (20, 1), new OneSprite("ObsidianVines", false ) },
+                { (20, 2), new OneSprite("IceVines", false ) },              // TO CHANGE
+                { (30, 0), new OneSprite("KelpUpwards", false) },
+                { (30, 1), new OneSprite("KelpDownwards", false) },
+                { (31, 0), new OneSprite("Algae", false) },
+                { (31, 1), new OneSprite("AlgaeTree", false) },
+                { (31, 2), new OneSprite("AlgaeCeiling", false) },
+                { (40, 0), new OneSprite("Mushroom", false) },
+                { (41, 0), new OneSprite("Mold", true) },                    // TO CHANGE
+                { (50, 0), new OneSprite("ObsidianPlant", false) },
+                { (60, 0), new OneSprite("IceGrass", false) },               // TO CHANGE
+                { (60, 1), new OneSprite("IceBrutic", false) },              // TO CHANGE
+                { (61, 0), new OneSprite("IceTromel", false) },             // TO CHANGE
+                { (61, 1), new OneSprite("IceKital", false) },              // TO CHANGE
+                { (62, 0), new OneSprite("IceFlokan", false) },             // TO CHANGE
+                { (62, 1), new OneSprite("IceOctam", false) },              // TO CHANGE
+                { (100, 0), new OneSprite("LanternTree", false) },
+                { (100, 1), new OneSprite("LanternVine", false) },
+                { (100, 2), new OneSprite("LanternSide", false) },
+                { (101, 0), new OneSprite("Candle", false) },
+                { (101, 1), new OneSprite("Chandelier", false) },
+                { (101, 2), new OneSprite("Candelabrum", false) },
+                { (200, 0), new OneSprite("FleshVine", true) },              // TO CHANGE
+                { (200, 1), new OneSprite("FleshTendril", true) },           // TO CHANGE
+                { (200, 2), new OneSprite("FleshTree1", true) },             // TO CHANGE
+                { (200, 3), new OneSprite("FleshTree2", true) },             // TO CHANGE
+                { (201, 0), new OneSprite("BoneStalactite", true) },         // TO CHANGE
+                { (201, 1), new OneSprite("BoneStalagmite", true) },         // TO CHANGE
+                { (202, 0), new OneSprite("HairBody", true) },               // TO CHANGE
+                { (202, 1), new OneSprite("HairLong", true) },               // TO CHANGE
             };
             materialSprites = new Dictionary<(int type, int subType), OneSprite>
             {
@@ -232,38 +232,23 @@ namespace Cave
 
             Bitmap[] numberBitmapArray = slice(numbersSprite.bitmap, 11, 1);
             numberSprites = new Dictionary<int, OneSprite>();
-            for (int i = 0; i < numberBitmapArray.Count(); i++)
-            {
-                numberSprites.Add(i, new OneSprite(numberBitmapArray[i]));
-            }
+            for (int i = 0; i < numberBitmapArray.Count(); i++) { numberSprites.Add(i, new OneSprite(numberBitmapArray[i])); }
 
             Bitmap[] letterUpBitmapArray = slice(lettersUpSprite.bitmap, 26, 1);
             letterUpSprites = new Dictionary<string, OneSprite>();
-            for (int i = 0; i < letterUpBitmapArray.Count(); i++)
-            {
-                letterUpSprites.Add("ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i].ToString(), new OneSprite(letterUpBitmapArray[i]));
-            }
+            for (int i = 0; i < letterUpBitmapArray.Count(); i++) { letterUpSprites.Add("ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i].ToString(), new OneSprite(letterUpBitmapArray[i])); }
 
             Bitmap[] letterLowBitmapArray = slice(lettersLowSprite.bitmap, 26, 1);
             letterLowSprites = new Dictionary<string, OneSprite>();
-            for (int i = 0; i < letterLowBitmapArray.Count(); i++)
-            {
-                letterLowSprites.Add("abcdefghijklmnopqrstuvwxyz"[i].ToString(), new OneSprite(letterLowBitmapArray[i]));
-            }
+            for (int i = 0; i < letterLowBitmapArray.Count(); i++) { letterLowSprites.Add("abcdefghijklmnopqrstuvwxyz"[i].ToString(), new OneSprite(letterLowBitmapArray[i])); }
 
             Bitmap[] arrowBitmapArray = slice(arrowsSprite.bitmap, 4, 1);
             arrowSprites = new Dictionary<int, OneSprite>();
-            for (int i = 0; i < arrowBitmapArray.Count(); i++)
-            {
-                arrowSprites.Add(i, new OneSprite(arrowBitmapArray[i]));
-            }
+            for (int i = 0; i < arrowBitmapArray.Count(); i++) { arrowSprites.Add(i, new OneSprite(arrowBitmapArray[i])); }
 
             Bitmap[] operationSignBitmapArray = slice(operationSignsSprite.bitmap, 6, 1);
             operationSignSprites = new Dictionary<int, OneSprite>();
-            for (int i = 0; i < operationSignBitmapArray.Count(); i++)
-            {
-                operationSignSprites.Add(i, new OneSprite(operationSignBitmapArray[i]));
-            }
+            for (int i = 0; i < operationSignBitmapArray.Count(); i++) { operationSignSprites.Add(i, new OneSprite(operationSignBitmapArray[i])); }
         }
 
 
@@ -282,38 +267,26 @@ namespace Cave
                         Color pixelColor = bitmapToPut.GetPixel(i, j);
                         for (int k = 0; k < paletteList.Count(); k++)
                         {
-                            if (pixelColor == paletteList[k])
-                            {
-                                goto afterTest;
-                            }
+                            if (pixelColor == paletteList[k]) { goto afterTest; }
                         }
                         paletteList.Add(pixelColor);
                     afterTest:;
                     }
                 }
                 Color[] palette = new Color[paletteList.Count];
-                for (int i = 0; i < paletteList.Count; i++)
-                {
-                    palette[i] = paletteList[i];
-                }
+                for (int i = 0; i < paletteList.Count; i++) { palette[i] = paletteList[i]; }
             }
             public OneSprite(string contentString, bool isFileName)
             {
                 if (isFileName || true)
                 {
                     contentString = findSpritesPath() + $"\\{contentString}.txt";
-                    using (StreamReader f = new StreamReader(contentString))
-                    {
-                        contentString = f.ReadToEnd();
-                    }
+                    using (StreamReader f = new StreamReader(contentString)) { contentString = f.ReadToEnd(); }
                 }
                 else { contentString = SpriteStrings.spriteStringsDict[contentString]; }
                 bitmap = makeBitmapFromContentString(contentString);
             }
-            public OneSprite(string sentence)
-            {
-                bitmap = letterLowSprites["f"].bitmap;
-            }
+            public OneSprite(string sentence) { bitmap = letterLowSprites["f"].bitmap; }
         }
         public class OneAnimation
         {
@@ -332,20 +305,14 @@ namespace Cave
                 if (isFileName)
                 {
                     contentString = findSpritesPath() + $"\\{contentString}.txt";
-                    using (StreamReader f = new StreamReader(contentString))
-                    {
-                        contentString = f.ReadToEnd();
-                    }
+                    using (StreamReader f = new StreamReader(contentString)) { contentString = f.ReadToEnd(); }
                 }
                 else { contentString = SpriteStrings.spriteStringsDict[contentString]; }
 
                 Bitmap motherBitmap = makeBitmapFromContentString(contentString);
                 frames = slice(motherBitmap, frameCount, 1);
 
-                foreach (Bitmap bitmap in frames)
-                {
-                    bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
-                }
+                foreach (Bitmap bitmap in frames) { bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY); }
 
                 offset = offsetToPut ?? (- ((frames[0].Width - 1) / 2), - ((frames[0].Height - 1) / 2));
             }
@@ -427,10 +394,7 @@ namespace Cave
 
 
             Color[] palette = new Color[secondLineInts.Count / 4];
-            for (int i = 0; i < secondLineInts.Count / 4; i++)
-            {
-                palette[i] = Color.FromArgb(secondLineInts[i * 4 + 3], secondLineInts[i * 4], secondLineInts[i * 4 + 1], secondLineInts[i * 4 + 2]);
-            }
+            for (int i = 0; i < secondLineInts.Count / 4; i++) { palette[i] = Color.FromArgb(secondLineInts[i * 4 + 3], secondLineInts[i * 4], secondLineInts[i * 4 + 1], secondLineInts[i * 4 + 2]); }
 
             Bitmap bitmapToReturn = new Bitmap(dimensions.Item1, dimensions.Item2);
             for (int i = 0; i < dimensions.Item1; i++)
@@ -468,25 +432,16 @@ namespace Cave
             if (scaleFactor <= 0) { return; }
             int[] drawRange = new int[4]; //OF THE SMALL SPRITE, startX (if cropped) (0-length), stopX (0-length), startY, stopY. Example, if it is [0,8,4,8], it will go from beginning on sprite to 8th pixel of sprite not included, and from 4th pixel of sprite (vertical) to 8th pixel of sprite not included
                                           // test les positions si ça dépasse pas
-            if (centeredDraw)
-            {
-                posToDraw = ((int)(posToDraw.Item1 - (smallBitmap.Width * scaleFactor * 0.5f)), (int)(posToDraw.Item2 - (smallBitmap.Height * scaleFactor * 0.5f)));
-            }
+            if (centeredDraw) { posToDraw = ((int)(posToDraw.Item1 - (smallBitmap.Width * scaleFactor * 0.5f)), (int)(posToDraw.Item2 - (smallBitmap.Height * scaleFactor * 0.5f))); }
             drawRange[0] = -Min(posToDraw.Item1, 0);
             drawRange[1] = Min(bigBitmap.Width - posToDraw.Item1, smallBitmap.Width * scaleFactor);
             drawRange[2] = -Min(posToDraw.Item2, 0); ;
             drawRange[3] = Min(bigBitmap.Height - posToDraw.Item2, smallBitmap.Height * scaleFactor);
-            if (drawRange[0] >= drawRange[1] || drawRange[2] >= drawRange[3])
-            {
-                return;
-            }
+            if (drawRange[0] >= drawRange[1] || drawRange[2] >= drawRange[3]) { return; }
 
             // Resizing
             Bitmap resizedBitmap;
-            if (scaleFactor == 1)
-            {
-                resizedBitmap = smallBitmap;
-            }
+            if (scaleFactor == 1) { resizedBitmap = smallBitmap; }
             else
             {
                 resizedBitmap = new Bitmap(smallBitmap.Width * scaleFactor, smallBitmap.Height * scaleFactor);
@@ -509,30 +464,12 @@ namespace Cave
 
         public static void drawElement(Bitmap bigBitmap, (int type, int subType, int megaType) element, (int, int) posToDraw, int scaleFactor, bool centeredDraw)
         {
-            if (element.megaType == 0)
-            {
-                Sprites.drawSpriteOnCanvas(bigBitmap, tileSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw);
-            }
-            else if (element.megaType == 1)
-            {
-                Sprites.drawSpriteOnCanvas(bigBitmap, entitySprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw);
-            }
-            else if (element.megaType == 2)
-            {
-                Sprites.drawSpriteOnCanvas(bigBitmap, plantSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw);
-            }
-            else if (element.megaType == 3)
-            {
-                Sprites.drawSpriteOnCanvas(bigBitmap, materialSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw);
-            }
-            else if (element.megaType == 4)
-            {
-                Sprites.drawSpriteOnCanvas(bigBitmap, toolsSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw);
-            }
-            else if (element.megaType == 5)
-            {
-                Sprites.drawSpriteOnCanvas(bigBitmap, attacksSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw);
-            }
+            if (element.megaType == 0) { Sprites.drawSpriteOnCanvas(bigBitmap, tileSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw); }
+            else if (element.megaType == 1) { Sprites.drawSpriteOnCanvas(bigBitmap, entitySprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw); }
+            else if (element.megaType == 2) { Sprites.drawSpriteOnCanvas(bigBitmap, plantSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw); }
+            else if (element.megaType == 3) { Sprites.drawSpriteOnCanvas(bigBitmap, materialSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw); }
+            else if (element.megaType == 4) { Sprites.drawSpriteOnCanvas(bigBitmap, toolsSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw); }
+            else if (element.megaType == 5) { Sprites.drawSpriteOnCanvas(bigBitmap, attacksSprites[(element.type, element.subType)].bitmap, posToDraw, scaleFactor, centeredDraw); }
         }
 
         public static void drawInventory(Game game, Dictionary<(int index, int subType, int typeOfElement), int> inventoryQuantities, List<(int index, int subType, int typeOfElement)> inventoryElements, int inventoryCursor)
@@ -543,10 +480,7 @@ namespace Cave
                 drawElement(game.overlayBitmap, element, (360, 64), 4, true);
 
                 int quantity = inventoryQuantities[element];
-                if (quantity == -999)
-                {
-                    Sprites.drawSpriteOnCanvas(game.overlayBitmap, numberSprites[10].bitmap, (420, 64), 4, true);
-                }
+                if (quantity == -999) { Sprites.drawSpriteOnCanvas(game.overlayBitmap, numberSprites[10].bitmap, (420, 64), 4, true); }
                 else
                 {
                     int scaleFactor = 4;
@@ -654,10 +588,7 @@ namespace Cave
         }
         public static void turnPngIntoStringFromFilepath(string filepath)
         {
-            if (!System.IO.File.Exists(filepath + ".png"))
-            {
-                return;
-            }
+            if (!System.IO.File.Exists(filepath + ".png")) { return; }
             Bitmap bitmap = new Bitmap(filepath + ".png");
             (int, int) dimensions = (bitmap.Width, bitmap.Height);
             string firstLine = dimensions.Item1.ToString() + "*" + dimensions.Item2.ToString();
@@ -744,10 +675,7 @@ namespace Cave
                     length2 = (i - col.radius) * (i - col.radius) + (j - col.radius) * (j - col.radius);
                     if (length2 <= bigRadiusSq)
                     {
-                        if (length2 <= radiusSq)
-                        {
-                            color = transparent;
-                        }
+                        if (length2 <= radiusSq) { color = transparent; }
                         else { color = semiTransparent; }
                         bitmap.SetPixel(i, j, color);
                     }
@@ -924,19 +852,13 @@ namespace Cave
             black32Bitmap = new Bitmap(32, 32);
             for (int i = 0; i < 32; i++)
             {
-                for (int j = 0; j < 32; j++)
-                {
-                    black32Bitmap.SetPixel(i, j, Color.Black);
-                }
+                for (int j = 0; j < 32; j++) { black32Bitmap.SetPixel(i, j, Color.Black); }
             }
             Color colortoSet = Color.FromArgb(128, 0, 80, 255);
             transBlue32Bitmap = new Bitmap(32, 32);
             for (int i = 0; i < 32; i++)
             {
-                for (int j = 0; j < 32; j++)
-                {
-                    transBlue32Bitmap.SetPixel(i, j, colortoSet);
-                }
+                for (int j = 0; j < 32; j++) { transBlue32Bitmap.SetPixel(i, j, colortoSet); }
             }
         }
     }

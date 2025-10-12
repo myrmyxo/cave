@@ -232,7 +232,7 @@ namespace Cave
             {
                 isStable = false;
                 int maxIterations = -1;
-                if (plantElement.traits.plantGrowthRules != null && plantElement.traits.plantGrowthRules.isMold) { maxIterations = 2 + rand.Next(100); }
+                if (plantElement.traits.isMold) { maxIterations = 2 + rand.Next(100); }
                 int i = 0;
                 while (!isStable && (maxIterations == -1 || i < maxIterations))
                 {
@@ -623,7 +623,7 @@ namespace Cave
                     else if (!testPositionEmpty((1, 0))) { baseDirection = (-1, baseDirection.y); }
                     if (baseDirection == (0, 0)) { return 0; }  // Plant was floating. Wadafak.
                 }
-                else if (type == (4, 1, 0)) { baseDirection = (0, 0); }  // temp, so mold doesn't get moved lol
+                else if (traits.isMold) { baseDirection = (0, 0); }  // temp, so mold doesn't get moved lol
                 else if (motherPlant.traits.isCeiling) { baseDirection = (0, -1); }
                 else if (motherPlant.traits.isSide)
                 {
@@ -890,7 +890,7 @@ namespace Cave
                         goto SuccessButStop;  // Necessary else might make children again when getting loaded
                     }
 
-                    if (traits.plantGrowthRules.isMold)
+                    if (traits.isMold)
                     {
                         if (growthLevel >= maxGrowthLevel) { goto Fail; }    // If overgrown
 
@@ -977,7 +977,7 @@ namespace Cave
             }
             public bool tryToMakeParticle()
             {
-                if ((type == (4, 1, 0) || true) && fillStates.Count > 0)
+                if (traits.isMold && fillStates.Count > 0)
                 {
                     if (rand.Next(10) == 0)
                     {
