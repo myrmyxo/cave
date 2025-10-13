@@ -1855,6 +1855,7 @@ namespace Cave
         {
             public (int type, int subType) tileType;
             public int layer;
+            public bool isMaturation;
 
             public int transitionRules;
             public bool meanBasedValueRequired;
@@ -1879,12 +1880,13 @@ namespace Cave
             public (int threshold, bool reverse)? oceanity;
             public int biomeValuesScale;
             public (int strength, int threshold)? biomeEdgeReduction;
-            public TerrainFeaturesTraits((int type, int subType) tT, int tR, bool mBVR = false, int bT = 512, (int? one, int? two)? nM = null,
+            public TerrainFeaturesTraits((int type, int subType) tT, int tR, bool iM = false, bool mBVR = false, int bT = 512, (int? one, int? two)? nM = null,
                 (int threshold, bool reverse)? T = null, (int threshold, bool reverse)? H = null, (int threshold, bool reverse)? A = null,
                 (int threshold, bool reverse)? TX = null, (int threshold, bool reverse)? S = null, (int threshold, bool reverse)? I = null,
                 (int threshold, bool reverse)? O = null, int bVS = 512, (int strength, int threshold)? bER = null, bool fBS = false, bool iS = false, bool iL = false, bool iA = false, bool nQF = false, bool iI = false)
             {
                 tileType = tT;
+                isMaturation = iM;
 
                 transitionRules = tR;
                 meanBasedValueRequired = mBVR;
@@ -1918,12 +1920,19 @@ namespace Cave
             famousTFT = new Dictionary<string, TerrainFeaturesTraits>
             {
                 { "HardRock", new TerrainFeaturesTraits((1, 1), 0, iS:true, mBVR:true, bT:0) },
-                { "Bone", new TerrainFeaturesTraits((4, 1), 1, iS:true, bT:512, H:(500, false), bVS:1024) },
                 { "Mold", new TerrainFeaturesTraits((5, 0), 2, iS:true, bT:1024, bER:(2000, 0), bVS:1024, nM:(64, 16)) },
+
                 { "Salt Terrain", new TerrainFeaturesTraits((6, 0), 3, iS:true, bT:0, bER:(10000, 700), S:(650, true), nM:(256, 64)) },
                 { "Salt Filling", new TerrainFeaturesTraits((6, 0), 4, iL:true, bT:0, fBS:true, bER:(10000, 700), nM:(null, null)) },
                 { "Salt Spikes", new TerrainFeaturesTraits((6, 0), 5, iL:true, bT:0, bER:(10000, 700), nQF:true) },
+
                 { "Frost Carving", new TerrainFeaturesTraits((0, 0), 6, iS:true, bT:0, bER:(100, 0), nM:(null, null), iI:true) },
+
+                { "Bone", new TerrainFeaturesTraits((4, 1), 1, iS:true, bT:512, H:(500, false), bVS:1024) },
+
+                { "Skin90", new TerrainFeaturesTraits((4, 2), 7, iM:true, iS:true, bT:205, nM:(32, null)) },
+                { "Skin75", new TerrainFeaturesTraits((4, 2), 7, iM:true, iS:true, bT:512, nM:(32, null)) },
+                { "Skin40", new TerrainFeaturesTraits((4, 2), 7, iM:true, iS:true, bT:1229, nM:(32, null)) },
             };
             int counto = 0;
             foreach (TerrainFeaturesTraits tTT in famousTFT.Values) { tTT.layer = counto * 2; counto++; }
@@ -1944,7 +1953,6 @@ namespace Cave
 
             public (int type, int subType) fillType;
             public (int type, int subType) tileType;
-            public ((int type, int subType) type, int chance)? surfaceMaterial;
 
             public (int type, int subType) lakeType;
             public (int minHeight, int minTiles, int maxTiles) lakeSize;
@@ -1958,7 +1966,8 @@ namespace Cave
             public int antiSeparatorType;
             public float caveWidth;
 
-            public TerrainFeaturesTraits[] terrainFeaturesTraitsArray;
+            public TerrainFeaturesTraits[] TFTArray;
+            public TerrainFeaturesTraits[] maturationTFTArray;
 
             public bool isDark;
             public bool isSlimy;
@@ -1998,7 +2007,7 @@ namespace Cave
 
             public BiomeTraits(string namee, (int r, int g, int b) colorToPut, float[] spawnRates, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes, ((int type, int subType) type, int percentage)[] ePS = null,
                 (int one, int two)? cT = null, (int one, int two)? txT = null, int cL = 0, int sT = 0, int aST = 0, float cW = 1, TerrainFeaturesTraits[] tFT = null,
-                (int type, int subType)? fT = null, (int type, int subType)? tT = null, ((int type, int subType) type, int chance)? sM = null, (int type, int subType)? lT = null, (int minHeight, int minTiles, int maxTiles)? lS = null,
+                (int type, int subType)? fT = null, (int type, int subType)? tT = null, (int type, int subType)? lT = null, (int minHeight, int minTiles, int maxTiles)? lS = null,
                 bool S = false, bool Dg = false, bool Da = false)
             {
                 name = namee;
@@ -2010,8 +2019,6 @@ namespace Cave
 
                 fillType = fT ?? (0, 0);
                 tileType = tT ?? (1, 0);
-                surfaceMaterial = sM;
-
 
                 lakeType = lT ?? (-2, 0);
                 lakeSize = lS ?? (2, 6, 1234);
@@ -2025,7 +2032,18 @@ namespace Cave
                 antiSeparatorType = aST;
                 caveWidth = cW;
 
-                terrainFeaturesTraitsArray = tFT;
+                if (tFT != null)
+                {
+                    List<TerrainFeaturesTraits> normalTFT = new List<TerrainFeaturesTraits>();
+                    List<TerrainFeaturesTraits> maturationTFT = new List<TerrainFeaturesTraits>();
+                    foreach (TerrainFeaturesTraits TFT in tFT)
+                    {
+                        if (TFT.isMaturation) { maturationTFT.Add(TFT); }
+                        else { normalTFT.Add(TFT); }
+                    }
+                    TFTArray = normalTFT.ToArray();
+                    maturationTFTArray = maturationTFT.ToArray();
+                }
 
                 EntityTraits entityTraits;
                 List<((int type, int subType) type, float percentage)> entityBaseSpawnTypesList = new List<((int type, int subType) type, float percentage)>();
@@ -2259,7 +2277,8 @@ namespace Cave
                 new float[]{1, 1, 2, 1,      0, 4, 1, 4, 0, 4, 0, 4, 0}, // Carnal     Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 100), ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 100), ((200, 1), 100) },
-                lT:(-7, 0), tT:(4, 0), sM:((4, 2), 40)) },           // Flesh Vine      Flesh Tendril
+                lT:(-7, 0), tT:(4, 0),                               // Flesh Vine      Flesh Tendril
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["Skin40"] }) },
                 { (200, 1), new BiomeTraits("FleshForest",           (Color.DarkRed.R + 20, Color.DarkRed.G - 20, Color.DarkRed.B - 20),
                 new float[]{1, 1, 2, 1,      0, 3, 1, 3, 0, 4, 0, 4, 0}, // Carnal     Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 100), ((201, 0), 100), },
@@ -2274,13 +2293,15 @@ namespace Cave
                 { (200, 3), new BiomeTraits("Body Hair Forest",      (Color.DarkRed.R - 20, Color.DarkRed.G - 50, Color.DarkRed.B - 70),
                 new float[]{1, 1, 2, 1,     10, 4, 1, 4, 0, 4, 0, 4, 0}, // Louse       Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((202, 0), 100),  ((201, 0), 100), },
-                new ((int type, int subType) type, float percentage)[]{           ((202, 0), 100) },
-                cT:(1, 0), lT:(-6, 0), tT:(4, 0), sM:((4, 2), 90), cW:2.5f) }, // Body Hair
+                new ((int type, int subType) type, float percentage)[]{ ((202, 0), 100) },
+                cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f,           // Body Hair
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["Skin90"] }) },
                 { (200, 4), new BiomeTraits("Long Hair Forest",      (Color.DarkRed.R - 20, Color.DarkRed.G - 50, Color.DarkRed.B - 70),
                 new float[]{1, 1, 2, 1,      0, 4, 1, 10, 0, 4, 0, 4, 0}, // Louse      Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((202, 0), 100),  ((201, 0), 100), },
-                new ((int type, int subType) type, float percentage)[]{           ((202, 1), 100) },
-                cT:(1, 0), lT:(-6, 0), tT:(4, 0), sM:((4, 2), 75), cW:2.5f) }, // Long Hair
+                new ((int type, int subType) type, float percentage)[]{ ((202, 1), 100) },
+                cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f,           // Long Hair
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["Skin75"] }) },
                 //      -E- C  G  W  J   -P- E  G  T  C  S  WG WT WC WS
                 { (201, 0), new BiomeTraits("Bone",                  (Color.White.R, Color.White.G, Color.White.B),
                 new float[]{1, 1, 2, 1,      0, 1, 1, 1, 0, 4, 0, 4, 0}, // Skeletal   Nematode
@@ -2309,13 +2330,13 @@ namespace Cave
                 BiomeTraits bT = biomeTraitsDict[key];
                 if (bT.tileType == (1, 0))
                 {
-                    if (bT.terrainFeaturesTraitsArray is null) { bT.terrainFeaturesTraitsArray = new TerrainFeaturesTraits[] { famousTFT["HardRock"] }; }
+                    if (bT.TFTArray is null) { bT.TFTArray = new TerrainFeaturesTraits[] { famousTFT["HardRock"] }; }
                     else
                     {
-                        TerrainFeaturesTraits[] tFTA = new TerrainFeaturesTraits[bT.terrainFeaturesTraitsArray.Length + 1];
-                        for (int i = 0; i < bT.terrainFeaturesTraitsArray.Length; i++) { tFTA[i + 1] = bT.terrainFeaturesTraitsArray[i]; }
+                        TerrainFeaturesTraits[] tFTA = new TerrainFeaturesTraits[bT.TFTArray.Length + 1];
+                        for (int i = 0; i < bT.TFTArray.Length; i++) { tFTA[i + 1] = bT.TFTArray[i]; }
                         tFTA[0] = famousTFT["HardRock"];
-                        bT.terrainFeaturesTraitsArray = tFTA;
+                        bT.TFTArray = tFTA;
                     }
                 }
             }

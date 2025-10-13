@@ -38,6 +38,23 @@ namespace Cave
 {
     public class Chunks
     {
+        public class ManyValues // Temp for convenience idk bruv. For keeping values and not having to redo them when maturing chunks from 0 to 1
+        {
+            public (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] biomeValues;
+            public ((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) derivative;
+            public (float baseScore1, float baseScore2, float separatorScore)[,] scoreArray;
+            public bool[] quartileFilledArray;
+            public ManyValues(
+                (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] bV,
+                ((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) d,
+                (float baseScore1, float baseScore2, float separatorScore)[,] sA, bool[] qFA)
+            {
+                biomeValues = bV;
+                derivative = d;
+                scoreArray = sA;
+                quartileFilledArray= qFA;
+            }
+        }
         public class Chunk
         {
             public Screens.Screen screen;
@@ -47,6 +64,7 @@ namespace Cave
             public (int x, int y) pos;
             public bool isImmuneToUnloading = true; // Immune to unloading on startup. Should fix shit I hope.
             public int framesSinceLastExtraGetting = 0;
+            public ManyValues manyValues = null;
 
             public (BiomeTraits traits, int percentage)[,][] biomeIndex;
             public HashSet<BiomeTraits> allBiomesInTheChunk;
@@ -63,7 +81,7 @@ namespace Cave
 
             public int modificationCount = 0;
             public int unstableLiquidCount = 1;
-            public bool isMature = false;
+            public int maturity = 0;    // 0 -> terrain with base TFTs, 1 -> terrain with base TFTs and maturation TFTs, 2 -> terrain with base TFTs, maturation TFTs, and plants + entities generated
             public HashSet<(int type, int subType)> tileTypesContainedOnGeneration = new HashSet<(int type, int subType)>();
 
             public int explorationLevel = 0; // set fog : 0 for not visible, 1 for cremebetweens, 2 for fully visible
@@ -80,7 +98,7 @@ namespace Cave
                 pos = chunkJson.pos;
                 chunkSeed = chunkJson.seed;
                 fillStates = ChunkJsonToChunkfillStates(chunkJson.fill1, chunkJson.fill2);
-                isMature = chunkJson.mt;
+                maturity = chunkJson.mt;
 
                 determineContents(chunkJson);
             }
@@ -119,7 +137,7 @@ namespace Cave
                 }
                 else { fogOfWar = null; }
 
-                if (!isMature) { screen.chunksToMature.Add(pos); }
+                if (maturity < 2) { screen.chunksToMature.Add(pos); }
             }
             public void demoteToExtra()
             {
@@ -135,7 +153,11 @@ namespace Cave
 
                 (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] tileValuesArray = determineAllBiomeValues();
 
-                if (chunkJson == null) { generateTerrain(tileValuesArray); }   // If first loading only, generate terrain
+                if (chunkJson == null) // If first loading only, generate terrain
+                {
+                    (((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) derivative, (float baseScore1, float baseScore2, float separatorScore)[,] scoreArray, bool[] quartileFilledArray) tupelo = generateTerrain(tileValuesArray);
+                    manyValues = new ManyValues(tileValuesArray, tupelo.derivative, tupelo.scoreArray, tupelo.quartileFilledArray);
+                }
 
                 for (int i = 0; i < 32; i++)
                 {
@@ -155,9 +177,8 @@ namespace Cave
                     }
                 }
             }
-            public (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] determineAllBiomeValues()
+            public (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] determineAllBiomeValues(bool updateTheTiles = true)
             {
-                allBiomesInTheChunk = new HashSet<BiomeTraits>();
                 int[,,] biomeValues = new int[33, 33, 18];
                 if (!screen.isMonoBiome)
                 {
@@ -178,6 +199,18 @@ namespace Cave
                 }
 
                 (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] tileValuesArray = new (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[32, 32];
+                if (!updateTheTiles)    // If for chunk maturation for level 2, only get the tileValuesArray !! No need to do the rest (acutally it's important not too)
+                {
+                    if (screen.isMonoBiome)
+                    {
+                        (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) tileValues = makeTileBiomeValueArrayMonoBiome(screen.type);
+                        for (int i = 0; i < 32; i++) { for (int j = 0; j < 32; j++) { tileValuesArray[i, j] = tileValues; } }
+                    }
+                    else { for (int i = 0; i < 32; i++) { for (int j = 0; j < 32; j++) { tileValuesArray[i, j] = makeTileBiomeValueArray(biomeValues, i, j); } } }
+                    return tileValuesArray;
+                }
+
+                allBiomesInTheChunk = new HashSet<BiomeTraits>();
                 biomeIndex = new (BiomeTraits traits, int percentage)[32, 32][];
                 baseColors = new (int, int, int)[32, 32];
                 bitmap = new Bitmap(32, 32);
@@ -205,7 +238,7 @@ namespace Cave
 
 
                 // Needed to be put alone to find the correct biome noise values AND still get the next optimization !
-                for (int i = 0; i < 32; i += 1) { for (int j = 0; j < 32; j += 1) { tileValuesArray[i, j] = makeTileBiomeValueArray(biomeValues, i, j); } }
+                for (int i = 0; i < 32; i++) { for (int j = 0; j < 32; j++) { tileValuesArray[i, j] = makeTileBiomeValueArray(biomeValues, i, j); } }
 
 
                 // Optimization for Monobiome CHUNKS
@@ -218,9 +251,9 @@ namespace Cave
                     baseColors[0, 0] = (colorArray[0], colorArray[1], colorArray[2]);
 
                     allBiomesInTheChunk.Add(biomeIndex[0, 0][0].traits);
-                    for (int i = 0; i < 32; i += 1)
+                    for (int i = 0; i < 32; i ++)
                     {
-                        for (int j = 0; j < 32; j += 1)
+                        for (int j = 0; j < 32; j++)
                         {
                             biomeIndex[i, j] = biomeIndex[0, 0];
                             baseColors[i, j] = baseColors[0, 0];
@@ -229,9 +262,9 @@ namespace Cave
                     return tileValuesArray;
                 }
 
-                for (int i = 0; i < 32; i += 1)
+                for (int i = 0; i < 32; i++)
                 {
-                    for (int j = 0; j < 32; j += 1)
+                    for (int j = 0; j < 32; j++)
                     {
                         biomeIndex[i, j] = findBiome(screen.type, tileValuesArray[i, j]);
                         foreach ((BiomeTraits traits, int percentage) item in biomeIndex[i, j]) { allBiomesInTheChunk.Add(item.traits); }
@@ -302,9 +335,10 @@ namespace Cave
                 }
                 return stateArray;
             }
-            public void generateTerrain((int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] tileValuesArray)
+            public (((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) derivative, (float baseScore1, float baseScore2, float separatorScore)[,] scoreArray, bool[] quartileFilledArray)
+                generateTerrain((int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] biomeValues, bool updateTheTiles = true)
             {
-                fillStates = new TileTraits[32, 32];
+                if (updateTheTiles) { fillStates = new TileTraits[32, 32]; }
 
                 // Find Perlin values when needed (chunk contains at least one biome that isn't mangrove)
                 int[,,] terrainValues = new int[33, 33, 6];
@@ -332,12 +366,6 @@ namespace Cave
                     if (biomeTraits.isVoronoiCave) { voronoiStateArray = voronoi(terrainValues); break; }
                 }
 
-                // Find terrainFeatures when needed
-                Dictionary<int, int[,]> terrainFeaturesNoiseDict = new Dictionary<int, int[,]>();
-                foreach (BiomeTraits biomeTraits in allBiomesInTheChunk) { if (biomeTraits.terrainFeaturesTraitsArray != null) { foreach (TerrainFeaturesTraits TFT in biomeTraits.terrainFeaturesTraitsArray) {
-                        if (TFT.makeNoiseMaps.one && !terrainFeaturesNoiseDict.ContainsKey(TFT.layer)) { terrainFeaturesNoiseDict[TFT.layer] = findNoiseValues(TFT.layer + 10000, TFT.noiseModulos.one, 2048); }
-                        if (TFT.makeNoiseMaps.two && !terrainFeaturesNoiseDict.ContainsKey(TFT.layer + 1)) { terrainFeaturesNoiseDict[TFT.layer + 1] = findNoiseValues(TFT.layer + 10001, TFT.noiseModulos.two, 2048); } } } }
-
                 (float baseScore1, float baseScore2, float separatorScore)[,] scoreArray = new (float baseScore1, float baseScore2, float separatorScore)[32, 32];
                 bool[] quartileFilledArray = new bool[4];
 
@@ -349,7 +377,7 @@ namespace Cave
 
                         int value1 = terrainValues[i, j, 0] + (int)(0.25 * terrainValues[i, j, 1]) - 32;
                         int value2 = terrainValues[i, j, 2] + (int)(0.25 * terrainValues[i, j, 3]) - 32;
-                        int mod2 = (int)(tileValuesArray[i, j].mod2 * 0.25);
+                        int mod2 = (int)(biomeValues[i, j].mod2 * 0.25);
 
                         float mult;
                         float bound1 = 0;
@@ -416,26 +444,33 @@ namespace Cave
                         float separatorScore2 = Max(0, 1 - separatorScore * 0.001f);
                         if (isVoronoiLiquidTransitionZone && isVoronoiPool) { separatorScore = 0; score1 += 10000; score2 += 10000; }
 
-                        float carveScore1 = score1 * separatorScore2 - separatorScore - bound1 * separatorScore2;
-                        float carveScore2 = score2 * separatorScore2 - separatorScore - bound2 * separatorScore2;
-                        scoreArray[i, j] = (carveScore1, carveScore2, separatorScore);
-
-                        if (carveScore1 > 0 || carveScore2 > 0)
-                        {
-                            if (mainBiomeTraits.isVoronoiCave && voronoiStateArray[i, j].isLiquid) { fillStates[i, j] = getTileTraits(mainBiomeTraits.lakeType); }
-                            else { fillStates[i, j] = getTileTraits(mainBiomeTraits.fillType); }
-                        }
-                        else { fillStates[i, j] = getTileTraits(mainBiomeTraits.tileType); quartileFilledArray[(i > 16 ? 1 : 0) + (j > 16 ? 2 : 0)] = true; }
+                        scoreArray[i, j] = (
+                            score1 * separatorScore2 - separatorScore - bound1 * separatorScore2,
+                            score2 * separatorScore2 - separatorScore - bound2 * separatorScore2,
+                            separatorScore);
                     }
                 }
 
-                for (int i = 0; i < 32; i++)
+                if (updateTheTiles)
                 {
-                    for (int j = 0; j < 32; j++)
+                    for (int i = 0; i < 32; i++)
                     {
-                        applyTerrainFeatures(terrainFeaturesNoiseDict, biomeIndex[i, j], tileValuesArray[i, j], derivative2, i, j, scoreArray[i, j], quartileFilledArray[(i > 16 ? 1 : 0) + (j > 16 ? 2 : 0)]);
+                        for (int j = 0; j < 32; j++)
+                        {
+                            BiomeTraits mainBiomeTraits = biomeIndex[i, j][0].traits;
+
+                            if (scoreArray[i, j].baseScore1 > 0 || scoreArray[i, j].baseScore2 > 0)
+                            {
+                                if (mainBiomeTraits.isVoronoiCave && voronoiStateArray[i, j].isLiquid) { fillStates[i, j] = getTileTraits(mainBiomeTraits.lakeType); }
+                                else { fillStates[i, j] = getTileTraits(mainBiomeTraits.fillType); }
+                            }
+                            else { fillStates[i, j] = getTileTraits(mainBiomeTraits.tileType); quartileFilledArray[(i > 16 ? 1 : 0) + (j > 16 ? 2 : 0)] = true; }
+                        }
                     }
+                    applyTerrainFeatures(biomeIndex, biomeValues, derivative2, scoreArray, quartileFilledArray);
                 }
+
+                return (derivative2, scoreArray, quartileFilledArray);
             }
             public float findFillScore(BiomeTraits biomeTraits, int type, int value, (int x, int y) mod32pos, int mod2)
             {
@@ -470,20 +505,91 @@ namespace Cave
                 if (type == 1) { float a = Min(mult, 1 - mult) * 50; return a * a; }        // 1 - ocean separator
                 return 0;
             }
-            public void applyTerrainFeatures(Dictionary<int, int[,]> terrainFeaturesNoiseDict, (BiomeTraits traits, int percentage)[] biomeTraits,
+            public void applyTerrainFeatures((BiomeTraits traits, int percentage)[,][] biomeTraits,
+                (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] biomeValues,
+                ((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) derivative,
+                (float baseScore1, float baseScore2, float separatorScore)[,] scoreArray, bool[] quartileFilledArray)
+            {
+                bool skip = true;
+                Dictionary<int, int[,]> terrainFeaturesNoiseDict = new Dictionary<int, int[,]>();
+                foreach (BiomeTraits traits in allBiomesInTheChunk)
+                {
+                    if (traits.TFTArray is null) { continue; }
+                    skip = false;
+                    foreach (TerrainFeaturesTraits TFT in traits.TFTArray)
+                    {
+                        if (TFT.makeNoiseMaps.one && !terrainFeaturesNoiseDict.ContainsKey(TFT.layer)) { terrainFeaturesNoiseDict[TFT.layer] = findNoiseValues(TFT.layer + 10000, TFT.noiseModulos.one, 2048); }
+                        if (TFT.makeNoiseMaps.two && !terrainFeaturesNoiseDict.ContainsKey(TFT.layer + 1)) { terrainFeaturesNoiseDict[TFT.layer + 1] = findNoiseValues(TFT.layer + 10001, TFT.noiseModulos.two, 2048); }
+                    }
+                }
+                if (skip) { return; }
+
+                for (int i = 0; i < 32; i++)
+                {
+                    for (int j = 0; j < 32; j++)
+                    {
+                        applyTerrainFeaturesOneTile(terrainFeaturesNoiseDict, biomeTraits[i, j], biomeValues[i, j], derivative, i, j, scoreArray[i, j], quartileFilledArray[(i > 16 ? 1 : 0) + (j > 16 ? 2 : 0)]);
+                    }
+                }
+            }
+            public void applyMaturationTerrainFeatures((BiomeTraits traits, int percentage)[,][] biomeTraits)
+            {
+                (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] biomeValues;
+                ((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) derivative;
+                (float baseScore1, float baseScore2, float separatorScore)[,] scoreArray;
+                bool[] quartileFilledArray;
+                if (manyValues is null)
+                {
+                    biomeValues = determineAllBiomeValues(false);
+                    (((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) derivative, (float baseScore1, float baseScore2, float separatorScore)[,] scoreArray, bool[] quartileFilledArray) tupelo = generateTerrain(biomeValues, false);
+                    derivative = tupelo.derivative;
+                    scoreArray = tupelo.scoreArray;
+                    quartileFilledArray = tupelo.quartileFilledArray;
+                }
+                else
+                {
+                    biomeValues = manyValues.biomeValues;
+                    derivative = manyValues.derivative;
+                    scoreArray = manyValues.scoreArray;
+                    quartileFilledArray = manyValues.quartileFilledArray;
+                }
+
+                bool skip = true;
+                Dictionary<int, int[,]> terrainFeaturesNoiseDict = new Dictionary<int, int[,]>();
+                foreach (BiomeTraits traits in allBiomesInTheChunk)
+                {
+                    if (traits.maturationTFTArray is null) { continue; }
+                    skip = false;
+                    foreach (TerrainFeaturesTraits TFT in traits.maturationTFTArray)
+                    {
+                        if (TFT.makeNoiseMaps.one && !terrainFeaturesNoiseDict.ContainsKey(TFT.layer)) { terrainFeaturesNoiseDict[TFT.layer] = findNoiseValues(TFT.layer + 10000, TFT.noiseModulos.one, 2048); }
+                        if (TFT.makeNoiseMaps.two && !terrainFeaturesNoiseDict.ContainsKey(TFT.layer + 1)) { terrainFeaturesNoiseDict[TFT.layer + 1] = findNoiseValues(TFT.layer + 10001, TFT.noiseModulos.two, 2048); }
+                    }
+                }
+                if (skip) { return; }
+
+                for (int i = 0; i < 32; i++)
+                {
+                    for (int j = 0; j < 32; j++)
+                    {
+                        if (applyTerrainFeaturesOneTile(terrainFeaturesNoiseDict, biomeTraits[i, j], biomeValues[i, j], derivative, i, j, scoreArray[i, j], quartileFilledArray[(i > 16 ? 1 : 0) + (j > 16 ? 2 : 0)], true)) { findTileColor(i, j); }
+                    }
+                }
+            }
+            public bool applyTerrainFeaturesOneTile(Dictionary<int, int[,]> terrainFeaturesNoiseDict, (BiomeTraits traits, int percentage)[] biomeTraits,
                 (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) biomeValues,
                 ((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) derivativeToPut,
-                int i, int j, (float baseScore1, float baseScore2, float separatorScore) fillScore, bool quartileWasFilled)
+                int i, int j, (float baseScore1, float baseScore2, float separatorScore) fillScore, bool quartileWasFilled, bool isMaturationTFTs = false)
             {
                 Dictionary<TerrainFeaturesTraits, int> terrainFeatures = new Dictionary<TerrainFeaturesTraits, int>();
                 foreach ((BiomeTraits traits, int percentage) tupel in biomeTraits)
                 {
-                    if (tupel.traits.terrainFeaturesTraitsArray is null) { continue; }
-                    foreach (TerrainFeaturesTraits trait in tupel.traits.terrainFeaturesTraitsArray) { addOrIncrementDict(terrainFeatures, (trait, tupel.percentage)); }
+                    if ((isMaturationTFTs ? tupel.traits.maturationTFTArray : tupel.traits.TFTArray) is null) { continue; }
+                    foreach (TerrainFeaturesTraits trait in (isMaturationTFTs ? tupel.traits.maturationTFTArray : tupel.traits.TFTArray)) { addOrIncrementDict(terrainFeatures, (trait, tupel.percentage)); }
                 }
 
                 float baseScore = Max(fillScore.baseScore1, fillScore.baseScore2);
-
+                bool modified = false;
                 foreach (TerrainFeaturesTraits tFT in terrainFeatures.Keys)
                 {
                     if (tFT.needsQuartileFilled && !quartileWasFilled) { continue; }
@@ -564,10 +670,17 @@ namespace Cave
                     {
                         noiseValue = Min(fillScore.baseScore1, fillScore.baseScore2 - 10);
                     }
+                    else if (tFT.transitionRules == 7) // skin
+                    {
+                        valueRequired = tFT.baseThreshold;
+                        noiseValue = 0;
+                        foreach ((int x, int y) mod in neighbourArray) { if (!screen.getTileContent((pos.x * 32 + i + mod.x, pos.y * 32 + j + mod.y), false).isSolid) { noiseValue = noiseValue1; break; } }
+                    }
                     else { noiseValue = -999999; }
-                        
-                    if (noiseValue >= valueRequired) { fillStates[i, j] = getTileTraits(tFT.tileType); }
+
+                    if (noiseValue >= valueRequired) { fillStates[i, j] = getTileTraits(tFT.tileType); modified = true; }
                 }
+                return modified;
             }
             public void findTileColor(int i, int j)
             {
@@ -721,11 +834,19 @@ namespace Cave
                     }
                 }
             }
-            public void matureChunk()
+            public void matureChunkToLevelOne()
             {
-                BiomeTraits traits = biomeIndex[16, 16][0].traits;  // Middle of chunk
+                bool modified = true;
+                applyMaturationTerrainFeatures(biomeIndex);
+                maturity = 1;
+                manyValues = null;                              // NOT YET DONE NEED TO FINISH THAT AND VREYFIY IT'S WORKINGE !!!
+                if (modified) { saveChunk(this); }
+            }
+            public void matureChunkToLevelTwo()
+            {
+                if (maturity == 0) { matureChunkToLevelOne(); }
 
-                bool modified = replaceSurfaceTiles();
+                BiomeTraits traits = biomeIndex[16, 16][0].traits;  // Middle of chunk
 
                 if (spawnEntitiesBool)
                 {
@@ -750,46 +871,9 @@ namespace Cave
                     spawnOnePlants(traits.plantEveryAttachSpawnRate, traits.plantEveryAttachSpawnTypes, forbiddenPositions);
                     spawnExtraPlants(traits, forbiddenPositions);
                 }
-                isMature = true;
-                if (modified) { saveChunk(this); }
-            }
-            public bool replaceSurfaceTiles()
-            {
-                List<((int i, int j) pos, BiomeTraits traits)> tilesToTryReplace = new List<((int i, int j) pos, BiomeTraits traits)>();
 
-                BiomeTraits biomeTraits;
-                for (int i = 0; i < 32; i++)
-                {
-                    for (int j = 0; j < 32; j++)
-                    {
-                        if (!fillStates[i, j].isSolid) { continue; }
-                        biomeTraits = biomeIndex[i, j][0].traits;
-                        if (biomeTraits.surfaceMaterial is null) { continue; }
-                        foreach ((int x, int y) mod in neighbourArray)
-                        {
-                            if (!screen.getTileContent((pos.x * 32 + i + mod.x, pos.y * 32 + j + mod.y)).isSolid) { tilesToTryReplace.Add(((i, j), biomeTraits)); break; }
-                        }
-                    }
-                }
-                if (tilesToTryReplace.Count == 0) { return false; }
-
-                int[] noiseValues = new int[4] {
-                    (int)(LCGxy((pos, 95), screen.seed) % 101),
-                    (int)(LCGxy(((pos.x + 1, pos.y), 95), screen.seed) % 101),
-                    (int)(LCGxy(((pos.x, pos.y + 1), 95), screen.seed) % 101),
-                    (int)(LCGxy(((pos.x + 1, pos.y + 1), 95), screen.seed) % 101)
-                };
-
-                bool modified = false;
-                foreach (((int i, int j) pos, BiomeTraits traits) item in tilesToTryReplace)
-                {
-                    if ((noiseValues[0] * (32 - item.pos.i) + noiseValues[1] * item.pos.i) * (32 - item.pos.j) +
-                        (noiseValues[2] * (32 - item.pos.i) + noiseValues[3] * item.pos.i) * item.pos.j
-                        > item.traits.surfaceMaterial.Value.chance * 1024) { continue; }
-                    fillStates[item.pos.i, item.pos.j] = getTileTraits(item.traits.surfaceMaterial.Value.type); findTileColor(item.pos.i, item.pos.j);
-                    modified = true;
-                }
-                return modified;
+                maturity = 2;
+                saveChunk(this);
             }
             public ((int x, int y), bool valid) findSuitablePositionPlant(HashSet<(int x, int y)> forbiddenPositions, PlantTraits plantTraits, bool isPropagation, ((int x, int y) motherPos, (int x, int y) range)? propagationRange)
             {

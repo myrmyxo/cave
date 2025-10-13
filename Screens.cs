@@ -72,7 +72,7 @@ namespace Cave
                 seed = 123456;
 
                 int idToPut = 0;
-                (int type, int subType) forceBiome = (0, 0);
+                (int type, int subType) forceBiome = (2, 0);
                 int PNGsize = 150;
                 PNGsize = 100;
 
@@ -291,7 +291,7 @@ namespace Cave
 
                     foreach ((int x, int y) pos in screen.chunksToMature)
                     {
-                        if (screen.loadedChunks.ContainsKey(pos)) { screen.loadedChunks[pos].matureChunk(); }
+                        if (screen.loadedChunks.ContainsKey(pos)) { screen.loadedChunks[pos].matureChunkToLevelTwo(); }
                     }
                     screen.chunksToMature = new HashSet<(int x, int y)>();
 
@@ -672,7 +672,7 @@ namespace Cave
 
                 foreach ((int x, int y) pos in chunksToMature)
                 {
-                    if (loadedChunks.ContainsKey(pos)) { loadedChunks[pos].matureChunk(); }
+                    if (loadedChunks.ContainsKey(pos)) { loadedChunks[pos].matureChunkToLevelTwo(); }
                 }
             }
             public int getLCGValue(((int x, int y) pos, int layer) key, int noiseAmplitude)
@@ -1455,7 +1455,8 @@ namespace Cave
                     }
                     foreach ((int x, int y) poso in screenToDebug.extraLoadedChunks.Keys)
                     {
-                        colorToDraw = Color.FromArgb(ColorClamp(255 - 1000 * Max(0, 0.25f - Seesaw(timeElapsed, 1))), Color.DarkSeaGreen);
+                        if (screenToDebug.extraLoadedChunks[poso].maturity == 0) { colorToDraw = Color.FromArgb(ColorClamp(255 - 1000 * Max(0, 0.25f - Seesaw(timeElapsed, 1))), Color.Beige); ; }
+                        else { colorToDraw = Color.FromArgb(ColorClamp(255 - 1000 * Max(0, 0.25f - Seesaw(timeElapsed, 1))), Color.DarkSeaGreen); }
                         drawPixelFixed(finalBitmap, colorToDraw, (100 + xOffset, 100), (-poso.x + playerChunkPos.x, -poso.y + playerChunkPos.y), 2 * scaleFactor, true);
                     }
                     foreach ((int x, int y) poso in screenToDebug.loadedChunks.Keys)
@@ -1470,19 +1471,19 @@ namespace Cave
                     xOffset -= 120;
                 }
             }
-            public TileTraits getTileContent((int x, int y) posToTest)
+            public TileTraits getTileContent((int x, int y) posToTest, bool forceMaturityLevelOne = true)
             {
-                return getChunkFromPixelPos(posToTest).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
+                return getChunkFromPixelPos(posToTest, forceMaturityLevelOne:forceMaturityLevelOne).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
             }
             public TileTraits setTileContent((int x, int y) posToTest, (int type, int subType) typeToSet)
             {
                 return getChunkFromPixelPos(posToTest).tileModification(posToTest.x, posToTest.y, typeToSet);
             }
-            public Chunk getChunkFromPixelPos((int x, int y) pos, bool isExtraGetting = true, bool onlyGetIfFullyLoaded = false, Dictionary<(int x, int y), Chunk> extraDict = null)
+            public Chunk getChunkFromPixelPos((int x, int y) pos, bool isExtraGetting = true, bool onlyGetIfFullyLoaded = false, bool forceMaturityLevelOne = true, Dictionary<(int x, int y), Chunk> extraDict = null)
             {
-                return getChunkFromChunkPos(ChunkIdx(pos), isExtraGetting, onlyGetIfFullyLoaded, extraDict);
+                return getChunkFromChunkPos(ChunkIdx(pos), isExtraGetting, onlyGetIfFullyLoaded, forceMaturityLevelOne, extraDict);
             }
-            public Chunk getChunkFromChunkPos((int x, int y) pos, bool isExtraGetting = true, bool onlyGetIfFullyLoaded = false, Dictionary<(int x, int y), Chunk> extraDict = null)  // Extradict is used
+            public Chunk getChunkFromChunkPos((int x, int y) pos, bool isExtraGetting = true, bool onlyGetIfFullyLoaded = false, bool forceMaturityLevelOne = true, Dictionary<(int x, int y), Chunk> extraDict = null)  // Extradict is used
             {
                 Chunk chunkToGet;
                 if (loadedChunks.ContainsKey(pos))
@@ -1496,6 +1497,7 @@ namespace Cave
                     chunkToGet = extraLoadedChunks[pos];
                     if (isExtraGetting)
                     {
+                        if (forceMaturityLevelOne && chunkToGet.maturity == 0) { chunkToGet.matureChunkToLevelOne(); }
                         chunkToGet.framesSinceLastExtraGetting = 0;
                         if (extraDict != null) { extraDict[pos] = chunkToGet; }
                         return chunkToGet;

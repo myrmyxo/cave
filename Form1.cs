@@ -242,8 +242,10 @@ namespace Cave
             makeTheFilledChunk();
 
             //      ----- - - CURRENTLY DOING - - -----
-            // mud, dirt, make other cereals, make chunk maturation TFT
-            // A marsh biome ! Like mangrove but with water that's not salt water !!! And rice grows in there instead not in mangrove lol cuz it's like. Impossible lmao.
+            // mud, dirt, make other cereals
+            // Marshes and Swamps !
+            // -> Swamp : like mangrove but with water that's not salt water and different trees !!! And rice grows in there (rare) instead not in mangrove lol cuz it's like. Impossible lmao.
+            // -> Marsh : like swamp but without any trees !!! And rice grows in there (common) instead not in mangrove lol cuz it's like. Impossible lmao.
             // Then fire ??
 
             //      --- - TO DO LIST - ---

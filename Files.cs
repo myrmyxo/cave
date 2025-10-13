@@ -217,7 +217,7 @@ namespace Cave
             public (int, int) pos;
             public int[,] fill1;
             public int[,] fill2;
-            public bool mt;
+            public int mt;
             public List<int> eLst;
             public List<int> pLst;
             public int explLvl;
@@ -229,7 +229,7 @@ namespace Cave
                 (int[,] one, int[,] two) returnTuple = ChunkToChunkJsonfillStates(chunk.fillStates);
                 fill1 = returnTuple.one;
                 fill2 = returnTuple.two;
-                mt = chunk.isMature;
+                mt = chunk.maturity;
                 eLst = new List<int>();
                 foreach (Entity entity in chunk.entityList)
                 {

@@ -494,6 +494,7 @@ namespace Cave
             public void getTraitAndAddColors()
             {
                 traits = getPlantElementTraits(type);
+                growthSpeedVariation = traits.plantGrowthRules is null ? 1 : traits.plantGrowthRules.growthSpeedVariationFactor.baseValue + (float)(rand.NextDouble()) * traits.plantGrowthRules.growthSpeedVariationFactor.variation;
                 foreach ((int type, int subType) material in traits.materialsPresent) { motherPlant.tryAddMaterialColor(material); }
                 if (traits.lightRadius > 0) { motherPlant.tryAddMaterialColor(traits.lightElement); }
                 makeColorOverrideDict();
@@ -508,7 +509,7 @@ namespace Cave
                     if (traits.maxGrowthParentRelatedVariation.Value.fromEnd) { maxGrowthLevel += traits.maxGrowthParentRelatedVariation.Value.step * (motherPlantElement.maxGrowthLevel - motherPlantElement.growthLevel); }
                     else { maxGrowthLevel += traits.maxGrowthParentRelatedVariation.Value.step * motherPlantElement.growthLevel; }
                 }
-                growthSpeedVariation = traits.plantGrowthRules is null ? 1 : traits.plantGrowthRules.growthSpeedVariationFactor.baseValue + (float)(rand.NextDouble() * traits.plantGrowthRules.growthSpeedVariationFactor.variation);
+                growthSpeedVariation = traits.plantGrowthRules is null ? 1 : traits.plantGrowthRules.growthSpeedVariationFactor.baseValue + (float)(rand.NextDouble()) * traits.plantGrowthRules.growthSpeedVariationFactor.variation;
                 if (traits.plantGrowthRules != null && traits.plantGrowthRules.offsetMaxGrowthVariation)
                 {
                     directionArrayOffset += (int)(growthSpeedVariation * maxGrowthLevelVariation);

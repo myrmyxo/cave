@@ -172,7 +172,7 @@ namespace Cave
 
                 foreach ((int x, int y) posToTest in tiles)
                 {
-                    chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, chunkDict);
+                    chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, extraDict:chunkDict);
                     chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)] = getTileTraits(typeToFill);
                     chunkToTest.modificationCount = 1;
                     chunkToTest.findTileColor(PosMod(posToTest.x), PosMod(posToTest.y));
