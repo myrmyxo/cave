@@ -81,7 +81,9 @@ namespace Cave
                 { (0, 0), errorSprite },
                 { (1, 0), new OneSprite("BasicTile", false) },
                 { (1, 1), new OneSprite("DenseRockTile", true) },           // TO CHANGE
-                { (2, 0), new OneSprite("BasicTile", false) },
+                { (2, 0), new OneSprite("DirtTile", false) },
+                { (2, 1), new OneSprite("MudTile", false) },
+                { (2, 2), new OneSprite("LitterTile", false) },
                 { (3, 0), new OneSprite("PlantMatter", false) },
                 { (4, 0), new OneSprite("FleshTile", true) },               // TO CHANGE
                 { (4, 1), new OneSprite("BoneTile", true) },                // TO CHANGE

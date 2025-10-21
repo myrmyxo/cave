@@ -21,6 +21,7 @@ namespace Cave
         public static int debugTestIntFourth = 0;
 
         public static bool devMode = true;
+        public static bool doBackgroundStructureGeneration = true;
         public static bool loadStructuresYesOrNo = false;
         public static bool spawnNests = false;
         public static bool spawnEntitiesBool = false;
@@ -72,6 +73,8 @@ namespace Cave
         public static (int, int)[] diagArray = new (int, int)[4] { (-1, 1), (1, 1), (1, -1), (-1, -1) };
         public static (int x, int y)[] directionPositionArray = new (int x, int y)[] { (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), };
         public static (int x, int y)[] wingPosArray = new (int x, int y)[] { (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), };
+
+        public static (int valid, int invalid)[] dirtScoreArray = new (int valid, int invalid)[] { (250, 0), (200, -50), (200, -100), (200, -200) };
 
         public static Dictionary<(int x, int y), int> directionPositionDictionary = new Dictionary<(int x, int y), int>
         {

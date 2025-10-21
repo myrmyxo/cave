@@ -152,11 +152,15 @@ namespace Cave
 
                 { (1, 0), new TileTraits("Rock", bCB:0.5f,
                 cR:new ColorRange((30, 0, 0), (30, 0, 0), (30, 0, 0))                                                       ) },
-                { (1, 1), new TileTraits("Dense Rock", bCB:0.2f,
+                { (1, 1), new TileTraits("Dense Rock", bCB:0.2f,                  
                 cR:new ColorRange((10, 0, 0), (10, 0, 0), (10, 0, 0))                                                       ) },
 
-                { (2, 0), new TileTraits("Dirt", bCB:0.5f,
-                cR:new ColorRange((80, 0, 0), (60, 0, 0), (20, 0, 0))                                                       ) },
+                { (2, 0), new TileTraits("Dirt", bCB:0.3f,
+                cR:new ColorRange((110, 0, 0), (55, 0, 0), (30, 0, 0))                                                      ) },
+                { (2, 1), new TileTraits("Mud", bCB:0.3f,
+                cR:new ColorRange((65, 0, 0), (45, 0, 0), (30, 0, 0))                                                       ) },
+                { (2, 2), new TileTraits("Litter", bCB:0.2f,
+                cR:new ColorRange((180, 0, 0), (75, 0, 0), (40, 0, 0)),           Tex:true                                  ) },
 
                 { (3, 0), new TileTraits("Plant Matter", bCB:0.35f,
                 cR:new ColorRange((10, 0, 0), (60, 0, 0), (30, 0, 0))                                                       ) },
@@ -433,7 +437,7 @@ namespace Cave
 
                 { (4, 0), new EntityTraits("Worm",            7,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((210, 0, 30), (140, 20, 30), (140, 20, 30)), L:(2, 4),
-                dT:new HashSet<(int type, int subType)>{ (1, 0), (2, 0), (3, 2) },
+                dT:new HashSet<(int type, int subType)>{ (1, 0), (2, 0), (2, 1), (2, 2), (3, 2) },
                 iW:3, oW:2, iA:0, oG:3, iG:2) },
                 { (4, 2), new EntityTraits("Salt Worm",       10, ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((170, -5, 5), (120, 5, 5), (140, 5, 5)), L:(3, 3),
@@ -1746,16 +1750,18 @@ namespace Cave
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), new ColorRange((120, 30, 30), (40, 0, 20), (20, -10, 10))), ((2, 1), new ColorRange((235, 0, 10), (225, 5, 10), (190, 15, 10))) }) },
                 { (2, 1), new PlantTraits("Rice", pOS:((4, 8), (9, 3)),                      W:true) },
 
-                { (10, 0), new PlantTraits("Tree",                                   T:true ) },
-                { (10, 1), new PlantTraits("Jungle Tree",                            T:true ) },
+                { (10, 0), new PlantTraits("Tree",                                   T:true,
+                sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }) },
+                { (10, 1), new PlantTraits("Jungle Tree",                            T:true,
+                sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }) },
                 { (10, 2), new PlantTraits("Weeping Willow",                         T:true,
-                tNC:((-2, 0), (3, 3)), fPS:(35, 35, 35), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((60, -10, 20), (145, 20, 20), (80, -15, 20))), ((1, 1), new ColorRange((100, -10, 15), (85, 5, 15), (80, 10, 15))) }) },
+                sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }, tNC:((-2, 0), (3, 3)), fPS:(35, 35, 35), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((60, -10, 20), (145, 20, 20), (80, -15, 20))), ((1, 1), new ColorRange((100, -10, 15), (85, 5, 15), (80, 10, 15))) }) },
 
                 { (11, 0), new PlantTraits("Fir",                                    T:true,
-                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((10, 0, 20), (75, -15, 20), (55, 15, 20))), ((1, 1), new ColorRange((80, -10, 20), (55, 10, 20), (35, -10, 20))) }) },
+                sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 2) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((10, 0, 20), (75, -15, 20), (55, 15, 20))), ((1, 1), new ColorRange((80, -10, 20), (55, 10, 20), (35, -10, 20))) }) },
 
                 { (12, 0), new PlantTraits("Mangrove Tree",                          T:true, W:true,
-                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 1), new ColorRange((115, -10, 20), (85, 10, 20), (65, -10, 20))) }) },
+                sT:new HashSet<(int type, int subType)> { (2, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 1), new ColorRange((115, -10, 20), (85, 10, 20), (65, -10, 20))) }) },
 
                 { (13, 0), new PlantTraits("Cheering Willow",                        T:true,
                 tNC:((-3, 0), (3, 3)), fPS:(50, 50, 50), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((220, -10, 20), (140, 20, 20), (180, -15, 20))), ((1, 1), new ColorRange((100, -10, 15), (85, 5, 15), (80, 10, 15))) }) },
@@ -1855,9 +1861,10 @@ namespace Cave
         {
             public (int type, int subType) tileType;
             public int layer;
-            public bool isMaturation;
+            public int priority;
 
             public int transitionRules;
+            public int maturationLevel;
             public bool meanBasedValueRequired;
 
             public bool inSoil;
@@ -1869,6 +1876,7 @@ namespace Cave
             public int baseThreshold;
             public (int one, int two) noiseModulos;
             public (bool one, bool two) makeNoiseMaps;
+            public (int one, int two) noiseValueRanges;
 
             public bool isBiomeSystem;
             public (int threshold, bool reverse)? temperature;
@@ -1880,15 +1888,16 @@ namespace Cave
             public (int threshold, bool reverse)? oceanity;
             public int biomeValuesScale;
             public (int strength, int threshold)? biomeEdgeReduction;
-            public TerrainFeaturesTraits((int type, int subType) tT, int tR, bool iM = false, bool mBVR = false, int bT = 512, (int? one, int? two)? nM = null,
+            public TerrainFeaturesTraits((int type, int subType) tT, int p, int tR, int mL = 0, bool mBVR = false, int bT = 512, (int? one, int? two)? nM = null, (int? one, int? two)? nVR = null,
                 (int threshold, bool reverse)? T = null, (int threshold, bool reverse)? H = null, (int threshold, bool reverse)? A = null,
                 (int threshold, bool reverse)? TX = null, (int threshold, bool reverse)? S = null, (int threshold, bool reverse)? I = null,
                 (int threshold, bool reverse)? O = null, int bVS = 512, (int strength, int threshold)? bER = null, bool fBS = false, bool iS = false, bool iL = false, bool iA = false, bool nQF = false, bool iI = false)
             {
                 tileType = tT;
-                isMaturation = iM;
+                priority = p;
 
                 transitionRules = tR;
+                maturationLevel = mL;
                 meanBasedValueRequired = mBVR;
 
                 inSoil = iS;
@@ -1900,6 +1909,7 @@ namespace Cave
                 baseThreshold = bT;
                 noiseModulos = nM is null ? (16, 16) : (nM.Value.one ?? 16, nM.Value.two ?? 16);
                 makeNoiseMaps = nM is null ? (true, true) : (nM.Value.one != null, nM.Value.two != null);
+                noiseValueRanges = nVR is null ? (2048, 2048) : (nVR.Value.one ?? 2048, nVR.Value.two ?? 2048);
 
                 if (fBS || T != null || H != null || A != null || TX != null || S != null || I != null || O != null) { isBiomeSystem = true; }
                 else { isBiomeSystem = false; }
@@ -1919,20 +1929,23 @@ namespace Cave
         {
             famousTFT = new Dictionary<string, TerrainFeaturesTraits>
             {
-                { "HardRock", new TerrainFeaturesTraits((1, 1), 0, iS:true, mBVR:true, bT:0) },
-                { "Mold", new TerrainFeaturesTraits((5, 0), 2, iS:true, bT:1024, bER:(2000, 0), bVS:1024, nM:(64, 16)) },
+                { "HardRock", new TerrainFeaturesTraits((1, 1), 0, 0, iS:true, mBVR:true, bT:0) },
+                { "Mold", new TerrainFeaturesTraits((5, 0), 0, 2, iS:true, bT:1024, bER:(2000, 0), bVS:1024, nM:(64, 16)) },
 
-                { "Salt Terrain", new TerrainFeaturesTraits((6, 0), 3, iS:true, bT:0, bER:(10000, 700), S:(650, true), nM:(256, 64)) },
-                { "Salt Filling", new TerrainFeaturesTraits((6, 0), 4, iL:true, bT:0, fBS:true, bER:(10000, 700), nM:(null, null)) },
-                { "Salt Spikes", new TerrainFeaturesTraits((6, 0), 5, iL:true, bT:0, bER:(10000, 700), nQF:true) },
+                { "Salt Terrain", new TerrainFeaturesTraits((6, 0), 0, 3, iS:true, bT:0, bER:(10000, 700), S:(650, true), nM:(256, 64)) },
+                { "Salt Filling", new TerrainFeaturesTraits((6, 0), 0, 4, iL:true, bT:0, fBS:true, bER:(10000, 700), nM:(null, null)) },
+                { "Salt Spikes", new TerrainFeaturesTraits((6, 0), 0, 5, iL:true, bT:0, bER:(10000, 700), nQF:true) },
 
-                { "Frost Carving", new TerrainFeaturesTraits((0, 0), 6, iS:true, bT:0, bER:(100, 0), nM:(null, null), iI:true) },
+                { "Frost Carving", new TerrainFeaturesTraits((0, 0), 0, 6, iS:true, bT:0, bER:(100, 0), nM:(null, null), iI:true) },
 
-                { "Bone", new TerrainFeaturesTraits((4, 1), 1, iS:true, bT:512, H:(500, false), bVS:1024) },
+                { "Dirt/Mud", new TerrainFeaturesTraits((2, 0), 0, 8, mL:2, iS:true, bT:1250, bER:(1000, 350), nM:(32, null), nVR:(1500, null)) },
+                { "Litter", new TerrainFeaturesTraits((2, 2), -1, 9, mL:2, iS:true, bT:1100, bER:(2000, 200), nM:(16, null), nVR:(1000, null)) },
 
-                { "Skin90", new TerrainFeaturesTraits((4, 2), 7, iM:true, iS:true, bT:205, nM:(32, null)) },
-                { "Skin75", new TerrainFeaturesTraits((4, 2), 7, iM:true, iS:true, bT:512, nM:(32, null)) },
-                { "Skin40", new TerrainFeaturesTraits((4, 2), 7, iM:true, iS:true, bT:1229, nM:(32, null)) },
+                { "Bone", new TerrainFeaturesTraits((4, 1), 0, 1, iS:true, bT:512, H:(500, false), bVS:1024) },
+
+                { "Skin90", new TerrainFeaturesTraits((4, 2), 0, 7, mL:1, iS:true, bT:205, nM:(32, null)) },
+                { "Skin75", new TerrainFeaturesTraits((4, 2), 0, 7, mL:1, iS:true, bT:512, nM:(32, null)) },
+                { "Skin40", new TerrainFeaturesTraits((4, 2), 0, 7, mL:1, iS:true, bT:1229, nM:(32, null)) },
             };
             int counto = 0;
             foreach (TerrainFeaturesTraits tTT in famousTFT.Values) { tTT.layer = counto * 2; counto++; }
@@ -1966,8 +1979,7 @@ namespace Cave
             public int antiSeparatorType;
             public float caveWidth;
 
-            public TerrainFeaturesTraits[] TFTArray;
-            public TerrainFeaturesTraits[] maturationTFTArray;
+            public TerrainFeaturesTraits[][] TFTArrays;
 
             public bool isDark;
             public bool isSlimy;
@@ -2032,17 +2044,22 @@ namespace Cave
                 antiSeparatorType = aST;
                 caveWidth = cW;
 
-                if (tFT != null)
+                if (tFT is null) { TFTArrays = new TerrainFeaturesTraits[][] { null, null, null }; }
+                else
                 {
                     List<TerrainFeaturesTraits> normalTFT = new List<TerrainFeaturesTraits>();
                     List<TerrainFeaturesTraits> maturationTFT = new List<TerrainFeaturesTraits>();
+                    List<TerrainFeaturesTraits> postStructureMaturationTFT = new List<TerrainFeaturesTraits>();
                     foreach (TerrainFeaturesTraits TFT in tFT)
                     {
-                        if (TFT.isMaturation) { maturationTFT.Add(TFT); }
+                        if (TFT.maturationLevel == 2) { postStructureMaturationTFT.Add(TFT); }
+                        else if (TFT.maturationLevel == 1) { maturationTFT.Add(TFT); }
                         else { normalTFT.Add(TFT); }
                     }
-                    TFTArray = normalTFT.ToArray();
-                    maturationTFTArray = maturationTFT.ToArray();
+                    if (normalTFT.Count == 0) { normalTFT = null; }
+                    if (maturationTFT.Count == 0) { maturationTFT = null; }
+                    if (postStructureMaturationTFT.Count == 0) { postStructureMaturationTFT = null; }
+                    TFTArrays = new TerrainFeaturesTraits[][] { normalTFT is null ? null : normalTFT.ToArray(), maturationTFT is null ? null : maturationTFT.ToArray(), postStructureMaturationTFT is null ? null : postStructureMaturationTFT.ToArray() };
                 }
 
                 EntityTraits entityTraits;
@@ -2178,30 +2195,31 @@ namespace Cave
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 98), ((0, 1), 2), ((10, 0), 96),  ((11, 0), 4),   ((20, 0), 100), ((30, 0), 100), ((30, 1), 100), },
                 cT:(1, 5), txT:(0, 0),                               // Grass         Wheat        Tree            Fir             Vine            Kelp            CeilingKelp
-                ePS:WILLOW) },
+                ePS:WILLOW, tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
                 { (3, 1),  new BiomeTraits("Flower Forest",         (Color.Green.R, Color.Green.G + 40, Color.Green.B + 80),
                 new float[]{1, 0.25f, 2, 2, 0, 16, 1, 3, 0, 4, 0, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 30), ((1, 0), 35), ((1, 1), 35), ((20, 0), 100), ((30, 0), 100), ((30, 1), 100), },
                 txT:(0, 0),                                          // Grass         Tulip         Allium        Vine            Kelp            CeilingKelp
-                ePS:WILLOW) },
+                ePS:WILLOW, tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
                 { (3, 2),  new BiomeTraits("Conifer Forest",        (Color.Green.R - 120, Color.Green.G - 40, Color.Green.B + 40),
                 new float[]{1, 0.25f, 2, 2,  0, 6, 3, 2, 0, 4, 0, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((11, 0), 100), ((20, 0), 100), ((30, 0), 100), ((30, 1), 100), },
                 cT:(1, 5), txT:(0, 0),                               // Grass          Fir             Vine            Kelp            CeilingKelp
-                ePS:WILLOW) },
+                ePS:WILLOW, tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"], famousTFT["Litter"] }) },
                 { (3, 3),  new BiomeTraits("Jungle",                (Color.Green.R + 80, Color.Green.G + 160, Color.Green.B + 40),
                 new float[]{1, 0.25f, 2, 2,  0, 6, 4, 2, 0, 4, 0, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((10, 1), 100), ((20, 0), 100), ((30, 0), 100), ((30, 1), 100), },
                 cT:(1, 5), txT:(0, 0),                               // Grass          JungleTree      Vine            Kelp            CeilingKelp
-                ePS:WILLOW) },
+                ePS:WILLOW, tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
                 { (3, 4),  new BiomeTraits("Mangrove",                (Color.DarkSeaGreen.R + 20, Color.DarkSeaGreen.G + 60, Color.DarkSeaGreen.B + 30),
                 new float[]{1, 0.25f, 2, 2,  0, 6, 1, 2, 0, 4, 3, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 100), ((2, 0), 100), ((5, 0), 75), ((10, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((12, 0), 100), ((20, 0), 100), ((2, 1), 3), ((30, 0), 97), ((30, 1), 100), },
-                cT:(7, 7), lT:(-2, 2), txT:(0, 0)) },                // Grass          MangroveTree    Vine            Rice         Kelp            CeilingKelp
+                cT:(7, 7), lT:(-2, 2), txT:(0, 0),                   // Grass          MangroveTree    Vine            Rice         Kelp            CeilingKelp
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
 
                 { (4, 0),  new BiomeTraits("Toxic",                 (Color.GreenYellow.R, Color.GreenYellow.G, Color.GreenYellow.B),
                 new float[]{1, 0.25f, 2, 2,  0, 4, 1, 2, 0, 4, 0, 4, 0}, // Frog       Worm           Fish           WaterSkipper   Dragonfly
@@ -2330,13 +2348,13 @@ namespace Cave
                 BiomeTraits bT = biomeTraitsDict[key];
                 if (bT.tileType == (1, 0))
                 {
-                    if (bT.TFTArray is null) { bT.TFTArray = new TerrainFeaturesTraits[] { famousTFT["HardRock"] }; }
+                    if (bT.TFTArrays[0] is null) { bT.TFTArrays[0] = new TerrainFeaturesTraits[] { famousTFT["HardRock"] }; }
                     else
                     {
-                        TerrainFeaturesTraits[] tFTA = new TerrainFeaturesTraits[bT.TFTArray.Length + 1];
-                        for (int i = 0; i < bT.TFTArray.Length; i++) { tFTA[i + 1] = bT.TFTArray[i]; }
+                        TerrainFeaturesTraits[] tFTA = new TerrainFeaturesTraits[bT.TFTArrays[0].Length + 1];
+                        for (int i = 0; i < bT.TFTArrays[0].Length; i++) { tFTA[i + 1] = bT.TFTArrays[0][i]; }
                         tFTA[0] = famousTFT["HardRock"];
-                        bT.TFTArray = tFTA;
+                        bT.TFTArrays[0] = tFTA;
                     }
                 }
             }

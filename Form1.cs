@@ -111,6 +111,9 @@ namespace Cave
 
                 turnPngIntoString("BasicTile");
                 turnPngIntoString("DenseRockTile");
+                turnPngIntoString("DirtTile");
+                turnPngIntoString("MudTile");
+                turnPngIntoString("LitterTile");
                 turnPngIntoString("FleshTile");
                 turnPngIntoString("BoneTile");
                 turnPngIntoString("SkinTile");
@@ -242,7 +245,7 @@ namespace Cave
             makeTheFilledChunk();
 
             //      ----- - - CURRENTLY DOING - - -----
-            // mud, dirt, make other cereals
+            // make new conifers (fir variations + others), make other cereals
             // Marshes and Swamps !
             // -> Swamp : like mangrove but with water that's not salt water and different trees !!! And rice grows in there (rare) instead not in mangrove lol cuz it's like. Impossible lmao.
             // -> Marsh : like swamp but without any trees !!! And rice grows in there (common) instead not in mangrove lol cuz it's like. Impossible lmao.
@@ -326,6 +329,7 @@ namespace Cave
             // swarms of locusts that uhhhh go and uh. eat plants idk.
             // Have some plants be background plants, darker and closer to background color ? Since Stijn (love of my live fr) saw the dark shade trees as background ones for some reason !!! Could be a cool idea to implement a shade/layer system for plants ! to add more depth
             // Add fossil structures ??
+            // Make it so seasons have a variation. In the same dimension, the season could be at +40 days somewhere, but -10 days somewhere else (like a noise that makes it lag)
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
@@ -645,6 +649,24 @@ namespace Cave
                 idx = Max(0, idx + 1);
             }
         }
+
+        public static void SortTerrainFeatureTraitsListByPriority(List<TerrainFeaturesTraits> listo)
+        {
+            int idx = 0;
+            while (idx < listo.Count - 1)
+            {
+                if (listo[idx + 1].priority > listo[idx].priority)
+                {
+                    listo.Insert(idx, listo[idx + 1]);
+                    listo.RemoveAt(idx + 2);
+                    idx -= 2;
+                }
+                idx = Max(0, idx + 1);
+            }
+        }
+
+
+
         public static T getRandomItem<T>(List<T> collection) { return collection[rand.Next(collection.Count)]; }
         public static T getRandomItem<T>(HashSet<T> collection) { return collection.ToArray()[rand.Next(collection.Count)]; }
         public static T getRandomKey<T, V>(Dictionary<T, V> collection) { return collection.Keys.ToArray()[rand.Next(collection.Count)]; }

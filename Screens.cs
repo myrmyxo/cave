@@ -72,7 +72,7 @@ namespace Cave
                 seed = 123456;
 
                 int idToPut = 0;
-                (int type, int subType) forceBiome = (2, 0);
+                (int type, int subType) forceBiome = (3, 2);
                 int PNGsize = 150;
                 PNGsize = 100;
 
@@ -80,15 +80,17 @@ namespace Cave
                 realZoomLevel = zoomLevel;
                 effectiveRadius = chunkLoadMininumRadius;
 
-                bool isMonoeBiomeToPut = false;
+                bool isMonoeBiomeToPut = true;
                 bool isPngToExport = false;
 
+                
+                doBackgroundStructureGeneration = false;
                 loadStructuresYesOrNo = false;
                 spawnNests = false;
                 spawnEntitiesBool = true;
                 spawnPlants = true;
                 bool spawnNOTHING = false;
-                bool spawnEVERYTHING = false;
+                bool spawnEVERYTHING = true;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
                 if (spawnEVERYTHING) { loadStructuresYesOrNo = true; spawnEntitiesBool = true; spawnPlants = true; }
 
@@ -238,21 +240,13 @@ namespace Cave
 
                 if (dimensionChangePress)
                 {
-                    if (dimensionSelection)
-                    {
-                        dimensionSelection = false;
-                        setPlayerDimension(player, currentTargetDimension);
-                    }
-                    else { dimensionSelection = true; }
+                    if (dimensionSelection) { setPlayerDimension(player, currentTargetDimension); }
+                    dimensionSelection = !dimensionSelection;
                     dimensionChangePress = false;
                 }
                 if (craftPress)
                 {
-                    if (craftSelection)
-                    {
-                        craftSelection = false;
-                    }
-                    else { craftSelection = true; }
+                    craftSelection = !craftSelection;
                     craftPress = false;
                 }
                 zoomUpdate();
@@ -289,10 +283,7 @@ namespace Cave
 
                     screen.addRemoveEntities();
 
-                    foreach ((int x, int y) pos in screen.chunksToMature)
-                    {
-                        if (screen.loadedChunks.ContainsKey(pos)) { screen.loadedChunks[pos].matureChunkToLevelTwo(); }
-                    }
+                    foreach ((int x, int y) pos in screen.chunksToMature) { if (screen.loadedChunks.ContainsKey(pos)) { screen.loadedChunks[pos].matureChunkToLevelTwo(); } }
                     screen.chunksToMature = new HashSet<(int x, int y)>();
 
                     foreach (Plant plant in screen.activePlants.Values) { plant.testPlantGrowth(false); }
@@ -335,10 +326,7 @@ namespace Cave
                                 if (!structure.screen.activeStructures.ContainsKey(id)) { continue; }
                                 Structure structo = structure.screen.activeStructures[id];
                                 if (structo.type != structure.type) { continue; }
-                                foreach ((int x, int y) pos in structo.chunkPresence)
-                                {
-                                    if (structure.chunkPresence.Contains(pos)) { goto doNotAddStructure; }
-                                }
+                                foreach ((int x, int y) pos in structo.chunkPresence) { if (structure.chunkPresence.Contains(pos)) { goto doNotAddStructure; } }
                             }
                             // after this the structure is VALID and WILL be added to existing structures
                             structure.initAfterStructureValidated();
@@ -364,10 +352,7 @@ namespace Cave
 
                     if (screen != playerScreen && screen.loadedChunks.Count == 0) { dimensionsToUnload.Add(screen.id); }
                 }
-                foreach (int id in dimensionsToUnload)
-                {
-                    unloadDimension(id);
-                }
+                foreach (int id in dimensionsToUnload) { unloadDimension(id); }
                 saveSettings(this);
 
                 // go back 10 times if fastForward
@@ -490,10 +475,7 @@ namespace Cave
             }
             public void zoomUpdate()
             {
-                if (zoomPress[0] == zoomPress[1])
-                {
-                    zoomingSpeed = Sign(zoomingSpeed) * Max(0.7f * Abs(zoomingSpeed) - 1, 0);
-                }
+                if (zoomPress[0] == zoomPress[1]) { zoomingSpeed = Sign(zoomingSpeed) * Max(0.7f * Abs(zoomingSpeed) - 1, 0); }
                 else
                 {
                     float factor = realZoomLevel / 50;
@@ -520,10 +502,7 @@ namespace Cave
             public void setPlayerDimension(Player player, int targetDimension)
             {
                 if (targetDimension > currentDimensionId) { targetDimension = currentDimensionId; currentTargetDimension = currentDimensionId; }
-                if (!loadedScreens.ContainsKey(targetDimension))
-                {
-                    loadDimension(targetDimension);
-                }
+                if (!loadedScreens.ContainsKey(targetDimension)) { loadDimension(targetDimension); }
                 player.screen = loadedScreens[targetDimension];
                 player.dimension = targetDimension;
                 // unloadAllDimensions(false);
@@ -549,10 +528,7 @@ namespace Cave
             {
                 foreach (int id in loadedScreens.Keys.ToList())
                 {
-                    if (unloadDimensionPlayerIsInAsWell || playerList[0].dimension != id)
-                    {
-                        unloadDimension(id);
-                    }
+                    if (unloadDimensionPlayerIsInAsWell || playerList[0].dimension != id) { unloadDimension(id); }
                 }
             }
             public Screen getScreen(int id)
@@ -670,10 +646,7 @@ namespace Cave
                 chunkY = ChunkIdx(player.posY);
                 if (player.dimension == id) { forceLoadChunksForAllPoints(); }
 
-                foreach ((int x, int y) pos in chunksToMature)
-                {
-                    if (loadedChunks.ContainsKey(pos)) { loadedChunks[pos].matureChunkToLevelTwo(); }
-                }
+                foreach ((int x, int y) pos in chunksToMature) { if (loadedChunks.ContainsKey(pos)) { loadedChunks[pos].matureChunkToLevelTwo(); } }
             }
             public int getLCGValue(((int x, int y) pos, int layer) key, int noiseAmplitude)
             {
@@ -695,14 +668,8 @@ namespace Cave
             }
             public void removePlantsFromChunk(Chunk chunk)
             {
-                if (chunk.exteriorPlantList.Count > 0)
-                {
-                    outOfBoundsPlants.Add((chunk.pos.x, chunk.pos.y), new List<Plant>());
-                }
-                foreach (Plant plant in chunk.exteriorPlantList)
-                {
-                    outOfBoundsPlants[(chunk.pos.x, chunk.pos.y)].Add(plant);
-                }
+                if (chunk.exteriorPlantList.Count > 0) { outOfBoundsPlants.Add((chunk.pos.x, chunk.pos.y), new List<Plant>()); }
+                foreach (Plant plant in chunk.exteriorPlantList) { outOfBoundsPlants[(chunk.pos.x, chunk.pos.y)].Add(plant); }
             }
             public void addRemoveEntities()
             {
@@ -722,10 +689,7 @@ namespace Cave
             }
             public void makeBitmapsOfPlants()
             {
-                foreach (Plant plant in plantsToMakeBitmapsOf.Values)
-                {
-                    plant.makeBitmap();
-                }
+                foreach (Plant plant in plantsToMakeBitmapsOf.Values) { plant.makeBitmap(); }
                 plantsToMakeBitmapsOf = new Dictionary<int, Plant>();
             }
             public void putPlantsInChunks()
@@ -764,17 +728,11 @@ namespace Cave
                 {
                     entity = entityArray[i];
                     chunkIndex = ChunkIdx(entity.posX, entity.posY);
-                    if (loadedChunks.ContainsKey(chunkIndex))
-                    {
-                        getChunkFromChunkPos(chunkIndex).entityList.Add(activeEntities[entity.id]);
-                    }
-                    else { if (activeEntities.ContainsKey(id)) { cringeEntities.Add(activeEntities[id]); } }    // Cuz sometimes they disappear ?????????? what ???
+                    if (loadedChunks.ContainsKey(chunkIndex)) { getChunkFromChunkPos(chunkIndex).entityList.Add(activeEntities[entity.id]); }
+                    else if (activeEntities.ContainsKey(id)) { cringeEntities.Add(activeEntities[id]); }    // Cuz sometimes they disappear ?????????? what ???
                     activeEntities.Remove(entity.id);
                 }
-                foreach (Entity entito in cringeEntities)
-                {
-                    activeEntities[entito.id] = entito;
-                }
+                foreach (Entity entito in cringeEntities) { activeEntities[entito.id] = entito; }
             }
             public void putEntitiesAndPlantsInChunks()
             {
@@ -932,16 +890,19 @@ namespace Cave
                 }
                 extraLoadedMegaChunks = newExtraLoadedMegaChunks;
 
-                if (generatingMegachunk is null)
+                if (doBackgroundStructureGeneration)
                 {
-                    Player player = game.playerList[0];
-                    foreach (MegaChunk megaChunk in extraLoadedMegaChunks.Values)
+                    if (generatingMegachunk is null)
                     {
-                        if (manhattanDistance(megaChunk.pos, MegaChunkIdxFromPixelPos((player.posX, player.posY))) > 4) { continue; }
-                        if (!megaChunk.doneGeneratingStructures) { generatingMegachunk = megaChunk.pos; break; }  // Break is SUPER IMPORTANT !! Need to STOP Because after generating structures it might have extra loaded new megachunks ! ! ! 
+                        Player player = game.playerList[0];
+                        foreach (MegaChunk megaChunk in extraLoadedMegaChunks.Values)
+                        {
+                            if (manhattanDistance(megaChunk.pos, MegaChunkIdxFromPixelPos((player.posX, player.posY))) > 4) { continue; }
+                            if (!megaChunk.doneGeneratingStructures) { generatingMegachunk = megaChunk.pos; break; }  // Break is SUPER IMPORTANT !! Need to STOP Because after generating structures it might have extra loaded new megachunks ! ! ! 
+                        }
                     }
+                    if (generatingMegachunk != null && getMegaChunkFromMegaPos(generatingMegachunk.Value).generateStructuresInTheBackground()) { generatingMegachunk = null; }
                 }
-                if (generatingMegachunk != null && getMegaChunkFromMegaPos(generatingMegachunk.Value).generateStructuresInTheBackground()) { generatingMegachunk = null; }
             }
             public void unloadMegaChunks() // megachunk resolution : 512*512
             {
@@ -1083,13 +1044,10 @@ namespace Cave
                 foreach (Entity entity in activeEntities.Values) { drawEntityOnScreen(gameBitmap, camPos, lightPositions, entity); }
                 foreach (Particle particle in activeParticles) { drawParticleOnScreen(gameBitmap, camPos, lightPositions, particle); }
                 drawPlayerOnScreen(gameBitmap, camPos, lightPositions, player);
-
                 drawAttacksOnScreen(gameBitmap, camPos, isPngToBeExported);
 
-                drawChunkEffectsOnScreen(gameBitmap, camPos, isPngToBeExported);
-
-                drawLightOnScreen(gameBitmap, lightBitmap, camPos, lightPositions);
-
+                drawChunkEffectsOnScreen(gameBitmap, camPos, isPngToBeExported); 
+                drawLightOnScreen(gameBitmap, lightBitmap, camPos, lightPositions); 
                 drawFogOfWarOnScreen(gameBitmap, camPos);                
 
                 if (debugMode && !isPngToBeExported && true) { drawNestDebugOnScreen(gameBitmap, camPos); } // debug for nests
@@ -1155,10 +1113,7 @@ namespace Cave
                         pasteImage(gameBitmap, plantElement.traits.animation.frames[frame], (posToDraw.x + plantElement.traits.animation.offset.x, posToDraw.y + plantElement.traits.animation.offset.y), camPos);
                     }
                 }
-                if (game.isLight)
-                {
-                    if (plant.lightPositions != null) { foreach ((int x, int y, int radius, Color color) item in plant.lightPositions) { lightPositions.Add(item); } }
-                }
+                if (game.isLight && plant.lightPositions != null) { foreach ((int x, int y, int radius, Color color) item in plant.lightPositions) { lightPositions.Add(item); } }
             }
             public (int x, int y) findPreviousPastPosition(Entity entity, int segment, (int x, int y) segmentPos, (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color) item)
             {
@@ -1350,10 +1305,7 @@ namespace Cave
                 {
                     Nest nest = structure.getItselfAsNest();
                     if (nest == null) { continue; }
-                    foreach ((int x, int y) posToDrawAt in nest.digErrands)
-                    {
-                        drawPixel(gameBitmap, Color.FromArgb(100, 255, 0, 0), posToDrawAt, camPos);
-                    }
+                    foreach ((int x, int y) posToDrawAt in nest.digErrands) { drawPixel(gameBitmap, Color.FromArgb(100, 255, 0, 0), posToDrawAt, camPos); }
                     if (nest.rooms.ContainsKey(1))
                     {
                         foreach ((int x, int y) posToDrawAt in nest.rooms[1].tiles) { drawPixel(gameBitmap, Color.FromArgb(100, 120, 0, 100), posToDrawAt, camPos); }
