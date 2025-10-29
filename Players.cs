@@ -29,6 +29,7 @@ using static Cave.Attacks;
 using static Cave.Files;
 using static Cave.Plants;
 using static Cave.Screens;
+
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
@@ -403,19 +404,7 @@ namespace Cave
                 if (currentAttack != null && currentAttack.isDone) { currentAttack = null; }
                 if (digPress && currentAttack is null && (currentItem.megaType == 4 || currentItem.megaType == 5))  // start an attack if a tool that can attack is selected, X is pressed, and player is not already attacking
                 {
-                    if (currentItem == (0, 0, 4)) { currentAttack = tryLaunchSingleAttack((0, 0, 0, 4)); }
-                    else if (currentItem == (1, 0, 4)) { currentAttack = tryLaunchSingleAttack((1, 0, 0, 4)); }
-                    else if (currentItem == (2, 0, 4)) { currentAttack = tryLaunchSingleAttack((2, 0, 0, 4)); }
-
-                    else if (currentItem == (3, 0, 4)) { currentAttack = tryLaunchSingleAttack((3, 0, 0, 4)); }
-                    else if (currentItem == (3, 1, 4)) { currentAttack = tryLaunchSingleAttack((3, 1, 0, 4)); }
-                    else if (currentItem == (3, 2, 4)) { currentAttack = tryLaunchSingleAttack((3, 2, 0, 4)); }
-                    else if (currentItem == (3, 3, 4)) { currentAttack = tryLaunchSingleAttack((3, 3, 0, 4)); }
-                    else if (currentItem == (3, 4, 4)) { currentAttack = tryLaunchSingleAttack((3, 4, 0, 4)); }
-                    else if (currentItem == (3, 5, 4)) { currentAttack = tryLaunchSingleAttack((3, 5, 0, 4)); }
-
-                    else if (currentItem == (4, 0, 4)) { currentAttack = tryLaunchSingleAttack((4, 0, 0, 4)); }
-                    else if (currentItem == (6, 0, 5)) { currentAttack = tryLaunchSingleAttack((6, 0, 0, 5)); }
+                    currentAttack = tryLaunchSingleAttack((currentItem.type, currentItem.subType, 0, currentItem.megaType));
                 }
             }
             public Attack tryLaunchSingleAttack((int type, int subType, int subSubType, int megaType) attackType)

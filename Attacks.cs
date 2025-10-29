@@ -160,7 +160,19 @@ namespace Cave
                     else
                     {
                         mod = (1, 0);
-                        if (state == 2) { new Attack(screen, motherEntity, (type.type, type.subType, 1, 4), (pos.x + 2 * sign, pos.y), direction); }
+                        if (state == 2)
+                        {
+                            new Attack(screen, motherEntity, (type.type, type.subType, 1, 4), (pos.x + 2 * sign, pos.y), direction);
+                            if (type.subType == 6)
+                            {
+                                new Attack(screen, motherEntity, (type.type, type.subType, 1, 4), (pos.x + 2 * sign, pos.y - 3), direction);
+                                new Attack(screen, motherEntity, (type.type, type.subType, 1, 4), (pos.x + 2 * sign, pos.y - 2), direction);
+                                new Attack(screen, motherEntity, (type.type, type.subType, 1, 4), (pos.x + 2 * sign, pos.y - 1), direction);
+                                new Attack(screen, motherEntity, (type.type, type.subType, 1, 4), (pos.x + 2 * sign, pos.y + 1), direction);
+                                new Attack(screen, motherEntity, (type.type, type.subType, 1, 4), (pos.x + 2 * sign, pos.y + 2), direction);
+                                new Attack(screen, motherEntity, (type.type, type.subType, 1, 4), (pos.x + 2 * sign, pos.y + 3), direction);
+                            }
+                        }
                     }
                     posToDrawList.Add(((pos.x + mod.x * sign, pos.y + mod.y), Color.FromArgb(140, 140, 50)));
 
@@ -219,7 +231,7 @@ namespace Cave
 
                     if (state >= 15) { finishAttack(); }
                 }
-                else if (type == (3, 4, 1, 4) || type == (3, 5, 1, 4))  // (WandDig) horizontal bullet that spawns 5 other bullets on death
+                else if (type.type == 3 && type.subSubType == 1 && type.typeOfElement == 4)  // (WandDig) horizontal bullet that spawns 5 other bullets on death
                 {
                     if (state > 0)
                     {
@@ -240,7 +252,7 @@ namespace Cave
 
                     if (state >= 5) { finishAttack(); }
                 }
-                else if (type == (3, 4, 2, 4) || type == (3, 5, 2, 4))  // (WandDig) horizontal bullet that just exists
+                else if (type.type == 3 && type.subSubType == 2 && type.typeOfElement == 4)  // (WandDig) horizontal bullet that just exists
                 {
                     if (state > 0)
                     {
@@ -260,7 +272,7 @@ namespace Cave
 
                     if (state >= 10) { finishAttack(); }
                 }
-                else if (type == (3, 4, 3, 4) || type == (3, 5, 3, 4))  // (WandDig) horizontal bullet that just exists
+                else if (type.type == 3 && type.subSubType == 3 && type.typeOfElement == 4)  // (WandDig) horizontal bullet that just exists
                 {
                     if (state > 0) { pos = (pos.x + Sign(direction.x), pos.y); }
 

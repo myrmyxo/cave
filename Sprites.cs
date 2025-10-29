@@ -135,6 +135,7 @@ namespace Cave
                 { (10, 1), new OneSprite("JungleTree", true) },              // TO CHANGE
                 { (10, 2), new OneSprite("WeepingWillow", true) },           // TO CHANGE
                 { (11, 0), new OneSprite("Fir", true) },                     // TO CHANGE
+                { (11, 1), new OneSprite("Fir", true) },                     // TO CHANGE
                 { (12, 0), new OneSprite("MangroveTree", true) },            // TO CHANGE
                 { (13, 0), new OneSprite("CheeringWillow", true) },          // TO CHANGE
                 { (20, 0), new OneSprite("Vines", false) },
@@ -203,6 +204,7 @@ namespace Cave
                 { (3, 3), new OneSprite("WandTeleport", true) },            // TO CHANGE
                 { (3, 4), new OneSprite("WandDig", true) },                 // TO CHANGE
                 { (3, 5), new OneSprite("WandPlace", true) },               // TO CHANGE
+                { (3, 6), new OneSprite("WandFloral", true) },              // TO CHANGE
                 { (4, 0), new OneSprite("Axe", true) },                     // TO CHANGE
             };
             attacksSprites = new Dictionary<(int type, int subType), OneSprite>
@@ -270,10 +272,7 @@ namespace Cave
                     for (int i = 0; i < dimensions.Item1; i++)
                     {
                         Color pixelColor = bitmapToPut.GetPixel(i, j);
-                        for (int k = 0; k < paletteList.Count(); k++)
-                        {
-                            if (pixelColor == paletteList[k]) { goto afterTest; }
-                        }
+                        for (int k = 0; k < paletteList.Count(); k++) { if (pixelColor == paletteList[k]) { goto afterTest; } }
                         paletteList.Add(pixelColor);
                     afterTest:;
                     }
@@ -285,7 +284,9 @@ namespace Cave
             {
                 if (isFileName || true)
                 {
-                    contentString = findSpritesPath() + $"\\{contentString}.txt";
+                    contentString = findSpritesPath() + $"\\{contentString}";
+                    turnPngIntoStringFromFilepath(contentString);
+                    contentString = contentString + ".txt";
                     using (StreamReader f = new StreamReader(contentString)) { contentString = f.ReadToEnd(); }
                 }
                 else { contentString = SpriteStrings.spriteStringsDict[contentString]; }
@@ -307,9 +308,11 @@ namespace Cave
             public OneAnimation(string contentString, bool isFileName, int amountOfFrames, (int x, int y)? offsetToPut = null)
             {
                 frameCount = amountOfFrames;
-                if (isFileName)
+                if (isFileName || true)
                 {
-                    contentString = findSpritesPath() + $"\\{contentString}.txt";
+                    contentString = findSpritesPath() + $"\\{contentString}";
+                    turnPngIntoStringFromFilepath(contentString);
+                    contentString = contentString + ".txt";
                     using (StreamReader f = new StreamReader(contentString)) { contentString = f.ReadToEnd(); }
                 }
                 else { contentString = SpriteStrings.spriteStringsDict[contentString]; }
@@ -570,21 +573,17 @@ namespace Cave
 
             return counto;
         }
-        public static string findSpritesPath()
+        public static string findSpritesPath(bool isPlantFrameSprite = false)
         {
             string filepath = currentDirectory;
             int foundo = 0;
             int idx = filepath.Length - 1;
             while (foundo < 2)
             {
-                if (filepath[idx] == '\\')
-                {
-                    filepath = filepath.Substring(0, idx);
-                    foundo++;
-                }
+                if (filepath[idx] == '\\') { filepath = filepath.Substring(0, idx); foundo++; }
                 idx--;
             }
-            return (filepath + $"\\Sprites");
+            return (filepath + $"\\Sprites" + (isPlantFrameSprite ? $"\\PlantFrameSprites" : ""));
         }
         public static void turnPngIntoString(string filename)
         {
@@ -605,14 +604,7 @@ namespace Cave
                 {
                     int colorIdx = -1;
                     Color pixelColor = bitmap.GetPixel(i, j);
-                    for (int k = 0; k < palette.Count(); k++)
-                    {
-                        if (pixelColor == palette[k])
-                        {
-                            colorIdx = k;
-                            goto afterTest;
-                        }
-                    }
+                    for (int k = 0; k < palette.Count(); k++) { if (pixelColor == palette[k]) { colorIdx = k; goto afterTest; } }
                     colorIdx = palette.Count();
                     palette.Add(pixelColor);
                 afterTest:;
@@ -627,10 +619,7 @@ namespace Cave
                 secondLine = secondLine + palette[i].B.ToString() + ";";
                 secondLine = secondLine + palette[i].A.ToString() + ";";
             }
-            using (StreamWriter f = new StreamWriter(filepath + ".txt", false))
-            {
-                f.Write(firstLine + "\n" + secondLine + "\n" + thirdLine);
-            }
+            using (StreamWriter f = new StreamWriter(filepath + ".txt", false)) { f.Write(firstLine + "\n" + secondLine + "\n" + thirdLine); }
         }
 
 
@@ -747,10 +736,7 @@ namespace Cave
                         if (pos.x < 0 || pos.y < 0 || receiver.Width <= pos.x || receiver.Height <= pos.y) { continue; }
                         data1 = scan01 + pos.y * bData1.Stride + pos.x * bitsPerPixel1 / 8;
                         data2 = scan02 + i * bData2.Stride + j * bitsPerPixel2 / 8;
-                        for (int k = 0; k < 3; k++)
-                        {
-                            data1[k] = Max(data1[k], (byte)(data2[3]*data2[k]*_1On255));
-                        }
+                        for (int k = 0; k < 3; k++) { data1[k] = Max(data1[k], (byte)(data2[3]*data2[k]*_1On255)); }
                         data1[3] = 255;
                     }
                 }
@@ -815,7 +801,7 @@ namespace Cave
 
             return bitmap;
         }
-        public static unsafe Color getPixelButFaster(Bitmap bitmap, (int x, int y) pos, Color colorToDraw)
+        public static unsafe Color getPixelButFaster(Bitmap bitmap, (int x, int y) pos)
         {
             BitmapData bData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadWrite, bitmap.PixelFormat);
 
@@ -834,10 +820,7 @@ namespace Cave
         public static Bitmap getLightBitmap(Color color, int radius)
         {
             (int radius, int r, int g, int b) col = (radius, (int)((color.R * _1On17) * 17), (int)((color.G * _1On17) * 17), (int)((color.B * _1On17) * 17));
-            if (lightBitmaps.ContainsKey(col))
-            {
-                return lightBitmaps[col];
-            }
+            if (lightBitmaps.ContainsKey(col)) { return lightBitmaps[col]; }
             else
             {
                 lightBitmaps[col] = makeLightBitmap((int)(radius * 0.5f + 0.6f), col);

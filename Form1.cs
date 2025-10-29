@@ -50,193 +50,12 @@ namespace Cave
             makeBlackBitmap();
             makeLightBitmaps();
 
-            bool makePngStrings = true;
-            if (makePngStrings)
-            {
-                turnPngIntoString("Error");
-
-                turnPngIntoString("OverlayBackground");
-
-                turnPngIntoString("Numbers");
-                turnPngIntoString("LettersUp");
-                turnPngIntoString("LettersLow");
-                turnPngIntoString("LettersMin");
-                turnPngIntoString("Arrows");
-                turnPngIntoString("OperationSigns");
-
-
-
-                turnPngIntoString("Fairy");
-                turnPngIntoString("ObsidianFairy");
-                turnPngIntoString("FrostFairy");
-                turnPngIntoString("SkeletonFairy");
-                turnPngIntoString("Frog");
-                turnPngIntoString("Fish");
-                turnPngIntoString("Pufferfish");
-                turnPngIntoString("SkeletonFish");
-                turnPngIntoString("HornetEgg");
-                turnPngIntoString("HornetLarva");
-                turnPngIntoString("HornetCocoon");
-                turnPngIntoString("Hornet");
-                turnPngIntoString("Worm");
-                turnPngIntoString("SaltWorm");
-                turnPngIntoString("IceWorm");
-                turnPngIntoString("IcealtWorm");
-                turnPngIntoString("WaterSkipper");
-                turnPngIntoString("Goblin");
-                turnPngIntoString("Shark");
-                turnPngIntoString("WaterDog");
-                turnPngIntoString("Dragonfly");
-
-                turnPngIntoString("Anglerfish");
-
-                turnPngIntoString("Carnal");
-                turnPngIntoString("Skeletal");
-                turnPngIntoString("Nematode");
-                turnPngIntoString("Louse");
-
-
-
-                turnPngIntoString("Slime");
-                turnPngIntoString("Acid");
-                turnPngIntoString("DeoxygenatedBlood");
-                turnPngIntoString("Blood");
-                turnPngIntoString("Honey");
-                turnPngIntoString("Lava");
-                turnPngIntoString("FairyLiquid");
-                turnPngIntoString("Ice");
-                turnPngIntoString("Water");
-                turnPngIntoString("SaltyWater");
-                turnPngIntoString("Piss");
-
-                turnPngIntoString("BasicTile");
-                turnPngIntoString("DenseRockTile");
-                turnPngIntoString("DirtTile");
-                turnPngIntoString("MudTile");
-                turnPngIntoString("LitterTile");
-                turnPngIntoString("FleshTile");
-                turnPngIntoString("BoneTile");
-                turnPngIntoString("SkinTile");
-                turnPngIntoString("MoldTile");
-                turnPngIntoString("SaltTile");
-
-
-
-                turnPngIntoString("Grass");
-                turnPngIntoString("Wheat");
-                turnPngIntoString("Tulip");
-                turnPngIntoString("Allium");
-                turnPngIntoString("Cattail");
-                turnPngIntoString("Rice");
-
-                turnPngIntoString("Tree");
-                turnPngIntoString("JungleTree");
-                turnPngIntoString("WeepingWillow");
-                turnPngIntoString("Fir");
-                turnPngIntoString("MangroveTree");
-                turnPngIntoString("CheeringWillow");
-
-                turnPngIntoString("Vines");
-                turnPngIntoString("ObsidianVines");
-                turnPngIntoString("IceVines");
-
-                turnPngIntoString("KelpUpwards");
-                turnPngIntoString("KelpDownwards");
-                turnPngIntoString("Algae");
-                turnPngIntoString("AlgaeTree");
-                turnPngIntoString("AlgaeCeiling");
-
-                turnPngIntoString("Mushroom");
-
-                turnPngIntoString("ObsidianPlant");
-
-                turnPngIntoString("IceGrass");
-                turnPngIntoString("IceBrutic");
-                turnPngIntoString("IceTromel");
-                turnPngIntoString("IceKital");
-                turnPngIntoString("IceFlokan");
-                turnPngIntoString("IceOctam");
-
-
-                turnPngIntoString("LanternTree");
-                turnPngIntoString("LanternVine");
-                turnPngIntoString("LanternSide");
-
-                turnPngIntoString("Candle");
-                turnPngIntoString("Chandelier");
-                turnPngIntoString("Candelabrum");
-
-
-                turnPngIntoString("FleshVine");
-                turnPngIntoString("FleshTendril");
-                turnPngIntoString("FleshTree1");
-                turnPngIntoString("FleshTree2");
-
-                turnPngIntoString("BoneStalactite");
-                turnPngIntoString("BoneStalagmite");
-
-                turnPngIntoString("HairBody");
-                turnPngIntoString("HairLong");
-
-
-
-                turnPngIntoString("PlantMatter");
-                turnPngIntoString("Wood");
-                turnPngIntoString("Kelp");
-                turnPngIntoString("ObsidianPlantMatter");
-                turnPngIntoString("Grain");
-                turnPngIntoString("FlowerPetal");
-                turnPngIntoString("Pollen");
-                turnPngIntoString("MushroomCap");
-                turnPngIntoString("MushroomStem");
-                turnPngIntoString("Mold");
-                turnPngIntoString("Flesh");
-                turnPngIntoString("Bone");
-                turnPngIntoString("Skin");
-                turnPngIntoString("Hair");
-                turnPngIntoString("MagicRock");
-                turnPngIntoString("Metal");
-                turnPngIntoString("LightBulb");
-                turnPngIntoString("Wax");
-
-
-
-                turnPngIntoString("Sword");
-                turnPngIntoString("Pickaxe");
-                turnPngIntoString("Scythe");
-                turnPngIntoString("Axe");
-                turnPngIntoString("WandMagic");
-                turnPngIntoString("WandCarnal");
-                turnPngIntoString("WandFloral");
-                turnPngIntoString("WandTeleport");
-                turnPngIntoString("WandDig");
-                turnPngIntoString("WandPlace");
-
-
-
-                turnPngIntoString("GoblinHand");
-                turnPngIntoString("Stinger");
-                turnPngIntoString("Mandibles");
-
-
-
-                turnPngIntoString("FairyPortrait");
-                turnPngIntoString("GoblinPortrait");
-                turnPngIntoString("HornetPortrait");
-
-
-
-                turnPngIntoString("Fire");
-                turnPngIntoString("LivingPortal");
-            }
-
             loadSpriteDictionaries();
 
             makeTileTraitsDict();
             makeMaterialTraitsDict();
             makeAttackTraitsDict();
             makeEntityTraitsDict();
-            makePlantStructureFramesDict();
             makePlantElementTraitsDict();
             makePlantTraitsDict();
             makeFamousTerrainFeaturesTraitsDict();
@@ -244,14 +63,15 @@ namespace Cave
 
             makeTheFilledChunk();
 
-            //      ----- - - CURRENTLY DOING - - -----
-            // make new conifers (fir variations + others), make other cereals
+            //     ---- - - CURRENTLY DOING - - ----
+            //
+            // Make other cereals
             // Marshes and Swamps !
             // -> Swamp : like mangrove but with water that's not salt water and different trees !!! And rice grows in there (rare) instead not in mangrove lol cuz it's like. Impossible lmao.
             // -> Marsh : like swamp but without any trees !!! And rice grows in there (common) instead not in mangrove lol cuz it's like. Impossible lmao.
             // Then fire ??
 
-            //      --- - TO DO LIST - ---
+            //          --- - TO DO LIST - ---
             //
             // Make nests not appear in certain biomes.
             // Fix plants spawning. Make megaChunks priority loading (to stop overlaps and weird generation).
@@ -304,7 +124,7 @@ namespace Cave
             // Portals... bug again... the dimension doesn't get unloaded anymore when going far from portal... fuuuck
             // Transition between Mangrove, Algae Ocean + Salt Ocean is buggy. The individual mangrove/salt and magrove algae work but when it's in the middle of algae/salt transition they get chopped up ??
 
-            // cool ideas for later !
+            // - - - Cool Ideas For Later ! - - -
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
             // add a dimension that is made ouf of pockets inside unbreakable terrain, a bit like an obsidian biome but scaled up.
             // make it possible to visit entities/players inventories lmfao
@@ -335,6 +155,8 @@ namespace Cave
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
             // Ocean biome -> in some patches, have the normal cave system thing get added on top, so that there are kinds of small caves and shit in the ocean biome too (but only in some parts)
             // Bone marrow biome in living dimension ? With voronoi
+            // Sequoia forest !!! Rare variant of conifer
+            // Soap biome. And uhhh soap dimension ?? idk ??
 
             // Entities ideas !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. And add LITHOPEDIONS
@@ -1021,16 +843,23 @@ namespace Cave
             } // do it twice because yes ! So element can be at its original position maybe ?
             return listo;
         }
+        public static Dictionary<T, List<K>> addToDictOfLists<T, K>(Dictionary<T, List<K>> dicto, (T key, K value) tupel)
+        {
+            if ( dicto.ContainsKey(tupel.key)) { dicto[tupel.key].Add(tupel.value); }
+            else { dicto[tupel.key] = new List<K> { tupel.value }; }
+
+            return dicto;
+        }
         public static Dictionary<T, int> addOrIncrementDict<T>(Dictionary<T, int> dicto, (T key, int value) tupel)
         {
-            if (dicto.ContainsKey(tupel.key)) { dicto[tupel.key] += tupel.value; }
+            if ( dicto.ContainsKey(tupel.key)) { dicto[tupel.key] += tupel.value; }
             else { dicto[tupel.key] = tupel.value; }
 
             return dicto;
         }
         public static Dictionary<T, float> addOrIncrementDict<T>(Dictionary<T, float> dicto, (T key, float value) tupel)
         {
-            if (dicto.ContainsKey(tupel.key)) { dicto[tupel.key] += tupel.value; }
+            if ( dicto.ContainsKey(tupel.key)) { dicto[tupel.key] += tupel.value; }
             else { dicto[tupel.key] = tupel.value; }
 
             return dicto;
