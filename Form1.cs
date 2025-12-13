@@ -65,11 +65,13 @@ namespace Cave
 
             //     ---- - - CURRENTLY DOING - - ----
             //
-            // Make other cereals
-            // Marshes and Swamps !
-            // -> Swamp : like mangrove but with water that's not salt water and different trees !!! And rice grows in there (rare) instead not in mangrove lol cuz it's like. Impossible lmao.
-            // -> Marsh : like swamp but without any trees !!! And rice grows in there (common) instead not in mangrove lol cuz it's like. Impossible lmao.
+            //
+            //  -> Change the liquids in Chunks quickly cuz honestly wtf dude
+            //
             // Then fire ??
+            // Then prairies and heathlands and shrublands and stuff HEATHHH
+            // -> Separate Bayou and Swamp (Bayou is rare variant)
+            // Add moss that grows on rock and shit
 
             //          --- - TO DO LIST - ---
             //
@@ -106,8 +108,9 @@ namespace Cave
             // Improve spawn rate shite for entity/plants to make the percentage system better idk (make the percentage be ABSOLUTE, not relative to the biome's frequency).
             // Breathability noise ???
             // Backrooms dimension ???
-            // Salty Frozen Ocean biome !!! With different plants. More ANGULAR, like cristals ?? salt cristals ?? Idk --> No actually due to BRINE REJECTION it's not the case ! Salt water freezing expells the salt out !
+            // Salty Frozen Ocean biome !!! With different plants. More ANGULAR, like cristals ?? salt cristals ?? Idk --> No actually due to BRINE REJECTION it's not the case ! Salt water freezing expells the salt out ! So Frozen ocean with pockets of brine ?
             // --> Danger/Breathability noise, that makes dangerous biome spawn like. SLIME. MOLD.
+            // Have VORONOI OCEANS ??????????? would be fucking nice no ???????
 
             // Candy dimension !! Candy Cane trees, Lollipop trees, Whipped Cream biome, Chocolate Biome
 
@@ -123,6 +126,7 @@ namespace Cave
             // Vines when arriving on terrain that forces them to move left or right become MONSTRUOUS
             // Portals... bug again... the dimension doesn't get unloaded anymore when going far from portal... fuuuck
             // Transition between Mangrove, Algae Ocean + Salt Ocean is buggy. The individual mangrove/salt and magrove algae work but when it's in the middle of algae/salt transition they get chopped up ??
+            // Prevent Entities and Plants from spawning in Nests/Structures (depending on the type of structure). With a "forbiddenLocations" HashSet that's applied to ChunkJson when the Structure/Nest is applied to Chunks.
 
             // - - - Cool Ideas For Later ! - - -
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
@@ -150,6 +154,9 @@ namespace Cave
             // Have some plants be background plants, darker and closer to background color ? Since Stijn (love of my live fr) saw the dark shade trees as background ones for some reason !!! Could be a cool idea to implement a shade/layer system for plants ! to add more depth
             // Add fossil structures ??
             // Make it so seasons have a variation. In the same dimension, the season could be at +40 days somewhere, but -10 days somewhere else (like a noise that makes it lag)
+            // Hair in living dimension become gray then white/transparent as they age before dying
+            // Shave ice worms for wool lol
+            // Lorax and lorax trees. Lorax dimension. With oncelers cutting them lmfao.
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
@@ -190,8 +197,10 @@ namespace Cave
             // WIND TURBINE PLANTS LMAOOOOOOOOOOOOo
             // Have poppy and other plants growing in wheat fields. Like before.
             // Colored guirelandes in chandeliers dimension !!!
-            // ---> Pass child on growth end ! Make it possible to pass the first child element flower to the COGE branch in trees and stuff. So the first flower grows till the beginning and not just a the last branch (which is ugly)
             // Shit dimension weeping willow called the WIPING WILLOW and it has toilet paper leaves LMFAOOOOOOOOOOOOOOOOOOOO i am a comedic genius
+            // Cotton-grass in cold biomes
+            // oyat on SAND ???
+            // Wapato/Sagittaria
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.
@@ -254,6 +263,7 @@ namespace Cave
             if (e.KeyCode == Keys.K && !dimensionChangePress) { craftPress = true; }
             if (e.KeyCode == Keys.M) { debugMode = !debugMode; }
             if (e.KeyCode == Keys.L && !craftPress) { dimensionChangePress = true; }
+            if (e.KeyCode == Keys.O && !specificDebugTestPress) { specificDebugTestPress = true; }
             if ((Control.ModifierKeys & Keys.Shift) != 0) { shiftPress = true; }
         }
         private void KeyIsUp(object sender, KeyEventArgs e)
@@ -275,6 +285,7 @@ namespace Cave
             if (e.KeyCode == Keys.K) { }
             if (e.KeyCode == Keys.M) { }
             if (e.KeyCode == Keys.L) { }
+            if (e.KeyCode == Keys.O) { }
             if ((Control.ModifierKeys & Keys.Shift) == 0) { shiftPress = false; }
         }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -345,6 +356,32 @@ namespace Cave
             }
 
             bitmap.Save($"{currentDirectory}\\BiomeDiagrams\\biomeDiagram   -{name}-   {dicto[fixedValuesIdx[0]]}={fixedValues[0]}, {dicto[fixedValuesIdx[1]]}={fixedValues[1]}, {dicto[fixedValuesIdx[2]]}={fixedValues[2]}, {dicto[fixedValuesIdx[3]]}={fixedValues[3]}, {dicto[fixedValuesIdx[4]]}={fixedValues[4]}, .png");
+        }
+        public static void makeSTATS(Screens.Screen screen)
+        {
+            spawnEntitiesBool = false;
+            spawnPlants = false;
+
+            Dictionary<string, float> biomePercentageStats = new Dictionary<string, float>();
+            int chunksToSample = 10000;
+            for (int i = 0; i < chunksToSample; i++)
+            {
+                (int x, int y) chunkPos = (rand.Next(-100000, 100000), rand.Next(-100000, 100000));
+                Chunk chunk = screen.getChunkFromChunkPos(chunkPos, forceMaturityLevelOne:true);
+
+                addOrIncrementDict(biomePercentageStats, (chunk.biomeIndex[16, 16][0].traits.name, 1));
+            }
+
+            foreach (string key in biomePercentageStats.Keys.ToList()) { biomePercentageStats[key] = biomePercentageStats[key] * 100 / chunksToSample; }
+
+            List<(string biome, float percentage)> percentageList = new List<(string biome, float percentage)>();
+            foreach (string key in biomePercentageStats.Keys) { percentageList.Add((key, biomePercentageStats[key])); }
+            SortByItem2(percentageList);
+
+            biomePercentageStats = new Dictionary<string, float>();
+            foreach ((string biome, float percentage) tuple in percentageList) { biomePercentageStats[tuple.biome] = tuple.percentage; }
+
+            int a = 3;
         }
     }
     public class MathF
@@ -470,6 +507,21 @@ namespace Cave
                 }
                 idx = Max(0, idx + 1);
             }
+        }
+        public static List<(T, float)> SortByItem2<T>(List<(T, float)> listo)
+        {
+            int idx = 0;
+            while (idx < listo.Count - 1)
+            {
+                if (listo[idx + 1].Item2 > listo[idx].Item2)
+                {
+                    listo.Insert(idx, listo[idx + 1]);
+                    listo.RemoveAt(idx + 2);
+                    idx -= 2;
+                }
+                idx = Max(0, idx + 1);
+            }
+            return listo;
         }
 
         public static void SortTerrainFeatureTraitsListByPriority(List<TerrainFeaturesTraits> listo)
@@ -669,14 +721,6 @@ namespace Cave
             if (a >= 0) { return a; }
             return -a;
         }
-        public static int Sqrt(int n)
-        {
-            return (int)Math.Sqrt(n);
-        }
-        public static float Sqrt(float n)
-        {
-            return (float)Math.Sqrt(n);
-        }
 
         //star see saw is the function used to make the*... circular blades
         public static int sawBladeSeesaw(int n, int mod)
@@ -779,17 +823,33 @@ namespace Cave
         {
             return Abs(pos1.x - pos2.x) + Abs(pos1.y - pos2.y);
         }
+        public static float ChebyshevDistance((int x, int y) pos1, (int x, int y) pos2)
+        {
+            return Max(Abs(pos1.x - pos2.x), Abs(pos1.y - pos2.y));
+        }
         public static float Distance((int x, int y) pos1, (int x, int y) pos2)
         {
             int x = (pos1.x - pos2.x);
             int y = (pos1.y - pos2.y);
-            return Sqrt(x * x + y * y);
+            return (float)Math.Sqrt(x * x + y * y);
         }
         public static float Distance((int x, int y) pos1, (int x, int y) pos2, (float x, float y) ponderation)
         {
             int x = (pos1.x - pos2.x);
             int y = (pos1.y - pos2.y);
-            return Sqrt(x * x * ponderation.x + y * y * ponderation.y);
+            return (float)Math.Sqrt(x * x * ponderation.x + y * y * ponderation.y);
+        }
+        public static float DistanceNotSqrted((int x, int y) pos1, (int x, int y) pos2)
+        {
+            int x = (pos1.x - pos2.x);
+            int y = (pos1.y - pos2.y);
+            return x * x + y * y;
+        }
+        public static float DistanceNotSqrted((int x, int y) pos1, (int x, int y) pos2, (float x, float y) ponderation)
+        {
+            int x = (pos1.x - pos2.x);
+            int y = (pos1.y - pos2.y);
+            return x * x * ponderation.x + y * y * ponderation.y;
         }
 
         // Coordinate manipulation stuff

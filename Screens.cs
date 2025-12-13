@@ -72,17 +72,18 @@ namespace Cave
                 seed = 123456;
 
                 int idToPut = 0;
-                (int type, int subType) forceBiome = (3, 2);
+                (int type, int subType) forceBiome = (-1, 0);
+                bool isMonoeBiomeToPut = false;
+                bool isPngToExport = false;
+
+                if (false) { forceBiome = (8, 1); isMonoeBiomeToPut = true; }
+
                 int PNGsize = 150;
                 PNGsize = 100;
 
                 zoomLevel = 42;
                 realZoomLevel = zoomLevel;
                 effectiveRadius = chunkLoadMininumRadius;
-
-                bool isMonoeBiomeToPut = true;
-                bool isPngToExport = false;
-
                 
                 doBackgroundStructureGeneration = false;
                 loadStructuresYesOrNo = false;
@@ -158,6 +159,8 @@ namespace Cave
                     setPlayerDimension(player, idToPut);
                     player.placePlayer();
                 }
+
+                if (false) { makeSTATS(loadedScreens.Values.ToList()[0]); }
             }
             public void movePlayerStuff(Player player)
             {
@@ -238,6 +241,19 @@ namespace Cave
 
                 Player player = playerList[0];
 
+                if (specificDebugTestPress && false)
+                {
+                    if (player.screen.activePlants.Count >= 3)
+                    {
+                        for (int k = 0; k < 1000; k++)
+                        {
+                            // savePlant1(player.screen.activePlants[0]);
+                            // savePlant2(player.screen.activePlants[1]);
+                            // savePlant3(player.screen.activePlants[2]);
+                        }
+                    }
+                    specificDebugTestPress = false;
+                }
                 if (dimensionChangePress)
                 {
                     if (dimensionSelection) { setPlayerDimension(player, currentTargetDimension); }
@@ -867,13 +883,14 @@ namespace Cave
             }
             public void manageExtraLoadedChunksAndMegaChunks()   // and MegaChunks
             {
+                (int x, int y) playerChunkPos = (ChunkIdx(game.playerList[0].posX), ChunkIdx(game.playerList[0].posY));
                 HashSet<((int x, int y) pos, bool loadNeighbours)> newExtraLoadedMegaChunksPoses = new HashSet<((int x, int y) pos, bool loadNeighbours)>();
                 HashSet<(int x, int y)> extraLoadedChunksToRemove = new HashSet<(int x, int y)>();
                 foreach (Chunk chunk in extraLoadedChunks.Values)
                 {
                     chunk.framesSinceLastExtraGetting += 1;
                     (int x, int y) megaPos = MegaChunkIdxFromChunkPos(chunk.pos);
-                    if (chunk.framesSinceLastExtraGetting > 5 && (generatingMegachunk is null || generatingMegachunk.Value != megaPos)) { extraLoadedChunksToRemove.Add(chunk.pos); continue; }
+                    if (chunk.framesSinceLastExtraGetting > 5 && ChebyshevDistance(chunk.pos, playerChunkPos) > game.effectiveRadius + 3 && (generatingMegachunk is null || generatingMegachunk.Value != megaPos)) { extraLoadedChunksToRemove.Add(chunk.pos); continue; }
                     if (!megaChunks.ContainsKey(megaPos)) { newExtraLoadedMegaChunksPoses.Add((megaPos, false)); }
                 }
                 foreach ((int x, int y) pos in extraLoadedChunksToRemove) { extraLoadedChunks.Remove(pos); }

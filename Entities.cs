@@ -139,7 +139,7 @@ namespace Cave
                 state = entityJson.state;
                 transformEntity(entityJson.type, false); // false to not reinitialize hp
             }
-            public Entity(Chunk chunk, (int type, int subType) typeToPut, (int x, int y) posToPut)
+            public Entity(Chunk chunk, (int x, int y) posToPut, (int type, int subType) typeToPut)
             {
                 screen = chunk.screen;
                 posX = posToPut.x;

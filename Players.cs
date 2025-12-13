@@ -133,7 +133,8 @@ namespace Cave
             public override void initializeInventory()
             {
                 bool allTools = true;
-                bool allEntities = true;
+                bool allEntities = false;
+                bool noEntities = true;
                 bool allPlants = true;
                 bool allTiles = true;
 
@@ -143,7 +144,7 @@ namespace Cave
                 if (devMode)
                 {
                     if (allEntities) { foreach ((int type, int subType) key in entityTraitsDict.Keys) { inventoryElements.Add((key.type, key.subType, 1)); } }
-                    else
+                    else if (!noEntities)
                     {
                         inventoryElements.Add((0, 0, 1));
                         inventoryElements.Add((1, 0, 1));
@@ -378,7 +379,7 @@ namespace Cave
                     (int x, int y) posToTest = (currentPosInt.x + (int)Floor(values.startPos.x, 1), currentPosInt.y + (int)Floor(values.startPos.y, 1));
                     Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                     if (chunk is null) { return; }
-                    TileTraits tile = screen.getTileContent(posToTest);
+                    TileTraits tile = chunk.getTileContentInTHISChunkOnlyUseForRayCast(posToTest);
                     chunk.updateFogOfWarOneTile(chunkDict, posToTest);
                     if (!tile.isTransparent) { lifeLoss = true; }
                     if (lifeLoss) { lives--; }

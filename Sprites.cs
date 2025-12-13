@@ -126,17 +126,23 @@ namespace Cave
                 { (-1, 0), errorSprite },
                 { (0, 0), new OneSprite("Grass", false) },
                 { (0, 1), new OneSprite("Wheat", false) },
+                { (0, 2), new OneSprite("Cortaderia", false) },
                 { (1, 0), new OneSprite("Tulip", false) },
                 { (1, 1), new OneSprite("Allium", false) },
-                { (1, 2), new OneSprite("Tulip", false) },
+                { (1, 2), new OneSprite("BigFlower", false) },
                 { (2, 0), new OneSprite("Cattail", false) },
                 { (2, 1), new OneSprite("Rice", false) },
+                { (2, 2), new OneSprite("Reed", false) },
+                { (2, 3), new OneSprite("Papyrus", false) },
+                { (3, 0), new OneSprite("Rush", false) },
+                { (3, 1), new OneSprite("Butomus", false) },
                 { (10, 0), new OneSprite("Tree", false) },
                 { (10, 1), new OneSprite("JungleTree", true) },              // TO CHANGE
                 { (10, 2), new OneSprite("WeepingWillow", true) },           // TO CHANGE
                 { (11, 0), new OneSprite("Fir", true) },                     // TO CHANGE
-                { (11, 1), new OneSprite("Fir", true) },                     // TO CHANGE
+                { (11, 1), new OneSprite("UpFir", true) },                   // TO CHANGE
                 { (12, 0), new OneSprite("MangroveTree", true) },            // TO CHANGE
+                { (12, 1), new OneSprite("BaldCypress", true) },             // TO CHANGE
                 { (13, 0), new OneSprite("CheeringWillow", true) },          // TO CHANGE
                 { (20, 0), new OneSprite("Vines", false) },
                 { (20, 1), new OneSprite("ObsidianVines", false ) },
@@ -204,7 +210,7 @@ namespace Cave
                 { (3, 3), new OneSprite("WandTeleport", true) },            // TO CHANGE
                 { (3, 4), new OneSprite("WandDig", true) },                 // TO CHANGE
                 { (3, 5), new OneSprite("WandPlace", true) },               // TO CHANGE
-                { (3, 6), new OneSprite("WandFloral", true) },              // TO CHANGE
+                { (3, 6), new OneSprite("WandHerbicide", true) },           // TO CHANGE
                 { (4, 0), new OneSprite("Axe", true) },                     // TO CHANGE
             };
             attacksSprites = new Dictionary<(int type, int subType), OneSprite>

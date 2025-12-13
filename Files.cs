@@ -346,6 +346,7 @@ namespace Cave
             public (int, int) lGP;
             public (int, int) gD;
             public (int, int) bD;
+            public ((int, int, int, int), (bool, bool, bool))? eW;
 
             public int[,] fS;
             public int[] oIA;   // offsets indexes array (for all the little ints)
@@ -359,10 +360,11 @@ namespace Cave
                 lGP = plantElement.lastDrawPos;
                 gD = plantElement.growthDirection;
                 bD = plantElement.baseDirection;
+                eW = plantElement.currentElementWidening;
                 mG = plantElement.maxGrowthLevel;
                 gR = plantElement.growthLevel;
                 fS = fillstatesToArray(plantElement.fillStates);
-                oIA = new int[8] { plantElement.currentFrameArrayIdx, plantElement.frameArrayOffset, plantElement.currentChildArrayIdx, plantElement.childArrayOffset, plantElement.currentDirectionArrayIdx, plantElement.directionArrayOffset, plantElement.currentModArrayIdx, plantElement.modArrayOffset };
+                oIA = new int[10] { plantElement.currentFrameArrayIdx, plantElement.frameArrayOffset, plantElement.currentChildArrayIdx, plantElement.childArrayOffset, plantElement.currentDirectionArrayIdx, plantElement.directionArrayOffset, plantElement.currentModArrayIdx, plantElement.modArrayOffset, plantElement.currentElementWideningArrayIdx, plantElement.ElementWideningArrayOffset };
                 pEs = new List<PlantElementJson>();
                 foreach (PlantElement childPlantElement in plantElement.childPlantElements)
                 {
@@ -597,10 +599,12 @@ namespace Cave
             serializer.NullValueHandling = NullValueHandling.Ignore;
 
             using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{chunk.screen.game.seed}\\ChunkData\\{chunk.screen.id}\\{chunk.pos.x}.{chunk.pos.y}.json"))
-            using (JsonWriter writer = new JsonTextWriter(sw))
             {
-                ChunkJson baby = new ChunkJson(chunk);
-                serializer.Serialize(writer, baby);
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    ChunkJson baby = new ChunkJson(chunk);
+                    serializer.Serialize(writer, baby);
+                }
             }
         }
         public static void saveAllChunks(Screens.Screen screen)
@@ -670,10 +674,13 @@ namespace Cave
             PlantJson plantJson = new PlantJson(plant);
 
             using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{plant.screen.game.seed}\\PlantData\\{plant.id}.json"))
-            using (JsonWriter writer = new JsonTextWriter(sw))
             {
-                serializer.Serialize(writer, plantJson);
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    serializer.Serialize(writer, plantJson);
+                }
             }
+
             plant.hasBeenModified = false;
         }
         public static void saveEntity(Entity entity)
@@ -685,9 +692,11 @@ namespace Cave
             EntityJson entityJson = new EntityJson(entity);
 
             using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{entity.screen.game.seed}\\EntityData\\{entity.id}.json"))
-            using (JsonWriter writer = new JsonTextWriter(sw))
             {
-                serializer.Serialize(writer, entityJson);
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    serializer.Serialize(writer, entityJson);
+                }
             }
         }
         public static Structure loadStructure(Game game, int id)

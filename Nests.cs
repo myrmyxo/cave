@@ -265,7 +265,7 @@ namespace Cave
                 if (forceSize == 0) { tileAmount = (int)(25 + (seed % 750)); }
                 else { tileAmount = forceSize; }
 
-                int targetDistance = Sqrt((int)(tileAmount * 0.5f)) + 2;
+                int targetDistance = (int)Math.Sqrt(tileAmount * 0.5f) + 2;
                 (int x, int y)[] heuristicTargets = makeHeuristicTargets(centerPos, targetDistance);
 
                 HashSet<(int x, int y)> tilesToFill = new HashSet<(int x, int y)>();

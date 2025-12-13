@@ -55,7 +55,6 @@ namespace Cave
 
             public (BiomeTraits traits, int percentage)[,][] biomeIndex;
             public HashSet<BiomeTraits> allBiomesInTheChunk;
-            public BiomeTraits traits;
 
             public TileTraits[,] fillStates = new TileTraits[32, 32];
             public (int, int, int)[,] baseColors;
@@ -69,7 +68,7 @@ namespace Cave
             public int modificationCount = 0;
             public int unstableLiquidCount = 1;
             public int maturity = 0;    // 0 -> terrain with base TFTs, 1 -> terrain with base TFTs and maturation TFTs, 2 -> terrain with base TFTs, maturation TFTs, and plants + entities generated
-            public HashSet<(int type, int subType)> tileTypesContainedOnGeneration = new HashSet<(int type, int subType)>();
+            // public HashSet<(int type, int subType)> tileTypesContainedOnGeneration = new HashSet<(int type, int subType)>();
 
             public int explorationLevel = 0; // set fog : 0 for not visible, 1 for cremebetweens, 2 for fully visible
             public bool[,] fogOfWar = null;
@@ -125,6 +124,16 @@ namespace Cave
                 else { fogOfWar = null; }
 
                 if (maturity < 2) { screen.chunksToMature.Add(pos); }
+                else
+                {
+                    for (int i = 0; i < 32; i++)
+                    {
+                        for (int j = 0; j < 32; j++)
+                        {
+                            findTileColor(i, j);
+                        }
+                    }
+                }
             }
             public void demoteToExtra()
             {
@@ -158,9 +167,6 @@ namespace Cave
                         darkness = Max(0, 255 - darkness);
                         Color colorToDraw = Color.FromArgb(255, darkness, darkness, darkness);
                         lightBitmap.SetPixel(i, j, colorToDraw);
-
-                        findTileColor(i, j);
-                        tileTypesContainedOnGeneration.Add(fillStates[i, j].type);
                     }
                 }
             }
@@ -169,19 +175,19 @@ namespace Cave
                 int[,,] biomeValues = new int[33, 33, 18];
                 if (!screen.isMonoBiome)
                 {
-                    findNoiseValues(biomeValues, 0, 100, 512, 1024);    // small Temperature
+                    findNoiseValues(biomeValues, 0, 100, 512, 1636);    // small Temperature
                     findNoiseValues(biomeValues, 1, 101, 1024, 512);   // BIG Temperature
-                    findNoiseValues(biomeValues, 2, 102, 512, 1024);    // small Humidity
+                    findNoiseValues(biomeValues, 2, 102, 512, 1636);    // small Humidity
                     findNoiseValues(biomeValues, 3, 103, 1024, 512);   // BIG Humidity
-                    findNoiseValues(biomeValues, 4, 104, 512, 1024);    // small Acidity
+                    findNoiseValues(biomeValues, 4, 104, 512, 1636);    // small Acidity
                     findNoiseValues(biomeValues, 5, 105, 1024, 512);   // BIG Acidity
-                    findNoiseValues(biomeValues, 6, 106, 512, 1024);    // small Toxicity
+                    findNoiseValues(biomeValues, 6, 106, 512, 1636);    // small Toxicity
                     findNoiseValues(biomeValues, 7, 107, 1024, 512);   // BIG Toxicity
-                    findNoiseValues(biomeValues, 8, 108, 512, 1024);    // small Salinity
+                    findNoiseValues(biomeValues, 8, 108, 512, 1636);    // small Salinity
                     findNoiseValues(biomeValues, 9, 109, 1024, 512);   // BIG Salinity
-                    findNoiseValues(biomeValues, 10, 110, 512, 1024);   // small Illumination
+                    findNoiseValues(biomeValues, 10, 110, 512, 1636);   // small Illumination
                     findNoiseValues(biomeValues, 11, 111, 1024, 512);  // BIG Illumination
-                    findNoiseValues(biomeValues, 12, 112, 512, 1024);   // small Oceanity
+                    findNoiseValues(biomeValues, 12, 112, 512, 1636);   // small Oceanity
                     findNoiseValues(biomeValues, 13, 113, 1024, 512);  // BIG Oceanity
                 }
 
@@ -287,7 +293,7 @@ namespace Cave
                         for (int k = 0; k < 25; k++)
                         {
                             item = basePosArray[k];
-                            posArray[k] = (item.pos, item.ponderation * Distance(item.pos, realPos, (1, 8)));
+                            posArray[k] = (item.pos, item.ponderation * item.ponderation * DistanceNotSqrted(item.pos, realPos, (1, 8)));
                         }
 
                         ((int x, int y) pos, float distance) closestPos = posArray[0];
@@ -296,6 +302,9 @@ namespace Cave
                         {
                             if (posArray[k].distance < closestPos.distance) { secondClosestPos = closestPos; closestPos = posArray[k]; }
                         }
+
+                        closestPos = (closestPos.pos, (float)Math.Sqrt(closestPos.distance));
+                        secondClosestPos = (secondClosestPos.pos, (float)Math.Sqrt(secondClosestPos.distance));
 
                         float baseSeparatorScore = secondClosestPos.distance - closestPos.distance;
 
@@ -522,7 +531,7 @@ namespace Cave
                 {
                     for (int j = 0; j < 32; j++)
                     {
-                        if (applyTerrainFeaturesOneTile(terrainFeaturesNoiseDict, maturityLevelToApply, biomeTraits[i, j], biomeValues[i, j], derivative, i, j, scoreArray[i, j], quartileFilledArray[(i > 16 ? 1 : 0) + (j > 16 ? 2 : 0)])) { findTileColor(i, j); }
+                        applyTerrainFeaturesOneTile(terrainFeaturesNoiseDict, maturityLevelToApply, biomeTraits[i, j], biomeValues[i, j], derivative, i, j, scoreArray[i, j], quartileFilledArray[(i > 16 ? 1 : 0) + (j > 16 ? 2 : 0)]);
                     }
                 }
             }
@@ -546,7 +555,6 @@ namespace Cave
                 SortTerrainFeatureTraitsListByPriority(terrainFeaturesList);
 
                 float baseScore = Max(fillScore.baseScore1, fillScore.baseScore2);
-                bool modified = false;
                 foreach (TerrainFeaturesTraits tFT in terrainFeaturesList)
                 {
                     if (tFT.needsQuartileFilled && !quartileWasFilled) { continue; }
@@ -619,7 +627,7 @@ namespace Cave
                         int x = 3 * (i + pos.x * 32);
                         int y = 3 * (j + pos.y * 32);
                         int top = Abs(derivative.x * x + derivative.y * y);
-                        int bottom = Sqrt(derivative.x * derivative.x + derivative.y * derivative.y);
+                        int bottom = (int)Math.Sqrt(derivative.x * derivative.x + derivative.y * derivative.y);
                         int c = Seesaw(top / (bottom > 0 ? bottom : 1), 16);
 
                         noiseValue = Abs(4 * c) - 10 - (Max(fillScore.baseScore2, fillScore.separatorScore) + Max(0, noiseValue1 - 1200) * 0.125f);
@@ -694,9 +702,9 @@ namespace Cave
                     }
                     else { noiseValue = -999999; }
 
-                    if (noiseValue >= valueRequired) { fillStates[i, j] = getTileTraits(typeToFill); modified = true; }
+                    if (noiseValue >= valueRequired) { fillStates[i, j] = getTileTraits(typeToFill); return true; }
                 }
-                return modified;
+                return false;
             }
             public void findTileColor(int i, int j)
             {
@@ -757,6 +765,10 @@ namespace Cave
                 checkForStructureAlteration(posToModify, newMaterial.type);
                 return previous;
             }
+            public TileTraits getTileContentInTHISChunkOnlyUseForRayCast((int x, int y) posToGet)
+            {
+                return fillStates[PosMod(posToGet.x), PosMod(posToGet.y)];
+            }
             public void checkForStructureAlteration((int x, int y) posToTest, (int type, int subType) newType)
             {
                 foreach (Structure structure in screen.activeStructures.Values)
@@ -768,196 +780,239 @@ namespace Cave
                     }
                 }
             }
-            public void spawnOneEntities(float spawnRate, ((int type, int subType) type, float percentage)[] spawnTypes, HashSet<(int x, int y)> forbiddenPositions)
-            {
-                for (float i = (float)rand.NextDouble(); i < spawnRate; i++)
-                {
-                    float rando = ((float)rand.NextDouble()) * 100;
-                    foreach (((int type, int subType) type, float percentage) tupelo in spawnTypes)
-                    {
-                        if (rando > tupelo.percentage) { rando -= tupelo.percentage; continue; }
-                        EntityTraits traits = entityTraitsDict.ContainsKey(tupelo.type) ? entityTraitsDict[tupelo.type] : entityTraitsDict[(-1, 0)];
-                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePositionEntity(forbiddenPositions, traits);
-                        if (!returnTuple.valid) { break; }
-                        Entity newEntity = new Entity(this, tupelo.type, returnTuple.pos);
-                        if (!newEntity.isDeadAndShouldDisappear) { screen.activeEntities[newEntity.id] = newEntity; }
-                    }
-                }
-            }
-            public void spawnOnePlants(float spawnRate, ((int type, int subType) type, float percentage)[] spawnTypes, HashSet<(int x, int y)> forbiddenPositions, bool isPropagation = false)
-            {
-                for (float i = (float)rand.NextDouble(); i < spawnRate; i++)
-                {
-                    float rando = ((float)rand.NextDouble()) * 100;
-                    foreach (((int type, int subType) type, float percentage) tupelo in spawnTypes)
-                    {
-                        if (rando > tupelo.percentage) { rando -= tupelo.percentage; continue; }
-                        trySpawnOnePlant(tupelo.type, forbiddenPositions);
-                    }
-                }
-            }
-            public void trySpawnOnePlant((int type, int subType) typeToSpawn, HashSet<(int x, int y)> forbiddenPositions, bool isPropagation = false, ((int x, int y) motherPos, (int x, int y) range)? propagationRange = null)
-            {
-                int tries = 0;
-                PlantTraits traits = plantTraitsDict.ContainsKey(typeToSpawn) ? plantTraitsDict[typeToSpawn] : plantTraitsDict[(-1, 0)];
-            plantInvalidTryAgain:;
-                ((int x, int y) pos, bool valid) returnTuple = findSuitablePositionPlant(forbiddenPositions, traits, isPropagation, propagationRange);
-                if (!returnTuple.valid) { return; }
-                Plant newPlant = new Plant(this, returnTuple.pos, typeToSpawn);
-                while (newPlant.isDeadAndShouldDisappear)
-                {
-                    if (tries > 10) { return; }
-                    tries++;
-                    if (newPlant.traits.initFailType != null) { newPlant = new Plant(this, returnTuple.pos, newPlant.traits.initFailType.Value); }
-                    else { goto plantInvalidTryAgain; }
-                }
-                screen.activePlants[newPlant.id] = newPlant;
-                if (!isPropagation && traits.propagateOnSuccess != null)
-                {
-                    for (int i = traits.propagateOnSuccess.Value.chance.baseValue + rand.Next(traits.propagateOnSuccess.Value.chance.variation + 1); i >= 0; i--) { trySpawnOnePlant(typeToSpawn, forbiddenPositions, true, (returnTuple.pos, traits.propagateOnSuccess.Value.range)); }
-                }
-            }
-            public void spawnExtraPlants(BiomeTraits traits, HashSet<(int x, int y)> forbiddenPositions)
-            {
-                if (traits.extraPlantsSpawning is null) { return; }
-                foreach (((int type, int subType) type, int percentage) tupelo in traits.extraPlantsSpawning)
-                {
-                    PlantTraits plantTraits = plantTraitsDict.ContainsKey(tupelo.type) ? plantTraitsDict[tupelo.type] : plantTraitsDict[(-1, 0)];
-                    if (plantTraits.tileNeededClose != null && !tileTypesContainedOnGeneration.Contains(plantTraits.tileNeededClose.Value.tile)) { continue; }
-
-                    int plantsToSpawn = tupelo.percentage / 100;
-                    if ((float)rand.NextDouble() * 100 < tupelo.percentage % 100) { plantsToSpawn++; }
-
-                    while (plantsToSpawn > 0)
-                    {
-                        plantsToSpawn--;
-                        int tries = 0;
-                    plantInvalidTryAgain:;
-                        ((int x, int y) pos, bool valid) returnTuple = findSuitablePositionPlant(forbiddenPositions, plantTraits, false, null);
-                        if (!returnTuple.valid) { continue; }
-                        Plant newPlant = new Plant(this, returnTuple.pos, tupelo.type);
-                        while (newPlant.isDeadAndShouldDisappear)
-                        {
-                            if (tries > 10) { goto finalFail; }
-                            tries++;
-                            if (newPlant.traits.initFailType != null) { newPlant = new Plant(this, returnTuple.pos, newPlant.traits.initFailType.Value); }
-                            else { goto plantInvalidTryAgain; }
-                        }
-                        screen.activePlants[newPlant.id] = newPlant;
-                    finalFail:;
-                    }
-                }
-            }
-            public void matureChunkToLevelOne()
+            public void matureChunkToLevelOne(bool saveTheChunk = true)
             {
                 applyTerrainFeatures(biomeIndex, 1);
                 maturity = 1;
-                saveChunk(this);
+                if (saveTheChunk) { saveChunk(this); }
             }
             public void matureChunkToLevelTwo()
             {
-                if (maturity < 1) { matureChunkToLevelOne(); }
+                if (maturity < 1) { matureChunkToLevelOne(false); }
                 applyTerrainFeatures(biomeIndex, 2);
                 maturity = 2;
                 manyValues = null;
 
-                BiomeTraits traits = biomeIndex[16, 16][0].traits;  // Middle of chunk
+                (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) spawnLocations = getSpawnLocations();
 
-                if (spawnEntitiesBool)
-                {
-                    HashSet<(int x, int y)> forbiddenPositions = new HashSet<(int x, int y)>();
-                    spawnOneEntities(traits.entityBaseSpawnRate, traits.entityBaseSpawnTypes, forbiddenPositions);
-                    spawnOneEntities(traits.entityGroundSpawnRate, traits.entityGroundSpawnTypes, forbiddenPositions);
-                    spawnOneEntities(traits.entityWaterSpawnRate, traits.entityWaterSpawnTypes, forbiddenPositions);
-                    spawnOneEntities(traits.entityJesusSpawnRate, traits.entityJesusSpawnTypes, forbiddenPositions);
-                }
+                BiomeTraits mainBiomeTraits = biomeIndex[16, 16][0].traits;  // Middle of chunk
+                if (spawnEntitiesBool) { spawnChunkEntities(mainBiomeTraits, spawnLocations); }
+                if (spawnPlants) { spawnChunkPlants(mainBiomeTraits, spawnLocations); }
 
-                if (spawnPlants)
+                for (int i = 0; i < 32; i++)
                 {
-                    HashSet<(int x, int y)> forbiddenPositions = new HashSet<(int x, int y)>();
-                    spawnOnePlants(traits.plantGroundSpawnRate, traits.plantGroundSpawnTypes, forbiddenPositions);
-                    spawnOnePlants(traits.plantCeilingSpawnRate, traits.plantCeilingSpawnTypes, forbiddenPositions);
-                    spawnOnePlants(traits.plantSideSpawnRate, traits.plantSideSpawnTypes, forbiddenPositions);
-                    spawnOnePlants(traits.plantTreeSpawnRate, traits.plantTreeSpawnTypes, forbiddenPositions);
-                    spawnOnePlants(traits.plantWaterGroundSpawnRate, traits.plantWaterGroundSpawnTypes, forbiddenPositions);
-                    spawnOnePlants(traits.plantWaterTreeSpawnRate, traits.plantWaterTreeSpawnTypes, forbiddenPositions);
-                    spawnOnePlants(traits.plantWaterCeilingSpawnRate, traits.plantWaterCeilingSpawnTypes, forbiddenPositions);
-                    spawnOnePlants(traits.plantWaterSideSpawnRate, traits.plantWaterSideSpawnTypes, forbiddenPositions);
-                    spawnOnePlants(traits.plantEveryAttachSpawnRate, traits.plantEveryAttachSpawnTypes, forbiddenPositions);
-                    spawnExtraPlants(traits, forbiddenPositions);
+                    for (int j = 0; j < 32; j++)
+                    {
+                        findTileColor(i, j);
+                    }
                 }
 
                 saveChunk(this);
             }
-            public ((int x, int y), bool valid) findSuitablePositionPlant(HashSet<(int x, int y)> forbiddenPositions, PlantTraits plantTraits, bool isPropagation, ((int x, int y) motherPos, (int x, int y) range)? propagationRange)
+            public (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) getSpawnLocations()
             {
-                int counto = 0;
-                (int x, int y) posToTest;
+                HashSet<(int x, int y)> airTilesWithSoilUnder = new HashSet<(int x, int y)>();
+                HashSet<(int x, int y)> airTilesWithSoilNext = new HashSet<(int x, int y)>();
+                HashSet<(int x, int y)> airTilesWithSoilOver = new HashSet<(int x, int y)>();
+                HashSet<(int x, int y)> liquidTilesWithSoilUnder = new HashSet<(int x, int y)>();
+                HashSet<(int x, int y)> liquidTilesWithSoilNext = new HashSet<(int x, int y)>();
+                HashSet<(int x, int y)> liquidTilesWithSoilOver = new HashSet<(int x, int y)>();
+                HashSet<(int x, int y)> airTiles = new HashSet<(int x, int y)>();
+                HashSet<(int x, int y)> liquidTiles = new HashSet<(int x, int y)>();
+                HashSet<(int x, int y)> solidTiles = new HashSet<(int x, int y)>();
+
                 (int x, int y) randPos;
-                while (counto < 100)
+                for (int i = 0; i < 32; i++)
                 {
-                    counto++;
-                    randPos = (pos.x * 32 + rand.Next(32), pos.y * 32 + rand.Next(32));
-                    if (isPropagation && (Abs(randPos.x - propagationRange.Value.motherPos.x) > propagationRange.Value.range.x || Abs(randPos.y - propagationRange.Value.motherPos.y) > propagationRange.Value.range.y)) { continue; }
-                    if (forbiddenPositions.Contains(randPos)) { continue; }
-                    TileTraits tileTraits = fillStates[PosMod(randPos.x), PosMod(randPos.y)];
-                    if (tileTraits.isSolid) { forbiddenPositions.Add(randPos); continue; }
-                    if (tileTraits.isAir == plantTraits.isWater) { continue; };    // If Water plant and AIR, skip, if Normal plant and LIQUID, skip
-
-                    if (plantTraits.isEveryAttach) { (int x, int y) mod = neighbourArray[rand.Next(4)]; posToTest = (randPos.x + mod.x, randPos.y + mod.y); }
-                    else if (plantTraits.isSide) { posToTest = (randPos.x + (plantTraits.isSide && !plantTraits.isCeiling ? (counto % 2) * 2 - 1 : 0), randPos.y); }
-                    else { posToTest = (randPos.x, randPos.y + (plantTraits.isCeiling ? 1 : -1)); }
-
-                    tileTraits = screen.getTileContent(posToTest);
-                    if (!tileTraits.isSolid) { continue; }
-
-                    if (plantTraits.soilType is null ? tileTraits.isSterile : !plantTraits.soilType.Contains(tileTraits.type)) { continue; }
-                    if (plantTraits.tileNeededClose != null)
+                    for (int j = 0; j < 32; j++)
                     {
-                        for (int i = -plantTraits.tileNeededClose.Value.range.x; i <= plantTraits.tileNeededClose.Value.range.x; i++)
+                        randPos = (pos.x * 32 + i, pos.y * 32 + j);
+                        TileTraits tileTraits = fillStates[i, j];
+
+                        if (tileTraits.isSolid) { solidTiles.Add(randPos); }
+                        else if (tileTraits.isAir)
                         {
-                            for (int j = -plantTraits.tileNeededClose.Value.range.y; j <= plantTraits.tileNeededClose.Value.range.y; j++)
+                            airTiles.Add(randPos);
+                            if (screen.getTileContent((randPos.x, randPos.y - 1)).isSolid) { airTilesWithSoilUnder.Add(randPos); }
+                            if (screen.getTileContent((randPos.x - 1, randPos.y)).isSolid || screen.getTileContent((randPos.x + 1, randPos.y)).isSolid) { airTilesWithSoilNext.Add(randPos); }
+                            if (screen.getTileContent((randPos.x, randPos.y + 1)).isSolid) { airTilesWithSoilOver.Add(randPos); }
+                        }
+                        else
+                        {
+                            liquidTiles.Add(randPos);
+                            if (screen.getTileContent((randPos.x, randPos.y - 1)).isSolid) { liquidTilesWithSoilUnder.Add(randPos); }
+                            if (screen.getTileContent((randPos.x - 1, randPos.y)).isSolid || screen.getTileContent((randPos.x + 1, randPos.y)).isSolid) { liquidTilesWithSoilNext.Add(randPos); }
+                            if (screen.getTileContent((randPos.x, randPos.y + 1)).isSolid) { liquidTilesWithSoilOver.Add(randPos); }
+                        }
+                    }
+                }
+
+                return (airTilesWithSoilUnder, airTilesWithSoilNext, airTilesWithSoilOver, liquidTilesWithSoilUnder, liquidTilesWithSoilNext, liquidTilesWithSoilOver, airTiles, liquidTiles, solidTiles);
+            }
+            public void spawnChunkEntities(BiomeTraits mainBiomeTraits, (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) spawnLocations)
+            {
+                HashSet<(int x, int y)> forbiddenPositions = new HashSet<(int x, int y)>();
+                foreach (((int type, int subType) type, float percentage) in mainBiomeTraits.entitySpawnTypes)
+                {
+                    for (float i = (float)rand.NextDouble(); i < percentage * 0.01; i++)
+                    {
+                        EntityTraits traits = entityTraitsDict.ContainsKey(type) ? entityTraitsDict[type] : entityTraitsDict[(-1, 0)];
+
+                        int forceChoose = -1;
+                        if (traits.spawnsInMultipleStates)
+                        {
+                            if (traits.spawnsInSolid && traits.spawnsInAir)
                             {
-                                if (screen.getTileContent((posToTest.x + i, posToTest.y + j)).type == plantTraits.tileNeededClose.Value.tile) { goto tileNeededFound; }
+                                if (traits.spawnsInLiquid) { forceChoose = rand.Next(3); }
+                                else { forceChoose = rand.Next(2); }
+                            }
+                            else if (traits.spawnsInSolid) { forceChoose = rand.Next(2) * 2; }  // if it doesn't spawn in either Solid or Air, then it MUST spawn in Liquid so no need to test
+                            else { forceChoose = rand.Next(2) + 1; }    // it spawns in Air and Liquid
+                        }
+
+                        (int x, int y) spawnPos;
+                        if ((!traits.spawnsInMultipleStates && traits.spawnsInSolid) || forceChoose == 0)
+                        {
+                            for (int j = 0; j < 10; j++)
+                            {
+                                if (spawnLocations.solidTiles.Count == 0) { continue; }
+                                spawnPos = getRandomItem(spawnLocations.solidTiles);
+                                if (!forbiddenPositions.Contains(spawnPos) && traits.diggableTiles.Contains(screen.getTileContent(spawnPos).type)) { goto proceed; }
+                            }
+                        }
+                        else if ((!traits.spawnsInMultipleStates && traits.spawnsInAir) || forceChoose == 1)
+                        {
+                            HashSet<(int x, int y)> setToUse;
+                            if (traits.forceSpawnOnSolid) { setToUse = spawnLocations.airTilesWithSoilUnder; }
+                            else { setToUse = spawnLocations.airTiles; }
+                            if (setToUse.Count == 0) { continue; }
+
+                            for (int j = 0; j < 10; j++)
+                            {
+                                spawnPos = getRandomItem(setToUse);
+                                if (!forbiddenPositions.Contains(spawnPos) && (traits.tilesItCanSpawnOn is null || traits.tilesItCanSpawnOn.Contains(screen.getTileContent((spawnPos.x, spawnPos.y - 1)).type))) { goto proceed; }
+                            }
+                        }
+                        else if ((!traits.spawnsInMultipleStates && traits.spawnsInLiquid) || forceChoose == 2)
+                        {
+                            if (spawnLocations.liquidTiles.Count == 0) { continue; }
+                            for (int j = 0; j < 10; j++)
+                            {
+                                spawnPos = getRandomItem(spawnLocations.liquidTiles);
+                                if (!forbiddenPositions.Contains(spawnPos)) { goto proceed; }
+                            }
+                        }
+                        continue;
+
+                    proceed:;
+                        Entity newEntity = new Entity(this, spawnPos, type);
+                        if (!newEntity.isDeadAndShouldDisappear) { screen.activeEntities[newEntity.id] = newEntity; forbiddenPositions.Add(spawnPos); }
+                    }
+                }
+            }
+            public void spawnChunkPlants(BiomeTraits mainBiomeTraits, (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) spawnLocations)
+            {
+                HashSet<(int x, int y)> forbiddenPositions = new HashSet<(int x, int y)>();
+                foreach (((int type, int subType) type, float percentage) in mainBiomeTraits.plantSpawnTypes)
+                {
+                    for (float i = (float)rand.NextDouble(); i < percentage * 0.01; i++)
+                    {
+                        testSpawnOneChunkPlant(type, forbiddenPositions, spawnLocations);
+                    }
+                }
+            }
+            public void testSpawnOneChunkPlant((int type, int subType) type, HashSet<(int x, int y)> forbiddenPositions, (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) spawnLocations, ((int x, int y) motherPos, (int x, int y) range)? propagation = null)
+            {
+                PlantTraits traits = plantTraitsDict.ContainsKey(type) ? plantTraitsDict[type] : plantTraitsDict[(-1, 0)];
+
+                bool forceChooseAir = false;
+                if (traits.isAmphibious)    // This code bit makes it so amphibious plants have the same chance to spawn on each type of tile (like if there's 20% of ground tiles in liquid, there's 20% chance it's gonna spawn in a ground tile in liquid).
+                {
+                    int airAmount;
+                    int liquidAmount;
+                    if (traits.isGround) { airAmount = spawnLocations.airTilesWithSoilUnder.Count; liquidAmount = spawnLocations.liquidTilesWithSoilUnder.Count; }
+                    else if (traits.isCeiling) { airAmount = spawnLocations.airTilesWithSoilOver.Count; liquidAmount = spawnLocations.liquidTilesWithSoilOver.Count; }
+                    else if (traits.isSide) { airAmount = spawnLocations.airTilesWithSoilNext.Count; liquidAmount = spawnLocations.liquidTilesWithSoilNext.Count; }
+                    else
+                    {
+                        airAmount = spawnLocations.airTilesWithSoilNext.Count + spawnLocations.airTilesWithSoilOver.Count + spawnLocations.airTilesWithSoilUnder.Count;
+                        liquidAmount = spawnLocations.liquidTilesWithSoilNext.Count + spawnLocations.liquidTilesWithSoilOver.Count + spawnLocations.liquidTilesWithSoilUnder.Count;
+                    }
+                    if (rand.Next(airAmount + liquidAmount + 1) > liquidAmount) { forceChooseAir = true; }
+                }
+
+                (int x, int y) attachTileMod;
+                bool testOtherSide = false;
+                HashSet<(int x, int y)> setToUse;
+                if ((!traits.isAmphibious && !traits.isWater) || forceChooseAir)
+                {
+                    if (traits.isEveryAttach)
+                    {
+                        int randy = rand.Next(4);   // So it spawns on 4 sides equally lol
+                        if (randy == 0) { setToUse = spawnLocations.airTilesWithSoilUnder; attachTileMod = (0, -1); }
+                        else if (randy == 1) { setToUse = spawnLocations.airTilesWithSoilOver; attachTileMod = (0, 1); }
+                        else { setToUse = spawnLocations.airTilesWithSoilNext; attachTileMod = (1, 0); testOtherSide = true; }
+                    }
+                    else if (traits.isGround) { setToUse = spawnLocations.airTilesWithSoilUnder; attachTileMod = (0, -1); }
+                    else if (traits.isCeiling) { setToUse = spawnLocations.airTilesWithSoilOver; attachTileMod = (0, 1); }
+                    else if (traits.isSide) { setToUse = spawnLocations.airTilesWithSoilNext; attachTileMod = (1, 0); testOtherSide = true; }
+                    else { setToUse = spawnLocations.airTiles; attachTileMod = (0, 0); }
+                }
+                else // if ((!traits.isAmphibious && traits.isWater) || !forceChooseAir)
+                {
+                    if (traits.isEveryAttach)
+                    {
+                        int randy = rand.Next(4);   // So it spawns on 4 sides equally lol
+                        if (randy == 0) { setToUse = spawnLocations.liquidTilesWithSoilUnder; attachTileMod = (0, -1); }
+                        else if (randy == 1) { setToUse = spawnLocations.liquidTilesWithSoilOver; attachTileMod = (0, 1); }
+                        else { setToUse = spawnLocations.liquidTilesWithSoilNext; attachTileMod = (1, 0); testOtherSide = true; }
+                    }
+                    else if (traits.isGround) { setToUse = spawnLocations.liquidTilesWithSoilUnder; attachTileMod = (0, -1); }
+                    else if (traits.isCeiling) { setToUse = spawnLocations.liquidTilesWithSoilOver; attachTileMod = (0, 1); }
+                    else if (traits.isSide) { setToUse = spawnLocations.liquidTilesWithSoilNext; attachTileMod = (1, 0); testOtherSide = true; }
+                    else { setToUse = spawnLocations.liquidTiles; attachTileMod = (0, 0); }
+                }
+
+                (int x, int y) spawnPos;
+                if (setToUse.Count == 0) { return; }
+                for (int j = 0; j < 10; j++)
+                {
+                    spawnPos = getRandomItem(setToUse);
+                    if (propagation != null && (Abs(spawnPos.x - propagation.Value.motherPos.x) > propagation.Value.range.x || Abs(spawnPos.y - propagation.Value.motherPos.y) > propagation.Value.range.y)) { continue; }
+                    if (traits.tileNeededClose != null)
+                    {
+                        for (int ii = -traits.tileNeededClose.Value.range.x; ii <= traits.tileNeededClose.Value.range.x; ii++)
+                        {
+                            for (int jj = -traits.tileNeededClose.Value.range.y; jj <= traits.tileNeededClose.Value.range.y; jj++)
+                            {
+                                if (screen.getTileContent((spawnPos.x + ii, spawnPos.y + jj)).type == traits.tileNeededClose.Value.tile) { goto tileNeededFound; }
                             }
                         }
                         continue;
                     }
                 tileNeededFound:;
-                    goto success;
-                }
-                return ((0, 0), false);
-            success:;
-                forbiddenPositions.Add(randPos); // if spawn succeeded, prevent spawning in the same tile
-                return (randPos, true);
-            }
-            public ((int x, int y), bool valid) findSuitablePositionEntity(HashSet<(int x, int y)> forbiddenPositions, EntityTraits entityTraits)
-            {
-                int counto = 0;
-                (int x, int y) randPos;
-                while (counto < 100)
-                {
-                    counto++;
-                    randPos = (pos.x * 32 + rand.Next(32), pos.y * 32 + rand.Next(32));
-                    TileTraits tileTraits = fillStates[PosMod(randPos.x), PosMod(randPos.y)];
-                    if (tileTraits.isSolid) { if (entityTraits.spawnsInSolid && entityTraits.diggableTiles.Contains(tileTraits.type)) { goto success; } }
-                    else if (tileTraits.isAir)
-                    { 
-                        if (entityTraits.spawnsInAir)
+
+                    TileTraits tileTraits = screen.getTileContent((spawnPos.x + attachTileMod.x, spawnPos.y + attachTileMod.y));
+                    if (forbiddenPositions.Contains(spawnPos) ||
+                        ((traits.soilType is null ? screen.getTileContent((spawnPos.x + attachTileMod.x, spawnPos.y + attachTileMod.y)).isSterile : !traits.soilType.Contains(screen.getTileContent((spawnPos.x + attachTileMod.x, spawnPos.y + attachTileMod.y)).type)) &&
+      (!testOtherSide || (traits.soilType is null ? screen.getTileContent((spawnPos.x - attachTileMod.x, spawnPos.y + attachTileMod.y)).isSterile : !traits.soilType.Contains(screen.getTileContent((spawnPos.x - attachTileMod.x, spawnPos.y + attachTileMod.y)).type)))))
+                    { continue; }
+
+                    Plant newPlant = new Plant(this, spawnPos, type);
+                    if (newPlant.isDeadAndShouldDisappear) { continue; }
+                    screen.activePlants[newPlant.id] = newPlant;
+                    forbiddenPositions.Add(spawnPos);
+
+                    if (propagation is null && traits.propagateOnSuccess != null)
+                    {
+                        for (int i = traits.propagateOnSuccess.Value.chance.baseValue + rand.Next(traits.propagateOnSuccess.Value.chance.variation + 1); i >= 0; i--)
                         {
-                            tileTraits = screen.getTileContent((randPos.x, randPos.y - 1));
-                            if (entityTraits.forceSpawnOnSolid && !tileTraits.isSolid) { continue; }
-                            if (entityTraits.tilesItCanSpawnOn != null && !entityTraits.tilesItCanSpawnOn.Contains(tileTraits.type)) { continue; }
-                            goto success;
+                            testSpawnOneChunkPlant(type, forbiddenPositions, spawnLocations, (spawnPos, traits.propagateOnSuccess.Value.range));
                         }
                     }
-                    else if (tileTraits.isLiquid) { if (entityTraits.spawnsInLiquid) { goto success; } }
-                    continue;
+
+                    return;
                 }
-                return ((0, 0), false);
-            success:;
-                forbiddenPositions.Add(randPos); // if spawn succeeded, prevent spawning in the same tile
-                return (randPos, true);
             }
             public void moveLiquids()
             {
@@ -1614,15 +1669,15 @@ namespace Cave
         }
         public static (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) makeTileBiomeValueArray(int[,,] values, int posX, int posY)
         {
-            int temperature = values[posX, posY, 0] + values[posX, posY, 1] - 256;
-            int humidity = values[posX, posY, 2] + values[posX, posY, 3] - 256;
-            int acidity = values[posX, posY, 4] + values[posX, posY, 5] - 256;
-            int toxicity = values[posX, posY, 6] + values[posX, posY, 7] - 256;
-            int salinity = values[posX, posY, 8] + values[posX, posY, 9] - 256;
-            int illumination = values[posX, posY, 10] + values[posX, posY, 11] - 256;
-            int oceanity = values[posX, posY, 12] + values[posX, posY, 13] - 256;
-            int mod1 = values[posX, posY, 14] + values[posX, posY, 15] - 256;
-            int mod2 = values[posX, posY, 16] + values[posX, posY, 17] - 256;
+            int temperature = values[posX, posY, 0] + values[posX, posY, 1] - 512;
+            int humidity = values[posX, posY, 2] + values[posX, posY, 3] - 512;
+            int acidity = values[posX, posY, 4] + values[posX, posY, 5] - 512;
+            int toxicity = values[posX, posY, 6] + values[posX, posY, 7] - 512;
+            int salinity = values[posX, posY, 8] + values[posX, posY, 9] - 512;
+            int illumination = values[posX, posY, 10] + values[posX, posY, 11] - 512;
+            int oceanity = values[posX, posY, 12] + values[posX, posY, 13] - 512;
+            int mod1 = values[posX, posY, 14] + values[posX, posY, 15] - 512;
+            int mod2 = values[posX, posY, 16] + values[posX, posY, 17] - 512;
             return (temperature, humidity, acidity, toxicity, salinity, illumination, oceanity, mod1, mod2);
         }
         public static int testAddBiome(List<((int biome, int subBiome), int)> biomeList, (int biome, int subBiome) biomeToTest, int biomeness)
@@ -1679,10 +1734,7 @@ namespace Cave
                 for (int i = 1; i < listo.Count; i++)
                 {
                     currentInt = listo[i].Item2;
-                    if (currentInt > max)
-                    {
-                        max = currentInt;
-                    }
+                    if (currentInt > max) { max = currentInt; }
                 }
                 //max = Max(0, max - 100);
                 max -= 100;
@@ -1690,22 +1742,12 @@ namespace Cave
                 for (int i = listo.Count - 1; i >= 0; i--)
                 {
                     listo[i] = (listo[i].Item1, Max(0, listo[i].Item2 - max));
-                    if (listo[i].Item2 <= 0)
-                    {
-                        listo.RemoveAt(i);
-                        continue;
-                    }
+                    if (listo[i].Item2 <= 0) { listo.RemoveAt(i); continue; }
                     counto += listo[i].Item2;
                 }
                 counto = Max(100, counto);
-                for (int i = 0; i < listo.Count; i++)
-                {
-                    listo[i] = (listo[i].Item1, listo[i].Item2 * 1000 / counto);
-                }
-                if (listo.Count == 0)
-                {
-                    listo.Add(((-1, 0), 1000));
-                }
+                for (int i = 0; i < listo.Count; i++) { listo[i] = (listo[i].Item1, listo[i].Item2 * 1000 / counto); }
+                if (listo.Count == 0) { listo.Add(((-1, 0), 1000)); }
 
             }
             else    // The GOOD version of the biome shit
@@ -1714,9 +1756,9 @@ namespace Cave
                 {
                     listo = new List<((int biome, int subBiome), int)>();
 
-                    if (oceanity > 720)
+                    if (oceanity > 800)
                     {
-                        int oceaness = calculateBiome(ref percentageFree, oceanity, (720, 999999));   // ocean
+                        int oceaness = calculateBiome(ref percentageFree, oceanity, (800, 999999));   // ocean
                         calculateAndAddBiome(listo, (8, 1), ref oceaness, temperature, (-999999, 0)); // Frozen ocean
                         int saltness = calculateBiome(ref oceaness, salinity, (512, 999999)); // Salt ocean;
                         calculateAndAddBiome(listo, (8, 2), ref saltness, illumination, (512, 999999)); // Algae ocean
@@ -1726,31 +1768,42 @@ namespace Cave
 
                     if (percentageFree <= 0) { goto AfterTest; }
                     calculateAndAddBiome(listo, (0, 1), ref percentageFree, temperature, (-999999, 0));   // add frost
-                    calculateAndAddBiome(listo, (6, 0), ref percentageFree, Min(500 - illumination, humidity - 500) + (int)(0.1f * (acidity + salinity)) - (int)(0.2f * temperature), (0, 999999), 5);  // add mold
 
-                    if (percentageFree <= 0) { goto AfterTest; }
-                    if (illumination > 400 && temperature > 200 && temperature < 850)
+                    if (temperature > 200 && temperature < 850)
                     {
-                        int forestness = calculateBiome(ref percentageFree, Min(illumination - 400, temperature - 200, 850 - temperature), (0, 999999));    // normal forest
-                        calculateAndAddBiome(listo, (3, 2), ref forestness, temperature, (-999999, 400)); // conifer forest
-                        calculateAndAddBiome(listo, (3, 4), ref forestness, salinity, (650 - Max(0, (int)(0.74f * (oceanity - 512))), 999999));    // mangrove
-                        calculateAndAddBiome(listo, (3, 3), ref forestness, temperature, (650, 999999));  // jungle
-                        calculateAndAddBiome(listo, (3, 1), ref forestness, toxicity + (int)(0.4f * (humidity - temperature)), (300, 999999));    // add flower forest
-                        testAddBiome(listo, (3, 0), forestness);
+                        if (illumination > 600)
+                        {
+                            int forestness = calculateBiome(ref percentageFree, Min(illumination - 600, temperature - 200, 850 - temperature), (0, 999999));    // normal forest
 
-                        // -> if humidity is TOO LOW, no forests ? but deserts instead ?
+                            int wetlandness = calculateBiome(ref forestness, humidity, (700 - Max(0, oceanity - 512), 999999));
+                            calculateAndAddBiome(listo, (3, 4), ref wetlandness, salinity, (512, 999999));    // mangrove
+                            testAddBiome(listo, (3, 3), wetlandness);    // Add rest as swamp
 
-                        // low humidity : baobab forest ?????? desert ???
-                        // -> Garrigue when alcaline ?
+                            calculateAndAddBiome(listo, (3, 1), ref forestness, temperature, (-999999, 400)); // conifer forest
+                            calculateAndAddBiome(listo, (3, 2), ref forestness, temperature, (650, 999999));  // jungle
+                            testAddBiome(listo, (3, 0), forestness);    // Add rest as forest
+
+                            // -> if humidity is TOO LOW, no forests ? but deserts instead ?
+
+                            // low humidity : baobab forest ?????? desert ???
+                            // -> Garrigue when alcaline ?
+                        }
+                        if (percentageFree <= 0) { goto AfterTest; }
+                        if (illumination > 350)
+                        {
+                            int prairieness = calculateBiome(ref percentageFree, Min(illumination - 350, temperature - 200, 850 - temperature), (0, 999999));
+                            calculateAndAddBiome(listo, (2, 1), ref prairieness, humidity, (700 - Max(0, oceanity - 512), 999999));    // Marsh
+                            testAddBiome(listo, (2, 0), prairieness);   // Add rest as flower forest (for now)
+                        }
                     }
 
                     if (percentageFree <= 0) { goto AfterTest; }
                     if (temperature > 720)
                     {
                         int hotness = calculateBiome(ref percentageFree, temperature, (720, 999999));
-                        calculateAndAddBiome(listo, (2, 2), ref hotness, Min(temperature - 840, humidity - 600), (0, 999999));   // obsidian
-                        calculateAndAddBiome(listo, (2, 1), ref hotness, Min(temperature - 920, 512 - oceanity), (0, 999999));   // lava ocean
-                        testAddBiome(listo, (2, 0), hotness);
+                        calculateAndAddBiome(listo, (1, 2), ref hotness, Min(temperature - 920, humidity - 800), (0, 999999));   // obsidian
+                        calculateAndAddBiome(listo, (1, 1), ref hotness, Min(temperature - 1040, 512 - oceanity), (0, 999999));   // lava ocean
+                        testAddBiome(listo, (1, 0), hotness);
                     }
 
                     if (percentageFree <= 0) { goto AfterTest; }
@@ -1758,11 +1811,12 @@ namespace Cave
                     {
                         int coldness = calculateBiome(ref percentageFree, temperature, (-999999, 440));
                         int savedColdness = calculateBiome(ref coldness, temperature, (-999999, 120));  // save coldness to have an ringe of ALWAYS cold biome around frost biomes
-                        calculateAndAddBiome(listo, (1, 0), ref coldness, acidity, (700, 999999));  // acid
+                        calculateAndAddBiome(listo, (0, 2), ref coldness, acidity, (700, 999999));  // acid
                         calculateAndAddBiome(listo, (5, 0), ref coldness, humidity - toxicity, (0, 999999));    // fairy
                         testAddBiome(listo, (0, 0), coldness + savedColdness);  // cold
                     }
 
+                    calculateAndAddBiome(listo, (6, 0), ref percentageFree, Min(400 - illumination, humidity - 500) + (int)(0.1f * (acidity + salinity)) - (int)(0.2f * temperature), (0, 999999), 5);  // add mold
                     testAddBiome(listo, (4, 0), percentageFree);    // add slime
                 }
                 else if (dimensionType == (1, 0)) // type == 1, chandelier dimension
@@ -1774,22 +1828,28 @@ namespace Cave
                 }
                 else if (dimensionType == (2, 0)) // type == 2, living dimension
                 {
-                    calculateAndAddBiome(listo, (202, 1), ref percentageFree, acidity, (800, 999999)); // acid ocean
-                    calculateAndAddBiome(listo, (202, 0), ref percentageFree, oceanity, (-999999, 300)); // blood ocean
-                    if (humidity > 500)
+                    calculateAndAddBiome(listo, (202, 1), ref percentageFree, acidity, (950, 999999)); // acid ocean
+                    calculateAndAddBiome(listo, (202, 0), ref percentageFree, oceanity, (-999999, 200)); // blood ocean
+                    if (humidity > 450)
                     {
-                        int fleshiness = calculateBiome(ref percentageFree, humidity, (500, 999999));
+                        int fleshiness = calculateBiome(ref percentageFree, humidity, (450, 999999));
                         if (toxicity >= 700)
                         {
                             int hairiness = calculateBiome(ref fleshiness, toxicity, (700, 999999));
                             calculateAndAddBiome(listo, (200, 3), ref hairiness, temperature + acidity, (1024, 999999));    // hair forest
                             testAddBiome(listo, (200, 4), hairiness);    // long hair forest
                         }
-                        calculateAndAddBiome(listo, (200, 1), ref fleshiness, toxicity, (-999999, 350)); // flesh forest;
+                        calculateAndAddBiome(listo, (200, 1), ref fleshiness, toxicity, (-999999, 450)); // flesh forest;
                         testAddBiome(listo, (200, 0), fleshiness);   // add what's remaining as normal flesh
                     }
-                    calculateAndAddBiome(listo, (201, 0), ref percentageFree, humidity, (-999999, 300)); // bone
+                    calculateAndAddBiome(listo, (201, 0), ref percentageFree, humidity, (-999999, 250)); // bone
                     testAddBiome(listo, (200, 2), percentageFree); // flesh and bone
+                }
+                else if (dimensionType == (-1, 0)) // type == -1, TEST wetlands dimension
+                {
+                    calculateAndAddBiome(listo, (2, 1), ref percentageFree, illumination, (650, 999999)); // Marsh
+                    calculateAndAddBiome(listo, (3, 3), ref percentageFree, salinity, (512, 999999)); // Swamp
+                    testAddBiome(listo, (3, 4), percentageFree); // Mangrove
                 }
             }
 
