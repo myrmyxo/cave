@@ -72,7 +72,7 @@ namespace Cave
                 seed = 123456;
 
                 int idToPut = 0;
-                (int type, int subType) forceBiome = (-1, 0);
+                (int type, int subType) forceBiome = (0, 0);
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 

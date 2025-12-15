@@ -765,7 +765,7 @@ namespace Cave
                 checkForStructureAlteration(posToModify, newMaterial.type);
                 return previous;
             }
-            public TileTraits getTileContentInTHISChunkOnlyUseForRayCast((int x, int y) posToGet)
+            public TileTraits getTileContentInTHISChunk((int x, int y) posToGet)
             {
                 return fillStates[PosMod(posToGet.x), PosMod(posToGet.y)];
             }
@@ -1212,133 +1212,15 @@ namespace Cave
             }
             public void testLiquidUnstableNonspecific(int posX, int posY)
             {
+                (int x, int y) posToTest;
                 Chunk chunkToTest;
+
                 foreach ((int x, int y) mod in directionPositionArray)
                 {
-                    chunkToTest = screen.getChunkFromPixelPos((posX + mod.x, posY + mod.y));
-                    if (!chunkToTest.fillStates[PosMod(posX + mod.x), PosMod(posY + mod.y)].isSolid)
-                    {
-                        chunkToTest.unstableLiquidCount++;
-                        unstableLiquidCount++;
-                    }
-                }
-            }
-            public void testLiquidUnstableAir(int posX, int posY)
-            {
-                (int, int) chunkPos;
-                Chunk chunkToTest;
-
-                chunkPos = ChunkIdx(posX + 1, posY);
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[PosMod(posX + 1), PosMod(posY)].isLiquid) { chunkToTest.unstableLiquidCount++; }
-                }
-
-                chunkPos = ChunkIdx(posX - 1, posY + 1);
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[PosMod(posX - 1), PosMod(posY + 1)].isLiquid) { chunkToTest.unstableLiquidCount++; }
-                }
-
-                chunkPos = ChunkIdx(posX + 1, posY + 1);
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[PosMod(posX + 1), PosMod(posY + 1)].isLiquid) { chunkToTest.unstableLiquidCount++; }
-                }
-
-                chunkPos = ChunkIdx(posX - 1, posY);
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[PosMod(posX - 1), PosMod(posY)].isLiquid) { chunkToTest.unstableLiquidCount++; }
-                }
-
-                chunkPos = ChunkIdx(posX, posY + 1);
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[PosMod(posX), PosMod(posY + 1)].isLiquid) { chunkToTest.unstableLiquidCount++; }
-                }
-
-                chunkPos = ChunkIdx(posX, posY - 1);
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    chunkToTest = screen.loadedChunks[chunkPos];
-                    if (chunkToTest.fillStates[PosMod(posX), PosMod(posY - 1)].isLiquid) { chunkToTest.unstableLiquidCount++; } // CHANGE THIS TOO FUCKER
-                }
-            }
-            public void testLiquidUnstableLiquid(int posX, int posY)
-            {
-                (int, int) chunkPos;
-                Chunk chunkToTest;
-
-                chunkPos = ChunkIdx(posX + 1, posY);
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    chunkToTest = screen.loadedChunks[chunkPos];
-                    if (!chunkToTest.fillStates[PosMod(posX + 1), PosMod(posY)].isSolid)
-                    {
-                        chunkToTest.unstableLiquidCount++;
-                        unstableLiquidCount++;
-                    }
-                }
-
-                chunkPos = ChunkIdx(posX - 1, posY - 1);
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    chunkToTest = screen.loadedChunks[chunkPos];
-                    if (!chunkToTest.fillStates[PosMod(posX - 1), PosMod(posY - 1)].isSolid)
-                    {
-                        chunkToTest.unstableLiquidCount++;
-                        unstableLiquidCount++;
-                    }
-                }
-
-                chunkPos = ChunkIdx(posX + 1, posY - 1);
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    chunkToTest = screen.loadedChunks[chunkPos];
-                    if (!chunkToTest.fillStates[PosMod(posX + 1), PosMod(posY - 1)].isSolid)
-                    {
-                        chunkToTest.unstableLiquidCount++;
-                        unstableLiquidCount++;
-                    }
-                }
-
-                chunkPos = ChunkIdx(posX - 1, posY);
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    chunkToTest = screen.loadedChunks[chunkPos];
-                    if (!chunkToTest.fillStates[PosMod(posX - 1), PosMod(posY)].isSolid)
-                    {
-                        chunkToTest.unstableLiquidCount++;
-                        unstableLiquidCount++;
-                    }
-                }
-
-                chunkPos = ChunkIdx(posX, posY + 1);
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    chunkToTest = screen.loadedChunks[chunkPos];
-                    if (!chunkToTest.fillStates[PosMod(posX), PosMod(posY + 1)].isSolid)
-                    {
-                        chunkToTest.unstableLiquidCount++;
-                        unstableLiquidCount++;
-                    }
-                }
-
-                chunkPos = ChunkIdx(posX, posY - 1);
-                if (screen.loadedChunks.ContainsKey(chunkPos))
-                {
-                    chunkToTest = screen.loadedChunks[chunkPos];
-                    if (!chunkToTest.fillStates[PosMod(posX), PosMod(posY - 1)].isSolid)
-                    {
-                        chunkToTest.unstableLiquidCount++;
-                        unstableLiquidCount++;
-                    }
+                    posToTest = (posX + mod.x, posY + mod.y);
+                    chunkToTest = screen.getChunkFromPixelPos(posToTest, onlyGetIfFullyLoaded: true);
+                    if (chunkToTest is null) { continue; }
+                    if (!chunkToTest.getTileContentInTHISChunk(posToTest).isSolid) { chunkToTest.unstableLiquidCount++; unstableLiquidCount++; }
                 }
             }
             public MegaChunk getMegaChunk(bool isExtraGetting = false)
