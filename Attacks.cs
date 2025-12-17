@@ -291,6 +291,9 @@ namespace Cave
                     else if (type.subType == 2) { spellColor = Color.MediumSpringGreen; }
                     else if (type.subType == 3) { spellColor = Color.Cyan; }
                     else if (type.subType == 4) { spellColor = Color.SandyBrown; }
+                    else if (type.subType == 5) { spellColor = Color.SandyBrown; }
+                    else if (type.subType == 6) { spellColor = Color.Crimson; }
+                    else if (type.subType == 7) { spellColor = Color.Red; }
                     else { spellColor = Color.Black; }
 
                     posToDrawList.Add((pos, spellColor));
@@ -325,6 +328,7 @@ namespace Cave
                 {
                     if (state == 3) { motherEntity.setEntityPos(pos); }
                 }
+                if (traits.isFire) { screen.firesToAdd.Add(pos); }
 
                 if (!traits.isHitting) { return; }
                 List<Entity> hitList = getHitList(attackPos, chunkToTest);

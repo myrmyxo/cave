@@ -329,6 +329,11 @@ namespace Cave
                     screen.removePlants();
                     screen.makeBitmapsOfPlants();
 
+                    foreach ((int x, int y) pos in screen.firesToAdd) { screen.getChunkFromPixelPos(pos, onlyGetIfFullyLoaded: true).tryAddFire(pos); }
+                    screen.firesToAdd = new HashSet<(int x, int y)>();
+                    foreach (Chunk chunk in screen.loadedChunks.Values) { chunk.moveFires(); }
+                    foreach ((int x, int y) pos in screen.firesToAdd) { Chunk chunko = screen.getChunkFromPixelPos(pos, onlyGetIfFullyLoaded: true); if (chunko != null) { chunko.tryAddFire(pos); } }
+                    screen.firesToAdd = new HashSet<(int x, int y)>();
 
                     while (structuresToAdd.Count > 0)
                     {
@@ -352,6 +357,7 @@ namespace Cave
                     foreach (Structure structure in screen.game.structuresToRemove.Values) { structure.EraseFromTheWorld(); }
                     structuresToRemove = new Dictionary<int, Structure>();
                 }
+
                 foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.unloadFarawayChunks(); }
                 foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.manageExtraLoadedChunksAndMegaChunks(); }
                 setUnloadingImmunity(); // Prevent MegaChunks/Chunks/Structures to be unloaded when they should not be
@@ -598,6 +604,7 @@ namespace Cave
             public Dictionary<int, Structure> activeStructures = new Dictionary<int, Structure>(); // structures that are active and can do shit to other shit (like portals)
             public List<Attack> activeAttacks = new List<Attack>();
             public HashSet<Attack> attacksToRemove = new HashSet<Attack>();
+            public HashSet<(int x, int y)> firesToAdd = new HashSet<(int x, int y)>();
 
             public HashSet<(int x, int y)> megaChunksToSave = new HashSet<(int x, int y)>();
 
@@ -1063,9 +1070,10 @@ namespace Cave
                 drawPlayerOnScreen(gameBitmap, camPos, lightPositions, player);
                 drawAttacksOnScreen(gameBitmap, camPos, isPngToBeExported);
 
-                drawChunkEffectsOnScreen(gameBitmap, camPos, isPngToBeExported); 
+                drawChunkEffectsOnScreen(gameBitmap, camPos, isPngToBeExported);
+                drawChunkFireOnScreen(gameBitmap, camPos, isPngToBeExported);
                 drawLightOnScreen(gameBitmap, lightBitmap, camPos, lightPositions); 
-                drawFogOfWarOnScreen(gameBitmap, camPos);                
+                drawFogOfWarOnScreen(gameBitmap, camPos);
 
                 if (debugMode && !isPngToBeExported && true) { drawNestDebugOnScreen(gameBitmap, camPos); } // debug for nests
                 if (debugMode && !isPngToBeExported && true) { drawEntityPathDebugOnScreen(gameBitmap, camPos, player); } // debug for paths
@@ -1103,7 +1111,20 @@ namespace Cave
                     {
                         chunko = getChunkFromChunkPos((chunkX + i, chunkY + j), !isPngToBeExported);
                         pasteImage(gameBitmap, chunko.effectsBitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos);
-                        //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32)); } // if want to show chunk origin
+                    }
+                }
+            }
+            public void drawChunkFireOnScreen(Bitmap gameBitmap, (int x, int y) camPos, bool isPngToBeExported)
+            {
+                Chunk chunko;
+                for (int i = -game.effectiveRadius; i <= game.effectiveRadius; i++)
+                {
+                    for (int j = -game.effectiveRadius; j <= game.effectiveRadius; j++)
+                    {
+                        chunko = getChunkFromChunkPos((chunkX + i, chunkY + j), !isPngToBeExported);
+                        chunko.makeFireBitmaps();
+                        if (chunko.fireBitmap is null) { continue; }  
+                        pasteImage(gameBitmap, chunko.fireBitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos);
                     }
                 }
             }

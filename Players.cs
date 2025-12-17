@@ -379,7 +379,7 @@ namespace Cave
                     (int x, int y) posToTest = (currentPosInt.x + (int)Floor(values.startPos.x, 1), currentPosInt.y + (int)Floor(values.startPos.y, 1));
                     Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                     if (chunk is null) { return; }
-                    TileTraits tile = chunk.getTileContentInTHISChunkOnlyUseForRayCast(posToTest);
+                    TileTraits tile = chunk.getTileContentInTHISChunk(posToTest);
                     chunk.updateFogOfWarOneTile(chunkDict, posToTest);
                     if (!tile.isTransparent) { lifeLoss = true; }
                     if (lifeLoss) { lives--; }

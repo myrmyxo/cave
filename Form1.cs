@@ -65,10 +65,12 @@ namespace Cave
 
             //     ---- - - CURRENTLY DOING - - ----
             //
+            // Fire -> FIX THE PLANTS BUGGING DUE TO CHARCOAL ADDITION ON UNLOAD/RELOAD (it forgets it has charcoal, need to test tileContents to see the tiles present). Or maybe make a nullable extra hashtable with "extra materials" so it takes less time to get booted up, in mother plant, I think that's much better ngl.
+            //      -> Make lava create fire
+            //      -> make liquids moving kill fire !
+            //      -> make fire hurt entities and shit
+            //      -> upgrade visuals (particles, color change)
             //
-            //  -> Change the liquids in Chunks quickly cuz honestly wtf dude
-            //
-            // Then fire ??
             // Then prairies and heathlands and shrublands and stuff HEATHHH
             // -> Separate Bayou and Swamp (Bayou is rare variant)
             // Add moss that grows on rock and shit

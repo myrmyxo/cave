@@ -189,6 +189,7 @@ namespace Cave
                 { (3, 0), new OneSprite("MushroomStem", false) },
                 { (3, 1), new OneSprite("MushroomCap", false) },
                 { (3, 2), new OneSprite("Mold", true) },                    // TO CHANGE
+                { (4, 0), new OneSprite("Charcoal", true) },                // TO CHANGE
                 { (8, 0), new OneSprite("Flesh", true) },                   // TO CHANGE
                 { (8, 1), new OneSprite("Bone", true ) },                   // TO CHANGE
                 { (8, 2), new OneSprite("Hair", true) },                    // TO CHANGE
@@ -211,6 +212,7 @@ namespace Cave
                 { (3, 4), new OneSprite("WandDig", true) },                 // TO CHANGE
                 { (3, 5), new OneSprite("WandPlace", true) },               // TO CHANGE
                 { (3, 6), new OneSprite("WandHerbicide", true) },           // TO CHANGE
+                { (3, 7), new OneSprite("WandCarnal", true) },              // TO CHANGE
                 { (4, 0), new OneSprite("Axe", true) },                     // TO CHANGE
             };
             attacksSprites = new Dictionary<(int type, int subType), OneSprite>

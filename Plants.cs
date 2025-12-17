@@ -341,6 +341,38 @@ namespace Cave
                 }
                 return (0, 0);
             }
+            public void fireDig((int x, int y) posToDig)
+            {
+                List<PlantElement> plantElements = returnAllPlantElements();
+
+                (int x, int y) posToTest;
+                foreach (PlantElement element in plantElements)
+                {
+                    posToTest = (posToDig.x - posX - element.pos.x, posToDig.y - posY - element.pos.y);
+                    if (element.fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value))
+                    {
+                        MaterialTraits traits = getMaterialTraits(value);
+                        if (traits.flammability != null)
+                        {
+                            element.fillStates.Remove(posToTest);
+                            if (traits.burnTransformation != null && element.tryFill(posToTest, traits.burnTransformation.Value)) { tryAddMaterialColor(traits.burnTransformation.Value); }
+                            screen.plantsToMakeBitmapsOf[id] = this;
+                            hasBeenModified = true;
+                        }
+                    }
+                }
+            }
+            public List<(PlantElement, MaterialTraits)> returnAllPlantElementsWhichMaterialsAtPos((int x, int y) posToAssess)
+            {
+                List<PlantElement> plantElements = returnAllPlantElements();
+                List<(PlantElement, MaterialTraits)> returnList = new List<(PlantElement, MaterialTraits)>();
+                foreach (PlantElement element in plantElements)
+                {
+                    (int x, int y) posToTest = (posToAssess.x - posX - element.pos.x, posToAssess.y - posY - element.pos.y);
+                    if (element.fillStates.ContainsKey(posToTest)) { returnList.Add((element, getMaterialTraits(element.fillStates[posToTest]))); }
+                }
+                return returnList;
+            }
             public (bool found, int x, int y) findPointOfInterestInPlant((int type, int subType) elementOfInterest)
             {
                 List<PlantElement> plantElements = returnAllPlantElements();
@@ -374,15 +406,9 @@ namespace Cave
             }
             public void testDeath(Dictionary<(int x, int y), Color> fillDict)
             {
-                if (growthLevel > 0 && fillDict.Count == 0)
-                {
-                    dieAndDrop();
-                }
+                if (growthLevel > 0 && fillDict.Count == 0) { dieAndDrop(); }
             }
-            public void dieAndDrop()
-            {
-                screen.plantsToRemove[id] = this;
-            }
+            public void dieAndDrop() { screen.plantsToRemove[id] = this; }
         }
 
 

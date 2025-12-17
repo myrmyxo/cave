@@ -38,6 +38,78 @@ namespace Cave
 {
     public class Chunks
     {
+        public class Fire
+        {
+            public Chunk chunk;
+            public (int x, int y) pos;
+            public bool isDeadAndShouldDisappear = false;
+            public int intensity;
+            public int propagationThreshold;
+            public int propagationThresholdDiag;
+            public int destructionThreshold;
+            public List<PlantElement> affectedPlantElements;
+            public TileTraits affectedTile;
+
+            public Fire((int x, int y) firePos, Chunk chunkToPut)
+            {
+                chunk = chunkToPut;
+                pos = firePos;
+                affectedTile = chunk.getTileContentInTHISChunk(firePos);
+                if (!affectedTile.isAir && affectedTile.flammability is null) { isDeadAndShouldDisappear = true; return; }
+                affectedPlantElements = new List<PlantElement>();
+                HashSet<MaterialTraits> affectedMaterials = new HashSet<MaterialTraits>();
+                foreach (Plant plant in chunk.plants.Values)
+                {
+                    foreach ((PlantElement pE, MaterialTraits MT) tuple in plant.returnAllPlantElementsWhichMaterialsAtPos(firePos)) { affectedPlantElements.Add(tuple.pE); affectedMaterials.Add(tuple.MT); }
+                }
+                intensity = 1;
+                if (affectedTile.flammability is null) { propagationThreshold = 999999; destructionThreshold = 0; }
+                else
+                {
+                    propagationThreshold = affectedTile.flammability.Value.propagationThreshold;
+                    destructionThreshold = affectedTile.flammability.Value.destructionThreshold;
+                }
+                foreach (MaterialTraits materialTraits in affectedMaterials)
+                {
+                    if (materialTraits.flammability is null) { continue; }
+                    propagationThreshold = Min(propagationThreshold, materialTraits.flammability.Value.propagationThreshold);
+                    destructionThreshold = Max(destructionThreshold, materialTraits.flammability.Value.destructionThreshold);
+                }
+                if (destructionThreshold <= 0) { isDeadAndShouldDisappear = true; }
+                propagationThreshold = propagationThreshold + (int)(rand.Next((int)(propagationThreshold * 0.3f)) - (propagationThreshold * 0.1f));
+                destructionThreshold = destructionThreshold + (int)(rand.Next((int)(destructionThreshold * 0.3f)) - (destructionThreshold * 0.1f));
+                propagationThresholdDiag = propagationThreshold + rand.Next((int)(0.3f + propagationThreshold * 0.7f));
+            }
+
+            public bool moveFire()   // false -> nothing happens, true -> fire dies
+            {
+                intensity++;
+                if (intensity >= propagationThreshold) { propagateFireOrtho(); }
+                if (intensity >= propagationThresholdDiag) { propagateFireDiag(); }
+                if (intensity >= destructionThreshold)
+                {
+                    propagateFireOrtho();
+                    propagateFireDiag();
+                    fireDestruction();
+                    return true;
+                }
+                return false;
+            }
+            public void propagateFireOrtho()
+            {
+                foreach ((int x, int y) mod in neighbourArray) { chunk.screen.firesToAdd.Add((pos.x + mod.x, pos.y + mod.y)); }
+            }
+            public void propagateFireDiag()
+            {
+                foreach ((int x, int y) mod in diagArray) { chunk.screen.firesToAdd.Add((pos.x + mod.x, pos.y + mod.y)); }
+            }
+            public void fireDestruction()
+            {
+                if (affectedTile.flammability != null && affectedTile.flammability.Value.destructionThreshold > 0) { chunk.tileModification(pos.x, pos.y, (0, 0)); }
+                foreach (Plant plant in chunk.plants.Values) { plant.fireDig(pos); }
+            }
+        }
+
         public class Chunk
         {
             public Screens.Screen screen;
@@ -60,6 +132,9 @@ namespace Cave
             public (int, int, int)[,] baseColors;
             public Bitmap bitmap;
             public Bitmap effectsBitmap;
+            public Bitmap fireBitmap;
+
+            public Dictionary<(int x, int y), Fire> fireDict = null;
 
             public List<Entity> entityList = new List<Entity>();
             public Dictionary<int, Plant> plants = new Dictionary<int, Plant>();
@@ -1223,6 +1298,38 @@ namespace Cave
                     if (!chunkToTest.getTileContentInTHISChunk(posToTest).isSolid) { chunkToTest.unstableLiquidCount++; unstableLiquidCount++; }
                 }
             }
+
+
+            public void moveFires()
+            {
+                if (fireDict is null) { return; }
+                HashSet<Fire> firesToRemove = new HashSet<Fire>();
+                foreach (Fire fire in fireDict.Values)
+                {
+                    if (fire.moveFire()) { firesToRemove.Add(fire); }
+                }
+                if (firesToRemove.Count == 0) { return; }
+                foreach (Fire fire in firesToRemove) { fireDict.Remove(fire.pos); }
+                if (fireDict.Count == 0) { fireDict = null; }
+            }
+            public void tryAddFire((int x, int y) posToAdd)
+            {
+                if (fireDict is null) { fireDict = new Dictionary<(int x, int y), Fire>(); }
+                if (fireDict.ContainsKey(posToAdd)) { return; }
+                Fire newFire = new Fire(posToAdd, this);
+                if (newFire.isDeadAndShouldDisappear) { return; }
+                fireDict[posToAdd] = newFire;
+            }
+            public void makeFireBitmaps()
+            {
+                if (fireDict is null) { fireBitmap = null; return; }
+                fireBitmap = new Bitmap(32, 32);
+                foreach ((int x, int y) firePos in fireDict.Keys) { fireBitmap.SetPixel(PosMod(firePos.x), PosMod(firePos.y), Color.FromArgb(255, 150 + (int)(Seesaw(timeElapsed * 200, 100)), 50 + (int)(Seesaw(timeElapsed * 400, 200)))); }
+            }
+
+
+
+
             public MegaChunk getMegaChunk(bool isExtraGetting = false)
             {
                 (int x, int y) pos = MegaChunkIdxFromChunkPos(this.pos);
