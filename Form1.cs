@@ -65,11 +65,11 @@ namespace Cave
 
             //     ---- - - CURRENTLY DOING - - ----
             //
-            // Fire -> FIX THE PLANTS BUGGING DUE TO CHARCOAL ADDITION ON UNLOAD/RELOAD (it forgets it has charcoal, need to test tileContents to see the tiles present). Or maybe make a nullable extra hashtable with "extra materials" so it takes less time to get booted up, in mother plant, I think that's much better ngl.
-            //      -> Make lava create fire
-            //      -> make liquids moving kill fire !
-            //      -> make fire hurt entities and shit
-            //      -> upgrade visuals (particles, color change)
+            // Fire
+            //      -> make fire hurt entities and shit     --> Make fires able to be ATTACHED ? to like entities ??? idk
+            //      -> upgrade visuals (particles, color change) -> becomes whiter as intensity increases, BUT as it goes to the max in starts to decrease. like ____-----^^^^^^^^--_
+            //              -> And the more intense it is, the bigger the flame also and the more spreading effect above (or to the sides too idk).
+            //      -> make burning plants unable to propagate while they are burning ?
             //
             // Then prairies and heathlands and shrublands and stuff HEATHHH
             // -> Separate Bayou and Swamp (Bayou is rare variant)

@@ -42,7 +42,8 @@ namespace Cave
         {
             public Chunk chunk;
             public (int x, int y) pos;
-            public bool isDeadAndShouldDisappear = false;
+            public bool isInvalidOnStartupOrGotKilled = false;
+            public bool hasNotBeenInited = false;
             public int intensity;
             public int propagationThreshold;
             public int propagationThresholdDiag;
@@ -50,12 +51,23 @@ namespace Cave
             public List<PlantElement> affectedPlantElements;
             public TileTraits affectedTile;
 
+            public Fire(FireJson fireJson, Chunk chunkToPut)
+            {
+                chunk = chunkToPut;
+                pos = fireJson.p;
+                isInvalidOnStartupOrGotKilled = false;
+                hasNotBeenInited = true;
+                intensity = fireJson.i;
+                propagationThreshold = fireJson.pT;
+                propagationThresholdDiag = fireJson.pTD;
+                destructionThreshold = fireJson.dT;
+            }
             public Fire((int x, int y) firePos, Chunk chunkToPut)
             {
                 chunk = chunkToPut;
                 pos = firePos;
                 affectedTile = chunk.getTileContentInTHISChunk(firePos);
-                if (!affectedTile.isAir && affectedTile.flammability is null) { isDeadAndShouldDisappear = true; return; }
+                if (!affectedTile.isAir && !affectedTile.isLava && affectedTile.flammability is null) { isInvalidOnStartupOrGotKilled = true; return; }
                 affectedPlantElements = new List<PlantElement>();
                 HashSet<MaterialTraits> affectedMaterials = new HashSet<MaterialTraits>();
                 foreach (Plant plant in chunk.plants.Values)
@@ -75,7 +87,7 @@ namespace Cave
                     propagationThreshold = Min(propagationThreshold, materialTraits.flammability.Value.propagationThreshold);
                     destructionThreshold = Max(destructionThreshold, materialTraits.flammability.Value.destructionThreshold);
                 }
-                if (destructionThreshold <= 0) { isDeadAndShouldDisappear = true; }
+                if (destructionThreshold <= 0) { isInvalidOnStartupOrGotKilled = true; }
                 propagationThreshold = propagationThreshold + (int)(rand.Next((int)(propagationThreshold * 0.3f)) - (propagationThreshold * 0.1f));
                 destructionThreshold = destructionThreshold + (int)(rand.Next((int)(destructionThreshold * 0.3f)) - (destructionThreshold * 0.1f));
                 propagationThresholdDiag = propagationThreshold + rand.Next((int)(0.3f + propagationThreshold * 0.7f));
@@ -83,6 +95,7 @@ namespace Cave
 
             public bool moveFire()   // false -> nothing happens, true -> fire dies
             {
+                if (hasNotBeenInited) { init(); }
                 intensity++;
                 if (intensity >= propagationThreshold) { propagateFireOrtho(); }
                 if (intensity >= propagationThresholdDiag) { propagateFireDiag(); }
@@ -94,6 +107,16 @@ namespace Cave
                     return true;
                 }
                 return false;
+            }
+            public void init()
+            {
+                affectedPlantElements = new List<PlantElement>();
+                HashSet<MaterialTraits> affectedMaterials = new HashSet<MaterialTraits>();
+                foreach (Plant plant in chunk.plants.Values)
+                {
+                    foreach ((PlantElement pE, MaterialTraits MT) tuple in plant.returnAllPlantElementsWhichMaterialsAtPos(pos)) { affectedPlantElements.Add(tuple.pE); affectedMaterials.Add(tuple.MT); }
+                }
+                affectedTile = chunk.getTileContentInTHISChunk(pos);
             }
             public void propagateFireOrtho()
             {
@@ -162,6 +185,11 @@ namespace Cave
                 maturity = chunkJson.mt;
 
                 determineContents(chunkJson);
+                if (chunkJson.f != null)
+                {
+                    fireDict = new Dictionary<(int x, int y), Fire>();
+                    foreach (FireJson fireJson in chunkJson.f) { fireDict[fireJson.p] = new Fire(fireJson, this); }
+                }
             }
             public Chunk(Screens.Screen screenToPut, (int x, int y) posToPut)
             {
@@ -820,24 +848,25 @@ namespace Cave
                 j = PosMod(j);
                 (int x, int y) posToModify = (i + pos.x * 32, j + pos.y * 32);
                 TileTraits previous = fillStates[i, j];
-                fillStates[i, j] = getTileTraits(newMaterial);
+                TileTraits newTraits = getTileTraits(newMaterial);
+                fillStates[i, j] = newTraits;
                 findTileColor(i, j);
-                testLiquidUnstableNonspecific(posToModify.x, posToModify.y);
+                testLiquidUnstableNonspecific(posToModify.x, posToModify.y, newTraits);
                 modificationCount += 1;
                 checkForStructureAlteration(posToModify, newMaterial);
                 return previous;
             }
-            public TileTraits tileModification(int i, int j, TileTraits newMaterial)
+            public TileTraits tileModification(int i, int j, TileTraits newTile)
             {
                 i = PosMod(i);
                 j = PosMod(j);
                 (int x, int y) posToModify = (i + pos.x * 32, j + pos.y * 32);
                 TileTraits previous = fillStates[i, j];
-                fillStates[i, j] = newMaterial;
+                fillStates[i, j] = newTile;
                 findTileColor(i, j);
-                testLiquidUnstableNonspecific(posToModify.x, posToModify.y);
+                testLiquidUnstableNonspecific(posToModify.x, posToModify.y, newTile);
                 modificationCount += 1;
-                checkForStructureAlteration(posToModify, newMaterial.type);
+                checkForStructureAlteration(posToModify, newTile.type);
                 return previous;
             }
             public TileTraits getTileContentInTHISChunk((int x, int y) posToGet)
@@ -1285,7 +1314,7 @@ namespace Cave
                 foreach ((int x, int y) pos in posVisited) { screen.liquidsThatCantGoLeft.Add(pos); }
                 return false;
             }
-            public void testLiquidUnstableNonspecific(int posX, int posY)
+            public void testLiquidUnstableNonspecific(int posX, int posY, TileTraits newTile)
             {
                 (int x, int y) posToTest;
                 Chunk chunkToTest;
@@ -1297,6 +1326,18 @@ namespace Cave
                     if (chunkToTest is null) { continue; }
                     if (!chunkToTest.getTileContentInTHISChunk(posToTest).isSolid) { chunkToTest.unstableLiquidCount++; unstableLiquidCount++; }
                 }
+
+                if (newTile.isLiquid)
+                {
+                    if (newTile.isLava) { tryAddFire((posX, posY)); }
+                    else if (newTile.flammability is null && fireDict != null && fireDict.ContainsKey((posX, posY))) { fireDict[(posX, posY)].isInvalidOnStartupOrGotKilled = true; }
+                }
+            }
+            public void applyRandomTileEffects()
+            {
+                (int x, int y) randPos = (rand.Next(32), rand.Next(32));
+                TileTraits randTile = fillStates[randPos.x, randPos.y];
+                if (randTile.isLava) { tryAddFire((pos.x * 32 + randPos.x + rand.Next(3) - 1, pos.y * 32 + randPos.y + rand.Next(3) - 1)); }
             }
 
 
@@ -1306,7 +1347,7 @@ namespace Cave
                 HashSet<Fire> firesToRemove = new HashSet<Fire>();
                 foreach (Fire fire in fireDict.Values)
                 {
-                    if (fire.moveFire()) { firesToRemove.Add(fire); }
+                    if (fire.isInvalidOnStartupOrGotKilled || fire.moveFire()) { firesToRemove.Add(fire); }
                 }
                 if (firesToRemove.Count == 0) { return; }
                 foreach (Fire fire in firesToRemove) { fireDict.Remove(fire.pos); }
@@ -1317,7 +1358,7 @@ namespace Cave
                 if (fireDict is null) { fireDict = new Dictionary<(int x, int y), Fire>(); }
                 if (fireDict.ContainsKey(posToAdd)) { return; }
                 Fire newFire = new Fire(posToAdd, this);
-                if (newFire.isDeadAndShouldDisappear) { return; }
+                if (newFire.isInvalidOnStartupOrGotKilled) { return; }
                 fireDict[posToAdd] = newFire;
             }
             public void makeFireBitmaps()

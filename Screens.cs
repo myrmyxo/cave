@@ -320,6 +320,7 @@ namespace Cave
                         if (rand.Next(200) == 0) { screen.loadedChunks[(pos.x, pos.y)].unstableLiquidCount++; }
                         screen.loadedChunks[(pos.x, pos.y)].moveLiquids();
                     }
+                    foreach (Chunk chunk in screen.loadedChunks.Values) { chunk.applyRandomTileEffects(); }
 
                     screen.makeBitmapsOfPlants();
                     screen.putEntitiesInChunks();

@@ -82,6 +82,7 @@ namespace Cave
                 timeAtLastGrowth = plantJson.lastGr;
                 transformPlant(plantJson.type);
                 plantElement = new PlantElement(this, plantJson.pE);
+                testAddExtraMaterialsToColorDict();     // In case fire turned wood into charcoal, so it doesn't forget to add charcoal to the dict
                 makeBitmap();
             }
             public Plant(Chunk chunkToPut, (int x, int y) posToPut, (int type, int subType) typeToPut)
@@ -295,6 +296,13 @@ namespace Cave
                 foreach (PlantElement element in plantElements) { if (element.traits.animation != null) { animatedPlantElementList.Add(element); } }
                 return animatedPlantElementList.ToArray();
             }
+            public HashSet<(int x, int y)> returnAllMaterialsInPlant(List<PlantElement> plantElements = null)
+            {
+                if (plantElements is null) { plantElements = returnAllPlantElements(); }
+                HashSet<(int type, int subType)> materialsHashSet = new HashSet<(int type, int subType)>();
+                foreach (PlantElement element in plantElements) { foreach ((int type, int subType) value in element.fillStates.Values) { materialsHashSet.Add(value); } }
+                return materialsHashSet;
+            }
             public Dictionary<(int x, int y), Color> returnFullPlantFillDict(List<PlantElement> plantElements = null)
             {
                 if (plantElements is null) { plantElements = returnAllPlantElements(); }
@@ -403,6 +411,10 @@ namespace Cave
                 {
                     foreach (((int type, int subType) type, ColorRange colorRange) item in traits.colorOverrideArray) { tryAddMaterialColor(item.type, item.colorRange); }
                 }
+            }
+            public void testAddExtraMaterialsToColorDict()
+            {
+                foreach ((int type, int subType) type in returnAllMaterialsInPlant()) { tryAddMaterialColor(type); }
             }
             public void testDeath(Dictionary<(int x, int y), Color> fillDict)
             {

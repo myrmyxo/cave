@@ -211,6 +211,24 @@ namespace Cave
                 }
             }
         }
+
+        public class FireJson
+        {
+            public (int x, int y) p;
+            public int i;
+            public int pT;
+            public int pTD;
+            public int dT;
+            public FireJson(Fire fire)
+            {
+                p = fire.pos;
+                i = fire.intensity;
+                pT = fire.propagationThreshold;
+                pTD = fire.propagationThresholdDiag;
+                dT = fire.destructionThreshold;
+            }
+            public FireJson() { }
+        }
         public class ChunkJson
         {
             public long seed;
@@ -222,6 +240,7 @@ namespace Cave
             public List<int> pLst;
             public int explLvl;
             public bool[,] fog;
+            public List<FireJson> f;
             public ChunkJson(Chunk chunk)
             {
                 seed = chunk.chunkSeed;
@@ -250,6 +269,12 @@ namespace Cave
                     fog = chunk.fogOfWar;
                 }
                 else { fog = null; }
+                if (chunk.fireDict is null) { f = null; }
+                else
+                {
+                    f = new List<FireJson>();
+                    foreach (Fire fire in chunk.fireDict.Values) { f.Add(new FireJson(fire)); }
+                }
             }
             public ChunkJson() { }
         }
