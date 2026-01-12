@@ -42,6 +42,7 @@ namespace Cave
         {
             public Screens.Screen screen;
             public Entity motherEntity;
+            public Fire motherFire;
             public AttackTraits traits;
             public (int type, int subType, int subSubType, int typeOfElement) type = (-1, -1, -1, -1);
 
@@ -55,10 +56,11 @@ namespace Cave
             public bool isDone = false;
             public bool digSuccess = false;
             public (int type, int subType) dugTile = (0, 0);
-            public Attack(Screens.Screen screenToPut, Entity motherEntityToPut, (int type, int subType, int subSubType, int typeOfElement) typeToPut, (int x, int y) posToPut, (int x, int y) directionToPut)
+            public Attack(Screens.Screen screenToPut, Entity motherEntityToPut, (int type, int subType, int subSubType, int typeOfElement) typeToPut, (int x, int y) posToPut, (int x, int y) directionToPut, Fire motherFireToPut = null)
             {
                 screen = screenToPut;
                 motherEntity = motherEntityToPut;
+                motherFire = motherFireToPut;
                 type = typeToPut;
                 traits = attackTraitsDict.ContainsKey(type) ? attackTraitsDict[type] : attackTraitsDict[(-1, 0, 0, 0)];
                 state = -1;
@@ -231,7 +233,7 @@ namespace Cave
 
                     if (state >= 15) { finishAttack(); }
                 }
-                else if (type.type == 3 && type.subSubType == 1 && type.typeOfElement == 4)  // (WandDig) horizontal bullet that spawns 5 other bullets on death
+                else if (type.type == 3 && type.subType >= 4 && type.subType <= 6 && type.subSubType == 1 && type.typeOfElement == 4)  // (WandDig) horizontal bullet that spawns 5 other bullets on death
                 {
                     if (state > 0)
                     {
@@ -247,12 +249,17 @@ namespace Cave
                         }
                     }
 
-                    posToDrawList.Add((pos, Color.SandyBrown));
+                    Color spellColor = Color.Black;
+                    if (type.subType == 4) { spellColor = Color.SandyBrown; }
+                    else if (type.subType == 5) { spellColor = Color.LightPink; }
+                    else if (type.subType == 6) { spellColor = Color.Crimson; }
+
+                    posToDrawList.Add((pos, spellColor));
                     posToAttackList.Add((pos, this));
 
                     if (state >= 5) { finishAttack(); }
                 }
-                else if (type.type == 3 && type.subSubType == 2 && type.typeOfElement == 4)  // (WandDig) horizontal bullet that just exists
+                else if (type.type == 3 && type.subType >= 4 && type.subType <= 6 && type.subSubType == 2 && type.typeOfElement == 4)  // (WandDig) horizontal bullet that just exists
                 {
                     if (state > 0)
                     {
@@ -267,7 +274,12 @@ namespace Cave
                         }
                     }
 
-                    posToDrawList.Add((pos, Color.SandyBrown));
+                    Color spellColor = Color.Black;
+                    if (type.subType == 4) { spellColor = Color.SandyBrown; }
+                    else if (type.subType == 5) { spellColor = Color.LightPink; }
+                    else if (type.subType == 6) { spellColor = Color.Crimson; }
+
+                    posToDrawList.Add((pos, spellColor));
                     posToAttackList.Add((pos, this));
 
                     if (state >= 10) { finishAttack(); }
@@ -276,7 +288,12 @@ namespace Cave
                 {
                     if (state > 0) { pos = (pos.x + Sign(direction.x), pos.y); }
 
-                    posToDrawList.Add((pos, Color.SandyBrown));
+                    Color spellColor = Color.Black;
+                    if (type.subType == 4) { spellColor = Color.SandyBrown; }
+                    else if (type.subType == 5) { spellColor = Color.LightPink; }
+                    else if (type.subType == 6) { spellColor = Color.Crimson; }
+
+                    posToDrawList.Add((pos, spellColor));
                     posToAttackList.Add((pos, this));
 
                     if (state >= 15) { finishAttack(); }
@@ -285,7 +302,7 @@ namespace Cave
                 {
                     if (state > 0) { pos = (pos.x + Sign(direction.x), pos.y); }
 
-                    Color spellColor;
+                    Color spellColor = Color.Black;
                     if (type.subType == 0) { spellColor = Color.BlueViolet; }
                     else if (type.subType == 1) { spellColor = Color.Crimson; }
                     else if (type.subType == 2) { spellColor = Color.MediumSpringGreen; }
@@ -293,13 +310,17 @@ namespace Cave
                     else if (type.subType == 4) { spellColor = Color.SandyBrown; }
                     else if (type.subType == 5) { spellColor = Color.SandyBrown; }
                     else if (type.subType == 6) { spellColor = Color.Crimson; }
-                    else if (type.subType == 7) { spellColor = Color.Red; }
-                    else { spellColor = Color.Black; }
+                    else if (type.subType == 7) { spellColor = Color.Orange; }
 
                     posToDrawList.Add((pos, spellColor));
                     posToAttackList.Add((pos, this));
 
                     if (state >= 15) { finishAttack(); }
+                }
+                else if (type == (0, 0, 0, 0))    // Fire damage
+                {
+                    if (motherFire.isInvalidOnStartupOrGotKilled) { finishAttack(); }
+                    posToAttackList.Add((pos, this));
                 }
                 else { finishAttack(); }
             }
@@ -354,7 +375,7 @@ namespace Cave
             {
                 foreach (Entity entity in entityList)
                 {
-                    if (entity.type != motherEntity.type)
+                    if (motherEntity == null || entity.type != motherEntity.type)
                     {
                         entitiesAlreadyHitByCurrentAttack.Add(entity.id);
                         entity.hp -= traits.damage;

@@ -304,6 +304,8 @@ namespace Cave
 
                     foreach (Plant plant in screen.activePlants.Values) { plant.testPlantGrowth(false); }
                     screen.putPlantsInChunks();
+                    foreach ((int x, int y) pos in screen.plantFullDestructionsToDo) { foreach (Plant plant in screen.getChunkFromPixelPos(pos).plants.Values) { plant.totalDestructionAtOnePos(pos); } }
+                    screen.plantFullDestructionsToDo = new HashSet<(int x, int y)>();
 
                     foreach (Entity entity in screen.activeEntities.Values) { entity.moveEntity(); }
                     screen.addRemoveEntities();
@@ -598,6 +600,7 @@ namespace Cave
             public Dictionary<int, Plant> activePlants = new Dictionary<int, Plant>();
             public Dictionary<int, Plant> plantsToRemove = new Dictionary<int, Plant>();
             public Dictionary<int, Plant> plantsToMakeBitmapsOf = new Dictionary<int, Plant>();
+            public HashSet<(int x, int y)> plantFullDestructionsToDo = new HashSet<(int x, int y)>();
             public List<Particle> activeParticles = new List<Particle>();
             public List<Particle> particlesToAdd = new List<Particle>();
             public HashSet<Particle> particlesToRemove = new HashSet<Particle>();
@@ -1069,13 +1072,14 @@ namespace Cave
                 foreach (Entity entity in activeEntities.Values) { drawEntityOnScreen(gameBitmap, camPos, lightPositions, entity); }
                 foreach (Particle particle in activeParticles) { drawParticleOnScreen(gameBitmap, camPos, lightPositions, particle); }
                 drawPlayerOnScreen(gameBitmap, camPos, lightPositions, player);
-                drawAttacksOnScreen(gameBitmap, camPos, isPngToBeExported);
+                drawAttacksOnScreen(gameBitmap, camPos);
 
                 drawChunkEffectsOnScreen(gameBitmap, camPos, isPngToBeExported);
                 drawChunkFireOnScreen(gameBitmap, camPos, isPngToBeExported);
                 drawLightOnScreen(gameBitmap, lightBitmap, camPos, lightPositions); 
                 drawFogOfWarOnScreen(gameBitmap, camPos);
 
+                if (debugMode && !isPngToBeExported && true) { drawAttacksDebugOnScreen(gameBitmap, camPos); } // debug for nests
                 if (debugMode && !isPngToBeExported && true) { drawNestDebugOnScreen(gameBitmap, camPos); } // debug for nests
                 if (debugMode && !isPngToBeExported && true) { drawEntityPathDebugOnScreen(gameBitmap, camPos, player); } // debug for paths
                 if (debugMode && !isPngToBeExported && false) { drawMiscDebugOnScreen(gameBitmap, camPos); } // debug misc
@@ -1270,16 +1274,9 @@ namespace Cave
                 //if (game.isLight && entity.type == 0) { lightPositions.Add((particle.posX, particle.posY, 7, particle.lightColor)); }
                 drawPixel(gameBitmap, color, (particle.posX, particle.posY), camPos);
             }
-            public void drawAttacksOnScreen(Bitmap gameBitmap, (int x, int y) camPos, bool isPngToBeExported)
+            public void drawAttacksOnScreen(Bitmap gameBitmap, (int x, int y) camPos)
             {
                 foreach (((int x, int y) pos, Color color) item in attacksToDraw) { drawPixel(gameBitmap, item.color, item.pos, camPos); }
-                if (debugMode && !isPngToBeExported)
-                {
-                    foreach (((int x, int y) pos, Attack attack) attack in attacksToDo)
-                    {
-                        drawPixel(gameBitmap, Color.IndianRed, attack.pos, camPos);
-                    }
-                }
             }
             public void drawLightOnScreen(Bitmap gameBitmap, Bitmap lightBitmap, (int x, int y) camPos, List<(int x, int y, int radius, Color color)> lightPositions)
             {
@@ -1336,6 +1333,13 @@ namespace Cave
                             }
                         }
                     }
+                }
+            }
+            public void drawAttacksDebugOnScreen(Bitmap gameBitmap, (int x, int y) camPos)
+            {
+                foreach (((int x, int y) pos, Attack attack) attack in attacksToDo)
+                {
+                    drawPixel(gameBitmap, Color.IndianRed, attack.pos, camPos);
                 }
             }
             public void drawNestDebugOnScreen(Bitmap gameBitmap, (int x, int y) camPos)
@@ -1462,13 +1466,18 @@ namespace Cave
                     xOffset -= 120;
                 }
             }
-            public TileTraits getTileContent((int x, int y) posToTest, bool forceMaturityLevelOne = true)
+            public TileTraits getTileContent((int x, int y) pos, bool forceMaturityLevelOne = true, bool onlyGetIfFullyLoaded = false)
             {
-                return getChunkFromPixelPos(posToTest, forceMaturityLevelOne:forceMaturityLevelOne).fillStates[PosMod(posToTest.x), PosMod(posToTest.y)];
+                if (onlyGetIfFullyLoaded && !loadedChunks.ContainsKey(ChunkIdx(pos))) { return getTileTraits((0, -1)); }
+                return getChunkFromPixelPos(pos, forceMaturityLevelOne:forceMaturityLevelOne).fillStates[PosMod(pos.x), PosMod(pos.y)];
             }
-            public TileTraits setTileContent((int x, int y) posToTest, (int type, int subType) typeToSet)
+            public TileTraits setTileContent((int x, int y) pos, (int type, int subType) typeToSet)
             {
-                return getChunkFromPixelPos(posToTest).tileModification(posToTest.x, posToTest.y, typeToSet);
+                return getChunkFromPixelPos(pos).tileModification(pos.x, pos.y, typeToSet);
+            }
+            public TileTraits setTileContent((int x, int y) pos, TileTraits typeToSet)
+            {
+                return getChunkFromPixelPos(pos).tileModification(pos.x, pos.y, typeToSet);
             }
             public Chunk getChunkFromPixelPos((int x, int y) pos, bool isExtraGetting = true, bool onlyGetIfFullyLoaded = false, bool forceMaturityLevelOne = true, Dictionary<(int x, int y), Chunk> extraDict = null)
             {

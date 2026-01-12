@@ -66,11 +66,14 @@ namespace Cave
             //     ---- - - CURRENTLY DOING - - ----
             //
             // Fire
-            //      -> make fire hurt entities and shit     --> Make fires able to be ATTACHED ? to like entities ??? idk
-            //      -> upgrade visuals (particles, color change) -> becomes whiter as intensity increases, BUT as it goes to the max in starts to decrease. like ____-----^^^^^^^^--_
-            //              -> And the more intense it is, the bigger the flame also and the more spreading effect above (or to the sides too idk).
-            //      -> make burning plants unable to propagate while they are burning ?
-            //
+            //      -> Make entities able to be on fire lol
+            //      -> upgrade visuals (particles, color change)
+            //              -> And the more intense it is, the bigger the flame also and the more spreading effect above (or to the sides too idk)
+            //      -> Make fire make light
+            //      -> Make a burnTransformation for tiles, so that mold and shit can sometimes turn into ashhhhhhh
+            //      -> Make ash be non fire choking
+            //      -> Make some attacks be able to MULTI HIT, so that the same fire can burn the same entity multiple times
+            // 
             // Then prairies and heathlands and shrublands and stuff HEATHHH
             // -> Separate Bayou and Swamp (Bayou is rare variant)
             // Add moss that grows on rock and shit
@@ -113,6 +116,7 @@ namespace Cave
             // Salty Frozen Ocean biome !!! With different plants. More ANGULAR, like cristals ?? salt cristals ?? Idk --> No actually due to BRINE REJECTION it's not the case ! Salt water freezing expells the salt out ! So Frozen ocean with pockets of brine ?
             // --> Danger/Breathability noise, that makes dangerous biome spawn like. SLIME. MOLD.
             // Have VORONOI OCEANS ??????????? would be fucking nice no ???????
+            // Deserts biomes... with rare Oasis biomes sometimes inside ?????? Idk
 
             // Candy dimension !! Candy Cane trees, Lollipop trees, Whipped Cream biome, Chocolate Biome
 

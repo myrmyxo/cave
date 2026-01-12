@@ -63,6 +63,7 @@ namespace Cave
             public bool isAir;
             public bool isLiquid;
             public bool isSolid;
+            public bool isSandy;
 
             public bool isLava;         // H for hot
             public bool isAcidic;
@@ -81,13 +82,14 @@ namespace Cave
             public float biomeColorBlend;
             public bool isTextured;     // For mold and salt crystals
             public bool isTransparent;
-            public TileTraits(string namee, ColorRange cR = null, bool Air = false, bool Liq = false, bool L = false, bool A = false, bool T = false, bool S = false, (int propagationThreshold, int destructionThreshold)? F = null, (int type, int subType)? bT = null, bool St = false, bool iTF = false, float bCB = 0.1f, bool Tex = false, bool Tr = false)
+            public TileTraits(string namee, ColorRange cR = null, bool Air = false, bool Liq = false, bool San = false, bool L = false, bool A = false, bool T = false, bool S = false, (int propagationThreshold, int destructionThreshold)? F = null, (int type, int subType)? bT = null, bool St = false, bool iTF = false, float bCB = 0.1f, bool Tex = false, bool Tr = false)
             {
                 name = namee;
 
                 isAir = Air;
                 isLiquid = Liq;
                 isSolid = !(isAir || isLiquid);
+                isSandy = San;
 
                 isLava = L;
                 isAcidic = A;
@@ -181,6 +183,9 @@ namespace Cave
 
                 { (6, 0), new TileTraits("Salt Tile", bCB:0.1f,
                 cR:new ColorRange((170, 0, 0), (120, 0, 0), (140, 0, 0)),         Tex:true, Tr:true, St:true                ) },
+
+                { (7, 0), new TileTraits("Ash Tile", bCB:0.1f,
+                cR:new ColorRange((120, 0, 0), (120, 0, 0), (125, 0, 0)),         San:true, Tex:true                        ) },
             };
 
             foreach ((int type, int subType) typeToSet in tileTraitsDict.Keys) { tileTraitsDict[typeToSet].setType(typeToSet); }
@@ -195,10 +200,10 @@ namespace Cave
             public string name;
             public (int type, int subType, int megaType)? toolGatheringRequirement;
             public (int propagationThreshold, int destructionThreshold)? flammability;
-            public (int type, int subType)? burnTransformation;
+            public ((int type, int subType) type, bool isTile, float chance)? burnTransformation;
             public ColorRange colorRange;
             //public float biomeColorBlend;
-            public MaterialTraits(string namee, (int propagationThreshold, int destructionThreshold)? F = null, (int type, int subType)? bT = null, (int type, int subType, int megaType)? tool = null, ColorRange col = null)
+            public MaterialTraits(string namee, (int propagationThreshold, int destructionThreshold)? F = null, ((int type, int subType) type, bool isTile, float chance)? bT = null, (int type, int subType, int megaType)? tool = null, ColorRange col = null)
             {
                 name = namee;
                 toolGatheringRequirement = tool;
@@ -221,27 +226,27 @@ namespace Cave
                 { (0, 0), new MaterialTraits("Error/Air", 
                 col:new ColorRange((255, 0, 0), (0, 0, 0), (255, 0, 0))                                                 ) },
 
-                { (1, 0), new MaterialTraits("Plant Matter", F:(75, 250),
+                { (1, 0), new MaterialTraits("Plant Matter", F:(75, 250), bT:((7, 0), true, 2),
                 col:new ColorRange((50, 0, 30), (170, 50, 30), (50, 0, 30))                                             ) },
-                { (1, 1), new MaterialTraits("Wood", F:(100, 500), bT:(4, 0), tool:(4, 0, 4),
+                { (1, 1), new MaterialTraits("Wood", F:(100, 500), bT:((4, 0), false, 100), tool:(4, 0, 4),
                 col:new ColorRange((140, 20, 30), (140, 20, 30), (50, 0, 30))                                           ) },
-                { (1, 2), new MaterialTraits("Kelp", F:(75, 250),
+                { (1, 2), new MaterialTraits("Kelp", F:(75, 250), bT:((7, 0), true, 2), 
                 col:new ColorRange((30, 0, 30), (90, 50, 30), (140, -50, 30))                                           ) },
                 { (1, 3), new MaterialTraits("Obsidian Plant Matter",
                 col:famousColorRanges["Obsidian"]                                                                       ) },
-                { (1, 4), new MaterialTraits("Grain", F:(75, 250),
+                { (1, 4), new MaterialTraits("Grain", F:(75, 250), bT:((7, 0), true, 2),
                 col:famousColorRanges["CerealGrain"]                                                                    ) },
 
-                { (2, 0), new MaterialTraits("Petal", F:(75, 250),
+                { (2, 0), new MaterialTraits("Petal", F:(75, 250), bT:((7, 0), true, 2),
                 col:new ColorRange((170, 20, 30), (120, 0, 30), (150, -20, 30))                                         ) },
-                { (2, 1), new MaterialTraits("Pollen", F:(75, 250),
+                { (2, 1), new MaterialTraits("Pollen", F:(75, 250), bT:((7, 0), true, 2),
                 col:new ColorRange((170, -10, 30), (170, 10, 30), (50, 0, 30))                                          ) },
 
-                { (3, 0), new MaterialTraits("Mushroom Stem", F:(35, 100),
+                { (3, 0), new MaterialTraits("Mushroom Stem", F:(35, 100), bT:((7, 0), true, 2),
                 col:new ColorRange((180, 0, 30), (160, 0, 30), (165, 0, 30))                                            ) },
-                { (3, 1), new MaterialTraits("Mushroom Cap", F:(25, 75),
+                { (3, 1), new MaterialTraits("Mushroom Cap", F:(25, 75), bT:((7, 0), true, 2),
                 col:new ColorRange((140, 0, -30), (120, 50, 0), (170, -50, 0))                                          ) },
-                { (3, 2), new MaterialTraits("Mold", F:(15, 60),
+                { (3, 2), new MaterialTraits("Mold", F:(15, 60), bT:((7, 0), true, 2),
                 col:new ColorRange((50, 0, 30), (50, 0, 30), (100, 0, 30))                                              ) },
 
                 { (4, 0), new MaterialTraits("Charcoal",
@@ -2219,11 +2224,12 @@ namespace Cave
             attackTraitsDict = new Dictionary<(int type, int subType, int subSubType, int megaType), AttackTraits>()
             {
                 { (-1, 0, 0, 0), new AttackTraits("Error"                                                                               ) },
-                                                                                                                                    
+
+                { (0, 0, 0, 0), new AttackTraits("Fire",                d:0.2f,         H:true                                          ) },
+
                 { (0, 0, 0, 4), new AttackTraits("Sword",               d:1,            H:true, B:true                                  ) },
                 { (1, 0, 0, 4), new AttackTraits("Pickaxe",             d:0.5f,         H:true, B:true, T:true,         A:true          ) },
                 { (2, 0, 0, 4), new AttackTraits("Scythe",              d:0.75f,        H:true, B:true,         P:true                  ) },
-                { (4, 0, 0, 4), new AttackTraits("Axe",                 d:0.5f,         H:true, B:true,         P:true, A:true          ) },
                                                                                                                                     
                 { (3, 0, 0, 4), new AttackTraits("Magic Wand",                  m:5,            B:true                                  ) },
                 { (3, 0, 1, 4), new AttackTraits("Magic Bullet"                                                                         ) },
@@ -2248,6 +2254,10 @@ namespace Cave
                 { (3, 6, 3, 4), new AttackTraits("Plant Dig bullet 3",                                  P:true                          ) },
                 { (3, 7, 0, 4), new AttackTraits("Fire Wand",              m:15,                B:true                                  ) },
                 { (3, 7, 1, 4), new AttackTraits("Fire bullet",                                         F:true                          ) },
+
+                { (4, 0, 0, 4), new AttackTraits("Axe",                 d:0.5f,         H:true, B:true,         P:true, A:true          ) },
+
+
 
                 { (6, 0, 0, 5), new AttackTraits("Goblin Hand",         d:0.25f,        H:true, B:true, T:true, P:true, A:true          ) },
                                                                                                                                     

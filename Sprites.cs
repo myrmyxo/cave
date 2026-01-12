@@ -90,6 +90,7 @@ namespace Cave
                 { (4, 2), new OneSprite("SkinTile", true) },                // TO CHANGE
                 { (5, 0), new OneSprite("MoldTile", true) },                // TO CHANGE          
                 { (6, 0), new OneSprite("SaltTile", true) },                // TO CHANGE
+                { (7, 0), new OneSprite("AshTile", true) },                 // TO CHANGE
             };                                                               
             entitySprites = new Dictionary<(int type, int subType), OneSprite>
             {
@@ -212,7 +213,7 @@ namespace Cave
                 { (3, 4), new OneSprite("WandDig", true) },                 // TO CHANGE
                 { (3, 5), new OneSprite("WandPlace", true) },               // TO CHANGE
                 { (3, 6), new OneSprite("WandHerbicide", true) },           // TO CHANGE
-                { (3, 7), new OneSprite("WandCarnal", true) },              // TO CHANGE
+                { (3, 7), new OneSprite("WandFire", true) },                // TO CHANGE
                 { (4, 0), new OneSprite("Axe", true) },                     // TO CHANGE
             };
             attacksSprites = new Dictionary<(int type, int subType), OneSprite>

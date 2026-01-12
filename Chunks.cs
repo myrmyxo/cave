@@ -45,6 +45,7 @@ namespace Cave
             public bool isInvalidOnStartupOrGotKilled = false;
             public bool hasNotBeenInited = false;
             public int intensity;
+            public int effectiveIntensity;
             public int propagationThreshold;
             public int propagationThresholdDiag;
             public int destructionThreshold;
@@ -74,7 +75,7 @@ namespace Cave
                 {
                     foreach ((PlantElement pE, MaterialTraits MT) tuple in plant.returnAllPlantElementsWhichMaterialsAtPos(firePos)) { affectedPlantElements.Add(tuple.pE); affectedMaterials.Add(tuple.MT); }
                 }
-                intensity = 1;
+                intensity = 0;
                 if (affectedTile.flammability is null) { propagationThreshold = 999999; destructionThreshold = 0; }
                 else
                 {
@@ -87,16 +88,20 @@ namespace Cave
                     propagationThreshold = Min(propagationThreshold, materialTraits.flammability.Value.propagationThreshold);
                     destructionThreshold = Max(destructionThreshold, materialTraits.flammability.Value.destructionThreshold);
                 }
-                if (destructionThreshold <= 0) { isInvalidOnStartupOrGotKilled = true; }
+                if (destructionThreshold <= 0) { isInvalidOnStartupOrGotKilled = true; return; }
                 propagationThreshold = propagationThreshold + (int)(rand.Next((int)(propagationThreshold * 0.3f)) - (propagationThreshold * 0.1f));
                 destructionThreshold = destructionThreshold + (int)(rand.Next((int)(destructionThreshold * 0.3f)) - (destructionThreshold * 0.1f));
                 propagationThresholdDiag = propagationThreshold + rand.Next((int)(0.3f + propagationThreshold * 0.7f));
+                new Attack(chunk.screen, null, (0, 0, 0, 0), pos, (0, 0), this);
             }
 
             public bool moveFire()   // false -> nothing happens, true -> fire dies
             {
                 if (hasNotBeenInited) { init(); }
                 intensity++;
+                if (!affectedTile.isAir && !affectedTile.isLava && affectedTile.flammability is null) { intensity -= 11; }
+                findEffectiveIntensity();
+                if (intensity <= 0) { isInvalidOnStartupOrGotKilled = true; return true; }
                 if (intensity >= propagationThreshold) { propagateFireOrtho(); }
                 if (intensity >= propagationThresholdDiag) { propagateFireDiag(); }
                 if (intensity >= destructionThreshold)
@@ -117,6 +122,13 @@ namespace Cave
                     foreach ((PlantElement pE, MaterialTraits MT) tuple in plant.returnAllPlantElementsWhichMaterialsAtPos(pos)) { affectedPlantElements.Add(tuple.pE); affectedMaterials.Add(tuple.MT); }
                 }
                 affectedTile = chunk.getTileContentInTHISChunk(pos);
+                new Attack(chunk.screen, null, (0, 0, 0, 0), pos, (0, 0), this);
+            }
+            public void findEffectiveIntensity()
+            {
+                effectiveIntensity = (int)(intensity * (2 - Min(1, destructionThreshold * 0.01f)));
+                int diff = (int)(intensity - destructionThreshold * 0.85f);
+                if (diff > 0) { effectiveIntensity -= diff * 6; }
             }
             public void propagateFireOrtho()
             {
@@ -129,7 +141,8 @@ namespace Cave
             public void fireDestruction()
             {
                 if (affectedTile.flammability != null && affectedTile.flammability.Value.destructionThreshold > 0) { chunk.tileModification(pos.x, pos.y, (0, 0)); }
-                foreach (Plant plant in chunk.plants.Values) { plant.fireDig(pos); }
+                foreach (Plant plant in chunk.plants.Values) { plant.totalDestructionAtOnePos(pos, true); }
+                isInvalidOnStartupOrGotKilled = true;
             }
         }
 
@@ -1122,115 +1135,60 @@ namespace Cave
             {
                 if (unstableLiquidCount > 0) //here
                 {
-                    Chunk leftChunk = screen.getChunkFromChunkPos((pos.x - 1, pos.y), false, true) ?? theFilledChunk;
-                    Chunk bottomLeftChunk = screen.getChunkFromChunkPos((pos.x - 1, pos.y - 1), false, true) ?? theFilledChunk;
-                    Chunk bottomChunk = screen.getChunkFromChunkPos((pos.x, pos.y - 1), false, true) ?? theFilledChunk;
-                    Chunk bottomRightChunk = screen.getChunkFromChunkPos((pos.x + 1, pos.y - 1), false, true) ?? theFilledChunk;
-                    Chunk rightChunk = screen.getChunkFromChunkPos((pos.x + 1, pos.y), false, true) ?? theFilledChunk;
-
                     unstableLiquidCount = 0;
 
                     for (int j = 0; j < 32; j++)
                     {
                         for (int i = 0; i < 32; i++)
                         {
-                            if (moveOneLiquid(i, j, leftChunk, bottomLeftChunk, bottomChunk, bottomRightChunk, rightChunk)) { unstableLiquidCount++; }
+                            if (moveOneLiquid(i, j)) { unstableLiquidCount++; }
                         }
                     }
                 }
             }
-            public bool moveOneLiquid(int i, int j, Chunk leftChunkParam, Chunk bottomLeftChunkParam, Chunk bottomChunkParam, Chunk bottomRightChunkParam, Chunk rightChunkParam)
+            public bool moveOneLiquid(int i, int j)
             {
-                Chunk leftChunk;
-                Chunk leftDiagChunk;
-                Chunk middleChunk;
-                Chunk rightChunk;
-                Chunk rightDiagChunk;
-
-                int jb = (j + 31) % 32;
-                int il = (i + 31) % 32;
-                int ir = (i + 1) % 32;
-
-                if (j == 0)
-                {
-                    middleChunk = bottomChunkParam;
-                    if (i == 0)
-                    {
-                        leftChunk = leftChunkParam;
-                        leftDiagChunk = bottomLeftChunkParam;
-                        rightDiagChunk = bottomChunkParam;
-                        rightChunk = this;
-                    }
-                    else if (i == 31)
-                    {
-                        leftChunk = this;
-                        leftDiagChunk = bottomChunkParam;
-                        rightDiagChunk = bottomRightChunkParam;
-                        rightChunk = rightChunkParam;
-                    }
-                    else
-                    {
-                        leftChunk = this;
-                        leftDiagChunk = bottomChunkParam;
-                        rightDiagChunk = bottomChunkParam;
-                        rightChunk = this;
-                    }
-                }
-                else
-                {
-                    middleChunk = this;
-                    if (i == 0)
-                    {
-                        leftChunk = leftChunkParam;
-                        leftDiagChunk = leftChunkParam;
-                        rightDiagChunk = this;
-                        rightChunk = this;
-                    }
-                    else if (i == 31)
-                    {
-                        leftChunk = this;
-                        leftDiagChunk = this;
-                        rightDiagChunk = rightChunkParam;
-                        rightChunk = rightChunkParam;
-                    }
-                    else
-                    {
-                        leftChunk = this;
-                        leftDiagChunk = this;
-                        rightDiagChunk = this;
-                        rightChunk = this;
-                    }
-                }
-
                 TileTraits traits = fillStates[i, j];
-                if (traits.isLiquid)
+                if (!traits.isLiquid && !traits.isSandy) { return false; }
+
+                (int x, int y) realPos = (pos.x * 32 + i, pos.y * 32 + j);
+                TileTraits leftTile = screen.getTileContent((realPos.x - 1, realPos.y), onlyGetIfFullyLoaded:true);
+                TileTraits leftDiagTile = screen.getTileContent((realPos.x - 1, realPos.y - 1), onlyGetIfFullyLoaded:true);
+                TileTraits middleTile = screen.getTileContent((realPos.x, realPos.y - 1), onlyGetIfFullyLoaded:true);
+                TileTraits rightTile = screen.getTileContent((realPos.x + 1, realPos.y), onlyGetIfFullyLoaded:true);
+                TileTraits rightDiagTile = screen.getTileContent((realPos.x + 1, realPos.y - 1), onlyGetIfFullyLoaded:true);
+
+                bool leftTileCrossable = leftTile.isAir || (traits.isSandy && leftTile.isLiquid);
+                bool leftDiagTileCrossable = leftDiagTile.isAir || (traits.isSandy && leftDiagTile.isLiquid);
+                bool middleTileCrossable = middleTile.isAir || (traits.isSandy && middleTile.isLiquid);
+                bool rightTileCrossable = rightTile.isAir || (traits.isSandy && rightTile.isLiquid);
+                bool rightDiagTileCrossable = rightDiagTile.isAir || (traits.isSandy && rightDiagTile.isLiquid);
+
+                if (middleTileCrossable)
                 {
-                    if (middleChunk.fillStates[i, jb].isAir)
-                    {
-                        tileModification(i, j, (0, 0));
-                        middleChunk.tileModification(i, jb, traits);
-                        return true;
-                    } // THIS ONE WAS FUCKING BUGGYYYYY BRUH
-                    if ((i < 15 || middleChunk.pos.x < rightChunk.pos.x) && (rightChunk.fillStates[ir, j].isAir || middleChunk.fillStates[i, jb].isLiquid) && rightDiagChunk.fillStates[ir, jb].isAir)
-                    {
-                        tileModification(i, j, (0, 0));
-                        rightDiagChunk.tileModification(ir, jb, traits);
-                        return true;
-                    } //this ONE WAS BUGGY
-                    if ((rightChunk.fillStates[ir, j].isAir || middleChunk.fillStates[i, jb].isLiquid) && rightDiagChunk.fillStates[ir, jb].isLiquid)
-                    {
-                        if (testLiquidPushRight(i, j)) { return true; }
-                    }
-                    if ((i > 0 || leftChunk.pos.x < middleChunk.pos.x) && (leftChunk.fillStates[il, j].isAir || middleChunk.fillStates[i, jb].isLiquid) && leftDiagChunk.fillStates[il, jb].isAir)
-                    {
-                        tileModification(i, j, (0, 0));
-                        leftDiagChunk.tileModification(il, jb, traits);
-                        return true;
-                    } // THIS ONE WAS ALSO BUGGY
-                    if ((leftChunk.fillStates[il, j].isAir || middleChunk.fillStates[i, jb].isLiquid) && leftDiagChunk.fillStates[il, jb].isLiquid)
-                    {
-                        if (testLiquidPushLeft(i, j)) { return true; }
-                    }
+                    tileModification(i, j, middleTile);
+                    screen.setTileContent((realPos.x, realPos.y - 1), traits);
+                    return true;
+                }
+                if (rightDiagTileCrossable && (rightTileCrossable || middleTileCrossable))
+                {
+                    tileModification(i, j, rightDiagTile);
+                    screen.setTileContent((realPos.x + 1, realPos.y - 1), traits);
+                    return true;
+                }
+                if (leftDiagTileCrossable && (leftTileCrossable || middleTileCrossable))
+                {
+                    tileModification(i, j, leftDiagTile);
+                    screen.setTileContent((realPos.x - 1, realPos.y - 1), traits);
+                    return true;
+                }
+                if (traits.isLiquid && (rightDiagTile.isLiquid && (rightTileCrossable || middleTileCrossable)))
+                {
+                    if (testLiquidPushRight(i, j)) { return true; }
+                }
+                if (traits.isLiquid && (leftDiagTile.isLiquid && (leftTileCrossable || middleTileCrossable)))
+                {
+                    if (testLiquidPushLeft(i, j)) { return true; }
                 }
                 return false;
             }
@@ -1327,10 +1285,10 @@ namespace Cave
                     if (!chunkToTest.getTileContentInTHISChunk(posToTest).isSolid) { chunkToTest.unstableLiquidCount++; unstableLiquidCount++; }
                 }
 
-                if (newTile.isLiquid)
+                if (newTile.isLiquid || newTile.isSandy)
                 {
                     if (newTile.isLava) { tryAddFire((posX, posY)); }
-                    else if (newTile.flammability is null && fireDict != null && fireDict.ContainsKey((posX, posY))) { fireDict[(posX, posY)].isInvalidOnStartupOrGotKilled = true; }
+                    else if (newTile.flammability is null && fireDict != null && fireDict.ContainsKey((posX, posY))) { fireDict[(posX, posY)].affectedTile = newTile; }
                 }
             }
             public void applyRandomTileEffects()
@@ -1365,7 +1323,7 @@ namespace Cave
             {
                 if (fireDict is null) { fireBitmap = null; return; }
                 fireBitmap = new Bitmap(32, 32);
-                foreach ((int x, int y) firePos in fireDict.Keys) { fireBitmap.SetPixel(PosMod(firePos.x), PosMod(firePos.y), Color.FromArgb(255, 150 + (int)(Seesaw(timeElapsed * 200, 100)), 50 + (int)(Seesaw(timeElapsed * 400, 200)))); }
+                foreach ((int x, int y) firePos in fireDict.Keys) { fireBitmap.SetPixel(PosMod(firePos.x), PosMod(firePos.y), Color.FromArgb(Min(255, fireDict[firePos].effectiveIntensity * 10), 255, Min(255, 150 + fireDict[firePos].effectiveIntensity), Min(255, 50 + fireDict[firePos].effectiveIntensity * 2))); }
             }
 
 

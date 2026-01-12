@@ -349,7 +349,7 @@ namespace Cave
                 }
                 return (0, 0);
             }
-            public void fireDig((int x, int y) posToDig)
+            public void totalDestructionAtOnePos((int x, int y) posToDig, bool isFireDestruction = false)
             {
                 List<PlantElement> plantElements = returnAllPlantElements();
 
@@ -359,11 +359,24 @@ namespace Cave
                     posToTest = (posToDig.x - posX - element.pos.x, posToDig.y - posY - element.pos.y);
                     if (element.fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value))
                     {
-                        MaterialTraits traits = getMaterialTraits(value);
-                        if (traits.flammability != null)
+                        if (isFireDestruction)
+                        {
+                            MaterialTraits traits = getMaterialTraits(value);
+                            if (traits.flammability != null)
+                            {
+                                element.fillStates.Remove(posToTest);
+                                if (traits.burnTransformation != null && rand.NextDouble() * 100 < traits.burnTransformation.Value.chance)
+                                {
+                                    if (traits.burnTransformation.Value.isTile) { screen.setTileContent(posToDig, traits.burnTransformation.Value.type); }
+                                    else if (element.tryFill(posToTest, traits.burnTransformation.Value.type)) { tryAddMaterialColor(traits.burnTransformation.Value.type); }
+                                }
+                                screen.plantsToMakeBitmapsOf[id] = this;
+                                hasBeenModified = true;
+                            }
+                        }
+                        else
                         {
                             element.fillStates.Remove(posToTest);
-                            if (traits.burnTransformation != null && element.tryFill(posToTest, traits.burnTransformation.Value)) { tryAddMaterialColor(traits.burnTransformation.Value); }
                             screen.plantsToMakeBitmapsOf[id] = this;
                             hasBeenModified = true;
                         }
@@ -972,6 +985,8 @@ namespace Cave
                             else
                             {
                                 drawPos = getRandomKey(fillStates);
+                                Chunk chunko = motherPlant.screen.getChunkFromPixelPos(motherPlant.getRealPos(drawPos));
+                                if (chunko.fireDict != null && chunko.fireDict.ContainsKey(motherPlant.getRealPos(drawPos))) { goto FailButContinue; }  // Abort if tile to propagate from is one fire lol
                                 int rando = rand.Next(5);
                                 if (rando != 4) { drawPos = (drawPos.x + neighbourArray[rando].Item1, drawPos.y + neighbourArray[rando].Item2); }
                             }
@@ -1074,8 +1089,9 @@ namespace Cave
                 }
                 if (moldyTiles + fullTiles >= 4)
                 {
-                    motherPlant.screen.setTileContent(motherPlant.getRealPos(pos), (5, 0));
-                    fillStates.Remove(pos);
+                    (int x, int y) realPos = motherPlant.getRealPos(pos);
+                    motherPlant.screen.setTileContent(realPos, (5, 0));
+                    motherPlant.screen.plantFullDestructionsToDo.Add(realPos);  // This will also remove the mold tile in the mold plant element so no need to remove it before
                     return true;
                 }
                 return false;

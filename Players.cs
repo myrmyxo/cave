@@ -134,7 +134,7 @@ namespace Cave
             {
                 bool allTools = true;
                 bool allEntities = false;
-                bool noEntities = true;
+                bool noEntities = false;
                 bool allPlants = true;
                 bool allTiles = true;
 
@@ -150,8 +150,8 @@ namespace Cave
                         inventoryElements.Add((1, 0, 1));
                         inventoryElements.Add((2, 0, 1));
                         inventoryElements.Add((4, 0, 1));
-                        inventoryElements.Add((4, 1, 1));
                         inventoryElements.Add((5, 0, 1));
+                        inventoryElements.Add((201, 0, 1));
                     }
 
                     if (allPlants) { foreach ((int type, int subType) key in plantTraitsDict.Keys) { inventoryElements.Add((key.type, key.subType, 2)); } }
