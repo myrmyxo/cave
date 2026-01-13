@@ -97,6 +97,7 @@ namespace Cave
             public float hp = 1;
             public int food = 0;
             public float mana = 0;
+            public float? fireTimer;
 
             public (int x, int y) homePosition = (0, 0);
 
@@ -1041,6 +1042,7 @@ namespace Cave
                 actuallyMoveTheEntity(isCurrentlyClimbing);
 
                 testTileEffects(entityTile);  // test what happens if in special liquids (fairy lake, lava...)
+                if (fireTimer != null) { updateEntityFire(); }
 
                 if (currentAttack != null && currentAttack.isDone) { currentAttack = null; }
 
@@ -1112,8 +1114,22 @@ namespace Cave
                     else { transformEntity((0, 0), true); }
                 }
                 if (type.type == 2 && tile.isAcidic && rand.Next(10) == 0) { transformEntity((2, 1), true); }
-                if (tile.isLava && !traits.lavaResistant && rand.Next(10) == 0) { dieAndDrop(); }
+                if (tile.isLava && !traits.fireResistant && rand.Next(10) == 0) { dieAndDrop(); }
                 if (tile.isAcidic && !traits.acidResistant && rand.Next(10) == 0) { dieAndDrop(); }
+            }
+            public void updateEntityFire()
+            {
+                if (traits.fireResistant || fireTimer.Value < timeElapsed || screen.getTileContent((posX, posY)).isFireChoking) { fireTimer = null; return; }
+                hp -= Min(1, 0.5f + traits.startingHp * 0.1f) * 0.05f;
+                timeAtLastGottenHit = timeElapsed;
+                if (hp <= 0) { dieAndDrop(); }
+
+                if (fireTimer.Value - timeElapsed > (float)rand.NextDouble() * 4)    // Add fire effect shits
+                {
+                    Chunk chunk = screen.getChunkFromPixelPos((posX, posY));
+                    if (chunk.screen.fireEffects.ContainsKey((posX, posY))) { chunk.screen.fireEffects[(posX, posY)] = Max(chunk.screen.fireEffects[(posX, posY)], (int)((fireTimer.Value - timeElapsed) * 15 + 50 * rand.NextDouble())); }
+                    else { chunk.screen.fireEffects[(posX, posY)] = (int)((fireTimer.Value - timeElapsed) * 15 + 50 * rand.NextDouble()); }
+                }
             }
             public void transformEntity((int type, int subType) newType, bool setHp = true)
             {

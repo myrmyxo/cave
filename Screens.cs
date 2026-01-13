@@ -335,6 +335,7 @@ namespace Cave
                     foreach ((int x, int y) pos in screen.firesToAdd) { screen.getChunkFromPixelPos(pos, onlyGetIfFullyLoaded: true).tryAddFire(pos); }
                     screen.firesToAdd = new HashSet<(int x, int y)>();
                     foreach (Chunk chunk in screen.loadedChunks.Values) { chunk.moveFires(); }
+                    screen.moveFireEffects();
                     foreach ((int x, int y) pos in screen.firesToAdd) { Chunk chunko = screen.getChunkFromPixelPos(pos, onlyGetIfFullyLoaded: true); if (chunko != null) { chunko.tryAddFire(pos); } }
                     screen.firesToAdd = new HashSet<(int x, int y)>();
 
@@ -609,6 +610,8 @@ namespace Cave
             public List<Attack> activeAttacks = new List<Attack>();
             public HashSet<Attack> attacksToRemove = new HashSet<Attack>();
             public HashSet<(int x, int y)> firesToAdd = new HashSet<(int x, int y)>();
+
+            public Dictionary<(int x, int y), int> fireEffects = new Dictionary<(int x, int y), int>();
 
             public HashSet<(int x, int y)> megaChunksToSave = new HashSet<(int x, int y)>();
 
@@ -974,6 +977,21 @@ namespace Cave
                 }
                 megaChunksToSave = new HashSet<(int x, int y)>();
             }
+            public void moveFireEffects()
+            {
+                Dictionary<(int x, int y), int> newFireEffects = new Dictionary<(int x, int y), int>();
+                foreach ((int x, int y) pos in fireEffects.Keys)
+                {
+                    int effectiveIntensity = fireEffects[pos];
+                    int newValue = (int)(effectiveIntensity * 0.7f + ((float)rand.NextDouble() * 0.2f) + ((float)rand.NextDouble() * 0.1f));
+                    if (newValue <= 0) { continue; }
+                    int xMod = rand.Next(10) == 0 ? (rand.Next(2) == 0 ? -1 : 1) : 0;
+                    newFireEffects[(pos.x + xMod, pos.y + 1)] = newValue;
+                    if (effectiveIntensity >= rand.Next(10000)) { firesToAdd.Add(pos); }
+                    if (effectiveIntensity >= rand.Next(1000)) { new Particle(this, pos, pos, (6, 0, 0)); }
+                }
+                fireEffects = newFireEffects;
+            }
 
             public void fillBitmap(Bitmap receiver, Color color)
             {
@@ -1073,10 +1091,11 @@ namespace Cave
                 foreach (Particle particle in activeParticles) { drawParticleOnScreen(gameBitmap, camPos, lightPositions, particle); }
                 drawPlayerOnScreen(gameBitmap, camPos, lightPositions, player);
                 drawAttacksOnScreen(gameBitmap, camPos);
+                addFireToLightPositions(lightPositions);
 
                 drawChunkEffectsOnScreen(gameBitmap, camPos, isPngToBeExported);
+                drawLightOnScreen(gameBitmap, lightBitmap, camPos, lightPositions);
                 drawChunkFireOnScreen(gameBitmap, camPos, isPngToBeExported);
-                drawLightOnScreen(gameBitmap, lightBitmap, camPos, lightPositions); 
                 drawFogOfWarOnScreen(gameBitmap, camPos);
 
                 if (debugMode && !isPngToBeExported && true) { drawAttacksDebugOnScreen(gameBitmap, camPos); } // debug for nests
@@ -1119,8 +1138,47 @@ namespace Cave
                     }
                 }
             }
+            public void addFireToLightPositions(List<(int x, int y, int radius, Color color)> lightPositions)
+            {
+                Dictionary<(int x, int y), int> fireLightDict = new Dictionary<(int x, int y), int>();
+                Chunk chunko;
+                for (int i = -game.effectiveRadius; i <= game.effectiveRadius; i++)
+                {
+                    for (int j = -game.effectiveRadius; j <= game.effectiveRadius; j++)
+                    {
+                        chunko = getChunkFromChunkPos((chunkX + i, chunkY + j), onlyGetIfFullyLoaded:true);
+                        if (chunko is null) { continue; }
+                        if (chunko.fireDict is null) { continue; }
+                        foreach ((int x, int y) pos in chunko.fireDict.Keys) { fireLightDict[pos] = Max(1, (int)(Math.Sqrt(chunko.fireDict[pos].effectiveIntensity) - 2)); }
+                    }
+                }
+
+                int countBeforeSimplification = fireLightDict.Count;
+
+                foreach ((int x, int y) pos in fireLightDict.Keys.ToArray())
+                {
+                    int fireValue = fireLightDict[pos];
+
+                    foreach ((int x, int y) mod in directionPositionArray)
+                    {
+                        if (fireLightDict.ContainsKey((pos.x + mod.x, pos.y + mod.y)) && fireLightDict[(pos.x + mod.x, pos.y + mod.y)] >= fireValue) { fireLightDict.Remove(pos); break; }
+                        if (fireLightDict.ContainsKey((pos.x + mod.x * 2, pos.y + mod.y * 2)) && fireLightDict[(pos.x + mod.x * 2, pos.y + mod.y * 2)] > fireValue) { fireLightDict.Remove(pos); break; }
+                    }
+                }
+
+                int countAfterSimplification = fireLightDict.Count;
+                float simplificationRatio = 100 * (1 - ((float)(countAfterSimplification) / countBeforeSimplification));
+                
+                foreach ((int x, int y) pos in fireLightDict.Keys) { lightPositions.Add((pos.x, pos.y + 2, fireLightDict[pos], fireColor)); }   // + 2 in y to make the flames go higher
+            }
             public void drawChunkFireOnScreen(Bitmap gameBitmap, (int x, int y) camPos, bool isPngToBeExported)
             {
+                foreach ((int x, int y) pos in fireEffects.Keys)
+                {
+                    int effectiveIntensity = fireEffects[pos];
+                    drawPixel(gameBitmap, Color.FromArgb(Min(255, effectiveIntensity * 10), 255, Min(255, 150 + effectiveIntensity), Min(255, 50 + effectiveIntensity * 2)), pos, camPos);
+                }
+
                 Chunk chunko;
                 for (int i = -game.effectiveRadius; i <= game.effectiveRadius; i++)
                 {

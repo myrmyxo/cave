@@ -68,7 +68,7 @@ namespace Cave
                 chunk = chunkToPut;
                 pos = firePos;
                 affectedTile = chunk.getTileContentInTHISChunk(firePos);
-                if (!affectedTile.isAir && !affectedTile.isLava && affectedTile.flammability is null) { isInvalidOnStartupOrGotKilled = true; return; }
+                if (affectedTile.isFireChoking) { isInvalidOnStartupOrGotKilled = true; return; }
                 affectedPlantElements = new List<PlantElement>();
                 HashSet<MaterialTraits> affectedMaterials = new HashSet<MaterialTraits>();
                 foreach (Plant plant in chunk.plants.Values)
@@ -99,7 +99,7 @@ namespace Cave
             {
                 if (hasNotBeenInited) { init(); }
                 intensity++;
-                if (!affectedTile.isAir && !affectedTile.isLava && affectedTile.flammability is null) { intensity -= 11; }
+                if (affectedTile.isFireChoking) { intensity -= 11; }
                 findEffectiveIntensity();
                 if (intensity <= 0) { isInvalidOnStartupOrGotKilled = true; return true; }
                 if (intensity >= propagationThreshold) { propagateFireOrtho(); }
@@ -110,6 +110,11 @@ namespace Cave
                     propagateFireDiag();
                     fireDestruction();
                     return true;
+                }
+                if (effectiveIntensity > rand.Next(300))    // Add fire effect shits
+                {
+                    if (chunk.screen.fireEffects.ContainsKey(pos)) { chunk.screen.fireEffects[pos] = Max(chunk.screen.fireEffects[pos], (int)(effectiveIntensity * (float)rand.NextDouble())); }
+                    else { chunk.screen.fireEffects[pos] = (int)(effectiveIntensity * 0.5f); }
                 }
                 return false;
             }
@@ -140,7 +145,14 @@ namespace Cave
             }
             public void fireDestruction()
             {
-                if (affectedTile.flammability != null && affectedTile.flammability.Value.destructionThreshold > 0) { chunk.tileModification(pos.x, pos.y, (0, 0)); }
+                if (affectedTile.flammability != null && affectedTile.flammability.Value.destructionThreshold > 0)
+                {
+                    if (affectedTile.burnTransformation != null && rand.NextDouble() * 100 < affectedTile.burnTransformation.Value.chance)
+                    {
+                        chunk.tileModification(pos.x, pos.y, affectedTile.burnTransformation.Value.type);
+                    }
+                    else { chunk.tileModification(pos.x, pos.y, (0, 0)); }
+                }
                 foreach (Plant plant in chunk.plants.Values) { plant.totalDestructionAtOnePos(pos, true); }
                 isInvalidOnStartupOrGotKilled = true;
             }

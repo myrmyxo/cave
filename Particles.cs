@@ -126,6 +126,11 @@ namespace Cave
                         return motherPlant.colorDict[(type.subType, type.subSubType)];
                     }
                 }
+                if (type.type == 6) // smoke particle
+                {
+                    int shadeMod = rand.Next(20);
+                    return Color.FromArgb(150, 40 - shadeMod, 35 - shadeMod, 45 - shadeMod);
+                }
                 return Color.FromArgb(100, rand.Next(256), rand.Next(256), rand.Next(256));
             }
             public void findLightColor()
@@ -227,6 +232,11 @@ namespace Cave
                     speedX = speedX * 0.9f + (float)(rand.NextDouble()) * 0.1f;
                     angle += -(((float)rand.NextDouble()-0.5f) * 1f);
                 }
+                else if (type.type == 6)
+                {
+                    speedY = 1;
+                    speedX += (0.1f - (float)rand.NextDouble() * 0.2f) * 0.6f;
+                }
 
                 if (isAngular)
                 {
@@ -241,6 +251,7 @@ namespace Cave
                     realPosY += speedY;
                     posX = (int)(Floor(realPosX, 1));
                     posY = (int)(Floor(realPosY, 1));
+                    if (type.type == 6 && !screen.getTileContent((posX, posY)).isAir) { screen.particlesToRemove.Add(this); }
                 }
 
                 if (!testDeath())

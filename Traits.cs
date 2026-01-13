@@ -44,6 +44,8 @@ namespace Cave
             public (int v, int h, int s) g;
             public (int v, int h, int s) b;
             public ColorRange((int v, int h, int s) red, (int v, int h, int s) green, (int v, int h, int s) blue) { r = red; g = green; b = blue; }
+            public Color getBaseColor() { return Color.FromArgb(r.v, g.v, b.v); }
+            public Color getLightColor() { return Color.FromArgb(255, (int)((r.v + 255) * 0.5f), (int)((g.v + 255) * 0.5f), (int)((b.v + 255) * 0.5f)); }
         }
         public static Dictionary<string, ColorRange> famousColorRanges = new Dictionary<string, ColorRange>
         {
@@ -54,7 +56,9 @@ namespace Cave
             { "IceStem", new ColorRange((175, 10, 15), (175, 10, 15), (215, -10, 15)) },
             { "IcePetal", new ColorRange((195, 10, 10), (195, 10, 10), (235, -10, 10)) },
             { "IcePollen", new ColorRange((235, 10, 10), (230, 0, 10), (255, 0, 0)) },
+            { "Fire", new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10)) },
         };
+        public static Color fireColor = famousColorRanges["Fire"].getLightColor();
         public class TileTraits
         {
             public (int type, int subType) type;
@@ -76,13 +80,14 @@ namespace Cave
             public int hardness;
             public int viscosity = 0;
             public (int propagationThreshold, int destructionThreshold)? flammability;
-            public (int type, int subType)? burnTransformation;
+            public ((int type, int subType) type, float chance)? burnTransformation;
+            public bool isFireChoking;
 
             public ColorRange colorRange;
             public float biomeColorBlend;
             public bool isTextured;     // For mold and salt crystals
             public bool isTransparent;
-            public TileTraits(string namee, ColorRange cR = null, bool Air = false, bool Liq = false, bool San = false, bool L = false, bool A = false, bool T = false, bool S = false, (int propagationThreshold, int destructionThreshold)? F = null, (int type, int subType)? bT = null, bool St = false, bool iTF = false, float bCB = 0.1f, bool Tex = false, bool Tr = false)
+            public TileTraits(string namee, ColorRange cR = null, bool Air = false, bool Liq = false, bool San = false, bool L = false, bool A = false, bool T = false, bool S = false, (int propagationThreshold, int destructionThreshold)? F = null, ((int type, int subType) type, float chance)? bT = null, bool? iFC = null, bool St = false, bool iTF = false, float bCB = 0.1f, bool Tex = false, bool Tr = false)
             {
                 name = namee;
 
@@ -95,11 +100,13 @@ namespace Cave
                 isAcidic = A;
                 isTransformant = T;
                 isSlippery = S;
-                flammability = F;
-                burnTransformation = bT;
 
                 isSterile = St;
                 ignoreTileFeatures = iTF;
+
+                flammability = F;
+                burnTransformation = bT;
+                isFireChoking = iFC ?? !isAir && !isLava && flammability is null;   // By default only Lava, Air, and tiles that are flammable are non fire choking, but can be forced (for ash for example)
 
                 colorRange = cR;
                 biomeColorBlend = bCB;
@@ -165,27 +172,27 @@ namespace Cave
                 cR:new ColorRange((110, 0, 0), (55, 0, 0), (30, 0, 0))                                                      ) },
                 { (2, 1), new TileTraits("Mud", bCB:0.3f,
                 cR:new ColorRange((65, 0, 0), (45, 0, 0), (30, 0, 0))                                                       ) },
-                { (2, 2), new TileTraits("Litter", bCB:0.2f, F:(45, 150),
+                { (2, 2), new TileTraits("Litter", bCB:0.2f, F:(45, 150), bT:((7, 0), 5),
                 cR:new ColorRange((180, 0, 0), (75, 0, 0), (40, 0, 0)),           Tex:true                                  ) },
 
-                { (3, 0), new TileTraits("Plant Matter", bCB:0.35f, F:(75, 250),
+                { (3, 0), new TileTraits("Plant Matter", bCB:0.35f, F:(75, 250), bT:((7, 0), 5),
                 cR:new ColorRange((10, 0, 0), (60, 0, 0), (30, 0, 0))                                                      ) },
 
                 { (4, 0), new TileTraits("Flesh Tile", bCB:0.2f,
                 cR:new ColorRange((135, 0, 0), (55, 0, 0), (55, 0, 0))                                                      ) },
                 { (4, 1), new TileTraits("Bone Tile", bCB:0.2f,
                 cR:new ColorRange((240, 0, 0), (230, 0, 0), (245, 0, 0))                                                    ) },
-                { (4, 2), new TileTraits("Skin Tile", bCB:0.2f, F:(75, 250),
+                { (4, 2), new TileTraits("Skin Tile", bCB:0.2f, F:(75, 250), bT:((7, 0), 5),
                 cR:new ColorRange((200, 0, 0), (150, 0, 0), (130, 0, 0))                                                    ) },
 
-                { (5, 0), new TileTraits("Mold Tile", bCB:0.1f, F:(15, 60),
+                { (5, 0), new TileTraits("Mold Tile", bCB:0.1f, F:(15, 60), bT:((7, 0), 5),
                 cR:new ColorRange((50, 0, 0), (50, 0, 0), (100, 0, 0)),           Tex:true                                  ) },
 
                 { (6, 0), new TileTraits("Salt Tile", bCB:0.1f,
                 cR:new ColorRange((170, 0, 0), (120, 0, 0), (140, 0, 0)),         Tex:true, Tr:true, St:true                ) },
 
                 { (7, 0), new TileTraits("Ash Tile", bCB:0.1f,
-                cR:new ColorRange((120, 0, 0), (120, 0, 0), (125, 0, 0)),         San:true, Tex:true                        ) },
+                cR:new ColorRange((120, 0, 0), (120, 0, 0), (125, 0, 0)),         San:true, Tex:true, iFC:false             ) },
             };
 
             foreach ((int type, int subType) typeToSet in tileTraitsDict.Keys) { tileTraitsDict[typeToSet].setType(typeToSet); }
@@ -314,7 +321,7 @@ namespace Cave
 
             // Resistances
             public bool acidResistant;
-            public bool lavaResistant;
+            public bool fireResistant;
 
             // Behaviors
             public int inWaterBehavior;     // -> 0: nothing, 1: float upwards, 2: move randomly in water, 3:drift towards land
@@ -338,7 +345,7 @@ namespace Cave
                 ((bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color, (int segment, bool fromEnd, (int x, int y) pos)[] array)[] tM2 = null,
                 (int type, (int x, int y) pos, float period, float turningSpeed, (bool isVariation, (int a, int r, int g, int b) value) color)? wT = null,
                 ((int x, int y)[] up, (int x, int y)[] side, (int x, int y)[] down)? cP = null, HashSet<(int type, int subType)> tICSO = null,
-                bool RsA = false, bool RsL = false, int iW = 0, int oW = 0, int iA = 0, int oG = 0, int iG = 0, int oP = 0,
+                bool RsA = false, bool RsF = false, int iW = 0, int oW = 0, int iA = 0, int oG = 0, int iG = 0, int oP = 0,
                 bool fIF = false, bool fIS = false, bool fID = false, bool fIJ = false, bool fIC = false,
                 float sS = 0.1f, float sMS = 0.5f, (float x, float y)? jS = null, float jC = 0, float mC = 0, int gHD = 50,
                 HashSet<(int type, int subType)> dT = null)
@@ -383,7 +390,7 @@ namespace Cave
                 tilesItCanSpawnOn = tICSO;
 
                 acidResistant = RsA;
-                lavaResistant = RsL;
+                fireResistant = RsF;
 
                 inWaterBehavior = iW;
                 onWaterBehavior = oW;
@@ -424,7 +431,7 @@ namespace Cave
                 iW:1, iA:1, iG:3) },
                 { (0, 3), new EntityTraits("SkeletonFairy",   15, ((8, 1, 3), 1),       //  --> Bone
                 new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)), lR:7, wT:(0, (0, 0), 0.02165f, 0.75f, (false, (50, 230, 230, 230))),
-                iW:1, iA:1, iG:3, RsA:true, RsL:true) },
+                iW:1, iA:1, iG:3, RsA:true, RsF:true) },
 
                 { (1, 0), new EntityTraits("Frog",            2,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((90, 50, 30), (210, 50, 30), (110, -50, 30)),
@@ -432,13 +439,13 @@ namespace Cave
 
                 { (2, 0), new EntityTraits("Fish",            2,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((190, 0, 30), (80, -50, 30), (80, 50, 30)), wT:(1, (0, 0), 0.01865f, 0.05f, (true, (-205, 50, 50, 50))),
-                iW:2, oG:1, iG:1, jC:0.01f, RsA:true, RsL:true) },
+                iW:2, oG:1, iG:1, jC:0.01f, RsA:true, RsF:true) },
                 { (2, 1), new EntityTraits("SkeletonFish",    2,  ((8, 1, 3), 1),       //  --> Bone
                 new ColorRange((210, 0, 20), (210, 0, 20), (190, 20, 20)),
-                iW:2, oG:1, iG:1, jC:0.01f, RsA:true, RsL:true) },
+                iW:2, oG:1, iG:1, jC:0.01f, RsA:true, RsF:true) },
                 { (2, 2), new EntityTraits("Pufferfish",      2,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((190, 0, 30), (80, -50, 30), (80, 50, 30)),
-                iW:2, oG:1, iG:1, jC:0.01f, RsA:true, RsL:true) },
+                iW:2, oG:1, iG:1, jC:0.01f, RsA:true, RsF:true) },
 
                 { (3, 0), new EntityTraits("HornetEgg",       2,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((205, 10, 30), (205, 10, 30), (235, 0, 30)),                                              
@@ -1740,11 +1747,11 @@ namespace Cave
 
 
                 { (101, 0), new PlantTraits("Candle",                                        lum:true,
-                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), famousColorRanges["Fire"]) }) },
                 { (101, 1), new PlantTraits("Chandelier",                                    lum:true,
-                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), famousColorRanges["Fire"]) }) },
                 { (101, 2), new PlantTraits("Candelabrum",                                   lum:true,
-                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10))) }) },
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), famousColorRanges["Fire"]) }) },
 
 
 
@@ -2197,12 +2204,14 @@ namespace Cave
             public bool isTerrainDigging;
             public bool isTerrainPlacing;
             public bool isPlantDigging;
-            public bool isFire;
+            public bool isBurning;
+            public bool isFireStarting;
             public bool isAbortable;
             public bool isEntityBound;
+            public bool isMultiHit;
             public (int type, int subType)? targetMaterial;
 
-            public AttackTraits(string namee, float d = 0, float m = 0, bool H = false, bool T = false, bool tP = false, bool P = false, bool F = false, bool A = false, bool B = false, (int type, int subType)? tM = null)
+            public AttackTraits(string namee, float d = 0, float m = 0, bool H = false, bool T = false, bool tP = false, bool P = false, bool Bu = false, bool fS = false, bool A = false, bool B = false, bool mH = false, (int type, int subType)? tM = null)
             {
                 name = namee;
                 damage = d;
@@ -2211,9 +2220,11 @@ namespace Cave
                 isTerrainDigging = T;
                 isTerrainPlacing = tP;
                 isPlantDigging = P;
-                isFire = F;
+                isBurning = Bu;
+                isFireStarting = fS;
                 isAbortable = A;
                 isEntityBound = B;
+                isMultiHit = mH;
                 targetMaterial = tM;
             }
         }
@@ -2225,7 +2236,7 @@ namespace Cave
             {
                 { (-1, 0, 0, 0), new AttackTraits("Error"                                                                               ) },
 
-                { (0, 0, 0, 0), new AttackTraits("Fire",                d:0.2f,         H:true                                          ) },
+                { (0, 0, 0, 0), new AttackTraits("Fire",                d:0.1f, mH:true,H:true, Bu:true                                 ) },
 
                 { (0, 0, 0, 4), new AttackTraits("Sword",               d:1,            H:true, B:true                                  ) },
                 { (1, 0, 0, 4), new AttackTraits("Pickaxe",             d:0.5f,         H:true, B:true, T:true,         A:true          ) },
@@ -2253,7 +2264,7 @@ namespace Cave
                 { (3, 6, 2, 4), new AttackTraits("Plant Dig bullet 2",                                  P:true                          ) },
                 { (3, 6, 3, 4), new AttackTraits("Plant Dig bullet 3",                                  P:true                          ) },
                 { (3, 7, 0, 4), new AttackTraits("Fire Wand",              m:15,                B:true                                  ) },
-                { (3, 7, 1, 4), new AttackTraits("Fire bullet",                                         F:true                          ) },
+                { (3, 7, 1, 4), new AttackTraits("Fire bullet",                                         fS:true, Bu:true                ) },
 
                 { (4, 0, 0, 4), new AttackTraits("Axe",                 d:0.5f,         H:true, B:true,         P:true, A:true          ) },
 

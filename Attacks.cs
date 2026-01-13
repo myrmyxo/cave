@@ -349,7 +349,7 @@ namespace Cave
                 {
                     if (state == 3) { motherEntity.setEntityPos(pos); }
                 }
-                if (traits.isFire) { screen.firesToAdd.Add(pos); }
+                if (traits.isFireStarting) { screen.firesToAdd.Add(pos); }
 
                 if (!traits.isHitting) { return; }
                 List<Entity> hitList = getHitList(attackPos, chunkToTest);
@@ -367,7 +367,7 @@ namespace Cave
                 if (chunkToTest is null) { chunkToTest = screen.getChunkFromPixelPos(attackPos); }
                 foreach (Entity entity in chunkToTest.entityList)
                 {
-                    if ((entity.posX, entity.posY) == attackPos && !entitiesAlreadyHitByCurrentAttack.Contains(entity.id)) { entityList.Add(entity); }
+                    if ((entity.posX, entity.posY) == attackPos && (traits.isMultiHit || !entitiesAlreadyHitByCurrentAttack.Contains(entity.id))) { entityList.Add(entity); }
                 }
                 return entityList;
             }
@@ -378,6 +378,11 @@ namespace Cave
                     if (motherEntity == null || entity.type != motherEntity.type)
                     {
                         entitiesAlreadyHitByCurrentAttack.Add(entity.id);
+                        if (traits.isBurning)
+                        {
+                            if (entity.traits.fireResistant) { continue; }
+                            entity.fireTimer = timeElapsed + 3 + (float)(rand.NextDouble()) * 4;
+                        }
                         entity.hp -= traits.damage;
                         entity.timeAtLastGottenHit = timeElapsed;
                         if (entity.hp <= 0) { entity.dieAndDrop(motherEntity); }

@@ -64,15 +64,6 @@ namespace Cave
             makeTheFilledChunk();
 
             //     ---- - - CURRENTLY DOING - - ----
-            //
-            // Fire
-            //      -> Make entities able to be on fire lol
-            //      -> upgrade visuals (particles, color change)
-            //              -> And the more intense it is, the bigger the flame also and the more spreading effect above (or to the sides too idk)
-            //      -> Make fire make light
-            //      -> Make a burnTransformation for tiles, so that mold and shit can sometimes turn into ashhhhhhh
-            //      -> Make ash be non fire choking
-            //      -> Make some attacks be able to MULTI HIT, so that the same fire can burn the same entity multiple times
             // 
             // Then prairies and heathlands and shrublands and stuff HEATHHH
             // -> Separate Bayou and Swamp (Bayou is rare variant)

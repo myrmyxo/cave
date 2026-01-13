@@ -368,7 +368,11 @@ namespace Cave
                                 if (traits.burnTransformation != null && rand.NextDouble() * 100 < traits.burnTransformation.Value.chance)
                                 {
                                     if (traits.burnTransformation.Value.isTile) { screen.setTileContent(posToDig, traits.burnTransformation.Value.type); }
-                                    else if (element.tryFill(posToTest, traits.burnTransformation.Value.type)) { tryAddMaterialColor(traits.burnTransformation.Value.type); }
+                                    else
+                                    {
+                                        element.forceFill(posToTest, traits.burnTransformation.Value.type);
+                                        tryAddMaterialColor(traits.burnTransformation.Value.type);
+                                    }
                                 }
                                 screen.plantsToMakeBitmapsOf[id] = this;
                                 hasBeenModified = true;
@@ -627,6 +631,7 @@ namespace Cave
                 if (motherPlant.testIfPositionEmpty(absolutePos(testPos))) { fillStates[testPos] = typeToFill; return true; }
                 return false;
             }
+            public void forceFill((int x, int y) testPos, (int type, int subType) typeToFill) { fillStates[testPos] = typeToFill; }
             public bool makeBaby(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item, int seedMod, int offset)
             {
                 (int x, int y) babyPos = (item.dirType == 0 || item.dirType == 5) ? absolutePos((lastDrawPos.x + item.mod.x, lastDrawPos.y + item.mod.y)) : absolutePos(lastDrawPos);
