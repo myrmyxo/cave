@@ -1114,15 +1114,19 @@ namespace Cave
                     else { transformEntity((0, 0), true); }
                 }
                 if (type.type == 2 && tile.isAcidic && rand.Next(10) == 0) { transformEntity((2, 1), true); }
-                if (tile.isLava && !traits.fireResistant && rand.Next(10) == 0) { dieAndDrop(); }
-                if (tile.isAcidic && !traits.acidResistant && rand.Next(10) == 0) { dieAndDrop(); }
+                if (tile.isLava && !traits.fireResistant)
+                {
+                    hp -= 0.05f;
+                    if (!traits.fireResistant) { fireTimer = timeElapsed + 3 + (float)(rand.NextDouble()) * 4; }
+                }
+                if (tile.isAcidic && !traits.acidResistant) { hp -= 0.05f; }
             }
             public void updateEntityFire()
             {
                 if (traits.fireResistant || fireTimer.Value < timeElapsed || screen.getTileContent((posX, posY)).isFireChoking) { fireTimer = null; return; }
                 hp -= Min(1, 0.5f + traits.startingHp * 0.1f) * 0.05f;
                 timeAtLastGottenHit = timeElapsed;
-                if (hp <= 0) { dieAndDrop(); }
+                testDeath();
 
                 if (fireTimer.Value - timeElapsed > (float)rand.NextDouble() * 4)    // Add fire effect shits
                 {
@@ -1140,6 +1144,10 @@ namespace Cave
                 findLength();
                 color = findColor();
                 findLightColor();
+            }
+            public void testDeath(Entity entityToGive = null)
+            {
+                if (hp <= 0) { dieAndDrop(entityToGive); }
             }
             public void dieAndDrop(Entity entityToGive = null)
             {

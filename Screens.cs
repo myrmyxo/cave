@@ -979,15 +979,32 @@ namespace Cave
             }
             public void moveFireEffects()
             {
+                (int x, int y) posToTest;
                 Dictionary<(int x, int y), int> newFireEffects = new Dictionary<(int x, int y), int>();
                 foreach ((int x, int y) pos in fireEffects.Keys)
                 {
                     int effectiveIntensity = fireEffects[pos];
                     int newValue = (int)(effectiveIntensity * 0.7f + ((float)rand.NextDouble() * 0.2f) + ((float)rand.NextDouble() * 0.1f));
                     if (newValue <= 0) { continue; }
-                    int xMod = rand.Next(10) == 0 ? (rand.Next(2) == 0 ? -1 : 1) : 0;
-                    newFireEffects[(pos.x + xMod, pos.y + 1)] = newValue;
+                    if (rand.Next(10) > 0)  // To directly try moving diagonally in 10% of cases so that even without something solid on top fire spreads out a lil bit
+                    {
+                        posToTest = (pos.x, pos.y + 1);
+                        if (!getTileContent(posToTest).isSolid) { goto Proceed; }
+                    }
+                    int xMod = rand.Next(2) == 0 ? -1 : 1;
+                    posToTest = (pos.x + xMod, pos.y + 1);
+                    if (!getTileContent(posToTest).isSolid) { goto Proceed; }
+                    posToTest = (pos.x - xMod, pos.y + 1);
+                    if (!getTileContent(posToTest).isSolid) { goto Proceed; }
+                    posToTest = (pos.x + xMod, pos.y);
+                    if (!getTileContent(posToTest).isSolid) { goto Proceed; }
+                    posToTest = (pos.x - xMod, pos.y);
+                    if (!getTileContent(posToTest).isSolid) { goto Proceed; }
+                    continue;
+                Proceed:;
+                    newFireEffects[posToTest] = newValue;
                     if (effectiveIntensity >= rand.Next(10000)) { firesToAdd.Add(pos); }
+                    if (effectiveIntensity >= rand.Next(5000)) { (int x, int y) mod = getRandomItem(directionPositionArray); firesToAdd.Add((pos.x + mod.x, pos.y + mod.y)); }
                     if (effectiveIntensity >= rand.Next(1000)) { new Particle(this, pos, pos, (6, 0, 0)); }
                 }
                 fireEffects = newFireEffects;

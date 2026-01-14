@@ -385,7 +385,7 @@ namespace Cave
                         }
                         entity.hp -= traits.damage;
                         entity.timeAtLastGottenHit = timeElapsed;
-                        if (entity.hp <= 0) { entity.dieAndDrop(motherEntity); }
+                        entity.testDeath(motherEntity);
                     }
                 }
             }

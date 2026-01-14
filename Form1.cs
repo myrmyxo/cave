@@ -539,6 +539,7 @@ namespace Cave
 
 
         public static T getRandomItem<T>(List<T> collection) { return collection[rand.Next(collection.Count)]; }
+        public static T getRandomItem<T>(T[] collection) { return collection[rand.Next(collection.Length)]; }
         public static T getRandomItem<T>(HashSet<T> collection) { return collection.ToArray()[rand.Next(collection.Count)]; }
         public static T getRandomKey<T, V>(Dictionary<T, V> collection) { return collection.Keys.ToArray()[rand.Next(collection.Count)]; }
         public static V getRandomValue<T, V>(Dictionary<T, V> collection) { return collection.Values.ToArray()[rand.Next(collection.Count)]; }
