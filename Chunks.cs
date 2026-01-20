@@ -131,9 +131,9 @@ namespace Cave
             }
             public void findEffectiveIntensity()
             {
-                effectiveIntensity = (int)(intensity * (2 - Min(1, destructionThreshold * 0.01f)));
-                int diff = (int)(intensity - destructionThreshold * 0.85f);
-                if (diff > 0) { effectiveIntensity -= diff * 6; }
+                effectiveIntensity = (int)(intensity * (3 - Min(2, destructionThreshold * 0.02f)));
+                int diff = (int)(intensity - destructionThreshold * 0.75f);
+                if (diff > 0) { effectiveIntensity -= diff * 4; }
             }
             public void propagateFireOrtho()
             {
@@ -177,7 +177,7 @@ namespace Cave
             public HashSet<BiomeTraits> allBiomesInTheChunk;
 
             public TileTraits[,] fillStates = new TileTraits[32, 32];
-            public (int, int, int)[,] baseColors;
+            public ((int r, int g, int b) solid, (int r, int g, int b) air)[,] baseColors;
             public Bitmap bitmap;
             public Bitmap effectsBitmap;
             public Bitmap fireBitmap;
@@ -333,7 +333,7 @@ namespace Cave
 
                 allBiomesInTheChunk = new HashSet<BiomeTraits>();
                 biomeIndex = new (BiomeTraits traits, int percentage)[32, 32][];
-                baseColors = new (int, int, int)[32, 32];
+                baseColors = new ((int r, int g, int b) solid, (int r, int g, int b) air)[32, 32];
                 bitmap = new Bitmap(32, 32);
                 effectsBitmap = new Bitmap(32, 32);
 
@@ -342,7 +342,7 @@ namespace Cave
                     (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) tileValues = makeTileBiomeValueArrayMonoBiome(screen.type);
                     (BiomeTraits traits, int percentage)[] biomeTraitArray = new (BiomeTraits traits, int percentage)[] { (getBiomeTraits(screen.type), 1000) };
                     int[] colorArray = findBiomeColor(biomeTraitArray);
-                    (int, int, int) baseColorsTuple = (colorArray[0], colorArray[1], colorArray[2]);
+                    ((int r, int g, int b) solid, (int r, int g, int b) air) baseColorsTuple = ((colorArray[0], colorArray[1], colorArray[2]), (colorArray[3], colorArray[4], colorArray[5]));
 
                     allBiomesInTheChunk.Add(biomeTraitArray[0].traits);
                     for (int i = 0; i < 32; i++)
@@ -369,7 +369,7 @@ namespace Cave
                     biomeIndex[0, 0][0] == biomeIndex[31, 0][0] && biomeIndex[0, 0][0] == biomeIndex[0, 31][0] && biomeIndex[0, 0][0] == biomeIndex[31, 31][0])
                 {
                     int[] colorArray = findBiomeColor(biomeIndex[0, 0]);
-                    baseColors[0, 0] = (colorArray[0], colorArray[1], colorArray[2]);
+                    baseColors[0, 0] = ((colorArray[0], colorArray[1], colorArray[2]), (colorArray[3], colorArray[4], colorArray[5]));
 
                     allBiomesInTheChunk.Add(biomeIndex[0, 0][0].traits);
                     for (int i = 0; i < 32; i ++)
@@ -391,7 +391,7 @@ namespace Cave
                         foreach ((BiomeTraits traits, int percentage) item in biomeIndex[i, j]) { allBiomesInTheChunk.Add(item.traits); }
 
                         int[] colorArray = findBiomeColor(biomeIndex[i, j]);
-                        baseColors[i, j] = (colorArray[0], colorArray[1], colorArray[2]);
+                        baseColors[i, j] = ((colorArray[0], colorArray[1], colorArray[2]), (colorArray[3], colorArray[4], colorArray[5]));
                     }
                 }
 
@@ -780,27 +780,29 @@ namespace Cave
                             bool isLiquid = false;
                             for (int k = 0; k < 4; k++)
                             {
+                                (int valid, int invalid) score = dirtScoreArray[k];
+
                                 tileTested = screen.getTileContent((pos.x * 32 + i, pos.y * 32 + j + k + 1), false);
-                                if (tileTested.isSolid) { noiseValue += dirtScoreArray[k].invalid; }
+                                if (tileTested.isSolid) { noiseValue += score.invalid; }
                                 else
                                 {
-                                    noiseValue += dirtScoreArray[k].valid;
+                                    noiseValue += score.valid;
                                     if (tileTested.isLiquid) { isLiquid = true; }
                                 }
 
                                 tileTested = screen.getTileContent((pos.x * 32 + i - 1, pos.y * 32 + j + k + 1), false);
-                                if (tileTested.isSolid) { noiseValue += dirtScoreArray[k].invalid * 0.2f; }
+                                if (tileTested.isSolid) { noiseValue += score.invalid * 0.2f; }
                                 else
                                 {
-                                    noiseValue += dirtScoreArray[k].valid * 0.2f;
+                                    noiseValue += score.valid * 0.2f;
                                     if (tileTested.isLiquid) { isLiquid = true; }
                                 }
 
                                 tileTested = screen.getTileContent((pos.x * 32 + i + 1, pos.y * 32 + j + k + 1), false);
-                                if (tileTested.isSolid) { noiseValue += dirtScoreArray[k].invalid * 0.2f; }
+                                if (tileTested.isSolid) { noiseValue += score.invalid * 0.2f; }
                                 else
                                 {
-                                    noiseValue += dirtScoreArray[k].valid * 0.2f;
+                                    noiseValue += score.valid * 0.2f;
                                     if (tileTested.isLiquid) { isLiquid = true; }
                                 }
                             }
@@ -828,6 +830,33 @@ namespace Cave
                         }
                         else { noiseValue -= 10000; }
                     }
+                    else if (tFT.transitionRules == 10) // Sand
+                    {
+                        valueRequired += tFT.baseThreshold;
+                        noiseValue = noiseValue1;
+                        TileTraits tileTested = screen.getTileContent((pos.x * 32 + i, pos.y * 32 + j - 1), false);
+                        TileTraits tileTested2 = screen.getTileContent((pos.x * 32 + i - 1, pos.y * 32 + j - 1), false);
+                        TileTraits tileTested3 = screen.getTileContent((pos.x * 32 + i + 1, pos.y * 32 + j - 1), false);
+                        if (tileTested.isSolid && tileTested2.isSolid && tileTested3.isSolid)
+                        {
+                            for (int k = 0; k < 10; k++)
+                            {
+                                (int valid, int invalid) score = sandScoreArray[k];
+                                tileTested = screen.getTileContent((pos.x * 32 + i, pos.y * 32 + j + k + 1), false);
+                                if (tileTested.isSolid) { noiseValue += score.invalid; }
+                                else { noiseValue += score.valid; }
+
+                                tileTested = screen.getTileContent((pos.x * 32 + i - 1, pos.y * 32 + j + k + 1), false);
+                                if (tileTested.isSolid) { noiseValue += score.invalid * 0.2f; }
+                                else { noiseValue += score.valid * 0.2f; }
+
+                                tileTested = screen.getTileContent((pos.x * 32 + i + 1, pos.y * 32 + j + k + 1), false);
+                                if (tileTested.isSolid) { noiseValue += score.invalid * 0.2f; }
+                                else { noiseValue += score.valid * 0.2f; }
+                            }
+                        }
+                        else { noiseValue -= 1000; }
+                    }
                     else { noiseValue = -999999; }
 
                     if (noiseValue >= valueRequired) { fillStates[i, j] = getTileTraits(typeToFill); return true; }
@@ -836,18 +865,29 @@ namespace Cave
             }
             public void findTileColor(int i, int j)
             {
-                int[] colorArray = { baseColors[i, j].Item1, baseColors[i, j].Item2, baseColors[i, j].Item3 };
-                Color colorToSet;
                 TileTraits traits = fillStates[i, j];
+
+                int[] colorArray;
+                if (traits.isSolid) { colorArray = new int[]{ baseColors[i, j].solid.r, baseColors[i, j].solid.g, baseColors[i, j].solid.b }; }
+                else { colorArray = new int[] { baseColors[i, j].air.r, baseColors[i, j].air.g, baseColors[i, j].air.b }; }
+                // colorArray = new int[] { baseColors[i, j].solid.r, baseColors[i, j].solid.g, baseColors[i, j].solid.b };
 
                 (int r, int g, int b, float mult) materialColor = (traits.colorRange.r.v, traits.colorRange.g.v, traits.colorRange.b.v, traits.biomeColorBlend);
                 for (int k = 0; k < 3; k++) { colorArray[k] = (int)(colorArray[k] * materialColor.mult); }
 
-                int rando = traits.isTextured ? Abs((int)(LCGyNeg(LCGxPos(pos.x * 32 + i) % 153 + LCGyPos(pos.y * 32 + j) % 247) % 279)) % 40 - 20 : 0;
+                int rando = 0;
+                if (traits.isTextured != null)
+                {
+                    long randoLong = 0;
+                    if (traits.isTextured.Value.x) { randoLong += LCGxPos(pos.x * 32 + i) % 153; }
+                    if (traits.isTextured.Value.y) { randoLong += LCGyPos(pos.y * 32 + j) % 247; }
+                    rando = Abs((int)(LCGyNeg(randoLong) % 279)) % 40 - 20;
+                }
+
                 colorArray[0] += (int)(materialColor.r * (1 - materialColor.mult)) + rando;
                 colorArray[1] += (int)(materialColor.g * (1 - materialColor.mult)) + rando;
                 colorArray[2] += (int)(materialColor.b * (1 - materialColor.mult)) + rando;
-                colorToSet = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
+                Color colorToSet = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
 
                 if (traits.type == (0, -1))  // csgo missing texture effect when thing is not in the the tha            SOIL
                 {
@@ -1335,7 +1375,13 @@ namespace Cave
             {
                 if (fireDict is null) { fireBitmap = null; return; }
                 fireBitmap = new Bitmap(32, 32);
-                foreach ((int x, int y) firePos in fireDict.Keys) { fireBitmap.SetPixel(PosMod(firePos.x), PosMod(firePos.y), Color.FromArgb(Min(255, fireDict[firePos].effectiveIntensity * 10), 255, Min(255, 150 + fireDict[firePos].effectiveIntensity), Min(255, 50 + fireDict[firePos].effectiveIntensity * 2))); }
+                foreach ((int x, int y) firePos in fireDict.Keys)
+                {
+                    int drawIntensity = fireDict[firePos].effectiveIntensity;
+                    if (drawIntensity > 50) { drawIntensity = 50 + (int)((drawIntensity - 50) * 0.5f); }
+                    if (drawIntensity > 70) { drawIntensity = 70 + (int)((drawIntensity - 70) * 0.5f); }
+                    fireBitmap.SetPixel(PosMod(firePos.x), PosMod(firePos.y), Color.FromArgb(Min(255, drawIntensity * 10), 255, Min(255, 150 + drawIntensity), Min(255, 50 + drawIntensity * 2)));
+                }
             }
 
 
@@ -1845,11 +1891,10 @@ namespace Cave
                     calculateAndAddBiome(listo, (201, 0), ref percentageFree, humidity, (-999999, 250)); // bone
                     testAddBiome(listo, (200, 2), percentageFree); // flesh and bone
                 }
-                else if (dimensionType == (-1, 0)) // type == -1, TEST wetlands dimension
+                else if (dimensionType == (-1, 0)) // type == -1, TEST dimension
                 {
-                    calculateAndAddBiome(listo, (2, 1), ref percentageFree, illumination, (650, 999999)); // Marsh
-                    calculateAndAddBiome(listo, (3, 3), ref percentageFree, salinity, (512, 999999)); // Swamp
-                    testAddBiome(listo, (3, 4), percentageFree); // Mangrove
+                    calculateAndAddBiome(listo, (2, 2), ref percentageFree, salinity, (512, 999999)); // Desert
+                    testAddBiome(listo, (2, 3), percentageFree); // Baobab desert
                 }
             }
 
@@ -1867,7 +1912,7 @@ namespace Cave
         }
         public static int[] findBiomeColor((BiomeTraits traits, int percentage)[] arrayo)
         {
-            int[] colorArray = { 0, 0, 0 };
+            int[] colorArray = { 0, 0, 0, 0, 0, 0 };
             float mult;
             foreach ((BiomeTraits traits, int percentage) tupel in arrayo)
             {
@@ -1875,8 +1920,11 @@ namespace Cave
                 colorArray[0] += (int)(mult * tupel.traits.color.r);
                 colorArray[1] += (int)(mult * tupel.traits.color.g);
                 colorArray[2] += (int)(mult * tupel.traits.color.b);
+                colorArray[3] += (int)(mult * tupel.traits.backgroundColor.r);
+                colorArray[4] += (int)(mult * tupel.traits.backgroundColor.g);
+                colorArray[5] += (int)(mult * tupel.traits.backgroundColor.b);
             }
-            for (int k = 0; k < 3; k++)
+            for (int k = 0; k < 6; k++)
             {
                 colorArray[k] = (int)(colorArray[k] * 0.3f);
                 colorArray[k] += 20;

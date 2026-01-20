@@ -1242,7 +1242,7 @@ namespace Cave
                         foreach ((int x, int y) mod in traits.collisionPoints.side)
                         {   // if a worm or the material is not a solid tile, stop updating positions
                             currentTile = screen.getTileContent((posToTest.x + mod.x * signX, posToTest.y + mod.y));
-                            if (currentTile.isSolid && !(traits.isDigging && traits.diggableTiles.Contains(currentTile.type)))
+                            if (currentTile.isSolid && !(traits.isDigging && (currentTile.isBurrowable || traits.diggableTiles.Contains(currentTile.type))))
                             {
                                 if (isPlayer && arrowKeysState[3] && onGround && !climbing && speedY <= 0 && traits.collisionPoints.side.Length == 1)  // Make players able to move 1 tile upwards (not get stuck on small slopes cuz it's annoying)
                                 {
@@ -1297,7 +1297,7 @@ namespace Cave
                         foreach ((int x, int y) mod in signY > 0 ? traits.collisionPoints.up : traits.collisionPoints.down)
                         {   // if a worm or the material is not a solid tile, stop updating positions
                             currentTile = screen.getTileContent((posToTest.x + mod.x * signX, posToTest.y + mod.y));
-                            if (currentTile.isSolid && !(traits.isDigging && traits.diggableTiles.Contains(currentTile.type))) { proceed = false; break; }
+                            if (currentTile.isSolid && !(traits.isDigging && (currentTile.isBurrowable || traits.diggableTiles.Contains(currentTile.type)))) { proceed = false; break; }
                         }
                         if (climbing && !screen.climbablePositions.Contains(posToTest)) { proceed = false; }
                         if (proceed)

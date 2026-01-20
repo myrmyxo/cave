@@ -634,13 +634,14 @@ namespace Cave
             public void forceFill((int x, int y) testPos, (int type, int subType) typeToFill) { fillStates[testPos] = typeToFill; }
             public bool makeBaby(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item, int seedMod, int offset)
             {
-                (int x, int y) babyPos = (item.dirType == 0 || item.dirType == 5) ? absolutePos((lastDrawPos.x + item.mod.x, lastDrawPos.y + item.mod.y)) : absolutePos(lastDrawPos);
+                (int x, int y) babyPos = (item.dirType == 0 || item.dirType >= 5) ? absolutePos((lastDrawPos.x + item.mod.x, lastDrawPos.y + item.mod.y)) : absolutePos(lastDrawPos);
                 ((int x, int y) dir, bool isApplyAfter)? babyDirection = null;
                 if (item.dirType == 1) { babyDirection = (item.mod, false); }
                 else if (item.dirType == 2) { babyDirection = (baseDirection, false); }
                 else if (item.dirType == 3) { babyDirection = (directionPositionArray[PosMod(directionPositionDictionary[growthDirection] + item.mod.x, 8)], false); }
                 else if (item.dirType == 4) { babyDirection = (directionPositionArray[PosMod(directionPositionDictionary[growthDirection] + item.mod.x * baseDirection.x, 8)], false); }
                 else if (item.dirType == 5) { babyDirection = ((SignZero(item.mod.x), SignZero(item.mod.y)), true); }
+                else if (item.dirType == 6) { babyDirection = ((SignZero(item.mod.x), SignZero(item.mod.y)), false); }
                 PlantElement baby = new PlantElement(motherPlant, babyPos, item.child, getRandValue(seed + 923147 * seedMod + offset * 10000), this, false, babyDirection);
                 if (baby.isDeadAndShouldDisappear)
                 {
@@ -652,13 +653,14 @@ namespace Cave
             }
             public bool makeBaby(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance) item, int seedMod)
             {
-                (int x, int y) babyPos = (item.dirType == 0 || item.dirType == 5) ? absolutePos((lastDrawPos.x + item.mod.x, lastDrawPos.y + item.mod.y)) : absolutePos(lastDrawPos);
+                (int x, int y) babyPos = (item.dirType == 0 || item.dirType >= 5) ? absolutePos((lastDrawPos.x + item.mod.x, lastDrawPos.y + item.mod.y)) : absolutePos(lastDrawPos);
                 ((int x, int y) dir, bool isApplyAfter)? babyDirection = null;
                 if (item.dirType == 1) { babyDirection = (item.mod, false); }
                 else if (item.dirType == 2) { babyDirection = (baseDirection, false); }
                 else if (item.dirType == 3) { babyDirection = (directionPositionArray[PosMod(directionPositionDictionary[growthDirection] + item.mod.x, 8)], false); }
                 else if (item.dirType == 4) { babyDirection = (directionPositionArray[PosMod(directionPositionDictionary[growthDirection] + item.mod.x * baseDirection.x, 8)], false); }
                 else if (item.dirType == 5) { babyDirection = ((SignZero(item.mod.x), SignZero(item.mod.y)), true); }
+                else if (item.dirType == 6) { babyDirection = ((SignZero(item.mod.x), SignZero(item.mod.y)), false); }
                 PlantElement baby = new PlantElement(motherPlant, babyPos, item.child, getRandValue(seed + 3 * seedMod), this, false, babyDirection);
                 if (baby.isDeadAndShouldDisappear)
                 {
@@ -1006,28 +1008,48 @@ namespace Cave
                     if (currentElementWidening is null) { if (!tryFill(drawPos, traits.plantGrowthRules.materalToFillWith)) { goto Fail; } }
                     else
                     {
-                        bool failure = tryFill(drawPos, traits.plantGrowthRules.materalToFillWith);
+                        bool success = tryFill(drawPos, traits.plantGrowthRules.materalToFillWith);
                         for (int i = 1; i < currentElementWidening.Value.width.left + 1; i++)
                         {
                             if (!tryFill((drawPos.x - i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y), traits.plantGrowthRules.materalToFillWith)) { break; }
-                            failure = false;
+                            success = true;
                         }
                         for (int i = 1; i < currentElementWidening.Value.width.right + 1; i++)
                         {
                             if (!tryFill((drawPos.x + i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y), traits.plantGrowthRules.materalToFillWith)) { break; }
-                            failure = false;
+                            success = true;
                         }
                         for (int i = 1; i < currentElementWidening.Value.width.down + 1; i++)
                         {
                             if (!tryFill((drawPos.x, drawPos.y - i * (currentElementWidening.Value.canBeFlipped.y && baseDirection.y < 0 ? -1 : 1)), traits.plantGrowthRules.materalToFillWith)) { break; }
-                            failure = false;
+                            success = true;
                         }
                         for (int i = 1; i < currentElementWidening.Value.width.up + 1; i++)
                         {
                             if (!tryFill((drawPos.x, drawPos.y + i * (currentElementWidening.Value.canBeFlipped.y && baseDirection.y < 0 ? -1 : 1)), traits.plantGrowthRules.materalToFillWith)) { break; }
-                            failure = false;
+                            success = true;
                         }
-                        if (failure) { goto Fail; }
+                        if (!success) { goto Fail; }
+
+                        if (growthLevelToTest == 1)
+                        {
+                            for (int i = 1; i < currentElementWidening.Value.width.left + 1; i++)
+                            {
+                                if (!testPositionEmpty((drawPos.x - i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y))) { break; }
+                                for (int k = 1; k <= currentElementWidening.Value.width.left * 2 + 2 - i * 2; k++)
+                                {
+                                    if (!tryFill((drawPos.x - i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y - k), traits.plantGrowthRules.materalToFillWith)) { break; }
+                                }
+                            }
+                            for (int i = 1; i < currentElementWidening.Value.width.right + 1; i++)
+                            {
+                                if (!testPositionEmpty((drawPos.x + i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y))) { break; }
+                                for (int k = 1; k <= currentElementWidening.Value.width.right * 2 + 2 - i * 2; k++)
+                                {
+                                    if (!tryFill((drawPos.x + i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y - k), traits.plantGrowthRules.materalToFillWith)) { break; }
+                                }
+                            }
+                        }
                     }
                     
 

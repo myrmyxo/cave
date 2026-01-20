@@ -76,7 +76,8 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                if (false) { forceBiome = (8, 1); isMonoeBiomeToPut = true; }
+                if (true) { forceBiome = (-1, 0); isMonoeBiomeToPut = false; }
+                if (false) { forceBiome = (6, 0); isMonoeBiomeToPut = true; }
 
                 int PNGsize = 150;
                 PNGsize = 100;
@@ -588,6 +589,7 @@ namespace Cave
             public long seed;
             public int id;
             public (int type, int subType) type;
+            public DimensionTraits traits;
             public bool isMonoBiome; // if yes, then the whole-ass dimension is only made ouf of ONE biome, that is of the type of... well type. If not, type is the type of dimension and not the biome (like idk normal, frozen, lampadaire, shitpiss world...)
 
             public (float x, float y) playerStartPos = (0, 0);
@@ -669,6 +671,7 @@ namespace Cave
                     currentDimensionId++;
                     if (game.livingDimensionId == -1 && isMonoBiome == false && type == (2, 0)) { game.livingDimensionId = id; }
                 }
+                traits = getDimensionTraits(type);
                 saveDimensionData(this);
                 createDimensionFolders(game, id);
                 Player player = game.playerList[0];
@@ -1108,10 +1111,10 @@ namespace Cave
                 foreach (Particle particle in activeParticles) { drawParticleOnScreen(gameBitmap, camPos, lightPositions, particle); }
                 drawPlayerOnScreen(gameBitmap, camPos, lightPositions, player);
                 drawAttacksOnScreen(gameBitmap, camPos);
-                addFireToLightPositions(lightPositions);
+                if (traits is null || traits.containsDarkBiomes) { addFireToLightPositions(lightPositions); }
 
                 drawChunkEffectsOnScreen(gameBitmap, camPos, isPngToBeExported);
-                drawLightOnScreen(gameBitmap, lightBitmap, camPos, lightPositions);
+                if (traits is null || traits.containsDarkBiomes) { drawLightOnScreen(gameBitmap, lightBitmap, camPos, lightPositions); }
                 drawChunkFireOnScreen(gameBitmap, camPos, isPngToBeExported);
                 drawFogOfWarOnScreen(gameBitmap, camPos);
 
@@ -1192,8 +1195,10 @@ namespace Cave
             {
                 foreach ((int x, int y) pos in fireEffects.Keys)
                 {
-                    int effectiveIntensity = fireEffects[pos];
-                    drawPixel(gameBitmap, Color.FromArgb(Min(255, effectiveIntensity * 10), 255, Min(255, 150 + effectiveIntensity), Min(255, 50 + effectiveIntensity * 2)), pos, camPos);
+                    int drawIntensity = fireEffects[pos];
+                    if (drawIntensity > 50) { drawIntensity = 50 + (int)((drawIntensity - 50) * 0.5f); }
+                    if (drawIntensity > 70) { drawIntensity = 70 + (int)((drawIntensity - 70) * 0.5f); }
+                    drawPixel(gameBitmap, Color.FromArgb(Min(255, drawIntensity * 10), 255, Min(255, 150 + drawIntensity), Min(255, 50 + drawIntensity * 2)), pos, camPos);
                 }
 
                 Chunk chunko;

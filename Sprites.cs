@@ -91,6 +91,10 @@ namespace Cave
                 { (5, 0), new OneSprite("MoldTile", true) },                // TO CHANGE          
                 { (6, 0), new OneSprite("SaltTile", true) },                // TO CHANGE
                 { (7, 0), new OneSprite("AshTile", true) },                 // TO CHANGE
+                { (8, 0), new OneSprite("SandTile", true) },                // TO CHANGE
+                { (8, 1), new OneSprite("SandOrangeTile", true) },          // TO CHANGE
+                { (9, 0), new OneSprite("SandstoneTile", true) },           // TO CHANGE
+                { (9, 1), new OneSprite("SandstoneOrangeTile", true) },     // TO CHANGE
             };                                                               
             entitySprites = new Dictionary<(int type, int subType), OneSprite>
             {
@@ -137,6 +141,7 @@ namespace Cave
                 { (2, 3), new OneSprite("Papyrus", false) },
                 { (3, 0), new OneSprite("Rush", false) },
                 { (3, 1), new OneSprite("Butomus", false) },
+                { (4, 0), new OneSprite("Algae", false) },
                 { (10, 0), new OneSprite("Tree", false) },
                 { (10, 1), new OneSprite("JungleTree", true) },              // TO CHANGE
                 { (10, 2), new OneSprite("WeepingWillow", true) },           // TO CHANGE
@@ -145,6 +150,7 @@ namespace Cave
                 { (12, 0), new OneSprite("MangroveTree", true) },            // TO CHANGE
                 { (12, 1), new OneSprite("BaldCypress", true) },             // TO CHANGE
                 { (13, 0), new OneSprite("CheeringWillow", true) },          // TO CHANGE
+                { (14, 0), new OneSprite("Baobab", true) },                  // TO CHANGE
                 { (20, 0), new OneSprite("Vines", false) },
                 { (20, 1), new OneSprite("ObsidianVines", false ) },
                 { (20, 2), new OneSprite("IceVines", false ) },              // TO CHANGE

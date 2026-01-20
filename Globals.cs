@@ -77,6 +77,7 @@ namespace Cave
         public static (int x, int y)[] wingPosArray = new (int x, int y)[8] { (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), };
 
         public static (int valid, int invalid)[] dirtScoreArray = new (int valid, int invalid)[] { (250, 0), (200, -50), (200, -100), (200, -200) };
+        public static (int valid, int invalid)[] sandScoreArray = new (int valid, int invalid)[] { (250, 0), (200, -50), (190, -50), (180, -50), (160, -50), (140, -50), (120, -50), (100, -40), (75, -30), (50, -20) };
 
         public static Dictionary<(int x, int y), int> directionPositionDictionary = new Dictionary<(int x, int y), int>
         {
