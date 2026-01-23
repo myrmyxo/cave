@@ -151,6 +151,9 @@ namespace Cave
                 { (12, 1), new OneSprite("BaldCypress", true) },             // TO CHANGE
                 { (13, 0), new OneSprite("CheeringWillow", true) },          // TO CHANGE
                 { (14, 0), new OneSprite("Baobab", true) },                  // TO CHANGE
+                { (14, 1), new OneSprite("BaobabSuarez", true) },            // TO CHANGE
+                { (14, 10), new OneSprite("YuccaTree", true) },              // TO CHANGE
+                { (14, 11), new OneSprite("YuccaBeaked", true) },            // TO CHANGE
                 { (20, 0), new OneSprite("Vines", false) },
                 { (20, 1), new OneSprite("ObsidianVines", false ) },
                 { (20, 2), new OneSprite("IceVines", false ) },              // TO CHANGE
@@ -186,6 +189,7 @@ namespace Cave
             materialSprites = new Dictionary<(int type, int subType), OneSprite>
             {
                 { (-1, 0), errorSprite },
+                { (1, -1), new OneSprite("ObsidianPlantMatter", true) },    // TO CHANGE
                 { (1, 0), new OneSprite("PlantMatter", false) },
                 { (1, 1), new OneSprite("Wood", false) },
                 { (1, 2), new OneSprite("Kelp", false) },

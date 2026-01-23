@@ -145,8 +145,8 @@ namespace Cave
             {
                 if (colorDict.ContainsKey(materialToAdd)) { return; }
                 ColorRange c = forceColorRange ?? getMaterialTraits(materialToAdd).colorRange;
-                float hueVar = (float)((seed % 11) * 0.2f - 1);
-                float shadeVar = (float)((LCGz(seed) % 11) * 0.2f - 1);
+                float hueVar = (float)((seed % 201) * 0.01f - 1);
+                float shadeVar = (float)((LCGz(seed) % 201) * 0.01f - 1);
                 colorDict[materialToAdd] = Color.FromArgb(
                     ColorClamp(c.r.v + (int)(hueVar * c.r.h) + fullPlantShade.r + (traits.doesFullPlantShadeOverride ? 0 : (int)(shadeVar * c.r.s))),
                     ColorClamp(c.g.v + (int)(hueVar * c.g.h) + fullPlantShade.g + (traits.doesFullPlantShadeOverride ? 0 : (int)(shadeVar * c.g.s))),
@@ -675,9 +675,11 @@ namespace Cave
                 (int x, int y)? baseDirectionToApplyAfter = null;
                 if (traits.plantGrowthRules != null && traits.plantGrowthRules.startDirection != null)
                 {
-                    ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped) dir = traits.plantGrowthRules.startDirection.Value;
-                    baseDirection = (dir.direction.x * (dir.canBeFlipped.x ? (rand.Next(2) * 2 - 1) : 1), dir.direction.y * (dir.canBeFlipped.y ? (rand.Next(2) * 2 - 1) : 1));
-
+                    if (forceDirection is null || forceDirection.Value.isApplyAfter)
+                    {
+                        ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped) dir = traits.plantGrowthRules.startDirection.Value;
+                        baseDirection = (dir.direction.x * (dir.canBeFlipped.x ? (rand.Next(2) * 2 - 1) : 1), dir.direction.y * (dir.canBeFlipped.y ? (rand.Next(2) * 2 - 1) : 1));
+                    }
                     if (forceDirection != null)
                     {
                         if (forceDirection.Value.isApplyAfter) { baseDirectionToApplyAfter = (baseDirection.x == 0 ? forceDirection.Value.dir.x : baseDirection.x, baseDirection.y == 0 ? forceDirection.Value.dir.y : baseDirection.y); }
@@ -1031,7 +1033,7 @@ namespace Cave
                         }
                         if (!success) { goto Fail; }
 
-                        if (growthLevelToTest == 1)
+                        if (growthLevelToTest == 1 && motherPlant.plantElement == this)
                         {
                             for (int i = 1; i < currentElementWidening.Value.width.left + 1; i++)
                             {

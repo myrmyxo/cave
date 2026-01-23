@@ -220,15 +220,17 @@ namespace Cave
             public (int type, int subType, int megaType)? toolGatheringRequirement;
             public (int propagationThreshold, int destructionThreshold)? flammability;
             public ((int type, int subType) type, bool isTile, float chance)? burnTransformation;
+            public (int type, int subType, int megaType)? transformOnGathering;
             public ColorRange colorRange;
             //public float biomeColorBlend;
-            public MaterialTraits(string namee, (int propagationThreshold, int destructionThreshold)? F = null, ((int type, int subType) type, bool isTile, float chance)? bT = null, (int type, int subType, int megaType)? tool = null, ColorRange col = null)
+            public MaterialTraits(string namee, (int propagationThreshold, int destructionThreshold)? F = null, ((int type, int subType) type, bool isTile, float chance)? bT = null, (int type, int subType, int megaType)? tool = null, (int type, int subType, int megaType)? tOG = null, ColorRange col = null)
             {
                 name = namee;
                 toolGatheringRequirement = tool;
                 colorRange = col;
                 flammability = F;
                 burnTransformation = bT;
+                transformOnGathering = tOG;
                 // biomeColorBlend = biomeColorBlendToPut;
             }
         }
@@ -245,6 +247,8 @@ namespace Cave
                 { (0, 0), new MaterialTraits("Error/Air", 
                 col:new ColorRange((255, 0, 0), (0, 0, 0), (255, 0, 0))                                                 ) },
 
+                { (1, -1), new MaterialTraits("Plant Matter 2 (for cool colors)", F:(75, 250), bT:((7, 0), true, 2), tOG:(1, 0, 3),
+                col:new ColorRange((50, 0, 30), (170, 50, 30), (50, 0, 30))                                             ) },
                 { (1, 0), new MaterialTraits("Plant Matter", F:(75, 250), bT:((7, 0), true, 2),
                 col:new ColorRange((50, 0, 30), (170, 50, 30), (50, 0, 30))                                             ) },
                 { (1, 1), new MaterialTraits("Wood", F:(100, 500), bT:((4, 0), false, 100), tool:(4, 0, 4),
@@ -1285,33 +1289,101 @@ namespace Cave
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), null) }
                 ) },
 
-                { (14, 0, 0), new PlantElementTraits("BaobabTrunk", rET:(from number in Enumerable.Range(0, 60) select ((0, number), (true, false))).ToArray(), sRET:new ((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip)[] { ((0, 15), (0, 0), (true, false)) },
-                pGR:new PlantGrowthRules(t:(1, 1), mG:(30, 15), lIMG:1, sEW:((3, 3, 0, 0), (true, false, false)),
+                { (14, 0, 0), new PlantElementTraits("GiantBaobabTrunk", rET:(from number in Enumerable.Range(0, 55) select ((0, number), (true, false))).ToArray().Concat(from number in Enumerable.Range(-15, 31) select ((number, 38), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(32, 13), lIMG:1, sEW:((3, 3, 0, 0), (true, false, false)),
                     cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 0, -1), 5, (-1, 0), 0, 50), ((14, 0, -1), 5, (1, 0), 0, 100),   ((14, 0, -2), 6, (-1, 0), 0, 50), ((14, 0, -2), 6, (1, 0), 0, 50),   ((14, 0, -3), 6, (-3, 0), 0, 100), ((14, 0, -3), 6, (3, 0), 0, 100) },
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (8, 12), 45) }
-                    // EW:new (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame)[] { (((3, 2, 0, 0), (true, false, false)), (5, 45)) }
                 )) },
-                { (14, 0, -1), new PlantElementTraits("BaobabBranchVertical",
+                { (14, 0, -1), new PlantElementTraits("GiantBaobabBranchVertical",
                 pGR:new PlantGrowthRules(t:(1, 1), sD:((0, 1), (true, false, false)), mG:(4, 4), sEW:((1, 0, 0, 0), (true, false, false)),
                     cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 0, 1), 0, (0, 0), 0, 100) },
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, true), (0, 0), 50), ((1, 0), (true, false, false), (1, 0), 45), ((1, 0), (true, false, false), (1, 1), 65) },
                     EW:new (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame)[] { (((0, 0, 0, 0), (true, false, false)), (2, 4)),  }
                 )) },
-                { (14, 0, -2), new PlantElementTraits("BaobabBranchDiag",
+                { (14, 0, -2), new PlantElementTraits("GiantBaobabBranchDiag",
                 pGR:new PlantGrowthRules(t:(1, 1), mG:(4, 4), sEW:((0, 0, 0, 1), (true, false, false)),
                     cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 0, 1), 0, (0, 0), 0, 100) },
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((0, 1), (true, false, true), (1, 1), 100) },
                     lPM:true,
                     EW:new (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame)[] { (((0, 0, 0, 0), (true, false, false)), (2, 4)),  }
                 )) },
-                { (14, 0, -3), new PlantElementTraits("BaobabBranchSide",
+                { (14, 0, -3), new PlantElementTraits("GiantBaobabBranchSide",
                 pGR:new PlantGrowthRules(t:(1, 1), mG:(6, 6), sEW:((0, 0, 0, 1), (true, false, false)),
                     cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 0, 1), 0, (0, 0), 0, 100) },
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((0, -1), (true, false, true), (0, 0), 50), ((0, 1), (true, false, true), (1, 1), 35), ((0, 1), (true, false, true), (3, 0), 65) },
                     EW:new (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame)[] { (((0, 0, 0, 0), (true, false, false)), (2, 4)),  }
                 )) },
-                { (14, 0, 1), new PlantElementTraits("BaobabLeavesVertical", stick:((0, 0), (false, false)), fMG:(4, 8),
+                { (14, 0, 1), new PlantElementTraits("GiantBaobabLeaves", stick:((0, 0), (false, false)), fMG:(4, 8),
                 framez:makeStructureFrameArray(new (int type, int subType)[]{ (1, 0) }, "BaobabLeaves", 12)
+                ) },
+
+                { (14, 1, 0), new PlantElementTraits("SuarezBaobabTrunk", rET:(from number in Enumerable.Range(0, 35) select ((0, number), (true, false))).ToArray().Concat(from number in Enumerable.Range(-20, 41) select ((number, 25), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(20, 10), lIMG:1, sEW:((2, 2, 0, 0), (true, false, false)),
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 1, -1), 6, (-2, 0), 0, 100), ((14, 1, -1), 6, (2, 0), 0, 100),   ((14, 1, -2), 0, (0, 0), 0, 50) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (4, 4), 65) }
+                )) },
+                { (14, 1, -1), new PlantElementTraits("SuarezBaobabBranchHorizontal",
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(8, 6), sEW:((0, 0, 0, 3), (true, false, false)),
+                    C:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((14, 1, -2), 0, (0, 0), 0, (2, 1), 45), ((14, 1, -3), 0, (0, 0), 0, (2, 1), 45), ((14, 1, -3), 0, (0, 0), 0, (2, 1), 45) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((0, 1), (true, false, true), (1, 1), 35), ((0, 1), (true, false, true), (2, 1), 55), ((0, 1), (true, false, true), (3, 0), 65) },
+                    EW:new (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame)[] { (((0, 0, 0, 2), (true, false, false)), (0, 3)), (((0, 0, 0, 1), (true, false, false)), (3, 3)), }
+                ), tTOPEOGE:(14, 1, -4)) },
+                { (14, 1, -2), new PlantElementTraits("SuarezBaobabBranchVertical",
+                pGR:new PlantGrowthRules(t:(1, 1), sD:((0, 1), (true, false, false)), mG:(5, 3), sEW:((1, 0, 0, 0), (true, false, false)),
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 1, 1), 0, (0, 0), 0, 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 0), 45), ((1, 0), (true, false, false), (1, 1), 65) },
+                    EW:new (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame)[] { (((0, 0, 0, 0), (true, false, false)), (2, 4)),  }
+                )) },
+                { (14, 1, -3), new PlantElementTraits("SuarezBaobabBranchDiag",
+                pGR:new PlantGrowthRules(t:(1, 1), sD:((1, 1), (true, false, false)), mG:(3, 2), sEW:((0, 0, 0, 1), (true, false, false)),
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 1, 1), 0, (0, 0), 0, 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((0, 1), (true, false, true), (1, 1), 100) },
+                    lPM:true,
+                    EW:new (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame)[] { (((0, 0, 0, 0), (true, false, false)), (2, 4)),  }
+                )) },
+                { (14, 1, -4), new PlantElementTraits("SuarezBaobabBranchHorizontal-2",
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(3, 1), sEW:((0, 0, 0, 1), (true, false, false)),
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 1, 1), 0, (0, 0), 0, 100) },
+                    EW:new (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame)[] { (((0, 0, 0, 0), (true, false, false)), (1, 1)) }
+                )) },
+                { (14, 1, 1), new PlantElementTraits("SuarezBaobabLeaves", stick:((0, 0), (false, false)), fMG:(6, 7),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (1, 0) }, "BaobabSuarezLeaves", 13)
+                ) },
+
+                { (14, 10, 0), new PlantElementTraits("YuccaTreeTrunk", rET:(from number in Enumerable.Range(0, 41) select ((0, number), (true, false))).ToArray().Concat(from number in Enumerable.Range(-15, 31) select ((number, 35), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(8, 8), lIMG:1, sEW:((1, 0, 0, 0), (true, false, false)),
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 10, -1), 5, (-1, 0), 0, 80), ((14, 10, -1), 5, (1, 0), 0, 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (4, 2), 45) },
+                    lPM:true
+                )) },
+                { (14, 10, -1), new PlantElementTraits("YuccaTreeBranch1",
+                pGR:new PlantGrowthRules(t:(1, 1), sD:((0, 1), (true, false, false)), mG:(4, 5), sEW:((1, 0, 0, 0), (true, false, false)),
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 10, -2), 5, (-1, 0), 0, 80), ((14, 10, -2), 5, (1, 0), 0, 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 0), 100), ((1, 0), (true, false, false), (1, 1), 80), ((1, 0), (true, false, false), (1, 2), 60), ((1, 0), (true, false, false), (2, 2), 40) }
+                )) },
+                { (14, 10, -2), new PlantElementTraits("YuccaTreeBranch2",
+                pGR:new PlantGrowthRules(t:(1, 1), sD:((0, 1), (true, false, false)), mG:(3, 4), sEW:((1, 0, 0, 0), (true, false, false)),
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 10, -3), 5, (-1, 0), 0, 80), ((14, 10, -3), 5, (1, 0), 0, 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 0), 100), ((1, 0), (true, false, false), (1, 1), 80), ((1, 0), (true, false, false), (1, 2), 60) }
+                )) },
+                { (14, 10, -3), new PlantElementTraits("YuccaTreeBranch3",
+                pGR:new PlantGrowthRules(t:(1, 1), sD:((0, 1), (true, false, false)), mG:(2, 2), sEW:((1, 0, 0, 0), (true, false, false)),
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 10, 1), 0, (0, 0), 0, 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 0), 100), ((1, 0), (true, false, false), (1, 1), 80), ((1, 0), (true, false, false), (1, 2), 60) }
+                )) },
+                { (14, 10, 1), new PlantElementTraits("YuccaTreeLeaves", stick:((0, 0), (false, false)), fMG:(6, 4),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (1, 0), (1, -1) }, "YuccaTreeLeaves", 11),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), null), ((1, 0), null) }
+                ) },
+
+                { (14, 11, 0), new PlantElementTraits("YuccaBeakedTrunk", rET:(from number in Enumerable.Range(0, 25) select ((0, number), (true, false))).ToArray().Concat(from number in Enumerable.Range(-10, 21) select ((number, 15), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(6, 8), lIMG:1, sEW:((1, 1, 0, 0), (true, false, false)),
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 11, 1), 0, (0, 0), 0, 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (2, 2), 45) },
+                    lPM:true
+                )) },
+                { (14, 11, 1), new PlantElementTraits("YuccaBeakedLeaves", stick:((0, 0), (false, false)), fMG:(7, 7),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (1, 0), (1, -1) }, "YuccaBeakedLeaves", 14)
                 ) },
 
 
@@ -1751,6 +1823,13 @@ namespace Cave
 
                 { (14, 0), new PlantTraits("Giant Baobab",
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((90, -5, 20), (80, 15, 15), (35, -10, 10))), ((1, 1), new ColorRange((215, 10, 15), (155, 0, 10), (105, -20, 10))) }) },
+                { (14, 1), new PlantTraits("Suarez Baobab",
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((90, -5, 20), (80, 15, 15), (35, -10, 10))), ((1, 1), new ColorRange((160, 10, 0), (135, 5, 0), (105, -10, 0))) }) },
+
+                { (14, 10), new PlantTraits("Yucca Tree",
+                fPS:(25, 25, 15), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((65, 10, 15), (85, -15, 20), (30, 5, 10))), ((1, 0), new ColorRange((90, 10, 15), (110, -15, 20), (50, 10, 10))), ((1, 1), new ColorRange((135, 10, 0), (125, 5, 0), (110, -10, 0))) }) },
+                { (14, 11), new PlantTraits("Beaked Yucca", pOS:((0, 2), (25, 16)),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((65, 10, 15), (85, -15, 20), (30, 5, 10))), ((1, 0), new ColorRange((90, 10, 15), (110, -15, 20), (50, 10, 10))), ((1, 1), new ColorRange((135, 10, 15), (125, 5, 20), (110, -10, 10))) }) },
 
 
 
@@ -2090,13 +2169,13 @@ namespace Cave
                 { (2, 2),  new BiomeTraits("Desert",                (Color.LightYellow.R + 80, Color.LightYellow.G + 40, Color.LightYellow.B - 20), ((200, 170, 30), true),
                                                                      // Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), },
-                new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25) },
+                new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), ((14, 10), 10), ((14, 11), 5) },
                 cT:(1, 5), tT:(9, 0), lT:(-2, 2), txT:(0, 0),                   // 
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Sand"] }) },
                 { (2, 3),  new BiomeTraits("Baobab Desert",         (Color.LightYellow.R + 160, Color.LightYellow.G + 80, Color.LightYellow.B - 80), ((250, 120, 50), true),
                                                                      // Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), },
-                new ((int type, int subType) type, float percentage)[]{ ((14, 0), 25) },
+                new ((int type, int subType) type, float percentage)[]{ ((14, 0), 15), ((14, 1), 20) },
                 cT:(1, 5), tT:(9, 1), lT:(-2, 2), txT:(0, 0),                   // 
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["SandOrange"] }) },
 

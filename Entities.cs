@@ -1363,6 +1363,11 @@ namespace Cave
             }
             public void addElementToInventory((int index, int subType, int typeOfElement) elementToAdd, int quantityToAdd = 1)
             {
+                if (elementToAdd.typeOfElement == 3)
+                {
+                    MaterialTraits materialTraits = getMaterialTraits((elementToAdd.index, elementToAdd.subType));
+                    if (materialTraits.transformOnGathering != null) { elementToAdd = (materialTraits.transformOnGathering.Value.type, materialTraits.transformOnGathering.Value.subType, 3); }
+                }
                 if (!inventoryQuantities.ContainsKey(elementToAdd))
                 {
                     inventoryQuantities.Add(elementToAdd, quantityToAdd);

@@ -66,13 +66,7 @@ namespace Cave
 
             //     ---- - - CURRENTLY DOING - - ----
             // 
-            // -> MAKE FIRE less white because THOAMS is stuped
-            //
-            // Deserts ! With Oasises ! When no humidity but high illumination ?
-            //      Multiple types of deserts ?
-            // 
-            //      -> Joshua Tree, Beaked Yucca, Giant
-            //      -> Giant Baobab
+            // Oasises in deserts ! Deserts are when no humidity but high illumination ?
             //
             // Then prairies and heathlands and shrublands and stuff HEATHHH
             // -> Separate Bayou and Swamp (Bayou is rare variant)
@@ -116,8 +110,8 @@ namespace Cave
             // Salty Frozen Ocean biome !!! With different plants. More ANGULAR, like cristals ?? salt cristals ?? Idk --> No actually due to BRINE REJECTION it's not the case ! Salt water freezing expells the salt out ! So Frozen ocean with pockets of brine ?
             // --> Danger/Breathability noise, that makes dangerous biome spawn like. SLIME. MOLD.
             // Have VORONOI OCEANS ??????????? would be fucking nice no ???????
-            // Deserts biomes... with rare Oasis biomes sometimes inside ?????? Idk
             // Make it so the fireEffects dict gets SAVED when closing screens ! In like dimensionJson (if it exists i forgot) or whatever the fuck. Important because it can spread fire so not purely cosmetic
+            // Add salars ! (salt deserts / salt pans / salt flats)
 
             // Candy dimension !! Candy Cane trees, Lollipop trees, Whipped Cream biome, Chocolate Biome
 
