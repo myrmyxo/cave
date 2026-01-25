@@ -191,6 +191,8 @@ namespace Cave
                 cR:new ColorRange((50, 0, 0), (50, 0, 0), (100, 0, 0)),           Tex:(true, true), B:true                  ) },
 
                 { (6, 0), new TileTraits("Salt Tile", bCB:0.1f,
+                cR:new ColorRange((210, 0, 0), (210, 0, 0), (210, 0, 0)),         Tex:(true, true), Tr:true, St:true        ) },
+                { (6, 1), new TileTraits("Pink Salt Tile", bCB:0.1f,
                 cR:new ColorRange((170, 0, 0), (120, 0, 0), (140, 0, 0)),         Tex:(true, true), Tr:true, St:true        ) },
 
                 { (7, 0), new TileTraits("Ash Tile", bCB:0.1f,
@@ -943,6 +945,8 @@ namespace Cave
                 { (0, 2, 1), new PlantElementTraits("CortaderiaFlower", stick:((0, 1), (false, false)), fMG:(5, 2),
                 framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0), (2, 1) }, "CortaderiaFlower", 8)
                 ) },
+                { (0, 3, 0), new PlantElementTraits("RedGlasswortStem",
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(1, 2), hPP:fHPP["Up1Gap"] )) },
 
                 { (1, 0, 0), new PlantElementTraits("TulipStem", rET:(from number in Enumerable.Range(0, 6) select ((0, number), (true, false))).ToArray(),
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(2, 3), hPP:fHPP["Up3GapX3Gap"],
@@ -1070,6 +1074,33 @@ namespace Cave
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(4, 4), sEW:((1, 0, 0, 0), (true, false, false)), hPP:fHPP["Up1Gap"],
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((3, 1), (true, false, false), (1, 1), 100), ((0, 1), (false, false, false), (1, 1), 100) }
                 )) },
+
+
+                { (4, 10, 0), new PlantElementTraits("YuccaFilamentosaStem", rET:(from number in Enumerable.Range(0, 12) select ((0, number), (true, false))).ToArray().Concat(from number in Enumerable.Range(-10, 21) select ((number, 15), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, -1), mG:(11, 3), lIMG:1,
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((4, 10, 1), 0, (0, 0), 0, 100) },
+                    C:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((4, 10, 2), 0, (0, 0), 0, (3, 2), 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (4, 2), 35) }
+                )) },
+                { (4, 10, 1), new PlantElementTraits("YuccaFilamentosaLeaves", fMG:(5, 4),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (1, 0), (1, -1) }, "YuccaFilamentosaLeaves", 9)
+                ) },
+                { (4, 10, 2), new PlantElementTraits("YuccaFilamentosaFlowers", stick:((0, 0), (false, false)),  fMG:(5, 6),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "YuccaFilamentosaFlowers", 11)
+                ) },
+
+                { (4, 11, 0), new PlantElementTraits("YuccaFlaccidaStem", rET:(from number in Enumerable.Range(0, 12) select ((0, number), (true, false))).ToArray().Concat(from number in Enumerable.Range(-10, 21) select ((number, 15), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, -1), mG:(9, 2), lIMG:1,
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((4, 11, 1), 0, (0, 0), 0, 100) },
+                    C:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((4, 11, 2), 0, (0, 0), 0, (3, 2), 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (4, 2), 35) }
+                )) },
+                { (4, 11, 1), new PlantElementTraits("YuccaFlaccidaLeaves", fMG:(7, 4),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (1, 0), (1, -1) }, "YuccaFlaccidaLeaves", 11)
+                ) },
+                { (4, 11, 2), new PlantElementTraits("YuccaFlaccidaFlowers", stick:((0, 0), (false, false)), fMG:(4, 5),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "YuccaFlaccidaFlowers", 9)
+                ) },
 
 
 
@@ -1775,6 +1806,9 @@ namespace Cave
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["CerealStem"]) }) },
                 { (0, 2), new PlantTraits("Cortaderia", sName:"Cortaderia selloana", pOS:((0, 4), (3, 2)),
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((50, 0, 20), (120, 20, 30), (50, 0, 20))), ((2, 0), new ColorRange((255, 0, 10), (210, 20, 15), (160, -10, 20))) }) },
+                { (0, 3), new PlantTraits("Red Glasswort", pOS:((1, 6), (5, 2)),
+                sT:new HashSet<(int type, int subType)> { (1, 0), (6, 0), (6, 1) }, tNC:((-2, 2), (6, 3)), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((150, -15, 20), (60, 10, 15), (65, 15, 15))) }) },
+
 
                 { (1, 0), new PlantTraits("Tulip",
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), new ColorRange((220, 0, 30), (110, -50, 30), (130, 50, 30))) }) },
@@ -1799,6 +1833,11 @@ namespace Cave
 
                 { (4, 0), new PlantTraits("Cactus",
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((150, 0, 10), (175, 15, 15), (80, -10, 10))) }) },
+                
+                { (4, 10), new PlantTraits("Filamentous Yucca", pOS:((0, 2), (25, 16)),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((65, 10, 15), (85, -15, 20), (30, 5, 10))), ((1, 0), new ColorRange((90, 10, 15), (110, -15, 20), (50, 10, 10))), ((2, 0), new ColorRange((250, 10, 15), (250, 10, 15), (220, -10, 15))) }) },
+                { (4, 11), new PlantTraits("Flaccid Yucca", pOS:((0, 2), (25, 16)),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((65, 10, 15), (85, -15, 20), (30, 5, 10))), ((1, 0), new ColorRange((90, 10, 15), (110, -15, 20), (50, 10, 10))), ((2, 0), new ColorRange((250, 10, 15), (250, 10, 15), (220, -10, 15))) }) },
 
 
                 { (10, 0), new PlantTraits("Tree",
@@ -1998,9 +2037,9 @@ namespace Cave
                 { "HardRock", new TerrainFeaturesTraits((1, 1), 0, 0, iS:true, mBVR:true, bT:0) },
                 { "Mold", new TerrainFeaturesTraits((5, 0), 0, 2, iS:true, bT:1024, bER:(2000, 0), bVS:1024, nM:(64, 16)) },
 
-                { "Salt Terrain", new TerrainFeaturesTraits((6, 0), 0, 3, iS:true, bT:0, bER:(10000, 700), S:(650, true), nM:(256, 64)) },
-                { "Salt Filling", new TerrainFeaturesTraits((6, 0), 0, 4, iL:true, bT:0, fBS:true, bER:(10000, 700), nM:(null, null)) },
-                { "Salt Spikes", new TerrainFeaturesTraits((6, 0), 0, 5, iL:true, bT:0, bER:(10000, 700), nQF:true) },
+                { "Salt Terrain", new TerrainFeaturesTraits((6, 1), 0, 3, iS:true, bT:0, bER:(10000, 700), S:(650, true), nM:(256, 64)) },
+                { "Salt Filling", new TerrainFeaturesTraits((6, 1), 0, 4, iL:true, bT:0, fBS:true, bER:(10000, 700), nM:(null, null)) },
+                { "Salt Spikes", new TerrainFeaturesTraits((6, 1), 0, 5, iL:true, bT:0, bER:(10000, 700), nQF:true) },
 
                 { "Frost Carving", new TerrainFeaturesTraits((0, 0), 0, 6, iS:true, bT:0, bER:(100, 0), nM:(null, null), iI:true) },
 
@@ -2009,6 +2048,8 @@ namespace Cave
 
                 { "Sand", new TerrainFeaturesTraits((8, 0), 0, 10, mL:2, iS:true, bT:1250, bER:(1000, 350), nM:(32, null), nVR:(1500, null)) },
                 { "SandOrange", new TerrainFeaturesTraits((8, 1), 0, 10, mL:2, iS:true, bT:1250, bER:(1000, 350), nM:(32, null), nVR:(1500, null)) },
+
+                { "Salt Ground", new TerrainFeaturesTraits((6, 0), 0, 11, mL:2, iS:true, bT:1250, bER:(1000, 350), nM:(32, null), nVR:(1500, null)) },
 
                 { "Bone", new TerrainFeaturesTraits((4, 1), 0, 1, iS:true, bT:512, H:(450, false), bVS:1024) },
 
@@ -2169,15 +2210,21 @@ namespace Cave
                 { (2, 2),  new BiomeTraits("Desert",                (Color.LightYellow.R + 80, Color.LightYellow.G + 40, Color.LightYellow.B - 20), ((200, 170, 30), true),
                                                                      // Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), },
-                new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), ((14, 10), 10), ((14, 11), 5) },
-                cT:(1, 5), tT:(9, 0), lT:(-2, 2), txT:(0, 0),                   // 
+                new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), ((4, 10), 5), ((4, 11), 5), ((14, 10), 10), ((14, 11), 5) },
+                cT:(1, 5), tT:(9, 0), lT:(0, 0), txT:(0, 0),        // Cactus        Yucca filament Yucca flaccid Yucca Tree      Beaked Yucca 
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Sand"] }) },
                 { (2, 3),  new BiomeTraits("Baobab Desert",         (Color.LightYellow.R + 160, Color.LightYellow.G + 80, Color.LightYellow.B - 80), ((250, 120, 50), true),
                                                                      // Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((14, 0), 15), ((14, 1), 20) },
-                cT:(1, 5), tT:(9, 1), lT:(-2, 2), txT:(0, 0),                   // 
+                cT:(1, 5), tT:(9, 1), lT:(0, 0), txT:(0, 0),        // Giant Baobab   Suarez Baobab 
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["SandOrange"] }) },
+                { (2, 4),  new BiomeTraits("Salt Desert",           (Color.White.R, Color.White.G, Color.White.B), null,
+                                                                     
+                new ((int type, int subType) type, float percentage)[]{ },
+                new ((int type, int subType) type, float percentage)[]{ ((0, 3), 80) },
+                cT:(1, 5), lT:(-2, 2), txT:(0, 0),                  // Red Glasswort
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["Salt Ground"] }) },
 
                 { (3, 0),  new BiomeTraits("Forest",                (Color.Green.R, Color.Green.G, Color.Green.B), null,
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly

@@ -90,6 +90,7 @@ namespace Cave
                 { (4, 2), new OneSprite("SkinTile", true) },                // TO CHANGE
                 { (5, 0), new OneSprite("MoldTile", true) },                // TO CHANGE          
                 { (6, 0), new OneSprite("SaltTile", true) },                // TO CHANGE
+                { (6, 1), new OneSprite("SaltTile", true) },                // TO CHANGE
                 { (7, 0), new OneSprite("AshTile", true) },                 // TO CHANGE
                 { (8, 0), new OneSprite("SandTile", true) },                // TO CHANGE
                 { (8, 1), new OneSprite("SandOrangeTile", true) },          // TO CHANGE
@@ -132,6 +133,7 @@ namespace Cave
                 { (0, 0), new OneSprite("Grass", false) },
                 { (0, 1), new OneSprite("Wheat", false) },
                 { (0, 2), new OneSprite("Cortaderia", false) },
+                { (0, 3), new OneSprite("RedGlasswort", false) },
                 { (1, 0), new OneSprite("Tulip", false) },
                 { (1, 1), new OneSprite("Allium", false) },
                 { (1, 2), new OneSprite("BigFlower", false) },
@@ -142,6 +144,8 @@ namespace Cave
                 { (3, 0), new OneSprite("Rush", false) },
                 { (3, 1), new OneSprite("Butomus", false) },
                 { (4, 0), new OneSprite("Algae", false) },
+                { (4, 10), new OneSprite("YuccaBeaked", true) },             // TO CHANGE
+                { (4, 11), new OneSprite("YuccaBeaked", true) },             // TO CHANGE
                 { (10, 0), new OneSprite("Tree", false) },
                 { (10, 1), new OneSprite("JungleTree", true) },              // TO CHANGE
                 { (10, 2), new OneSprite("WeepingWillow", true) },           // TO CHANGE

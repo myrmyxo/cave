@@ -67,6 +67,9 @@ namespace Cave
             //     ---- - - CURRENTLY DOING - - ----
             // 
             // Oasises in deserts ! Deserts are when no humidity but high illumination ?
+            // NEW PLANTS
+            //  -> add Ghost Gum, Saxaul, Quiver Tree and other species of Aloidendron, Desert Rose, Yareta, Colocynths (wild desert gourd),
+            //     Camel Thorn, Panicum Turgidum, Atriplex polycarpa, Frankinsence
             //
             // Then prairies and heathlands and shrublands and stuff HEATHHH
             // -> Separate Bayou and Swamp (Bayou is rare variant)

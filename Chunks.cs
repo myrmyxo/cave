@@ -857,6 +857,31 @@ namespace Cave
                         }
                         else { noiseValue -= 1000; }
                     }
+                    else if (tFT.transitionRules == 11) // Salt ground
+                    {
+                        valueRequired += tFT.baseThreshold;
+                        noiseValue = noiseValue1;
+                        TileTraits tileTested = screen.getTileContent((pos.x * 32 + i, pos.y * 32 + j - 1), false);
+                        if (tileTested.isSolid)
+                        {
+                            for (int k = 0; k < 3; k++)
+                            {
+                                (int valid, int invalid) score = dirtScoreArray[k];
+                                tileTested = screen.getTileContent((pos.x * 32 + i, pos.y * 32 + j + k + 1), false);
+                                if (tileTested.isSolid) { noiseValue += score.invalid; }
+                                else { noiseValue += score.valid; }
+
+                                tileTested = screen.getTileContent((pos.x * 32 + i - 1, pos.y * 32 + j + k + 1), false);
+                                if (tileTested.isSolid) { noiseValue += score.invalid * 0.2f; }
+                                else { noiseValue += score.valid * 0.2f; }
+
+                                tileTested = screen.getTileContent((pos.x * 32 + i + 1, pos.y * 32 + j + k + 1), false);
+                                if (tileTested.isSolid) { noiseValue += score.invalid * 0.2f; }
+                                else { noiseValue += score.valid * 0.2f; }
+                            }
+                        }
+                        else { noiseValue -= 1000; }
+                    }
                     else { noiseValue = -999999; }
 
                     if (noiseValue >= valueRequired) { fillStates[i, j] = getTileTraits(typeToFill); return true; }
