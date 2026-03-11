@@ -68,8 +68,9 @@ namespace Cave
             // 
             // Oasises in deserts ! Deserts are when no humidity but high illumination ?
             // NEW PLANTS
-            //  -> add Ghost Gum, Saxaul, Quiver Tree and other species of Aloidendron, Desert Rose, Yareta, Colocynths (wild desert gourd),
-            //     Camel Thorn, Panicum Turgidum, Atriplex polycarpa, Frankinsence
+            //  -> add Ghost Gum, Saxaul, Quiver Tree and other species of Aloidendron, Yareta, Colocynths (wild desert gourd),
+            //     Camel Thorn, Panicum Turgidum, Atriplex polycarpa, Frankinsence, Pachypodium mikea, Pachypodium namaquanum
+            //  Add Elm also
             //
             // Then prairies and heathlands and shrublands and stuff HEATHHH
             // -> Separate Bayou and Swamp (Bayou is rare variant)
@@ -115,6 +116,7 @@ namespace Cave
             // Have VORONOI OCEANS ??????????? would be fucking nice no ???????
             // Make it so the fireEffects dict gets SAVED when closing screens ! In like dimensionJson (if it exists i forgot) or whatever the fuck. Important because it can spread fire so not purely cosmetic
             // Add salars ! (salt deserts / salt pans / salt flats)
+            // Reorganise plants and entity spawns. Now before spawning everything, make it so when loading the chunks, it spawns a list of plants to try to spawn. So if it propagates plants next to it, the second chunk with just have that list updated. yay.
 
             // Candy dimension !! Candy Cane trees, Lollipop trees, Whipped Cream biome, Chocolate Biome
 
@@ -188,6 +190,7 @@ namespace Cave
             // embrios in living dim
             // mermaids (i forgor) spawn only in normal ocean ??
             // add tamanoirs ?? tamanoir people ??
+            // Ants that grow fungi ?????????????????????????????????????????
 
             // Plants ideas !
             // bone trees and shrubs... like ribs.
@@ -205,6 +208,8 @@ namespace Cave
             // Cotton-grass in cold biomes
             // oyat on SAND ???
             // Wapato/Sagittaria
+            // Mimosa
+            // Poplar/Aspen
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.

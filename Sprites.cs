@@ -158,6 +158,7 @@ namespace Cave
                 { (14, 1), new OneSprite("BaobabSuarez", true) },            // TO CHANGE
                 { (14, 10), new OneSprite("YuccaTree", true) },              // TO CHANGE
                 { (14, 11), new OneSprite("YuccaBeaked", true) },            // TO CHANGE
+                { (14, 20), new OneSprite("DesertRose", true) },             // TO CHANGE
                 { (20, 0), new OneSprite("Vines", false) },
                 { (20, 1), new OneSprite("ObsidianVines", false ) },
                 { (20, 2), new OneSprite("IceVines", false ) },              // TO CHANGE

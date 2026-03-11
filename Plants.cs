@@ -525,10 +525,10 @@ namespace Cave
                 isDeadAndShouldDisappear = init(isMainPlantElement, forceDirection) == 0;
                 motherPlant.isDeadAndShouldDisappear = isMainPlantElement ? isDeadAndShouldDisappear : motherPlant.isDeadAndShouldDisappear;
             }
-            public int getRandValue(int valueModifier, int modulo = -1)
+            public int getRandValue(int valueModifier, int modulo = -1)     // Modulo < 0 -> return random value, Modulo > 0 -> return modulo of random value 
             {
+                if (modulo == 1 || modulo == 0) { return 0; }
                 int randy = cashInt((valueModifier, 7, 13), seed);
-                if (modulo == 0) { return 0; }
                 return modulo > 0 ? randy % modulo : randy;
             }
             public void transitionToOtherPlantElement((int type, int subType, int subSubType) newType)  // if new plant element doesn't contains a material that the old one did, it might cause bug on reload !
@@ -632,9 +632,28 @@ namespace Cave
                 return false;
             }
             public void forceFill((int x, int y) testPos, (int type, int subType) typeToFill) { fillStates[testPos] = typeToFill; }
-            public bool makeBaby(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item, int seedMod, int offset)
+            public bool makeBaby(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item, (int x, int y) currentGrowPos, int seedMod, int offset)
             {
-                (int x, int y) babyPos = (item.dirType == 0 || item.dirType >= 5) ? absolutePos((lastDrawPos.x + item.mod.x, lastDrawPos.y + item.mod.y)) : absolutePos(lastDrawPos);
+                (int x, int y) babyPos = (item.dirType == 0 || item.dirType >= 5) ? (lastDrawPos.x + item.mod.x, lastDrawPos.y + item.mod.y) : lastDrawPos;
+                if (traits.plantGrowthRules.preventGapsOnChildSpawn > 0)
+                {
+                    int allowDiag = traits.plantGrowthRules.preventGapsOnChildSpawn == 1 ? 1 : 0;
+                    if (currentElementWidening is null)
+                    {
+                        if (babyPos.x < currentGrowPos.x - allowDiag) { babyPos = (currentGrowPos.x - allowDiag, currentGrowPos.y); }
+                        else if (babyPos.x > currentGrowPos.x + allowDiag) { babyPos = (currentGrowPos.x + allowDiag, currentGrowPos.y); }
+                        if (babyPos.y < currentGrowPos.y - allowDiag) { babyPos = (currentGrowPos.x, currentGrowPos.y - allowDiag); }
+                        else if (babyPos.y > currentGrowPos.y + allowDiag) { babyPos = (currentGrowPos.x, currentGrowPos.y + allowDiag); }
+                    }
+                    else
+                    {
+                        if (babyPos.x < currentGrowPos.x - currentElementWidening.Value.width.left - allowDiag) { babyPos = (currentGrowPos.x - currentElementWidening.Value.width.left - allowDiag, currentGrowPos.y); }
+                        else if (babyPos.x > currentGrowPos.x + currentElementWidening.Value.width.right + allowDiag) { babyPos = (currentGrowPos.x + currentElementWidening.Value.width.right + allowDiag, currentGrowPos.y); }
+                        if (babyPos.y < currentGrowPos.y - currentElementWidening.Value.width.down - allowDiag) { babyPos = (currentGrowPos.x, currentGrowPos.y - currentElementWidening.Value.width.down - allowDiag); }
+                        else if (babyPos.y > currentGrowPos.y + currentElementWidening.Value.width.up + allowDiag) { babyPos = (currentGrowPos.x, currentGrowPos.y + currentElementWidening.Value.width.up + allowDiag); }
+                    }
+                }
+                babyPos = absolutePos(babyPos);
                 ((int x, int y) dir, bool isApplyAfter)? babyDirection = null;
                 if (item.dirType == 1) { babyDirection = (item.mod, false); }
                 else if (item.dirType == 2) { babyDirection = (baseDirection, false); }
@@ -651,9 +670,28 @@ namespace Cave
                 childPlantElements.Add(baby);
                 return true;
             }
-            public bool makeBaby(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance) item, int seedMod)
+            public bool makeBaby(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance) item, (int x, int y) currentGrowPos, int seedMod)
             {
-                (int x, int y) babyPos = (item.dirType == 0 || item.dirType >= 5) ? absolutePos((lastDrawPos.x + item.mod.x, lastDrawPos.y + item.mod.y)) : absolutePos(lastDrawPos);
+                (int x, int y) babyPos = (item.dirType == 0 || item.dirType >= 5) ? (lastDrawPos.x + item.mod.x, lastDrawPos.y + item.mod.y) : lastDrawPos;
+                if (traits.plantGrowthRules.preventGapsOnChildSpawn > 0)
+                {
+                    int allowDiag = traits.plantGrowthRules.preventGapsOnChildSpawn == 1 ? 1 : 0;
+                    if (currentElementWidening is null)
+                    {
+                        if (babyPos.x < currentGrowPos.x - allowDiag) { babyPos = (currentGrowPos.x - allowDiag, currentGrowPos.y); }
+                        else if (babyPos.x > currentGrowPos.x + allowDiag) { babyPos = (currentGrowPos.x + allowDiag, currentGrowPos.y); }
+                        if (babyPos.y < currentGrowPos.y - allowDiag) { babyPos = (currentGrowPos.x, currentGrowPos.y - allowDiag); }
+                        else if (babyPos.y > currentGrowPos.y + allowDiag) { babyPos = (currentGrowPos.x, currentGrowPos.y + allowDiag); }
+                    }
+                    else
+                    {
+                        if (babyPos.x < currentGrowPos.x - currentElementWidening.Value.width.left - allowDiag) { babyPos = (currentGrowPos.x - currentElementWidening.Value.width.left - allowDiag, currentGrowPos.y); }
+                        else if (babyPos.x > currentGrowPos.x + currentElementWidening.Value.width.right + allowDiag) { babyPos = (currentGrowPos.x + currentElementWidening.Value.width.right + allowDiag, currentGrowPos.y); }
+                        if (babyPos.y < currentGrowPos.y - currentElementWidening.Value.width.down - allowDiag) { babyPos = (currentGrowPos.x, currentGrowPos.y - currentElementWidening.Value.width.down - allowDiag); }
+                        else if (babyPos.y > currentGrowPos.y + currentElementWidening.Value.width.up + allowDiag) { babyPos = (currentGrowPos.x, currentGrowPos.y + currentElementWidening.Value.width.up + allowDiag); }
+                    }
+                }
+                babyPos = absolutePos(babyPos);
                 ((int x, int y) dir, bool isApplyAfter)? babyDirection = null;
                 if (item.dirType == 1) { babyDirection = (item.mod, false); }
                 else if (item.dirType == 2) { babyDirection = (baseDirection, false); }
@@ -728,6 +766,7 @@ namespace Cave
                     childArrayOffset += traits.plantGrowthRules.childOffset;
                     directionArrayOffset += traits.plantGrowthRules.dGOffset;
                     modArrayOffset += traits.plantGrowthRules.pMOffset;
+                    ElementWideningArrayOffset += traits.plantGrowthRules.eWoffset.baseValue + getRandValue(seed + 165843, traits.plantGrowthRules.eWoffset.variation + 1) + (int)(traits.plantGrowthRules.eWoffset.maxGrowthScaling * maxGrowthLevel);
                     currentElementWidening = traits.plantGrowthRules.startElementWidening;
 
                     if (!isTransition)
@@ -742,7 +781,7 @@ namespace Cave
                         foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item in traits.plantGrowthRules.childrenOnGrowthStart)
                         {
                             if (item.chance != 100 && getRandValue((int)maxGrowthLevel + childArrayOffset + 20000, 100) > item.chance) { continue; }
-                            makeBaby(item, 0, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset);
+                            makeBaby(item, lastDrawPos, 0, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset);
                             offset += 1;
                         }
                     }
@@ -817,7 +856,7 @@ namespace Cave
                     }
                     if (growthLevel > maxGrowthLevel)   // If was final growth
                     {
-                        if (traits.deathChild != null && (traits.deathChild.Value.chance == 100 || getRandValue((int)maxGrowthLevel + childArrayOffset + 20000, 100) <= traits.deathChild.Value.chance)) { makeBaby((traits.deathChild.Value.plantElement, 0, traits.deathChild.Value.offset, 0, 100), growthLevel, 1); }
+                        if (traits.deathChild != null && (traits.deathChild.Value.chance == 100 || getRandValue((int)maxGrowthLevel + childArrayOffset + 20000, 100) <= traits.deathChild.Value.chance)) { makeBaby((traits.deathChild.Value.plantElement, 0, traits.deathChild.Value.offset, 0, 100), lastDrawPos, growthLevel, 1); }
                         if (traits.transitionToOtherPlantElementOnGrowthEnd != null)
                         {
                             transitionToOtherPlantElement(traits.transitionToOtherPlantElementOnGrowthEnd.Value);
@@ -939,7 +978,7 @@ namespace Cave
                         int cost = (int)(growthSpeedVariation * (item.birthFrame.frame + getRandValue(childArrayOffset + 30000, item.birthFrame.range + 1)));
                         if (growthLevelToTest - childArrayOffset >= cost)
                         {   // This part here will make it so it the baby chance is not 100 AND fails it still proceeds in the array even without spawning the bebe
-                            if ((item.chance < 100 && getRandValue(growthLevelToTest + childArrayOffset + 20000, 100) > item.chance) || makeBaby(item, growthLevelToTest))  // Only increase cost and position when the growth of the child succeeds. Might add that as a parameter idk to make some kids skippable
+                            if ((item.chance < 100 && getRandValue(growthLevelToTest + childArrayOffset + 20000, 100) > item.chance) || makeBaby(item, drawPos, growthLevelToTest))  // Only increase cost and position when the growth of the child succeeds. Might add that as a parameter idk to make some kids skippable
                             {
                                 currentChildArrayIdx++;
                                 childArrayOffset += cost;
@@ -947,7 +986,7 @@ namespace Cave
                         }
                     }
 
-                    if (traits.plantGrowthRules.elementWideningArray != null && traits.plantGrowthRules.elementWideningArray.Length > 0 && (traits.plantGrowthRules.loopEW || currentElementWideningArrayIdx + 1 < traits.plantGrowthRules.elementWideningArray.Length))
+                    while (traits.plantGrowthRules.elementWideningArray != null && traits.plantGrowthRules.elementWideningArray.Length > 0 && (traits.plantGrowthRules.loopEW || currentElementWideningArrayIdx + 1 < traits.plantGrowthRules.elementWideningArray.Length))
                     {
                         (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame) item = traits.plantGrowthRules.elementWideningArray[(currentElementWideningArrayIdx + 1) % traits.plantGrowthRules.elementWideningArray.Length];
 
@@ -958,6 +997,7 @@ namespace Cave
                             currentElementWideningArrayIdx++;
                             ElementWideningArrayOffset += cost;
                         }
+                        else { break; }
                     }
 
 
@@ -972,7 +1012,7 @@ namespace Cave
                             {
                                 offset += 1;
                                 if (item.chance != 100 && getRandValue((int)maxGrowthLevel + childArrayOffset + 20000 + offset, 100) > item.chance) { continue; }
-                                makeBaby(item, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset);
+                                makeBaby(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset);
                             }
                         }
                         if (traits.transitionToOtherPlantElementOnGrowthEnd != null)

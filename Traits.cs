@@ -665,6 +665,7 @@ namespace Cave
             public ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] childArray;
             public int childOffset;
             public bool mirrorTwinChildren;
+            public int preventGapsOnChildSpawn;
             public bool loopChild;
             public int? liquidIncreasesChildOffset;
 
@@ -682,7 +683,7 @@ namespace Cave
 
             public ((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)? startElementWidening;
             public (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame)[] elementWideningArray;
-            public int eWoffset;
+            public (int baseValue, int variation, float maxGrowthScaling) eWoffset;
             public bool loopEW;
             public int? liquidIncreasesEWOffset;
 
@@ -690,13 +691,13 @@ namespace Cave
             public PlantGrowthRules((int type, int subType) t, (int type, int subType)[] tCNTG = null, (int frame, int range)? mG = null, (float step, bool fromEnd)? mGPRV = null, bool oMGV = false, (float baseValue, float variation)? gSVF = null, int? lIMG = null,
                 ((int x, int y, bool stopGrowth)[] left, (int x, int y, bool stopGrowth)[] right, (int x, int y, bool stopGrowth)[] down, (int x, int y, bool stopGrowth)[] up)? hPP = null,
                 ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] cOGS = null,
-                ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] cOGE = null,
-                ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] C = null, int cO = 0, bool lC = false, int? lICO = null, bool mTC = false,    // O O OOOO I. WANT A HEN-
+                ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] cOGE = null,                                                                               //   pGOCS 0 -> not prevent, 1 -> prevent gaps but allow diagonal, 2 -> prevent gaps including diagonal linkage
+                ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] C = null, int cO = 0, bool lC = false, int? lICO = null, int pGOCS = 0, bool mTC = false,    // O O OOOO I. WANT A HEN-
                 ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped)? sD = null,
                 ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] DG = null, int dGO = 0, bool rDG = false, bool lDG = false, int? lIDGO = null,
                 ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] PM = null, int pMO = 0, bool lPM = false, int? lIPMO = null,
                 ((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)? sEW = null,
-                (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame)[] EW = null, int eWO = 0, bool lEW = false, int? lIEWO = null,
+                (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame)[] EW = null, (int baseValue, int variation, float maxGrowthScaling)? eWO = null, bool lEW = false, int? lIEWO = null,
                 bool pG = true, bool M = false)
             {
                 maxGrowth = mG ?? (5, 0);
@@ -714,6 +715,7 @@ namespace Cave
                 childArray = C;
                 childOffset = cO;
                 mirrorTwinChildren = mTC;
+                preventGapsOnChildSpawn = pGOCS;
                 loopChild = lC;
                 liquidIncreasesChildOffset = lICO;
 
@@ -731,7 +733,7 @@ namespace Cave
 
                 startElementWidening = sEW;
                 elementWideningArray = EW;
-                eWoffset = eWO;
+                eWoffset = eWO ?? (0, 0, 0);
                 loopEW = lEW;
                 liquidIncreasesEWOffset = lIEWO;
 
@@ -1418,6 +1420,35 @@ namespace Cave
                 ) },
 
 
+                { (14, 20, 0), new PlantElementTraits("DesertRoseTrunk", rET:(from number in Enumerable.Range(0, 20) select ((0, number), (true, false))).ToArray().Concat(from number in Enumerable.Range(-7, 15) select ((number, 10), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(2, 10), pGOCS:2, lIMG:1, sEW:((3, 3, 0, 0), (true, false, false)),
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 20, -1), 5, (-3, 0), 0, 90), ((14, 20, -1), 5, (3, 0), 0, 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (8, 12), 45) },
+                    EW:new (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame)[] { (((3, 2, 0, 0), (true, false, false)), (1, 1)), (((2, 2, 0, 0), (true, false, false)), (1, 1)), (((2, 1, 0, 0), (true, false, false)), (1, 1)), (((1, 1, 0, 0), (true, false, false)), (1, 1)) },
+                    eWO:(-5, 4, 0.65f)
+                )) },
+                { (14, 20, -1), new PlantElementTraits("DesertRoseBranch1",
+                pGR:new PlantGrowthRules(t:(1, 1), sD:((0, 1), (true, false, false)), mG:(5, 5), sEW:((1, 0, 0, 0), (true, false, false)),
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 20, 1), 0, (0, 0), 0, 100) },
+                    C:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((14, 20, -2), 1, (1, 0), 0, (1, 0), 80), ((14, 20, -2), 1, (-1, 0), 0, (1, 0), 80) },
+                    lC:true, cO:3,
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, true), (0, 0), 15), ((1, 1), (true, false, false), (1, 0), 30), ((1, 1), (true, false, false), (1, 1), 45) },
+                    EW:new (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame)[] { (((0, 0, 0, 0), (true, false, false)), (2, 6)),  }
+                )) },
+                { (14, 20, -2), new PlantElementTraits("DesertRoseBranch2",
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(3, 3),
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((14, 20, 1), 0, (0, 0), 0, 100) },
+                    C:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((14, 20, 2), 0, (0, 0), 0, (1, 2), 35) },
+                    DG:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 1), (true, false, true), (1, 3), 100), ((0, 1), (true, false, true), (1, 1), 50) }
+                )) },
+                { (14, 20, 1), new PlantElementTraits("DesertRoseFlowerSticky", stick:((0, 1), (false, false)), fMG:(1, 2),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0), (2, 1) }, "DesertRoseFlower", 4)
+                ) },
+                { (14, 20, 2), new PlantElementTraits("DesertRoseFlower", fMG:(1, 2),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0), (2, 1) }, "DesertRoseFlower", 4)
+                ) },
+
+
 
                 { (20, 0, 0), new PlantElementTraits("Vine", rET:(from number in Enumerable.Range(0, 15) select ((0, -number), (true, false))).ToArray(),
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(10, 50),
@@ -1869,6 +1900,9 @@ namespace Cave
                 fPS:(25, 25, 15), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((65, 10, 15), (85, -15, 20), (30, 5, 10))), ((1, 0), new ColorRange((90, 10, 15), (110, -15, 20), (50, 10, 10))), ((1, 1), new ColorRange((135, 10, 0), (125, 5, 0), (110, -10, 0))) }) },
                 { (14, 11), new PlantTraits("Beaked Yucca", pOS:((0, 2), (25, 16)),
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((65, 10, 15), (85, -15, 20), (30, 5, 10))), ((1, 0), new ColorRange((90, 10, 15), (110, -15, 20), (50, 10, 10))), ((1, 1), new ColorRange((135, 10, 15), (125, 5, 20), (110, -10, 10))) }) },
+                
+                { (14, 20), new PlantTraits("Desert Rose", sName:"Adenium obesum",
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((90, -5, 20), (80, 15, 15), (35, -10, 10))), ((1, 1), new ColorRange((160, 10, 0), (135, 5, 0), (105, -10, 0))), ((2, 0), new ColorRange((255, 10, 30), (110, -20, 15), (165, 10, 20))), ((2, 1), new ColorRange((255, 10, 20), (190, -10, 15), (225, 5, 15))) }) },
 
 
 
@@ -2216,8 +2250,8 @@ namespace Cave
                 { (2, 3),  new BiomeTraits("Baobab Desert",         (Color.LightYellow.R + 160, Color.LightYellow.G + 80, Color.LightYellow.B - 80), ((250, 120, 50), true),
                                                                      // Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), },
-                new ((int type, int subType) type, float percentage)[]{ ((14, 0), 15), ((14, 1), 20) },
-                cT:(1, 5), tT:(9, 1), lT:(0, 0), txT:(0, 0),        // Giant Baobab   Suarez Baobab 
+                new ((int type, int subType) type, float percentage)[]{ ((14, 0), 15), ((14, 1), 20), ((14, 20), 10) },
+                cT:(1, 5), tT:(9, 1), lT:(0, 0), txT:(0, 0),        // Giant Baobab   Suarez Baobab   Desert Rose
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["SandOrange"] }) },
                 { (2, 4),  new BiomeTraits("Salt Desert",           (Color.White.R, Color.White.G, Color.White.B), null,
                                                                      
