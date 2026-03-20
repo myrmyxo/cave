@@ -66,6 +66,9 @@ namespace Cave
 
             //     ---- - - CURRENTLY DOING - - ----
             // 
+            //  -------> Ease the transition between sands/sandstones ! And sandstone/normal rock
+            //  --> Adding Saxaul in cold desert, with Cistanche deserticola AND Cynomorium coccineum as a plant that grows near it ! Also add wild onion and bindweed
+            //  
             // Oasises in deserts ! Deserts are when no humidity but high illumination ?
             // NEW PLANTS
             //  -> add Ghost Gum, Saxaul, Quiver Tree and other species of Aloidendron, Yareta, Colocynths (wild desert gourd),
@@ -75,6 +78,7 @@ namespace Cave
             // Then prairies and heathlands and shrublands and stuff HEATHHH
             // -> Separate Bayou and Swamp (Bayou is rare variant)
             // Add moss that grows on rock and shit
+            // Biomes with low light and with fungi when illumination is low ? And if it gets under 0 it gets very dangerous, like deep dark in minefart or idk ?
 
             //          --- - TO DO LIST - ---
             //
@@ -210,6 +214,7 @@ namespace Cave
             // Wapato/Sagittaria
             // Mimosa
             // Poplar/Aspen
+            // Lupin !!!
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.

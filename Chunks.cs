@@ -893,7 +893,7 @@ namespace Cave
                 TileTraits traits = fillStates[i, j];
 
                 int[] colorArray;
-                if (traits.isSolid) { colorArray = new int[]{ baseColors[i, j].solid.r, baseColors[i, j].solid.g, baseColors[i, j].solid.b }; }
+                if (traits.isSolid) { colorArray = new int[] { baseColors[i, j].solid.r, baseColors[i, j].solid.g, baseColors[i, j].solid.b }; }
                 else { colorArray = new int[] { baseColors[i, j].air.r, baseColors[i, j].air.g, baseColors[i, j].air.b }; }
                 // colorArray = new int[] { baseColors[i, j].solid.r, baseColors[i, j].solid.g, baseColors[i, j].solid.b };
 
@@ -903,10 +903,23 @@ namespace Cave
                 int rando = 0;
                 if (traits.isTextured != null)
                 {
+                    int mod = 0;
+                    if (traits.isTextured.Value.x == 2)
+                    {
+                        float modFloat = (((int)LCGxy(((pos.x, 0), 5423), screen.seed) % 100) * (31 - i) + ((int)LCGxy(((pos.x + 1, 0), 5423), screen.seed) % 100) * i);
+                        int newMod = 13;
+                        int newPosX = pos.x * 32 + i + 539212;
+                        int xxx = Floor(newPosX, newMod) / newMod;
+                        int xMod = PosMod(newPosX, newMod);
+                        modFloat += (((int)LCGxy(((xxx, 0), 5423), screen.seed) % 100) * (newMod - xMod - 1) + ((int)LCGxy(((xxx + 1, 0), 5423), screen.seed) % 100) * xMod) * 1.5f;
+                        mod = (int)(modFloat * 0.0025f);
+                    }
+
                     long randoLong = 0;
-                    if (traits.isTextured.Value.x) { randoLong += LCGxPos(pos.x * 32 + i) % 153; }
-                    if (traits.isTextured.Value.y) { randoLong += LCGyPos(pos.y * 32 + j) % 247; }
+                    if (traits.isTextured.Value.x == 1) { randoLong += LCGxPos(pos.x * 32 + i) % 153; }
+                    if (traits.isTextured.Value.y == 1) { randoLong += LCGyPos(pos.y * 32 + j + mod) % 247; }
                     rando = Abs((int)(LCGyNeg(randoLong) % 279)) % 40 - 20;
+
                 }
 
                 colorArray[0] += (int)(materialColor.r * (1 - materialColor.mult)) + rando;
@@ -1842,9 +1855,20 @@ namespace Cave
 
                     if (temperature > 200 && temperature < 850)
                     {
+                        int temperateness = calculateBiome(ref percentageFree, Min(temperature - 200, 850 - temperature), (0, 999999)); // so it's ez to calculeyt
+                        calculateAndAddBiome(listo, (2, 4), ref temperateness, Min(400 - humidity, salinity - 850), (0, 999999)); // salt desert
+                        if (humidity < 250)
+                        {
+                            int desertness = calculateBiome(ref temperateness, humidity, (-999999, 250));
+                            calculateAndAddBiome(listo, (2, 6), ref desertness, temperature, (-999999, 400));    // cold desert
+                            calculateAndAddBiome(listo, (2, 5), ref desertness, temperature, (-999999, 650));    // temperate desert
+                            calculateAndAddBiome(listo, (2, 3), ref desertness, acidity, (512, 999999));    // baobab desert
+                            testAddBiome(listo, (2, 2), desertness);    // Add rest as hot desert
+                        }
+                        if (temperateness <= 0) { goto AfterTemperateTest; }
                         if (illumination > 600)
                         {
-                            int forestness = calculateBiome(ref percentageFree, Min(illumination - 600, temperature - 200, 850 - temperature), (0, 999999));    // normal forest
+                            int forestness = calculateBiome(ref temperateness, Min(illumination - 600), (0, 999999));    // normal forest
 
                             int wetlandness = calculateBiome(ref forestness, humidity, (700 - Max(0, oceanity - 512), 999999));
                             calculateAndAddBiome(listo, (3, 4), ref wetlandness, salinity, (512, 999999));    // mangrove
@@ -1859,14 +1883,16 @@ namespace Cave
                             // low humidity : baobab forest ?????? desert ???
                             // -> Garrigue when alcaline ?
                         }
-                        if (percentageFree <= 0) { goto AfterTest; }
+                        if (temperateness <= 0) { goto AfterTemperateTest; }
                         if (illumination > 350)
                         {
-                            int prairieness = calculateBiome(ref percentageFree, Min(illumination - 350, temperature - 200, 850 - temperature), (0, 999999));
+                            int prairieness = calculateBiome(ref temperateness, Min(illumination - 350), (0, 999999));
                             calculateAndAddBiome(listo, (2, 1), ref prairieness, humidity, (700 - Max(0, oceanity - 512), 999999));    // Marsh
                             testAddBiome(listo, (2, 0), prairieness);   // Add rest as flower forest (for now)
                         }
+                        percentageFree += temperateness;    // if not all temperateness allocated a biome
                     }
+                AfterTemperateTest:;
 
                     if (percentageFree <= 0) { goto AfterTest; }
                     if (temperature > 720)
@@ -1918,8 +1944,10 @@ namespace Cave
                 }
                 else if (dimensionType == (-1, 0)) // type == -1, TEST dimension
                 {
-                    calculateAndAddBiome(listo, (2, 2), ref percentageFree, salinity, (512, 999999)); // Desert
-                    testAddBiome(listo, (2, 3), percentageFree); // Baobab desert
+                    calculateAndAddBiome(listo, (2, 6), ref percentageFree, temperature, (800, 999999)); // Desert 3
+                    calculateAndAddBiome(listo, (2, 5), ref percentageFree, humidity, (700, 999999)); // Desert 2
+                    calculateAndAddBiome(listo, (2, 3), ref percentageFree, salinity, (512, 999999)); // Desert
+                    testAddBiome(listo, (2, 2), percentageFree); // Baobab desert
                 }
             }
 

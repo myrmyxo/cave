@@ -94,8 +94,12 @@ namespace Cave
                 { (7, 0), new OneSprite("AshTile", true) },                 // TO CHANGE
                 { (8, 0), new OneSprite("SandTile", true) },                // TO CHANGE
                 { (8, 1), new OneSprite("SandOrangeTile", true) },          // TO CHANGE
+                { (8, 2), new OneSprite("SandRedTile", true) },             // TO CHANGE
+                { (8, 3), new OneSprite("SandGrayTile", true) },            // TO CHANGE
                 { (9, 0), new OneSprite("SandstoneTile", true) },           // TO CHANGE
                 { (9, 1), new OneSprite("SandstoneOrangeTile", true) },     // TO CHANGE
+                { (9, 2), new OneSprite("SandstoneRedTile", true) },        // TO CHANGE
+                { (9, 3), new OneSprite("SandstoneGrayTile", true) },       // TO CHANGE
             };                                                               
             entitySprites = new Dictionary<(int type, int subType), OneSprite>
             {

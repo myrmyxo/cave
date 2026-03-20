@@ -86,9 +86,11 @@ namespace Cave
 
             public ColorRange colorRange;
             public float biomeColorBlend;
-            public (bool x, bool y)? isTextured;
+            public (int x, int y)? isTextured;
             public bool isTransparent;
-            public TileTraits(string namee, ColorRange cR = null, bool Air = false, bool Liq = false, bool San = false, bool L = false, bool A = false, bool T = false, bool S = false, (int propagationThreshold, int destructionThreshold)? F = null, ((int type, int subType) type, float chance)? bT = null, bool? iFC = null, bool B = false, bool St = false, bool iTF = false, float bCB = 0.1f, (bool x, bool y)? Tex = null, bool Tr = false)
+            public TileTraits(string namee, ColorRange cR = null, bool Air = false, bool Liq = false, bool San = false, bool L = false, bool A = false, bool T = false,
+                bool S = false, (int propagationThreshold, int destructionThreshold)? F = null, ((int type, int subType) type, float chance)? bT = null, bool? iFC = null,
+                bool B = false, bool St = false, bool iTF = false, float bCB = 0.1f, (int x, int y)? Tex = null, bool Tr = false)
             {
                 name = namee;
 
@@ -175,7 +177,7 @@ namespace Cave
                 { (2, 1), new TileTraits("Mud", bCB:0.3f,
                 cR:new ColorRange((65, 0, 0), (45, 0, 0), (30, 0, 0))                                                       ) },
                 { (2, 2), new TileTraits("Litter", bCB:0.2f, F:(45, 150), bT:((7, 0), 5),
-                cR:new ColorRange((180, 0, 0), (75, 0, 0), (40, 0, 0)),           Tex:(true, true)                          ) },
+                cR:new ColorRange((180, 0, 0), (75, 0, 0), (40, 0, 0)),           Tex:(1, 1)                          ) },
 
                 { (3, 0), new TileTraits("Plant Matter", bCB:0.35f, F:(75, 250), bT:((7, 0), 5),
                 cR:new ColorRange((10, 0, 0), (60, 0, 0), (30, 0, 0))                                                       ) },
@@ -188,25 +190,33 @@ namespace Cave
                 cR:new ColorRange((200, 0, 0), (150, 0, 0), (130, 0, 0))                                                    ) },
 
                 { (5, 0), new TileTraits("Mold Tile", bCB:0.1f, F:(15, 60), bT:((7, 0), 5),
-                cR:new ColorRange((50, 0, 0), (50, 0, 0), (100, 0, 0)),           Tex:(true, true), B:true                  ) },
+                cR:new ColorRange((50, 0, 0), (50, 0, 0), (100, 0, 0)),           Tex:(1, 1), B:true                  ) },
 
                 { (6, 0), new TileTraits("Salt Tile", bCB:0.1f,
-                cR:new ColorRange((210, 0, 0), (210, 0, 0), (210, 0, 0)),         Tex:(true, true), Tr:true, St:true        ) },
+                cR:new ColorRange((210, 0, 0), (210, 0, 0), (210, 0, 0)),         Tex:(1, 1), Tr:true, St:true        ) },
                 { (6, 1), new TileTraits("Pink Salt Tile", bCB:0.1f,
-                cR:new ColorRange((170, 0, 0), (120, 0, 0), (140, 0, 0)),         Tex:(true, true), Tr:true, St:true        ) },
+                cR:new ColorRange((170, 0, 0), (120, 0, 0), (140, 0, 0)),         Tex:(1, 1), Tr:true, St:true        ) },
 
                 { (7, 0), new TileTraits("Ash Tile", bCB:0.1f,
-                cR:new ColorRange((120, 0, 0), (120, 0, 0), (125, 0, 0)),         San:true, Tex:(true, true), iFC:false, B:true ) },
+                cR:new ColorRange((120, 0, 0), (120, 0, 0), (125, 0, 0)),         San:true, Tex:(1, 1), iFC:false, B:true ) },
 
                 { (8, 0), new TileTraits("Sand Tile", bCB:0.1f,
-                cR:new ColorRange((220, 0, 0), (180, 0, 0), (50, 0, 0)),         San:true, Tex:(true, true), B:true        ) },
+                cR:new ColorRange((220, 0, 0), (180, 0, 0), (50, 0, 0)),         San:true, Tex:(1, 1), B:true        ) },
                 { (8, 1), new TileTraits("Orange Sand Tile", bCB:0.1f,
-                cR:new ColorRange((230, 0, 0), (120, 0, 0), (50, 0, 0)),         San:true, Tex:(true, true), B:true        ) },
+                cR:new ColorRange((225, 0, 0), (150, 0, 0), (50, 0, 0)),         San:true, Tex:(1, 1), B:true        ) },
+                { (8, 2), new TileTraits("Red Sand Tile", bCB:0.1f,
+                cR:new ColorRange((230, 0, 0), (120, 0, 0), (50, 0, 0)),         San:true, Tex:(1, 1), B:true        ) },
+                { (8, 3), new TileTraits("Gray Sand Tile", bCB:0.1f,
+                cR:new ColorRange((175, 0, 0), (160, 0, 0), (145, 0, 0)),        San:true, Tex:(1, 1), B:true        ) },
 
                 { (9, 0), new TileTraits("Sandstone Tile", bCB:0.1f,
-                cR:new ColorRange((185, 0, 0), (150, 0, 0), (75, 0, 0)),         Tex:(false, true)                         ) },
+                cR:new ColorRange((185, 0, 0), (150, 0, 0), (75, 0, 0)),         Tex:(2, 1)                         ) },
                 { (9, 1), new TileTraits("Orange Sandstone Tile", bCB:0.1f,
-                cR:new ColorRange((195, 0, 0), (110, 0, 0), (75, 0, 0)),         Tex:(false, true)                         ) },
+                cR:new ColorRange((190, 0, 0), (130, 0, 0), (75, 0, 0)),         Tex:(2, 1)                         ) },
+                { (9, 2), new TileTraits("Red Sandstone Tile", bCB:0.1f,
+                cR:new ColorRange((195, 0, 0), (110, 0, 0), (75, 0, 0)),         Tex:(2, 1)                         ) },
+                { (9, 3), new TileTraits("Gray Sandstone Tile", bCB:0.1f,
+                cR:new ColorRange((135, 0, 0), (125, 0, 0), (115, 0, 0)),        Tex:(2, 1)                         ) },
             };
 
             foreach ((int type, int subType) typeToSet in tileTraitsDict.Keys) { tileTraitsDict[typeToSet].setType(typeToSet); }
@@ -2080,8 +2090,10 @@ namespace Cave
                 { "Dirt/Mud", new TerrainFeaturesTraits((2, 0), 0, 8, mL:2, iS:true, bT:1250, bER:(1000, 350), nM:(32, null), nVR:(1500, null)) },
                 { "Litter", new TerrainFeaturesTraits((2, 2), -1, 9, mL:2, iS:true, bT:1100, bER:(2000, 200), nM:(16, null), nVR:(1000, null)) },
 
-                { "Sand", new TerrainFeaturesTraits((8, 0), 0, 10, mL:2, iS:true, bT:1250, bER:(1000, 350), nM:(32, null), nVR:(1500, null)) },
-                { "SandOrange", new TerrainFeaturesTraits((8, 1), 0, 10, mL:2, iS:true, bT:1250, bER:(1000, 350), nM:(32, null), nVR:(1500, null)) },
+                { "Sand", new TerrainFeaturesTraits((8, 0), 0, 10, mL:2, iS:true, bT:1250, bER:(3000, 0), nM:(32, null), nVR:(1500, null)) },
+                { "SandOrange", new TerrainFeaturesTraits((8, 1), 0, 10, mL:2, iS:true, bT:1250, bER:(3000, 0), nM:(32, null), nVR:(1500, null)) },
+                { "SandRed", new TerrainFeaturesTraits((8, 2), 0, 10, mL:2, iS:true, bT:1250, bER:(3000, 0), nM:(32, null), nVR:(1500, null)) },
+                { "SandGray", new TerrainFeaturesTraits((8, 3), 0, 10, mL:2, iS:true, bT:1250, bER:(3000, 0), nM:(32, null), nVR:(1500, null)) },
 
                 { "Salt Ground", new TerrainFeaturesTraits((6, 0), 0, 11, mL:2, iS:true, bT:1250, bER:(1000, 350), nM:(32, null), nVR:(1500, null)) },
 
@@ -2241,24 +2253,36 @@ namespace Cave
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 35), ((0, 2), 25), ((2, 3), 5), ((2, 2), 75), ((3, 0), 200), ((3, 1), 50), ((2, 1), 5), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
                 cT:(7, 7), lT:(-2, 0), txT:(0, 0),                   // Grass         Cortaderia    Papyrus       Reed           Rush           Butomus       Rice         Vine            Cattail        Kelp            CeilingKelp
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
-                { (2, 2),  new BiomeTraits("Desert",                (Color.LightYellow.R + 80, Color.LightYellow.G + 40, Color.LightYellow.B - 20), ((200, 170, 30), true),
+                { (2, 2),  new BiomeTraits("Hot Desert",                (Color.LightYellow.R + 120, Color.LightYellow.G + 100, Color.LightYellow.B - 40), ((210, 150, 50), true),
                                                                      // Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), ((4, 10), 5), ((4, 11), 5), ((14, 10), 10), ((14, 11), 5) },
                 cT:(1, 5), tT:(9, 0), lT:(0, 0), txT:(0, 0),        // Cactus        Yucca filament Yucca flaccid Yucca Tree      Beaked Yucca 
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Sand"] }) },
-                { (2, 3),  new BiomeTraits("Baobab Desert",         (Color.LightYellow.R + 160, Color.LightYellow.G + 80, Color.LightYellow.B - 80), ((250, 120, 50), true),
+                { (2, 3),  new BiomeTraits("Baobab Desert",         (Color.LightYellow.R + 160, Color.LightYellow.G + 80, Color.LightYellow.B - 80), ((250, 120, 70), true),
                                                                      // Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((14, 0), 15), ((14, 1), 20), ((14, 20), 10) },
-                cT:(1, 5), tT:(9, 1), lT:(0, 0), txT:(0, 0),        // Giant Baobab   Suarez Baobab   Desert Rose
-                tFT:new TerrainFeaturesTraits[]{ famousTFT["SandOrange"] }) },
+                cT:(1, 5), tT:(9, 2), lT:(0, 0), txT:(0, 0),        // Giant Baobab   Suarez Baobab   Desert Rose
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["SandRed"] }) },
                 { (2, 4),  new BiomeTraits("Salt Desert",           (Color.White.R, Color.White.G, Color.White.B), null,
                                                                      
                 new ((int type, int subType) type, float percentage)[]{ },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 3), 80) },
                 cT:(1, 5), lT:(-2, 2), txT:(0, 0),                  // Red Glasswort
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Salt Ground"] }) },
+                { (2, 5),  new BiomeTraits("Temperate Desert",      (Color.LightGray.R, Color.LightGray.G, Color.LightGray.B), ((160, 150, 140), true),
+                                                                     
+                new ((int type, int subType) type, float percentage)[]{ },
+                new ((int type, int subType) type, float percentage)[]{ ((0, 0), 50), },
+                cT:(1, 5), tT:(9, 3), lT:(0, 0), txT:(0, 0),         // Grass         
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["SandGray"] }) },
+                { (2, 6),  new BiomeTraits("Cold Desert",           (Color.LightYellow.R + 140, Color.LightYellow.G + 90, Color.LightYellow.B - 60), ((230, 135, 60), true),
+
+                new ((int type, int subType) type, float percentage)[]{ },
+                new ((int type, int subType) type, float percentage)[]{ ((0, 0), 50), },
+                cT:(1, 5), tT:(9, 1), lT:(0, 0), txT:(0, 0),         // Grass         
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["SandOrange"] }) },
 
                 { (3, 0),  new BiomeTraits("Forest",                (Color.Green.R, Color.Green.G, Color.Green.B), null,
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
