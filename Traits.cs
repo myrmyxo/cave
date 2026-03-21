@@ -2008,6 +2008,7 @@ namespace Cave
 
         public class TerrainFeaturesTraits
         {
+            public string name;
             public (int type, int subType) tileType;
             public int layer;
             public int priority;
@@ -2037,10 +2038,15 @@ namespace Cave
             public (int threshold, bool reverse)? oceanity;
             public int biomeValuesScale;
             public (int strength, int threshold)? biomeEdgeReduction;
+
+            public Dictionary<(int type, int subType), (int type, int subType)> biomeDependantTiles;
+            public bool sandStoneTransition;
+
             public TerrainFeaturesTraits((int type, int subType) tT, int p, int tR, int mL = 0, bool mBVR = false, int bT = 512, (int? one, int? two)? nM = null, (int? one, int? two)? nVR = null,
                 (int threshold, bool reverse)? T = null, (int threshold, bool reverse)? H = null, (int threshold, bool reverse)? A = null,
                 (int threshold, bool reverse)? TX = null, (int threshold, bool reverse)? S = null, (int threshold, bool reverse)? I = null,
-                (int threshold, bool reverse)? O = null, int bVS = 512, (int strength, int threshold)? bER = null, bool fBS = false, bool iS = false, bool iL = false, bool iA = false, bool nQF = false, bool iI = false)
+                (int threshold, bool reverse)? O = null, int bVS = 512, (int strength, int threshold)? bER = null, bool fBS = false, bool iS = false, bool iL = false, bool iA = false, bool nQF = false, bool iI = false,
+                Dictionary<(int type, int subType), (int type, int subType)> bDT = null, bool sST = false)
             {
                 tileType = tT;
                 priority = p;
@@ -2071,6 +2077,9 @@ namespace Cave
                 oceanity = O;
                 biomeValuesScale = bVS;
                 biomeEdgeReduction = bER;
+
+                biomeDependantTiles = bDT;
+                sandStoneTransition = sST;
             }
         }
         public static Dictionary<string, TerrainFeaturesTraits> famousTFT;
@@ -2087,13 +2096,13 @@ namespace Cave
 
                 { "Frost Carving", new TerrainFeaturesTraits((0, 0), 0, 6, iS:true, bT:0, bER:(100, 0), nM:(null, null), iI:true) },
 
-                { "Dirt/Mud", new TerrainFeaturesTraits((2, 0), 0, 8, mL:2, iS:true, bT:1250, bER:(1000, 350), nM:(32, null), nVR:(1500, null)) },
+                { "Dirt/Mud", new TerrainFeaturesTraits((2, 0), 0, 8, mL:2, iS:true, bT:1250, bER:(2000, 250), nM:(32, null), nVR:(1500, null)) },
                 { "Litter", new TerrainFeaturesTraits((2, 2), -1, 9, mL:2, iS:true, bT:1100, bER:(2000, 200), nM:(16, null), nVR:(1000, null)) },
 
-                { "Sand", new TerrainFeaturesTraits((8, 0), 0, 10, mL:2, iS:true, bT:1250, bER:(3000, 0), nM:(32, null), nVR:(1500, null)) },
-                { "SandOrange", new TerrainFeaturesTraits((8, 1), 0, 10, mL:2, iS:true, bT:1250, bER:(3000, 0), nM:(32, null), nVR:(1500, null)) },
-                { "SandRed", new TerrainFeaturesTraits((8, 2), 0, 10, mL:2, iS:true, bT:1250, bER:(3000, 0), nM:(32, null), nVR:(1500, null)) },
-                { "SandGray", new TerrainFeaturesTraits((8, 3), 0, 10, mL:2, iS:true, bT:1250, bER:(3000, 0), nM:(32, null), nVR:(1500, null)) },
+                { "DesertSand", new TerrainFeaturesTraits((8, 0), 0, 10, mL:2, iS:true, bT:1250, bER:(3000, 0), nM:(32, null), nVR:(1500, null),
+                bDT:new Dictionary<(int type, int subType), (int type, int subType)>() { { (2, 2), (8, 0) }, { (2, 3), (8, 2)}, {(2, 5), (8, 3)}, {(2, 6), (8, 1)} }) },
+                { "DesertSandstone", new TerrainFeaturesTraits((9, 0), 0, 12, mL:0, iS:true, bT:1250, bER:(1200, 100), nM:(32, null), nVR:(1000, null), sST:true,
+                bDT:new Dictionary<(int type, int subType), (int type, int subType)>() { { (2, 2), (9, 0) }, { (2, 3), (9, 2)}, {(2, 5), (9, 3)}, {(2, 6), (9, 1)} }) },
 
                 { "Salt Ground", new TerrainFeaturesTraits((6, 0), 0, 11, mL:2, iS:true, bT:1250, bER:(1000, 350), nM:(32, null), nVR:(1500, null)) },
 
@@ -2104,7 +2113,7 @@ namespace Cave
                 { "Skin40", new TerrainFeaturesTraits((4, 2), 0, 7, mL:1, iS:true, bT:1229, nM:(32, null)) },
             };
             int counto = 0;
-            foreach (TerrainFeaturesTraits tTT in famousTFT.Values) { tTT.layer = counto * 2; counto++; }
+            foreach (string TFTname in famousTFT.Keys) { famousTFT[TFTname].layer = counto * 2; counto++; famousTFT[TFTname].name = TFTname; }
         }
 
 
@@ -2257,32 +2266,32 @@ namespace Cave
                                                                      // Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), ((4, 10), 5), ((4, 11), 5), ((14, 10), 10), ((14, 11), 5) },
-                cT:(1, 5), tT:(9, 0), lT:(0, 0), txT:(0, 0),        // Cactus        Yucca filament Yucca flaccid Yucca Tree      Beaked Yucca 
-                tFT:new TerrainFeaturesTraits[]{ famousTFT["Sand"] }) },
+                cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Cactus        Yucca filament Yucca flaccid Yucca Tree      Beaked Yucca 
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
                 { (2, 3),  new BiomeTraits("Baobab Desert",         (Color.LightYellow.R + 160, Color.LightYellow.G + 80, Color.LightYellow.B - 80), ((250, 120, 70), true),
                                                                      // Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((14, 0), 15), ((14, 1), 20), ((14, 20), 10) },
-                cT:(1, 5), tT:(9, 2), lT:(0, 0), txT:(0, 0),        // Giant Baobab   Suarez Baobab   Desert Rose
-                tFT:new TerrainFeaturesTraits[]{ famousTFT["SandRed"] }) },
+                cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Giant Baobab   Suarez Baobab   Desert Rose
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
                 { (2, 4),  new BiomeTraits("Salt Desert",           (Color.White.R, Color.White.G, Color.White.B), null,
                                                                      
                 new ((int type, int subType) type, float percentage)[]{ },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 3), 80) },
-                cT:(1, 5), lT:(-2, 2), txT:(0, 0),                  // Red Glasswort
+                cT:(1, 5), lT:(-2, 2), txT:(0, 0),                   // Red Glasswort
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Salt Ground"] }) },
                 { (2, 5),  new BiomeTraits("Temperate Desert",      (Color.LightGray.R, Color.LightGray.G, Color.LightGray.B), ((160, 150, 140), true),
                                                                      
                 new ((int type, int subType) type, float percentage)[]{ },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 50), },
-                cT:(1, 5), tT:(9, 3), lT:(0, 0), txT:(0, 0),         // Grass         
-                tFT:new TerrainFeaturesTraits[]{ famousTFT["SandGray"] }) },
+                cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Grass         
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
                 { (2, 6),  new BiomeTraits("Cold Desert",           (Color.LightYellow.R + 140, Color.LightYellow.G + 90, Color.LightYellow.B - 60), ((230, 135, 60), true),
 
                 new ((int type, int subType) type, float percentage)[]{ },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 50), },
-                cT:(1, 5), tT:(9, 1), lT:(0, 0), txT:(0, 0),         // Grass         
-                tFT:new TerrainFeaturesTraits[]{ famousTFT["SandOrange"] }) },
+                cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Grass         
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
 
                 { (3, 0),  new BiomeTraits("Forest",                (Color.Green.R, Color.Green.G, Color.Green.B), null,
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly

@@ -66,6 +66,7 @@ namespace Cave
 
             //     ---- - - CURRENTLY DOING - - ----
             // 
+            // add desert worms
             //  -------> Ease the transition between sands/sandstones ! And sandstone/normal rock
             //  --> Adding Saxaul in cold desert, with Cistanche deserticola AND Cynomorium coccineum as a plant that grows near it ! Also add wild onion and bindweed
             //  
@@ -112,14 +113,12 @@ namespace Cave
             // Turn the individual findBiome() LISTS of (traits, ponderation) into a big (traits, ponderation)[32,32,4 or 5] ARRAY. Might actually reduce computation time by a LOT. idk.
             // guuuys i've got such a cool idea it's like a FLOATING ISLANDS fucking biome (or dimension) surely this has NEVER BEEN DONE ever before so ILL PUT IT AS A FUCKING LUDUM DARE THEME FFS
             // Wait what the fuck ??? Ludum Dare is like cancelled forever ???????? i'm actually shocked what the actual fuck this fucking sucks. Mike i love you pleas come back
-            // Improve spawn rate shite for entity/plants to make the percentage system better idk (make the percentage be ABSOLUTE, not relative to the biome's frequency).
             // Breathability noise ???
             // Backrooms dimension ???
             // Salty Frozen Ocean biome !!! With different plants. More ANGULAR, like cristals ?? salt cristals ?? Idk --> No actually due to BRINE REJECTION it's not the case ! Salt water freezing expells the salt out ! So Frozen ocean with pockets of brine ?
             // --> Danger/Breathability noise, that makes dangerous biome spawn like. SLIME. MOLD.
             // Have VORONOI OCEANS ??????????? would be fucking nice no ???????
             // Make it so the fireEffects dict gets SAVED when closing screens ! In like dimensionJson (if it exists i forgot) or whatever the fuck. Important because it can spread fire so not purely cosmetic
-            // Add salars ! (salt deserts / salt pans / salt flats)
             // Reorganise plants and entity spawns. Now before spawning everything, make it so when loading the chunks, it spawns a list of plants to try to spawn. So if it propagates plants next to it, the second chunk with just have that list updated. yay.
 
             // Candy dimension !! Candy Cane trees, Lollipop trees, Whipped Cream biome, Chocolate Biome
@@ -215,6 +214,7 @@ namespace Cave
             // Mimosa
             // Poplar/Aspen
             // Lupin !!!
+            // Bluebells and lily of the valleys
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.
@@ -540,6 +540,7 @@ namespace Cave
 
         public static void SortTerrainFeatureTraitsListByPriority(List<TerrainFeaturesTraits> listo)
         {
+            if (listo.Count <= 1) { return; }
             int idx = 0;
             while (idx < listo.Count - 1)
             {
@@ -551,6 +552,30 @@ namespace Cave
                 }
                 idx = Max(0, idx + 1);
             }
+        }
+
+        // In the future there MIGHT be bugs if a TFT in in a biome but that TFT doesn't have the biome in its biomeDependantTiles
+        public static (BiomeTraits traits, int percentage)[] returnBiomeIndexCopySortedByBiomeWithBiomesNotInTFTremoved((BiomeTraits traits, int percentage)[] arrayo, Dictionary<(int type, int subType), (int type, int subType)> biomeDependantTiles)
+        {
+            List<(BiomeTraits traits, int percentage)> listo = arrayo.ToList();
+            for (int i = listo.Count - 1; i >= 0; i--)
+            {
+                if (!biomeDependantTiles.ContainsKey(listo[i].traits.type)) { listo.RemoveAt(i); }
+            }
+
+            int idx = 0;
+            while (idx < listo.Count - 1)
+            {
+                if (listo[idx + 1].traits.type.type < listo[idx].traits.type.type || (listo[idx + 1].traits.type.type == listo[idx].traits.type.type && listo[idx + 1].traits.type.subType < listo[idx].traits.type.subType))
+                {
+                    listo.Insert(idx, listo[idx + 1]);
+                    listo.RemoveAt(idx + 2);
+                    idx -= 2;
+                }
+                idx = Max(0, idx + 1);
+            }
+
+            return listo.ToArray();
         }
 
 

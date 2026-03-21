@@ -682,6 +682,7 @@ namespace Cave
                 if (terrainFeaturesList.Count == 0) { return false; }
                 SortTerrainFeatureTraitsListByPriority(terrainFeaturesList);
 
+                bool modified = false;
                 float baseScore = Max(fillScore.baseScore1, fillScore.baseScore2);
                 foreach (TerrainFeaturesTraits tFT in terrainFeaturesList)
                 {
@@ -882,11 +883,56 @@ namespace Cave
                         }
                         else { noiseValue -= 1000; }
                     }
+                    else if (tFT.transitionRules == 12) // Sandstone filling
+                    {
+                        float modFloat = (((int)LCGxy(((pos.x, 0), 5423), screen.seed) % 100) * (31 - i) + ((int)LCGxy(((pos.x + 1, 0), 5423), screen.seed) % 100) * i);
+                        int newMod = 13;
+                        int newPosX = pos.x * 32 + i + 539212;
+                        int xxx = Floor(newPosX, newMod) / newMod;
+                        int xMod = PosMod(newPosX, newMod);
+                        modFloat += (((int)LCGxy(((xxx, 0), 5423), screen.seed) % 100) * (newMod - xMod - 1) + ((int)LCGxy(((xxx + 1, 0), 5423), screen.seed) % 100) * xMod) * 1.5f;
+                        int mod = (int)(modFloat * 0.0025f);
+
+                        noiseValue = LCGxy(((7483231, j + mod), 743175), screen.seed) % 500 + LCGxy(((7483231, j + mod + 1), 743175), screen.seed) % 500;
+                    }
                     else { noiseValue = -999999; }
 
-                    if (noiseValue >= valueRequired) { fillStates[i, j] = getTileTraits(typeToFill); return true; }
+                    if (noiseValue >= valueRequired)
+                    {
+                        if (tFT.biomeDependantTiles != null)
+                        {
+                            // need to SORT by biome to always take the same order of biome and NOT the percentage (that would make the pattern change after the main biome changes in the middle of the transition)
+                            (BiomeTraits traits, int percentage)[] currentBiomePecentages = returnBiomeIndexCopySortedByBiomeWithBiomesNotInTFTremoved(biomeIndex[i, j], tFT.biomeDependantTiles);
+                            if (currentBiomePecentages.Length == 0) {; }
+
+                            int biomeI = 0;
+                            float randomValue;
+                            if (tFT.sandStoneTransition)
+                            {
+                                float modFloat = (((int)LCGxy(((pos.x, 0), 5423), screen.seed) % 100) * (31 - i) + ((int)LCGxy(((pos.x + 1, 0), 5423), screen.seed) % 100) * i);
+                                int newMod = 13;
+                                int newPosX = pos.x * 32 + i + 539212;
+                                int xxx = Floor(newPosX, newMod) / newMod;
+                                int xMod = PosMod(newPosX, newMod);
+                                modFloat += (((int)LCGxy(((xxx, 0), 5423), screen.seed) % 100) * (newMod - xMod - 1) + ((int)LCGxy(((xxx + 1, 0), 5423), screen.seed) % 100) * xMod) * 1.5f;
+                                int mod = (int)(modFloat * 0.0025f);
+
+                                randomValue = LCGxy(((7483231, j + mod), 743175), screen.seed) % 1000;
+                            }
+                            else { randomValue = (float)rand.NextDouble() * 650 + ((i + j) % 2 == 0 ? 350 : 0); }   // Second part is to add a lil dithering bias to generation so it looks less like shite
+                            while(biomeI < currentBiomePecentages.Length - 1)
+                            {
+                                randomValue -= currentBiomePecentages[biomeI].percentage;
+                                if (randomValue < 0) { break; }
+                                biomeI++;
+                            }
+                            if (tFT.biomeDependantTiles.ContainsKey(currentBiomePecentages[biomeI].traits.type)) { typeToFill = tFT.biomeDependantTiles[currentBiomePecentages[biomeI].traits.type]; }
+                        }
+                        fillStates[i, j] = getTileTraits(typeToFill);
+                        modified = true;
+                    }
                 }
-                return false;
+                return modified;
             }
             public void findTileColor(int i, int j)
             {
@@ -1856,10 +1902,10 @@ namespace Cave
                     if (temperature > 200 && temperature < 850)
                     {
                         int temperateness = calculateBiome(ref percentageFree, Min(temperature - 200, 850 - temperature), (0, 999999)); // so it's ez to calculeyt
-                        calculateAndAddBiome(listo, (2, 4), ref temperateness, Min(400 - humidity, salinity - 850), (0, 999999)); // salt desert
-                        if (humidity < 250)
+                        if (humidity < 275 && oceanity < 700)
                         {
-                            int desertness = calculateBiome(ref temperateness, humidity, (-999999, 250));
+                            int desertness = calculateBiome(ref temperateness, Min(275 - humidity, 700 - oceanity), (0, 999999));
+                            calculateAndAddBiome(listo, (2, 4), ref desertness, salinity, (1000, 999999));  // salt desert
                             calculateAndAddBiome(listo, (2, 6), ref desertness, temperature, (-999999, 400));    // cold desert
                             calculateAndAddBiome(listo, (2, 5), ref desertness, temperature, (-999999, 650));    // temperate desert
                             calculateAndAddBiome(listo, (2, 3), ref desertness, acidity, (512, 999999));    // baobab desert
