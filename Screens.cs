@@ -76,8 +76,8 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                if (false) { forceBiome = (-1, 0); isMonoeBiomeToPut = false; }
-                if (false) { forceBiome = (3, 1); isMonoeBiomeToPut = true; }
+                if (true) { forceBiome = (-1, 0); isMonoeBiomeToPut = false; }
+                if (true) { forceBiome = (2, 6); isMonoeBiomeToPut = true; }
 
                 int PNGsize = 150;
                 PNGsize = 100;
@@ -91,7 +91,7 @@ namespace Cave
                 spawnNests = false;
                 spawnEntitiesBool = true;
                 spawnPlants = true;
-                bool spawnNOTHING = true;
+                bool spawnNOTHING = false;
                 bool spawnEVERYTHING = false;
                 if (spawnNOTHING) { loadStructuresYesOrNo = false; spawnEntitiesBool = false; spawnPlants = false; }
                 if (spawnEVERYTHING) { loadStructuresYesOrNo = true; spawnEntitiesBool = true; spawnPlants = true; }

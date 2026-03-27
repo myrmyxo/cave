@@ -67,14 +67,13 @@ namespace Cave
             //     ---- - - CURRENTLY DOING - - ----
             // 
             // add desert worms
-            //  -------> Ease the transition between sands/sandstones ! And sandstone/normal rock
-            //  --> Adding Saxaul in cold desert, with Cistanche deserticola AND Cynomorium coccineum as a plant that grows near it ! Also add wild onion and bindweed
+            //  --> With Cistanche deserticola AND Cynomorium coccineum as a plant that grows near it ! Also add wild onion and bindweed
             //  
             // Oasises in deserts ! Deserts are when no humidity but high illumination ?
             // NEW PLANTS
-            //  -> add Ghost Gum, Saxaul, Quiver Tree and other species of Aloidendron, Yareta, Colocynths (wild desert gourd),
+            //  -> add Ghost Gum, Quiver Tree and other species of Aloidendron, Yareta, Colocynths (wild desert gourd),
             //     Camel Thorn, Panicum Turgidum, Atriplex polycarpa, Frankinsence, Pachypodium mikea, Pachypodium namaquanum
-            //  Add Elm also
+            // Add Elm also
             //
             // Then prairies and heathlands and shrublands and stuff HEATHHH
             // -> Separate Bayou and Swamp (Bayou is rare variant)
@@ -120,6 +119,7 @@ namespace Cave
             // Have VORONOI OCEANS ??????????? would be fucking nice no ???????
             // Make it so the fireEffects dict gets SAVED when closing screens ! In like dimensionJson (if it exists i forgot) or whatever the fuck. Important because it can spread fire so not purely cosmetic
             // Reorganise plants and entity spawns. Now before spawning everything, make it so when loading the chunks, it spawns a list of plants to try to spawn. So if it propagates plants next to it, the second chunk with just have that list updated. yay.
+            // When growing plants, make the new tile always be plant material for trees ? THEN on next growth or last growth replace it with wood. So it looks like a bud.
 
             // Candy dimension !! Candy Cane trees, Lollipop trees, Whipped Cream biome, Chocolate Biome
 

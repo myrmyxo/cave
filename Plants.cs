@@ -763,9 +763,9 @@ namespace Cave
                 if (!isTransition || forceDirection != null) { if (findBaseDirection(forceDirection) == 0) { return 0; } }
                 if (traits.plantGrowthRules != null)
                 {
-                    childArrayOffset += traits.plantGrowthRules.childOffset;
-                    directionArrayOffset += traits.plantGrowthRules.dGOffset;
-                    modArrayOffset += traits.plantGrowthRules.pMOffset;
+                    childArrayOffset += traits.plantGrowthRules.childOffset.baseValue + getRandValue(seed + 143243, traits.plantGrowthRules.childOffset.variation + 1) + (int)(traits.plantGrowthRules.childOffset.maxGrowthScaling * maxGrowthLevel);
+                    directionArrayOffset += traits.plantGrowthRules.dGOffset.baseValue + getRandValue(seed + 183941, traits.plantGrowthRules.dGOffset.variation + 1) + (int)(traits.plantGrowthRules.dGOffset.maxGrowthScaling * maxGrowthLevel);
+                    modArrayOffset += traits.plantGrowthRules.pMOffset.baseValue + getRandValue(seed + 147392, traits.plantGrowthRules.pMOffset.variation + 1) + (int)(traits.plantGrowthRules.pMOffset.maxGrowthScaling * maxGrowthLevel);
                     ElementWideningArrayOffset += traits.plantGrowthRules.eWoffset.baseValue + getRandValue(seed + 165843, traits.plantGrowthRules.eWoffset.variation + 1) + (int)(traits.plantGrowthRules.eWoffset.maxGrowthScaling * maxGrowthLevel);
                     currentElementWidening = traits.plantGrowthRules.startElementWidening;
 
