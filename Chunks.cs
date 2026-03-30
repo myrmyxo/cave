@@ -1244,6 +1244,17 @@ namespace Cave
                         continue;
                     }
                 tileNeededFound:;
+                    if (traits.plantNeededClose != null)
+                    {
+                        foreach (Plant plant in screen.activePlants.Values)
+                        {
+                            if (!traits.plantNeededClose.Value.plantType.Contains(plant.type)) { continue; }
+                            if (Abs(plant.posX - spawnPos.x) > traits.plantNeededClose.Value.range.x || Abs(plant.posY - spawnPos.y) > traits.plantNeededClose.Value.range.y) { continue; }
+                            goto plantNeededFound;
+                        }
+                        continue;
+                    }
+                plantNeededFound:;
 
                     TileTraits tileTraits = screen.getTileContent((spawnPos.x + attachTileMod.x, spawnPos.y + attachTileMod.y));
                     if (forbiddenPositions.Contains(spawnPos) ||

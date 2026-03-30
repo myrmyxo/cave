@@ -136,6 +136,7 @@ namespace Cave
             // Portals... bug again... the dimension doesn't get unloaded anymore when going far from portal... fuuuck
             // Transition between Mangrove, Algae Ocean + Salt Ocean is buggy. The individual mangrove/salt and magrove algae work but when it's in the middle of algae/salt transition they get chopped up ??
             // Prevent Entities and Plants from spawning in Nests/Structures (depending on the type of structure). With a "forbiddenLocations" HashSet that's applied to ChunkJson when the Structure/Nest is applied to Chunks.
+            // Downwards Flesh Tree looks WEIRD now. Due to changes in plant system (need to fix and maybe other plants are buggy now).
 
             // - - - Cool Ideas For Later ! - - -
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh

@@ -635,7 +635,7 @@ namespace Cave
             public bool makeBaby(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item, (int x, int y) currentGrowPos, int seedMod, int offset)
             {
                 (int x, int y) babyPos = (item.dirType == 0 || item.dirType >= 5) ? (lastDrawPos.x + item.mod.x, lastDrawPos.y + item.mod.y) : lastDrawPos;
-                if (traits.plantGrowthRules.preventGapsOnChildSpawn > 0)
+                if (traits.plantGrowthRules != null && traits.plantGrowthRules.preventGapsOnChildSpawn > 0)
                 {
                     int allowDiag = traits.plantGrowthRules.preventGapsOnChildSpawn == 1 ? 1 : 0;
                     if (currentElementWidening is null)
@@ -673,7 +673,7 @@ namespace Cave
             public bool makeBaby(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance) item, (int x, int y) currentGrowPos, int seedMod)
             {
                 (int x, int y) babyPos = (item.dirType == 0 || item.dirType >= 5) ? (lastDrawPos.x + item.mod.x, lastDrawPos.y + item.mod.y) : lastDrawPos;
-                if (traits.plantGrowthRules.preventGapsOnChildSpawn > 0)
+                if (traits.plantGrowthRules != null && traits.plantGrowthRules.preventGapsOnChildSpawn > 0)
                 {
                     int allowDiag = traits.plantGrowthRules.preventGapsOnChildSpawn == 1 ? 1 : 0;
                     if (currentElementWidening is null)

@@ -1114,6 +1114,22 @@ namespace Cave
                 framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "YuccaFlaccidaFlowers", 9)
                 ) },
 
+                { (4, 20, 0), new PlantElementTraits("DesertThumbStem", rET:(from number in Enumerable.Range(0, 6) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(1, 0), hPP:fHPP["Up5Gap"],
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((4, 20, 1), 0, (0, 1), 0, 100) }
+                )) },
+                { (4, 20, 1), new PlantElementTraits("DesertThumbFlower", stick:((0, 1), (false, false)), fMG:(0, 2),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "DesertThumbFlower", 3)
+                ) },
+
+                { (4, 30, 0), new PlantElementTraits("CistancheDeserticolaStem", rET:(from number in Enumerable.Range(0, 6) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(1, 1), hPP:fHPP["Up5Gap"],
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((4, 30, 1), 0, (0, 1), 0, 100) }
+                )) },
+                { (4, 30, 1), new PlantElementTraits("CistancheDeserticolaFlower", stick:((0, 1), (false, false)), fMG:(6, 5),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0), (2, 1) }, "CistancheDeserticolaFlower", 12)
+                ) },
+
 
 
                 { (10, 0, 0), new PlantElementTraits("BaseTrunk", rET:(from number in Enumerable.Range(0, 20) select ((0, number), (true, false))).ToArray(),
@@ -1854,6 +1870,7 @@ namespace Cave
 
             public HashSet<(int type, int subType)> soilType;
             public ((int type, int subType) tile, (int x, int y) range)? tileNeededClose;
+            public (HashSet<(int type, int subType)> plantType, (int x, int y) range)? plantNeededClose;
 
             public (int r, int g, int b)? fullPlantShade;
             public bool doesFullPlantShadeOverride;
@@ -1873,7 +1890,7 @@ namespace Cave
             public ((int baseValue, int variation) chance, (int x, int y) range)? propagateOnSuccess;
 
             public PlantTraits(string n, string sName = "", (int type, int subType)? iFT = null, int mGFV = 1,
-                HashSet<(int type, int subType)> sT = null, ((int type, int subType) tile, (int x, int y) range)? tNC = null,
+                HashSet<(int type, int subType)> sT = null, ((int type, int subType) tile, (int x, int y) range)? tNC = null, (HashSet<(int type, int subType)> plantType, (int x, int y) range)? pNC = null,
                 ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, (int r, int g, int b)? fPS = null, bool dFPSO = false,
                 bool C = false, bool S = false, bool EA = false, bool W = false, bool A = false, bool lum = false, bool cl = false, ((int baseValue, int variation) chance, (int x, int y) range)? pOS = null)
             {
@@ -1885,6 +1902,7 @@ namespace Cave
 
                 soilType = sT;
                 tileNeededClose = tNC;
+                plantNeededClose = pNC;
 
                 colorOverrideArray = cOverride;
                 fullPlantShade = fPS;
@@ -1949,6 +1967,13 @@ namespace Cave
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((65, 10, 15), (85, -15, 20), (30, 5, 10))), ((1, 0), new ColorRange((90, 10, 15), (110, -15, 20), (50, 10, 10))), ((2, 0), new ColorRange((250, 10, 15), (250, 10, 15), (220, -10, 15))) }) },
                 { (4, 11), new PlantTraits("Flaccid Yucca", pOS:((0, 2), (25, 16)),
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((65, 10, 15), (85, -15, 20), (30, 5, 10))), ((1, 0), new ColorRange((90, 10, 15), (110, -15, 20), (50, 10, 10))), ((2, 0), new ColorRange((250, 10, 15), (250, 10, 15), (220, -10, 15))) }) },
+
+                { (4, 20), new PlantTraits("Desert Thumb", sName:"Cynomorium coccineum", pOS:((0, 2), (4, 2)),
+                pNC:(new HashSet<(int type, int subType)> { (14, 30), (14, 31) }, (6, 3)), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((105, -5, 10), (55, 0, 5), (15, 5, 5))), ((2, 0), new ColorRange((60, -5, 10), (25, 0, 5), (30, 5, 5))) }) },
+
+                { (4, 30), new PlantTraits("Yellow Cistanche", sName:"Cistanche deserticola", pOS:((0, 3), (8, 2)),
+                pNC:(new HashSet<(int type, int subType)> { (14, 30), (14, 31) }, (8, 4)), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((140, 10, 15), (115, 10, 15), (30, -10, 10))), ((2, 0), new ColorRange((225, 5, 15), (215, 5, 15), (80, -10, 10))), ((2, 1), new ColorRange((190, 5, 15), (180, 5, 15), (65, -10, 10))) }) },
+
 
 
                 { (10, 0), new PlantTraits("Tree",
@@ -2364,8 +2389,8 @@ namespace Cave
                 { (2, 6),  new BiomeTraits("Cold Desert",           (Color.LightYellow.R + 140, Color.LightYellow.G + 90, Color.LightYellow.B - 60), ((230, 135, 60), true),
 
                 new ((int type, int subType) type, float percentage)[]{ },
-                new ((int type, int subType) type, float percentage)[]{ ((14, 30), 25), ((14, 31), 35), },
-                cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Black Saxaul     White Saxaul
+                new ((int type, int subType) type, float percentage)[]{ ((14, 30), 25), ((14, 31), 35), ((4, 20), 15), ((4, 30), 5), },
+                cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Black Saxaul     White Saxaul   Desert Thumb   Yellow Cistanche
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
 
                 { (3, 0),  new BiomeTraits("Forest",                (Color.Green.R, Color.Green.G, Color.Green.B), null,
