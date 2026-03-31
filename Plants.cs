@@ -531,6 +531,12 @@ namespace Cave
                 int randy = cashInt((valueModifier, 7, 13), seed);
                 return modulo > 0 ? randy % modulo : randy;
             }
+            public float getRandValueFloat(int valueModifier, float modulo = -1)     // Modulo < 0 -> return random value, Modulo > 0 -> return modulo of random value 
+            {
+                if (modulo == 0) { return 0; }
+                int randy = cashInt((valueModifier, 7, 13), seed);
+                return modulo > 0 ? randy % modulo : randy;
+            }
             public void transitionToOtherPlantElement((int type, int subType, int subSubType) newType)  // if new plant element doesn't contains a material that the old one did, it might cause bug on reload !
             {   // CAREFUL when transitioning, it will NOT be able to add the maxGrowthParentRelatedVariation related to MotherPlantElement cuz it's not passed in the function !!!
                 seed = Abs((int)LCGyNeg(seed));
@@ -634,7 +640,7 @@ namespace Cave
             public void forceFill((int x, int y) testPos, (int type, int subType) typeToFill) { fillStates[testPos] = typeToFill; }
             public bool makeBaby(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item, (int x, int y) currentGrowPos, int seedMod, int offset)
             {
-                (int x, int y) babyPos = (item.dirType == 0 || item.dirType >= 5) ? (lastDrawPos.x + item.mod.x, lastDrawPos.y + item.mod.y) : lastDrawPos;
+                (int x, int y) babyPos = (item.dirType == 0 || item.dirType >= 5) ? (currentGrowPos.x + item.mod.x, currentGrowPos.y + item.mod.y) : currentGrowPos;
                 if (traits.plantGrowthRules != null && traits.plantGrowthRules.preventGapsOnChildSpawn > 0)
                 {
                     int allowDiag = traits.plantGrowthRules.preventGapsOnChildSpawn == 1 ? 1 : 0;
@@ -672,7 +678,7 @@ namespace Cave
             }
             public bool makeBaby(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance) item, (int x, int y) currentGrowPos, int seedMod)
             {
-                (int x, int y) babyPos = (item.dirType == 0 || item.dirType >= 5) ? (lastDrawPos.x + item.mod.x, lastDrawPos.y + item.mod.y) : lastDrawPos;
+                (int x, int y) babyPos = (item.dirType == 0 || item.dirType >= 5) ? (currentGrowPos.x + item.mod.x, currentGrowPos.y + item.mod.y) : currentGrowPos;
                 if (traits.plantGrowthRules != null && traits.plantGrowthRules.preventGapsOnChildSpawn > 0)
                 {
                     int allowDiag = traits.plantGrowthRules.preventGapsOnChildSpawn == 1 ? 1 : 0;
@@ -763,10 +769,10 @@ namespace Cave
                 if (!isTransition || forceDirection != null) { if (findBaseDirection(forceDirection) == 0) { return 0; } }
                 if (traits.plantGrowthRules != null)
                 {
-                    childArrayOffset += traits.plantGrowthRules.childOffset.baseValue + getRandValue(seed + 143243, traits.plantGrowthRules.childOffset.variation + 1) + (int)(traits.plantGrowthRules.childOffset.maxGrowthScaling * maxGrowthLevel);
-                    directionArrayOffset += traits.plantGrowthRules.dGOffset.baseValue + getRandValue(seed + 183941, traits.plantGrowthRules.dGOffset.variation + 1) + (int)(traits.plantGrowthRules.dGOffset.maxGrowthScaling * maxGrowthLevel);
-                    modArrayOffset += traits.plantGrowthRules.pMOffset.baseValue + getRandValue(seed + 147392, traits.plantGrowthRules.pMOffset.variation + 1) + (int)(traits.plantGrowthRules.pMOffset.maxGrowthScaling * maxGrowthLevel);
-                    ElementWideningArrayOffset += traits.plantGrowthRules.eWoffset.baseValue + getRandValue(seed + 165843, traits.plantGrowthRules.eWoffset.variation + 1) + (int)(traits.plantGrowthRules.eWoffset.maxGrowthScaling * maxGrowthLevel);
+                    childArrayOffset += (int)(traits.plantGrowthRules.childOffset.baseValue + getRandValueFloat(seed + 143243, traits.plantGrowthRules.childOffset.variation + 1) + (traits.plantGrowthRules.childOffset.maxGrowthScaling * maxGrowthLevel));
+                    directionArrayOffset += (int)(traits.plantGrowthRules.dGOffset.baseValue + getRandValueFloat(seed + 183941, traits.plantGrowthRules.dGOffset.variation + 1) + (traits.plantGrowthRules.dGOffset.maxGrowthScaling * maxGrowthLevel));
+                    modArrayOffset += (int)(traits.plantGrowthRules.pMOffset.baseValue + getRandValueFloat(seed + 147392, traits.plantGrowthRules.pMOffset.variation + 1) + (traits.plantGrowthRules.pMOffset.maxGrowthScaling * maxGrowthLevel));
+                    ElementWideningArrayOffset += (int)(traits.plantGrowthRules.eWoffset.baseValue + getRandValueFloat(seed + 165843, traits.plantGrowthRules.eWoffset.variation + 1) + (traits.plantGrowthRules.eWoffset.maxGrowthScaling * maxGrowthLevel));
                     currentElementWidening = traits.plantGrowthRules.startElementWidening;
 
                     if (!isTransition)
@@ -971,7 +977,7 @@ namespace Cave
                     }
 
 
-                    if (traits.plantGrowthRules.childArray != null && traits.plantGrowthRules.childArray.Length > 0 && (traits.plantGrowthRules.loopChild || currentChildArrayIdx + 1 < traits.plantGrowthRules.childArray.Length))
+                    while (traits.plantGrowthRules.childArray != null && traits.plantGrowthRules.childArray.Length > 0 && (traits.plantGrowthRules.loopChild || currentChildArrayIdx + 1 < traits.plantGrowthRules.childArray.Length))
                     {
                         ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance) item = traits.plantGrowthRules.childArray[(currentChildArrayIdx + 1) % traits.plantGrowthRules.childArray.Length];
 
@@ -983,7 +989,9 @@ namespace Cave
                                 currentChildArrayIdx++;
                                 childArrayOffset += cost;
                             }
+                            else { break; }
                         }
+                        else { break; }
                     }
 
                     while (traits.plantGrowthRules.elementWideningArray != null && traits.plantGrowthRules.elementWideningArray.Length > 0 && (traits.plantGrowthRules.loopEW || currentElementWideningArrayIdx + 1 < traits.plantGrowthRules.elementWideningArray.Length))

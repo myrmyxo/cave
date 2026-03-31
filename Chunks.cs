@@ -1931,8 +1931,9 @@ namespace Cave
                             calculateAndAddBiome(listo, (3, 4), ref wetlandness, salinity, (512, 999999));    // mangrove
                             testAddBiome(listo, (3, 3), wetlandness);    // Add rest as swamp
 
-                            calculateAndAddBiome(listo, (3, 1), ref forestness, temperature, (-999999, 400)); // conifer forest
-                            calculateAndAddBiome(listo, (3, 2), ref forestness, temperature, (650, 999999));  // jungle
+                            calculateAndAddBiome(listo, (3, 1), ref forestness, temperature, (-999999, 400));   // conifer forest
+                            calculateAndAddBiome(listo, (3, 2), ref forestness, temperature, (650, 999999));    // jungle
+                            calculateAndAddBiome(listo, (3, 5), ref forestness, acidity, (850, 999999));    // bluebell forest
                             testAddBiome(listo, (3, 0), forestness);    // Add rest as forest
 
                             // -> if humidity is TOO LOW, no forests ? but deserts instead ?
