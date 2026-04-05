@@ -301,6 +301,7 @@ namespace Cave
             public int id;
             public int nstId;
             public (int, int) type;
+            public (int, int) bB;
             public int state;
             public (float, float) pos;
             public (int, int) hPos;
@@ -319,6 +320,7 @@ namespace Cave
                 if (entity.nest == null) { nstId = -1; }
                 else { nstId = entity.nest.id; }
                 type = entity.type;
+                bB = entity.birthBiome;
                 state = entity.state;
                 hPos = entity.homePosition;
                 pos = (entity.realPosX, entity.realPosY);

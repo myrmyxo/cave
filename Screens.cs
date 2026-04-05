@@ -76,7 +76,7 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                if (false) { forceBiome = (-1, 0); isMonoeBiomeToPut = false; }
+                if (true) { forceBiome = (-1, 0); isMonoeBiomeToPut = false; }
                 if (false) { forceBiome = (3, 5); isMonoeBiomeToPut = true; }
 
                 int PNGsize = 150;

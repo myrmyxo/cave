@@ -60,6 +60,7 @@ namespace Cave
             public int id;
             public (int type, int subType) type; // Type :     0 = fairy , 1 = frog , 2 = fish, 3 = hornet, 4 = worm, 5 = waterSkipper, 6 = goblin
                                                  // Subtype : (0 : normal, obsidian, frost, skeleton). (1 : frog, carnal, skeletal). (2 : fish, skeleton). (3 : egg, larva, cocoon, adult). (4 : worm, nematode). ( 5 : waterSkipper) 
+            public (int type, int subType) birthBiome;
             public EntityTraits traits;
             public int state; // 0 = idle I guess idk
             public float realPosX = 0;
@@ -138,6 +139,7 @@ namespace Cave
                 timeAtLastStateChange = entityJson.sttCh;
                 timeAtLastTeleportation = entityJson.tp;
                 state = entityJson.state;
+                birthBiome = entityJson.bB;
                 transformEntity(entityJson.type, false); // false to not reinitialize hp
             }
             public Entity(Chunk chunk, (int x, int y) posToPut, (int type, int subType) typeToPut)
@@ -151,6 +153,7 @@ namespace Cave
                 targetPos = posToPut;
                 seed = LCGint1(Abs((int)chunk.chunkSeed));
                 type = typeToPut;
+                birthBiome = chunk.biomeIndex[PosMod(posX), PosMod(posY)][0].traits.type;
                 id = currentEntityId;
                 transformEntity(typeToPut); // contains transformEntity so contains Color and LightColor finding
                 initializeInventory();
@@ -169,6 +172,7 @@ namespace Cave
                 targetPos = posToPut;
                 seed = rand.Next(1000000000); //                              TO CHANGE FALSE RANDOM NOT SEEDED ARGHHEHEEEE
                 id = currentEntityId;
+                birthBiome = screen.getChunkFromPixelPos(posToPut).biomeIndex[PosMod(posX), PosMod(posY)][0].traits.type;
                 transformEntity(typeToPut, true);
                 initializeInventory();
                 timeAtBirth = timeElapsed;
@@ -188,6 +192,7 @@ namespace Cave
                 float hueVar = (float)((seed % 11) * 0.2f - 1);
                 float shadeVar = (float)((LCGz(seed) % 11) * 0.2f - 1);
                 ColorRange c = traits.colorRange;
+                if (traits.biomeDependantColorRanges != null && traits.biomeDependantColorRanges.ContainsKey(birthBiome)) { c = traits.biomeDependantColorRanges[birthBiome]; }
                 return Color.FromArgb(
                     ColorClamp(c.r.v + (int)(hueVar * c.r.h) + (int)(shadeVar * c.r.s)),
                     ColorClamp(c.g.v + (int)(hueVar * c.g.h) + (int)(shadeVar * c.g.s)),

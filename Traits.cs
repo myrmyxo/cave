@@ -322,6 +322,7 @@ namespace Cave
 
             // Cosmetic stuff
             public ColorRange colorRange;
+            public Dictionary<(int type, int subType), ColorRange> biomeDependantColorRanges;
             public int? lightRadius;
             public (int baseLength, int variation)? length;
             public float? tailAxisRigidity;
@@ -368,7 +369,7 @@ namespace Cave
             public int goHomeDistance;
             public HashSet<(int type, int subType)> diggableTiles;
             public EntityTraits(string namee, int hp, ((int type, int subType, int megaType) element, int count) drps,
-                ColorRange colRange, int? lR = null, (int baseLength, int variation)? L = null, float? tAR = null, bool tT = false,
+                ColorRange colRange, Dictionary<(int type, int subType), ColorRange> biomeCR = null, int? lR = null, (int baseLength, int variation)? L = null, float? tAR = null, bool tT = false,
                 (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[] tM = null,
                 ((bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color, (int segment, bool fromEnd, (int x, int y) pos)[] array)[] tM2 = null,
                 (int type, (int x, int y) pos, float period, float turningSpeed, (bool isVariation, (int a, int r, int g, int b) value) color)? wT = null,
@@ -383,6 +384,7 @@ namespace Cave
                 drops = drps;
 
                 colorRange = colRange;
+                biomeDependantColorRanges = biomeCR;
                 lightRadius = lR;
                 length = L;
                 tailAxisRigidity = tAR;
@@ -533,6 +535,23 @@ namespace Cave
                 },
                 dT:new HashSet<(int type, int subType)>{ (6, 0), (-2, -1) },
                 iW:2, oW:2, iA:0, oG:3, iG:2) },
+                { (4, 5), new EntityTraits("Desert Worm",       5,  ((8, 0, 3), 1),       //  --> Flesh
+                new ColorRange((190, 0, 15), (155, 0, 15), (100, 15, 15)), L:(6, 4),
+                biomeCR:new Dictionary<(int type, int subType), ColorRange>()
+                {
+                    { (2, 6), new ColorRange((195, 0, 15), (135, 0, 15), (90, 15, 15)) },    // Orange desert
+                    { (2, 3), new ColorRange((200, 0, 15), (115, 0, 15), (80, 15, 15)) },    // Red desert
+                    { (2, 5), new ColorRange((140, -10, 15), (130, -10, 15), (125, 10, 15)) },   // Gray desert
+                },
+                tM:new (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[]
+                {
+                    (0, true, true, 1,  (1, 0), (true, null, (0, 25, 25, 15))),
+                    (0, true, true, -1, (1, 0), (true, null, (0, 25, 25, 15))),
+                    (1, true, true, 2,  (1, 0), (true, null, (0, 25, 25, 15))),
+                    (2, true, true, -2, (1, 0), (true, null, (0, 25, 25, 15))),
+                },
+                dT:new HashSet<(int type, int subType)>{ (8, 0), (8, 1), (8, 2), (8, 3), (9, 0), (9, 1), (9, 2), (9, 3), },
+                iW:3, oW:2, iA:0, oG:3, iG:2) },
 
                 { (5, 0), new EntityTraits("WaterSkipper",    3,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((110, 0, 30), (110, 0, 30), (140, 20, 30)),
@@ -2389,14 +2408,14 @@ namespace Cave
                 cT:(7, 7), lT:(-2, 0), txT:(0, 0),                   // Grass         Cortaderia    Papyrus       Reed           Rush           Butomus       Rice         Vine            Cattail        Kelp            CeilingKelp
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
                 { (2, 2),  new BiomeTraits("Hot Desert",                (Color.LightYellow.R + 120, Color.LightYellow.G + 100, Color.LightYellow.B - 40), ((210, 150, 50), true),
-                                                                     // Worm
-                new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), },
+                                                                    // Desert Worm
+                new ((int type, int subType) type, float percentage)[]{ ((4, 5), 10), },
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), ((4, 10), 5), ((4, 11), 5), ((14, 10), 10), ((14, 11), 5) },
                 cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Cactus        Yucca filament Yucca flaccid Yucca Tree      Beaked Yucca 
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
                 { (2, 3),  new BiomeTraits("Baobab Desert",         (Color.LightYellow.R + 160, Color.LightYellow.G + 80, Color.LightYellow.B - 80), ((250, 120, 70), true),
-                                                                     // Worm
-                new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), },
+                                                                    // Desert Worm
+                new ((int type, int subType) type, float percentage)[]{ ((4, 5), 10), },
                 new ((int type, int subType) type, float percentage)[]{ ((14, 0), 15), ((14, 1), 20), ((14, 20), 10) },
                 cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Giant Baobab   Suarez Baobab   Desert Rose
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
@@ -2407,14 +2426,14 @@ namespace Cave
                 cT:(1, 5), lT:(-2, 2), txT:(0, 0),                   // Red Glasswort
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Salt Ground"] }) },
                 { (2, 5),  new BiomeTraits("Temperate Desert",      (Color.LightGray.R, Color.LightGray.G, Color.LightGray.B), ((160, 150, 140), true),
-                                                                     
-                new ((int type, int subType) type, float percentage)[]{ },
+                                                                    // Desert Worm
+                new ((int type, int subType) type, float percentage)[]{ ((4, 5), 10), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 50), },
                 cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Grass         
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
                 { (2, 6),  new BiomeTraits("Cold Desert",           (Color.LightYellow.R + 140, Color.LightYellow.G + 90, Color.LightYellow.B - 60), ((230, 135, 60), true),
-
-                new ((int type, int subType) type, float percentage)[]{ },
+                                                                     // Desert Worm
+                new ((int type, int subType) type, float percentage)[]{ ((4, 5), 10), },
                 new ((int type, int subType) type, float percentage)[]{ ((14, 30), 25), ((14, 31), 35), ((4, 20), 15), ((4, 30), 5), },
                 cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Black Saxaul     White Saxaul   Desert Thumb   Yellow Cistanche
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },

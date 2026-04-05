@@ -120,6 +120,7 @@ namespace Cave
                 { (4, 2), new OneSprite("SaltWorm", true) },
                 { (4, 3), new OneSprite("IceWorm", true) },
                 { (4, 4), new OneSprite("IcealtWorm", true) },
+                { (4, 5), new OneSprite("DesertWorm", true) },
                 { (5, 0), new OneSprite("WaterSkipper", true) },
                 { (6, 0), new OneSprite("Goblin", true) },
                 { (8, 0), new OneSprite("Shark", true) },
