@@ -96,10 +96,12 @@ namespace Cave
                 { (8, 1), new OneSprite("SandOrangeTile", true) },
                 { (8, 2), new OneSprite("SandRedTile", true) },
                 { (8, 3), new OneSprite("SandGrayTile", true) },
+                { (8, 4), new OneSprite("SandBrownTile", true) },
                 { (9, 0), new OneSprite("SandstoneTile", true) },
                 { (9, 1), new OneSprite("SandstoneOrangeTile", true) },
                 { (9, 2), new OneSprite("SandstoneRedTile", true) },
                 { (9, 3), new OneSprite("SandstoneGrayTile", true) },
+                { (9, 4), new OneSprite("SandstoneBrownTile", true) },
             };                                                               
             entitySprites = new Dictionary<(int type, int subType), OneSprite>
             {
@@ -170,6 +172,7 @@ namespace Cave
                 { (14, 20), new OneSprite("DesertRose", true) },
                 { (14, 30), new OneSprite("SaxaulBlack", true) },
                 { (14, 31), new OneSprite("SaxaulWhite", true) },
+                { (14, 40), new OneSprite("QuiverTree", true) },
                 { (20, 0), new OneSprite("Vines", false) },
                 { (20, 1), new OneSprite("ObsidianVines", false ) },
                 { (20, 2), new OneSprite("IceVines", false ) },

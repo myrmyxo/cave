@@ -133,7 +133,7 @@ namespace Cave
             public override void initializeInventory()
             {
                 bool allTools = true;
-                bool allEntities = true;
+                bool allEntities = false;
                 bool noEntities = false;
                 bool allPlants = true;
                 bool allTiles = true;

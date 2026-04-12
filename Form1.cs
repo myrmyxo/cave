@@ -66,12 +66,12 @@ namespace Cave
 
             //     ---- - - CURRENTLY DOING - - ----
             // 
-            // add desert worms
             // add wild onion and bindweed
+            // --> Other species of Aloidendron !
             //  
             // Oasises in deserts ! Deserts are when no humidity but high illumination ?
             // NEW PLANTS
-            //  -> add Ghost Gum, Quiver Tree and other species of Aloidendron, Yareta, Colocynths (wild desert gourd),
+            //  -> add Ghost Gum, Yareta, Colocynths (wild desert gourd),
             //     Camel Thorn, Panicum Turgidum, Atriplex polycarpa, Frankinsence, Pachypodium mikea, Pachypodium namaquanum
             // Add Elm also
             //
@@ -176,6 +176,8 @@ namespace Cave
             // Bone marrow biome in living dimension ? With voronoi
             // Sequoia forest !!! Rare variant of conifer
             // Soap biome. And uhhh soap dimension ?? idk ??
+            // Jungle with ferns. And a special rare variant called the Fern Jungle with Fern Trees (fougères arborescentes) and no other type of tree ?
+            // A forest biome with a CACA D OIE color ??? With CACA D OIE trees ??? Like for real not caca d'oie but the shit i ate in vietnamese restaut color. I have trop la vision genre
 
             // Entities ideas !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. And add LITHOPEDIONS
@@ -380,10 +382,10 @@ namespace Cave
             spawnPlants = false;
 
             Dictionary<string, float> biomePercentageStats = new Dictionary<string, float>();
-            int chunksToSample = 10000;
+            int chunksToSample = 25000;
             for (int i = 0; i < chunksToSample; i++)
             {
-                (int x, int y) chunkPos = (rand.Next(-100000, 100000), rand.Next(-100000, 100000));
+                (int x, int y) chunkPos = (rand.Next(-1000000, 1000000), rand.Next(-1000000, 1000000));
                 Chunk chunk = screen.getChunkFromChunkPos(chunkPos, forceMaturityLevelOne:true);
 
                 addOrIncrementDict(biomePercentageStats, (chunk.biomeIndex[16, 16][0].traits.name, 1));

@@ -11,6 +11,8 @@ namespace Cave
 {
     public partial class Globals
     {
+        public static (int, int, int)? globalNullTuple3 = null;
+
         public const float div32 = 0.03125f;
         public const float _1On255 = 0.00393f;
         public const float _1On17 = 0.0588f;

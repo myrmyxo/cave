@@ -1916,11 +1916,15 @@ namespace Cave
                         if (humidity < 275 && oceanity < 700)
                         {
                             int desertness = calculateBiome(ref temperateness, Min(275 - humidity, 700 - oceanity), (0, 999999));
-                            calculateAndAddBiome(listo, (2, 4), ref desertness, salinity, (1000, 999999));  // salt desert
-                            calculateAndAddBiome(listo, (2, 6), ref desertness, temperature, (-999999, 400));    // cold desert
-                            calculateAndAddBiome(listo, (2, 5), ref desertness, temperature, (-999999, 650));    // temperate desert
-                            calculateAndAddBiome(listo, (2, 3), ref desertness, acidity, (512, 999999));    // baobab desert
-                            testAddBiome(listo, (2, 2), desertness);    // Add rest as hot desert
+                            calculateAndAddBiome(listo, (2, 4), ref desertness, salinity, (1000, 999999));      // salt desert
+                            calculateAndAddBiome(listo, (2, 6), ref desertness, temperature, (-999999, 400));   // cold desert
+
+                            int hotDesertness = calculateBiome(ref desertness, temperature, (650, 999999));
+                            calculateAndAddBiome(listo, (2, 3), ref hotDesertness, acidity, (512, 999999));     // baobab desert
+                            testAddBiome(listo, (2, 2), hotDesertness); // Add rest as hot desert
+
+                            calculateAndAddBiome(listo, (2, 7), ref desertness, salinity, (-999999, 100));      // gray desert
+                            testAddBiome(listo, (2, 5), desertness);    // Add rest as temperate desert
                         }
                         if (temperateness <= 0) { goto AfterTemperateTest; }
                         if (illumination > 600)
@@ -2002,10 +2006,11 @@ namespace Cave
                 }
                 else if (dimensionType == (-1, 0)) // type == -1, TEST dimension
                 {
-                    calculateAndAddBiome(listo, (2, 6), ref percentageFree, temperature, (800, 999999)); // Desert 3
-                    calculateAndAddBiome(listo, (2, 5), ref percentageFree, humidity, (700, 999999)); // Desert 2
-                    calculateAndAddBiome(listo, (2, 3), ref percentageFree, salinity, (512, 999999)); // Desert
-                    testAddBiome(listo, (2, 2), percentageFree); // Baobab desert
+                    calculateAndAddBiome(listo, (2, 6), ref percentageFree, temperature, (800, 999999)); // Cold desert
+                    calculateAndAddBiome(listo, (2, 7), ref percentageFree, humidity, (750, 999999)); // Temperate desert
+                    calculateAndAddBiome(listo, (2, 5), ref percentageFree, humidity, (500, 999999)); // Temperate desert
+                    calculateAndAddBiome(listo, (2, 3), ref percentageFree, salinity, (512, 999999)); // Baobab desert
+                    testAddBiome(listo, (2, 2), percentageFree); // Hot desert
                 }
             }
 
