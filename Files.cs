@@ -366,7 +366,9 @@ namespace Cave
             public (int, int, int) t;
 
             public float mG;
+            public bool gF;
             public int gR;
+            public (float, float)? fGSVF;
 
             public (int, int) pos;
 
@@ -389,7 +391,9 @@ namespace Cave
                 bD = plantElement.baseDirection;
                 eW = plantElement.currentElementWidening;
                 mG = plantElement.maxGrowthLevel;
+                gF = plantElement.growthFinished;
                 gR = plantElement.growthLevel;
+                fGSVF = plantElement.forceGrowthSpeedVariationFactor;
                 fS = fillstatesToArray(plantElement.fillStates);
                 oIA = new int[10] { plantElement.currentFrameArrayIdx, plantElement.frameArrayOffset, plantElement.currentChildArrayIdx, plantElement.childArrayOffset, plantElement.currentDirectionArrayIdx, plantElement.directionArrayOffset, plantElement.currentModArrayIdx, plantElement.modArrayOffset, plantElement.currentElementWideningArrayIdx, plantElement.ElementWideningArrayOffset };
                 pEs = new List<PlantElementJson>();

@@ -467,6 +467,7 @@ namespace Cave
             
             public float maxGrowthLevel;
             public int growthLevel;
+            public bool growthFinished = false;
             public float growthSpeedVariation;
             public (float baseValue, float variation)? forceGrowthSpeedVariationFactor;
 
@@ -499,11 +500,13 @@ namespace Cave
 
                 seed = plantElementJson.s;
                 type = plantElementJson.t;
+                forceGrowthSpeedVariationFactor = plantElementJson.fGSVF;
 
                 getTraitAndAddColors();
 
                 maxGrowthLevel = plantElementJson.mG;
                 growthLevel = plantElementJson.gR;
+                growthFinished = plantElementJson.gF;
 
                 pos = plantElementJson.pos;
 
@@ -526,7 +529,10 @@ namespace Cave
 
                 foreach (PlantElementJson baby in plantElementJson.pEs) { childPlantElements.Add(new PlantElement(motherPlant, baby)); }
             }
-            public PlantElement(Plant motherPlantToPut, (int x, int y) posToPut, (int type, int subType, int subSubType) typeToPut, int seedToPut, PlantElement motherPlantElement, bool isMainPlantElement = false, ((int x, int y) dir, bool isApplyAfter)? forceDirection = null, (float baseValue, float variation)? childMaxGrowthVariation = null, (float baseValue, float variation)? forceGrowthSpeedVariationFactorToPut = null)
+            public PlantElement(Plant motherPlantToPut, (int x, int y) posToPut, (int type, int subType, int subSubType) typeToPut, int seedToPut,
+                PlantElement motherPlantElement, bool isMainPlantElement = false, ((int x, int y) dir, bool isApplyAfter)? forceDirection = null,
+                (float baseValue, float variation)? childMaxGrowthVariation = null, (float baseValue, float variation)? forceGrowthSpeedVariationFactorToPut = null,
+                bool spawnStartBabiesToPut = true)
             {
                 motherPlant = motherPlantToPut;
                 pos = posToPut;
@@ -536,7 +542,7 @@ namespace Cave
                 getTraitAndAddColorsAndFindMaxGrowth(motherPlantElement, childMaxGrowthVariation);
                 fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
                 growthLevel = -1;
-                isDeadAndShouldDisappear = init(isMainPlantElement, forceDirection) == 0;
+                isDeadAndShouldDisappear = init(isMainPlantElement, forceDirection, spawnStartBabies:spawnStartBabiesToPut) == 0;
                 motherPlant.isDeadAndShouldDisappear = isMainPlantElement ? isDeadAndShouldDisappear : motherPlant.isDeadAndShouldDisappear;
             }
             public int getRandValue(int valueModifier, int modulo = -1)     // Modulo < 0 -> return random value, Modulo > 0 -> return modulo of random value 
@@ -551,7 +557,7 @@ namespace Cave
                 int randy = cashInt((valueModifier, 7, 13), seed);
                 return modulo > 0 ? randy % modulo : randy;
             }
-            public void transitionToOtherPlantElement((int type, int subType, int subSubType) newType)  // if new plant element doesn't contains a material that the old one did, it might cause bug on reload !
+            public void transitionToOtherPlantElement((int type, int subType, int subSubType) newType, bool spawnStartBabies = true)  // if new plant element doesn't contains a material that the old one did, it might cause bug on reload !
             {   // CAREFUL when transitioning, it will NOT be able to add the maxGrowthParentRelatedVariation related to MotherPlantElement cuz it's not passed in the function !!!
                 seed = Abs((int)LCGyNeg(seed));
 
@@ -571,7 +577,7 @@ namespace Cave
 
                 type = newType;
                 getTraitAndAddColorsAndFindMaxGrowth();
-                init(false, null, true);
+                init(false, null, true, spawnStartBabies);
             }
             public void getTraitAndAddColors()
             {
@@ -661,11 +667,19 @@ namespace Cave
                 return false;
             }
             public void forceFill((int x, int y) testPos, (int type, int subType) typeToFill) { fillStates[testPos] = typeToFill; }
-            public bool makeBabyEndSpecial(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (float baseValue, float variation)? childMaxGrowthVariation, (float baseValue, float variation)? forceGrowthSpeedVariationFactor, int chance) item, (int x, int y) currentGrowPos, int seedMod, int offset)
+            public bool makeBabyEnd(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item, (int x, int y) currentGrowPos, int seedMod, int offset, bool spawnStartBabies)
+            {
+                return makeBaby((item.child, item.dirType, item.mod, item.failMGIncrease, null, null), currentGrowPos, seedMod, offset, spawnStartBabies);
+            }
+            public bool makeBabyEndSpecial(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (float baseValue, float variation)? childMaxGrowthVariation, (float baseValue, float variation)? forceGrowthSpeedVariationFactor, int chance) item, (int x, int y) currentGrowPos, int seedMod, int offset, bool spawnStartBabies)
             {
                 return makeBaby((item.child, item.dirType, item.mod, item.failMGIncrease, item.childMaxGrowthVariation, item.forceGrowthSpeedVariationFactor), currentGrowPos, seedMod, offset);
             }
-            public bool makeBabyStartOrEnd(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item, (int x, int y) currentGrowPos, int seedMod, int offset)
+            public bool makeBabyEndAbortive(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, int chance) item, (int x, int y) currentGrowPos, int seedMod, int offset, bool spawnStartBabies)
+            {
+                return makeBaby((item.child, item.dirType, item.mod, 0, null, null), currentGrowPos, seedMod, offset);
+            }
+            public bool makeBabyStart(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item, (int x, int y) currentGrowPos, int seedMod, int offset)
             {
                 return makeBaby((item.child, item.dirType, item.mod, item.failMGIncrease, null, null), currentGrowPos, seedMod, offset);
             }
@@ -673,7 +687,7 @@ namespace Cave
             {
                 return makeBaby((item.child, item.dirType, item.mod, item.failMGIncrease, null, null), currentGrowPos, seedMod, offset:853);
             }
-            public bool makeBaby(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (float baseValue, float variation)? childMaxGrowthVariation, (float baseValue, float variation)? forceGrowthSpeedVariationFactor) item, (int x, int y) currentGrowPos, int seedMod, int offset)
+            public bool makeBaby(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (float baseValue, float variation)? childMaxGrowthVariation, (float baseValue, float variation)? forceGrowthSpeedVariationFactor) item, (int x, int y) currentGrowPos, int seedMod, int offset, bool spawnStartBabies = true)
             {
                 (int x, int y) babyPos = (item.dirType == 0 || item.dirType == 5 || item.dirType == 6) ? (currentGrowPos.x + item.mod.x * Sign(baseDirection.x), currentGrowPos.y + item.mod.y) : currentGrowPos;
                 if (traits.plantGrowthRules != null && traits.plantGrowthRules.preventGapsOnChildSpawn > 0)
@@ -709,7 +723,7 @@ namespace Cave
 
                 if (item.dirType != 2 && babyDirection != null) { babyDirection = ((babyDirection.Value.dir.x * Sign(baseDirection.x), babyDirection.Value.dir.y), babyDirection.Value.isApplyAfter); }    // To flip it depending on mother plantelement orientation : MIGHT BREAK EVERYTHING
 
-                PlantElement baby = new PlantElement(motherPlant, babyPos, item.child, getRandValue(seed + 923147 * seedMod + offset * 10000), this, false, babyDirection, item.childMaxGrowthVariation, item.forceGrowthSpeedVariationFactor);
+                PlantElement baby = new PlantElement(motherPlant, babyPos, item.child, getRandValue(seed + 923147 * seedMod + offset * 10000), this, false, babyDirection, item.childMaxGrowthVariation, item.forceGrowthSpeedVariationFactor, spawnStartBabies);
                 if (baby.isDeadAndShouldDisappear)
                 {
                     maxGrowthLevel += item.failMGIncrease;
@@ -768,7 +782,7 @@ namespace Cave
 
                 return -1;  // Return -1 to say everything went good lol
             }
-            public int init(bool isMainPlantElement = false, ((int x, int y) dir, bool isApplyAfter)? forceDirection = null, bool isTransition = false)
+            public int init(bool isMainPlantElement = false, ((int x, int y) dir, bool isApplyAfter)? forceDirection = null, bool isTransition = false, bool spawnStartBabies = true)
             {
                 if (!isTransition) { fillStates = new Dictionary<(int x, int y), (int type, int subType)>(); }
                 if (!isTransition || forceDirection != null) { if (findBaseDirection(forceDirection) == 0) { return 0; } }
@@ -784,17 +798,6 @@ namespace Cave
                     {
                         if (!isMainPlantElement) { updatePos(growthDirection); } // if the first plantElement created by the plant (like the trunk of a tree, stem of a flower...)
                         lastDrawPos = (-growthDirection.x, -growthDirection.y);
-                    }
-
-                    if (traits.plantGrowthRules.childrenOnGrowthStart != null && traits.plantGrowthRules.childrenOnGrowthStart.Length > 0)
-                    {
-                        int offset = 0;
-                        foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item in traits.plantGrowthRules.childrenOnGrowthStart)
-                        {
-                            if (item.chance != 100 && getRandValue((int)maxGrowthLevel + childArrayOffset + 20000, 100) > item.chance) { continue; }
-                            makeBabyStartOrEnd(item, lastDrawPos, 0, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset);
-                            offset += 1;
-                        }
                     }
                 }
 
@@ -835,11 +838,35 @@ namespace Cave
                     }
                 }
 
+                if (spawnStartBabies) { birthStartChildren(); }
+
                 growthLevel = 0;
                 return 2;
             }
+            public void birthStartChildren(bool childrenPassed = false)
+            {
+                HashSet<(int type, int subType, int subSubType)> passedChildren = new HashSet<(int type, int subType, int subSubType)>();
+                if (childrenPassed && childPlantElements.Count > 0)
+                {
+                    foreach (PlantElement childPlantElement in childPlantElements) { passedChildren.Add(childPlantElement.type); }
+                }
+                else { childrenPassed = false; }
+                if (traits.plantGrowthRules != null && traits.plantGrowthRules.childrenOnGrowthStart != null && traits.plantGrowthRules.childrenOnGrowthStart.Length > 0)
+                {
+                    int offset = 0;
+                    foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item in traits.plantGrowthRules.childrenOnGrowthStart)
+                    {
+                        if (childrenPassed && passedChildren.Contains(item.child)) { continue; }
+                        if (item.chance != 100 && getRandValue((int)maxGrowthLevel + childArrayOffset + 20000, 100) > item.chance) { continue; }
+                        makeBabyStart(item, lastDrawPos, 0, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset);
+                        offset += 1;
+                    }
+                }
+            }
             public int tryGrowth()  // 0 -> Growth Failed and ABORT, 1 -> Final growth, won't grow anymore after but SUCCESS, 2 -> Normal growth, SUCCESS and continue after
             {
+                if (growthFinished) { return 0; }
+
                 if (growthLevel == -1)
                 {
                     growthLevel = 0;
@@ -867,7 +894,7 @@ namespace Cave
                     }
                     if (growthLevel > maxGrowthLevel)   // If was final growth
                     {
-                        if (traits.deathChild != null && (traits.deathChild.Value.chance == 100 || getRandValue((int)maxGrowthLevel + childArrayOffset + 20000, 100) <= traits.deathChild.Value.chance)) { makeBabyStartOrEnd((traits.deathChild.Value.plantElement, 0, traits.deathChild.Value.offset, 0, 100), lastDrawPos, growthLevel, 1); }
+                        if (traits.deathChild != null && (traits.deathChild.Value.chance == 100 || getRandValue((int)maxGrowthLevel + childArrayOffset + 20000, 100) <= traits.deathChild.Value.chance)) { makeBabyEnd((traits.deathChild.Value.plantElement, 0, traits.deathChild.Value.offset, 0, 100), lastDrawPos, growthLevel, 1, true); }
                         if (traits.transitionToOtherPlantElementOnGrowthEnd != null)
                         {
                             transitionToOtherPlantElement(traits.transitionToOtherPlantElementOnGrowthEnd.Value);
@@ -981,6 +1008,41 @@ namespace Cave
                         foreach ((int x, int y) pos in posToRemove) { foreach (PlantElement child in childPlantElements) { if (child.traits.isSticky != null) { child.fillStates.Remove(pos); } } } // Crucial
                     }
 
+                    while (traits.plantGrowthRules.elementWideningArray != null && traits.plantGrowthRules.elementWideningArray.Length > 0 && (traits.plantGrowthRules.loopEW || currentElementWideningArrayIdx + 1 < traits.plantGrowthRules.elementWideningArray.Length))
+                    {
+                        (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame) item = traits.plantGrowthRules.elementWideningArray[(currentElementWideningArrayIdx + 1) % traits.plantGrowthRules.elementWideningArray.Length];
+
+                        int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue(ElementWideningArrayOffset + 60000, item.changeFrame.range + 1)));
+                        if (growthLevelToTest - ElementWideningArrayOffset >= cost)
+                        {
+                            currentElementWidening = item.Item1;
+                            currentElementWideningArrayIdx++;
+                            ElementWideningArrayOffset += cost;
+                        }
+                        else { break; }
+                    }
+
+
+                    if (traits.plantGrowthRules.growthAbortiveChild != null)
+                    {
+                        if (traits.plantGrowthRules.growthAbortiveChild.Value.chance == 100 || getRandValue(seed + 6085234, 100) <= traits.plantGrowthRules.growthAbortiveChild.Value.chance)
+                        {
+                            if (growthLevelToTest == traits.plantGrowthRules.growthAbortiveChild.Value.growthLevel.baseValue + getRandValue(seed + 35893, traits.plantGrowthRules.growthAbortiveChild.Value.growthLevel.variation + 1))
+                            {
+                                int successfulAbortiveChildren = 0;
+                                drawPos = lastDrawPos;
+                                int offset = 0;
+                                foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, int chance) item in traits.plantGrowthRules.growthAbortiveChild.Value.array)
+                                {
+                                    offset += 1;
+                                    if (item.chance != 100 && getRandValue((int)maxGrowthLevel + childArrayOffset + 20000 + offset, 100) > item.chance) { continue; }
+                                    if (makeBabyEndAbortive(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset, !traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd)) { successfulAbortiveChildren++; }
+                                }
+                                if (traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd && successfulAbortiveChildren > 0) { transmitStickyChildren(successfulAbortiveChildren); }
+                                goto SuccessButStop;
+                            }
+                        }
+                    }
 
                     while (traits.plantGrowthRules.childArray != null && traits.plantGrowthRules.childArray.Length > 0 && (traits.plantGrowthRules.loopChild || currentChildArrayIdx + 1 < traits.plantGrowthRules.childArray.Length))
                     {
@@ -999,24 +1061,10 @@ namespace Cave
                         else { break; }
                     }
 
-                    while (traits.plantGrowthRules.elementWideningArray != null && traits.plantGrowthRules.elementWideningArray.Length > 0 && (traits.plantGrowthRules.loopEW || currentElementWideningArrayIdx + 1 < traits.plantGrowthRules.elementWideningArray.Length))
-                    {
-                        (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame) item = traits.plantGrowthRules.elementWideningArray[(currentElementWideningArrayIdx + 1) % traits.plantGrowthRules.elementWideningArray.Length];
-
-                        int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue(ElementWideningArrayOffset + 60000, item.changeFrame.range + 1)));
-                        if (growthLevelToTest - ElementWideningArrayOffset >= cost)
-                        {
-                            currentElementWidening = item.Item1;
-                            currentElementWideningArrayIdx++;
-                            ElementWideningArrayOffset += cost;
-                        }
-                        else { break; }
-                    }
-
-
 
                     if (growthLevelToTest == maxGrowthLevel + 1) // Should only happen when plants has childrenOnGrowthEnd and has done its last growth already
                     {
+                        int successfulEndChildren = 0;
                         if (traits.plantGrowthRules.childrenOnGrowthEnd != null)
                         {
                             drawPos = lastDrawPos;
@@ -1025,7 +1073,7 @@ namespace Cave
                             {
                                 offset += 1;
                                 if (item.chance != 100 && getRandValue((int)maxGrowthLevel + childArrayOffset + 20000 + offset, 100) > item.chance) { continue; }
-                                makeBabyStartOrEnd(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset);
+                                if (makeBabyEnd(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset, !traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd)) { successfulEndChildren++; }
                             }
                         }
                         if (traits.plantGrowthRules.childrenOnGrowthEndSpecial != null)
@@ -1036,7 +1084,7 @@ namespace Cave
                             {
                                 offset += 1;
                                 if (item.chance != 100 && getRandValue((int)maxGrowthLevel + childArrayOffset + 284392 + offset, 100) > item.chance) { continue; }
-                                makeBabyEndSpecial(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset);
+                                if (makeBabyEndSpecial(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset, !traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd)) { successfulEndChildren++; }
                             }
                         }
                         if (traits.transitionToOtherPlantElementOnGrowthEnd != null)    // wait according to the comment on top it should not happen if plantElement doesn't have children on growth end ??? yet it does ??? Who coded this shit i am confused
@@ -1044,6 +1092,10 @@ namespace Cave
                             lastDrawPos = drawPos;
                             transitionToOtherPlantElement(traits.transitionToOtherPlantElementOnGrowthEnd.Value);
                             return 2;   // return not goto !! improtant ig ?
+                        }
+                        else if (traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd && successfulEndChildren > 0)  // It's in the else because if there's a transition it's NOT YET the time to transmit the children because the plant isn't really fully grown
+                        {
+                            transmitStickyChildren(successfulEndChildren);
                         }
                         goto SuccessButStop;  // Necessary else might make children again when getting loaded
                     }
@@ -1146,6 +1198,7 @@ namespace Cave
                 SuccessButStop:;
                     lastDrawPos = drawPos;
                     growthLevel = growthLevelToTest;
+                    growthFinished = true;
                     return 1;
 
                 Success:;
@@ -1155,6 +1208,39 @@ namespace Cave
                     return 2;
                 }
                 return 0;
+            }
+            public void transmitStickyChildren(int successfulEndChildren)
+            {
+                PlantElement currentChild;
+                List<PlantElement> endChildren = new List<PlantElement>();
+                int endChildrenIdx = childPlantElements.Count - successfulEndChildren;
+                for (int i = 0; i < successfulEndChildren; i++) // Get all end children (that were spawned just before) that can spawn start children
+                {
+                    currentChild = childPlantElements[endChildrenIdx + i];
+                    if (currentChild.traits.plantGrowthRules is null || currentChild.traits.plantGrowthRules.childrenOnGrowthStart is null) { continue; }
+                    endChildren.Add(currentChild);
+                }
+                for (int i = 0; i < endChildrenIdx; i++)    // Loop through sticky children to transmit them to end children if they were gonna spawn a start child of the same type
+                {
+                    currentChild = childPlantElements[i];
+                    if (currentChild.traits.isSticky is null) { continue; }
+                    foreach (PlantElement endChild in endChildren)
+                    {
+                        foreach (var item in endChild.traits.plantGrowthRules.childrenOnGrowthStart)
+                        {
+                            if (item.child == currentChild.traits.type)
+                            {
+                                endChildrenIdx--;
+                                endChild.childPlantElements.Add(currentChild);
+                                childPlantElements.RemoveAt(i);
+                                if (i >= endChildrenIdx) { goto exitLoop; }
+                                currentChild = childPlantElements[i];
+                            }
+                        }
+                    }
+                }
+            exitLoop:;
+                foreach (PlantElement endChild in endChildren) { endChild.birthStartChildren(true); }
             }
             public void updateStickyChildren((int x, int y) newPos)
             {

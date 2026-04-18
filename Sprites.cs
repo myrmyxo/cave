@@ -173,6 +173,7 @@ namespace Cave
                 { (14, 30), new OneSprite("SaxaulBlack", true) },
                 { (14, 31), new OneSprite("SaxaulWhite", true) },
                 { (14, 40), new OneSprite("QuiverTree", true) },
+                { (14, 41), new OneSprite("QuiverTreeGiant", true) },
                 { (20, 0), new OneSprite("Vines", false) },
                 { (20, 1), new OneSprite("ObsidianVines", false ) },
                 { (20, 2), new OneSprite("IceVines", false ) },
