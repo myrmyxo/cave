@@ -677,7 +677,7 @@ namespace Cave
             }
             public bool makeBabyEndAbortive(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, int chance) item, (int x, int y) currentGrowPos, int seedMod, int offset, bool spawnStartBabies)
             {
-                return makeBaby((item.child, item.dirType, item.mod, 0, null, null), currentGrowPos, seedMod, offset);
+                return makeBaby((item.child, item.dirType, item.mod, 0, null, null), currentGrowPos, seedMod, offset, spawnStartBabies);
             }
             public bool makeBabyStart(((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item, (int x, int y) currentGrowPos, int seedMod, int offset)
             {
@@ -1029,13 +1029,14 @@ namespace Cave
                         {
                             if (growthLevelToTest == traits.plantGrowthRules.growthAbortiveChild.Value.growthLevel.baseValue + getRandValue(seed + 35893, traits.plantGrowthRules.growthAbortiveChild.Value.growthLevel.variation + 1))
                             {
+                                int sameChance = getRandValue((int)maxGrowthLevel + childArrayOffset + 8539213, 100);
                                 int successfulAbortiveChildren = 0;
                                 drawPos = lastDrawPos;
                                 int offset = 0;
                                 foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, int chance) item in traits.plantGrowthRules.growthAbortiveChild.Value.array)
                                 {
                                     offset += 1;
-                                    if (item.chance != 100 && getRandValue((int)maxGrowthLevel + childArrayOffset + 20000 + offset, 100) > item.chance) { continue; }
+                                    if (item.chance != 100 && (traits.plantGrowthRules.sameChanceForEndChildren ? sameChance : getRandValue((int)maxGrowthLevel + childArrayOffset + 20000 + offset, 100)) > item.chance) { continue; }
                                     if (makeBabyEndAbortive(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset, !traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd)) { successfulAbortiveChildren++; }
                                 }
                                 if (traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd && successfulAbortiveChildren > 0) { transmitStickyChildren(successfulAbortiveChildren); }
@@ -1064,6 +1065,7 @@ namespace Cave
 
                     if (growthLevelToTest == maxGrowthLevel + 1) // Should only happen when plants has childrenOnGrowthEnd and has done its last growth already
                     {
+                        int sameChance = getRandValue((int)maxGrowthLevel + childArrayOffset + 582012, 100);
                         int successfulEndChildren = 0;
                         if (traits.plantGrowthRules.childrenOnGrowthEnd != null)
                         {
@@ -1072,7 +1074,7 @@ namespace Cave
                             foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item in traits.plantGrowthRules.childrenOnGrowthEnd)
                             {
                                 offset += 1;
-                                if (item.chance != 100 && getRandValue((int)maxGrowthLevel + childArrayOffset + 20000 + offset, 100) > item.chance) { continue; }
+                                if (item.chance != 100 && (traits.plantGrowthRules.sameChanceForEndChildren ? sameChance : getRandValue((int)maxGrowthLevel + childArrayOffset + 20000 + offset, 100)) > item.chance) { continue; }
                                 if (makeBabyEnd(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset, !traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd)) { successfulEndChildren++; }
                             }
                         }
@@ -1083,7 +1085,7 @@ namespace Cave
                             foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (float baseValue, float variation)? childMaxGrowthVariation, (float baseValue, float variation)? forceGrowthSpeedVariationFactor, int chance) item in traits.plantGrowthRules.childrenOnGrowthEndSpecial)
                             {
                                 offset += 1;
-                                if (item.chance != 100 && getRandValue((int)maxGrowthLevel + childArrayOffset + 284392 + offset, 100) > item.chance) { continue; }
+                                if (item.chance != 100 && (traits.plantGrowthRules.sameChanceForEndChildren ? sameChance : getRandValue((int)maxGrowthLevel + childArrayOffset + 284392 + offset, 100)) > item.chance) { continue; }
                                 if (makeBabyEndSpecial(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset, !traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd)) { successfulEndChildren++; }
                             }
                         }
@@ -1123,28 +1125,35 @@ namespace Cave
 
                     TileTraits currentTile = getTileFromRelPos(drawPos);
                     if (traits.plantGrowthRules.tileContentNeededToGrow != null && !traits.plantGrowthRules.tileContentNeededToGrow.Contains(currentTile.type)) { goto Fail; }
-                    if (currentElementWidening is null) { if (!tryFill(drawPos, traits.plantGrowthRules.materalToFillWith)) { goto Fail; } }
+                    (int type, int subType) materialToFillTileWith = traits.plantGrowthRules.materalToFillWith;
+                    if (traits.plantGrowthRules.fillWithOtherMaterial != null)
+                    {
+                        int growthLevelRequired = traits.plantGrowthRules.fillWithOtherMaterial.Value.threshold + getRandValue(6853932, traits.plantGrowthRules.fillWithOtherMaterial.Value.variation + 1);
+                        if (traits.plantGrowthRules.fillWithOtherMaterial.Value.fromEnd ? (maxGrowthLevel - growthLevelToTest) < growthLevelRequired : growthLevelToTest >= growthLevelRequired) { materialToFillTileWith = traits.plantGrowthRules.fillWithOtherMaterial.Value.material; }
+                    }
+                    
+                    if (currentElementWidening is null) { if (!tryFill(drawPos, materialToFillTileWith)) { goto Fail; } }
                     else
                     {
-                        bool success = tryFill(drawPos, traits.plantGrowthRules.materalToFillWith);
+                        bool success = tryFill(drawPos, materialToFillTileWith);
                         for (int i = 1; i < currentElementWidening.Value.width.left + 1; i++)
                         {
-                            if (!tryFill((drawPos.x - i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y), traits.plantGrowthRules.materalToFillWith)) { break; }
+                            if (!tryFill((drawPos.x - i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y), materialToFillTileWith)) { break; }
                             success = true;
                         }
                         for (int i = 1; i < currentElementWidening.Value.width.right + 1; i++)
                         {
-                            if (!tryFill((drawPos.x + i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y), traits.plantGrowthRules.materalToFillWith)) { break; }
+                            if (!tryFill((drawPos.x + i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y), materialToFillTileWith)) { break; }
                             success = true;
                         }
                         for (int i = 1; i < currentElementWidening.Value.width.down + 1; i++)
                         {
-                            if (!tryFill((drawPos.x, drawPos.y - i * (currentElementWidening.Value.canBeFlipped.y && baseDirection.y < 0 ? -1 : 1)), traits.plantGrowthRules.materalToFillWith)) { break; }
+                            if (!tryFill((drawPos.x, drawPos.y - i * (currentElementWidening.Value.canBeFlipped.y && baseDirection.y < 0 ? -1 : 1)), materialToFillTileWith)) { break; }
                             success = true;
                         }
                         for (int i = 1; i < currentElementWidening.Value.width.up + 1; i++)
                         {
-                            if (!tryFill((drawPos.x, drawPos.y + i * (currentElementWidening.Value.canBeFlipped.y && baseDirection.y < 0 ? -1 : 1)), traits.plantGrowthRules.materalToFillWith)) { break; }
+                            if (!tryFill((drawPos.x, drawPos.y + i * (currentElementWidening.Value.canBeFlipped.y && baseDirection.y < 0 ? -1 : 1)), materialToFillTileWith)) { break; }
                             success = true;
                         }
                         if (!success) { goto Fail; }
@@ -1156,7 +1165,7 @@ namespace Cave
                                 if (!testPositionEmpty((drawPos.x - i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y))) { break; }
                                 for (int k = 1; k <= currentElementWidening.Value.width.left * 2 + 2 - i * 2; k++)
                                 {
-                                    if (!tryFill((drawPos.x - i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y - k), traits.plantGrowthRules.materalToFillWith)) { break; }
+                                    if (!tryFill((drawPos.x - i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y - k), materialToFillTileWith)) { break; }
                                 }
                             }
                             for (int i = 1; i < currentElementWidening.Value.width.right + 1; i++)
@@ -1164,7 +1173,7 @@ namespace Cave
                                 if (!testPositionEmpty((drawPos.x + i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y))) { break; }
                                 for (int k = 1; k <= currentElementWidening.Value.width.right * 2 + 2 - i * 2; k++)
                                 {
-                                    if (!tryFill((drawPos.x + i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y - k), traits.plantGrowthRules.materalToFillWith)) { break; }
+                                    if (!tryFill((drawPos.x + i * (currentElementWidening.Value.canBeFlipped.x && baseDirection.x < 0 ? -1 : 1), drawPos.y - k), materialToFillTileWith)) { break; }
                                 }
                             }
                         }

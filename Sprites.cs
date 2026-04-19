@@ -157,6 +157,7 @@ namespace Cave
                 { (4, 12), new OneSprite("YuccaBeaked", true) },
                 { (4, 20), new OneSprite("DesertThumb", true) },
                 { (4, 30), new OneSprite("CistancheDeserticola", true) },
+                { (4, 40), new OneSprite("Saltbush", true) },
                 { (10, 0), new OneSprite("Tree", false) },
                 { (10, 1), new OneSprite("JungleTree", true) },
                 { (10, 2), new OneSprite("WeepingWillow", true) },

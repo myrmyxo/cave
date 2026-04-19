@@ -67,12 +67,11 @@ namespace Cave
             //     ---- - - CURRENTLY DOING - - ----
             // 
             // add wild onion and bindweed
-            // --> Other species of Aloidendron !
             //  
             // Oasises in deserts ! Deserts are when no humidity but high illumination ?
             // NEW PLANTS
             //  -> add Ghost Gum, Yareta, Colocynths (wild desert gourd),
-            //     Camel Thorn, Panicum Turgidum, Atriplex polycarpa, Frankinsence, Pachypodium mikea, Pachypodium namaquanum
+            //     Camel Thorn, Panicum Turgidum, Pachypodium mikea, Pachypodium namaquanum
             // Add Elm also
             //
             // Then prairies and heathlands and shrublands and stuff HEATHHH
@@ -219,7 +218,8 @@ namespace Cave
             // Mimosa
             // Poplar/Aspen
             // Lupin !!!
-            // Bluebells and lily of the valleys
+            // lily of the valleys
+            // Frankinsence
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.
