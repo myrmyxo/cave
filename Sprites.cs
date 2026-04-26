@@ -161,6 +161,7 @@ namespace Cave
                 { (10, 0), new OneSprite("Tree", false) },
                 { (10, 1), new OneSprite("JungleTree", true) },
                 { (10, 2), new OneSprite("WeepingWillow", true) },
+                { (10, 3), new OneSprite("Alder", false) },
                 { (11, 0), new OneSprite("Fir", true) },
                 { (11, 1), new OneSprite("UpFir", true) },
                 { (12, 0), new OneSprite("MangroveTree", true) },

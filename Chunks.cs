@@ -181,6 +181,7 @@ namespace Cave
             public Bitmap bitmap;
             public Bitmap effectsBitmap;
             public Bitmap fireBitmap;
+            public Bitmap scoreBitmap;
 
             public Dictionary<(int x, int y), Fire> fireDict = null;
 
@@ -372,7 +373,7 @@ namespace Cave
                     baseColors[0, 0] = ((colorArray[0], colorArray[1], colorArray[2]), (colorArray[3], colorArray[4], colorArray[5]));
 
                     allBiomesInTheChunk.Add(biomeIndex[0, 0][0].traits);
-                    for (int i = 0; i < 32; i ++)
+                    for (int i = 0; i < 32; i++)
                     {
                         for (int j = 0; j < 32; j++)
                         {
@@ -397,12 +398,12 @@ namespace Cave
 
                 return tileValuesArray;
             }
-            public (float baseSeparatorScore, float rightScore, bool isLiquid, bool forceSolid)[,] voronoi(int[,,] terrainValues)
+            public (float score, float threshold, float liquidScore, bool forceSolid)[,] voronoiStepOne()
             {
-                (float baseSeparatorScore, float rightScore, bool isLiquid, bool forceSolid)[,] stateArray = new (float baseSeparatorScore, float rightScore, bool isLiquid, bool forceSolid)[32, 32];
-
+                (float score, float threshold, float liquidScore, bool forceSolid)[,] stateArray = new (float score, float threshold, float liquidScore, bool forceSolid)[32, 32];
                 ((int x, int y) pos, float ponderation)[] basePosArray = new ((int x, int y) pos, float distance)[25];
 
+                // Get all Voronoi points in a 5x5 square centered on current point
                 (int x, int y) quartile = (Floor(pos.x, 8) / 8, pos.y);
                 int counto = 0;
                 foreach ((int x, int y) mod in bigSquareCenteredModArray)
@@ -434,30 +435,88 @@ namespace Cave
                         closestPos = (closestPos.pos, (float)Math.Sqrt(closestPos.distance));
                         secondClosestPos = (secondClosestPos.pos, (float)Math.Sqrt(secondClosestPos.distance));
 
-                        float baseSeparatorScore = secondClosestPos.distance - closestPos.distance;
+                        float score = secondClosestPos.distance - closestPos.distance;
+                        int heightDiff = realPos.y - closestPos.pos.y;
 
                         int junctionScore = Max(0, realPos.y - Max(closestPos.pos.y, secondClosestPos.pos.y));
                         junctionScore *= -junctionScore * 4;
-                        int heightDiff = realPos.y - closestPos.pos.y;
 
-                        float juncScore1 = - Clamp(0, Max(0, heightDiff * 3), 3 * baseSeparatorScore);
-                        bool juncScore2 = secondClosestPos.pos.y > closestPos.pos.y || baseSeparatorScore >= 20 + heightDiff * 5 ? false : true;
+                        float juncScore1 = -Clamp(0, Max(0, heightDiff * 3), 3 * score);
+                        float juncScore2 = -Max(secondClosestPos.pos.y - closestPos.pos.y, score - 20 - heightDiff * 5);
 
-                        int depthScoreLOW = - 10 * Min(0, heightDiff + 6) - 10 * Min(0, heightDiff + 3);
-                        int noiseScore = (int)(terrainValues[i, j, 1] * 0.05f);
-
-                        float rightScore = juncScore2 ? baseSeparatorScore - 10 : noiseScore + junctionScore + depthScoreLOW + juncScore1 + Max(25, Max(Abs(closestPos.pos.x - realPos.x) * 0.25f, Abs(closestPos.pos.y - realPos.y)) + closestPos.distance * closestPos.distance * 0.003f);
-                        stateArray[i, j] = (baseSeparatorScore, rightScore, !juncScore2 && realPos.y <= closestPos.pos.y && baseSeparatorScore > rightScore, baseSeparatorScore <= rightScore && rightScore - baseSeparatorScore < 30);
-                        /*
-                        if (baseSeparatorScore > rightScore)
-                        {
-                            if (realPos.y > closestPos.pos.y || baseSeparatorScore <= rightScore - juncScore2) { stateArray[i, j] = 0; }
-                            else { stateArray[i, j] = 2; }
-                        }
-                        else { stateArray[i, j] = 1; }*/
+                        float threshold = juncScore2 > 0 ? score - 10 : junctionScore + juncScore1 + Max(25, Max(Abs(closestPos.pos.x - realPos.x) * 0.25f, Abs(closestPos.pos.y - realPos.y)) + closestPos.distance * closestPos.distance * 0.003f);
+                        float liquidScore = juncScore2 > 0 || score - threshold < 0 ? -10 : -heightDiff;
+                        bool forceSolid = score <= threshold && threshold - score < 30; // idk what this does
+                        stateArray[i, j] = (score, threshold, liquidScore, forceSolid);
                     }
                 }
                 return stateArray;
+            }
+            public void voronoiStepTwo((float score, float threshold, float liquidScore, bool forceSolid)[,] voronoiStateArray, int[,,] terrainValues, int i, int j, ref float score1, ref float score2, ref float bound1, ref float bound2, ref bool isLiquidVoronoiTransition)
+            {
+                (float score, float threshold, float liquidScore, bool forceSolid) item = voronoiStateArray[i, j];
+
+                // Get a dictionnary of all different possible liquids in the voronoi pools, and find the mean pool depth (average of voronoi biomes)
+                Dictionary<(int type, int subType), int> voronoiLiquidTypesPercentagesDict = new Dictionary<(int type, int subType), int>();
+                float totalVoronoiMult = 0;
+                float voronoiDepth = 0;
+                float voronoiNoisePonderation = 0;
+                foreach ((BiomeTraits traits, int percentage) tupel in biomeIndex[i, j])
+                {
+                    if (!tupel.traits.isVoronoiCave) { continue; }
+                    voronoiDepth += tupel.traits.voronoiDepth * tupel.percentage;
+                    voronoiNoisePonderation += tupel.traits.voronoiNoisePonderation * tupel.percentage;
+                    totalVoronoiMult += tupel.percentage;
+                    addOrIncrementDict(voronoiLiquidTypesPercentagesDict, (tupel.traits.lakeType, tupel.percentage));
+                }
+                if (totalVoronoiMult == 0) { return; }  // Return if no Voronoi biomes for that tile
+                voronoiDepth /= totalVoronoiMult;
+                voronoiNoisePonderation /= totalVoronoiMult;
+                totalVoronoiMult *= 0.001f;
+
+                if (item.liquidScore >= 0)  // If tile would be liquid, find separators and other stuff to make it look better
+                {
+                    // Find the voronoi biome with the biggest ponderation (in that case biomes with the same liquid count as the same biome)
+                    int maxVoronoiMult = 0;
+                    (int type, int subType) liquidType = (0, 0);
+                    foreach ((int type, int subType) key in voronoiLiquidTypesPercentagesDict.Keys)
+                    {
+                        if (voronoiLiquidTypesPercentagesDict[key] > maxVoronoiMult)
+                        {
+                            maxVoronoiMult = voronoiLiquidTypesPercentagesDict[key];
+                            liquidType = key;
+                        }
+                    }
+
+                    // Pools going in oceans
+                    float liquidVoronoiTransitionScore = maxVoronoiMult * 0.001f;
+                    float oceanity = 0;
+                    foreach ((BiomeTraits traits, int percentage) tupel in biomeIndex[i, j])
+                    {
+                        if (tupel.traits.fillType == liquidType && liquidType != (0, 0)) { oceanity += tupel.percentage * 0.025f; liquidVoronoiTransitionScore += tupel.percentage * 0.001f; }
+                    }
+                    if (liquidVoronoiTransitionScore > 0.95f && oceanity > 0) { isLiquidVoronoiTransition = true; }
+
+                    // Noise for variation in height of bottom of pools
+                    int noiseScore = Abs((int)(terrainValues[i, j, 1] * voronoiNoisePonderation));
+
+                    // Apply max liquid depth (replace liquid under max depth by solid), with smoothing of the pool's edge
+                    float voronoiDepthPercentage = item.liquidScore / voronoiDepth;
+                    float depthScore = Max(0, 1 + item.liquidScore - voronoiDepth) * 1000 + Max(0, voronoiDepthPercentage * 65 - oceanity) + noiseScore;
+                    item = (item.score, item.threshold + depthScore, item.liquidScore, item.forceSolid);
+                    voronoiStateArray[i, j] = item;
+
+                    // Biome separator : Replace liquid by solid when in a transition between 2 Voronoi biomes with different liquids (to prevent mixed liquid pools), or between Voronoi/Normal biomes (to prevent leakage)
+                    voronoiDepthPercentage = Min(25, item.liquidScore / (voronoiDepth * 2.25f));
+                    float poolSeparationScore = Max(0, 1 - maxVoronoiMult * 0.001f);
+                    if (!isLiquidVoronoiTransition && voronoiDepthPercentage + poolSeparationScore >= 0.45f) { voronoiStateArray[i, j] = (item.score, item.threshold, item.liquidScore, true); score1 -= 10003; score2 -= 10003; }
+                    
+                }
+
+                score1 += totalVoronoiMult * 0.15f * item.score;
+                score2 += totalVoronoiMult * 0.15f * item.score;
+                bound1 += totalVoronoiMult * 0.15f * item.threshold;
+                bound2 += totalVoronoiMult * 0.15f * item.threshold;
             }
             public (((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) derivative, (float baseScore1, float baseScore2, float separatorScore)[,] scoreArray, bool[] quartileFilledArray)
                 generateTerrain((int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] biomeValues, bool updateTheTiles = true)
@@ -484,15 +543,16 @@ namespace Cave
                 }
 
                 // Find Voronoi values when needed (chunk contains mangrove)
-                (float baseSeparatorScore, float rightScore, bool isLiquid, bool forceSolid)[,] voronoiStateArray = new (float baseSeparatorScore, float rightScore, bool isLiquid, bool forceSolid)[32, 32];
+                (float score, float threshold, float liquidScore, bool forceSolid)[,] voronoiStateArray = null;
                 foreach (BiomeTraits biomeTraits in allBiomesInTheChunk)
                 {
-                    if (biomeTraits.isVoronoiCave) { voronoiStateArray = voronoi(terrainValues); break; }
+                    if (biomeTraits.isVoronoiCave) { voronoiStateArray = voronoiStepOne(); break; }
                 }
 
                 (float baseScore1, float baseScore2, float separatorScore)[,] scoreArray = new (float baseScore1, float baseScore2, float separatorScore)[32, 32];
                 bool[] quartileFilledArray = new bool[4];
 
+                scoreBitmap = new Bitmap(32, 32);
                 for (int i = 0; i < 32; i++)
                 {
                     for (int j = 0; j < 32; j++)
@@ -514,21 +574,9 @@ namespace Cave
 
                         float separatorScore = 0;
                         float antiSeparatorScore = 0;
-                        float liquidVoronoiTransition = 0;
-                        (int type, int subType)? liquidVoronoiTransitionType = null;
 
-                        foreach ((BiomeTraits traits, int percentage) tupel in biomeIndex[i, j]) { if (tupel.traits.isVoronoiCave) { liquidVoronoiTransitionType = tupel.traits.lakeType; break; } }
-                        if (liquidVoronoiTransitionType != null)
-                        {
-                            foreach ((BiomeTraits traits, int percentage) tupel in biomeIndex[i, j])
-                            {
-                                if (tupel.traits.isVoronoiCave && tupel.traits.lakeType == liquidVoronoiTransitionType.Value) { liquidVoronoiTransition += tupel.percentage * 0.001f; }
-                                else if (tupel.traits.fillType == liquidVoronoiTransitionType.Value) { liquidVoronoiTransition += tupel.percentage * 0.001f; }
-                            }
-                        }
-
-                        bool isVoronoiLiquidTransitionZone = liquidVoronoiTransition > 0.95f;
-                        bool isVoronoiPool = false;
+                        bool isLiquidVoronoiTransition = false;
+                        if (voronoiStateArray != null) { voronoiStepTwo(voronoiStateArray, terrainValues, i, j, ref score1, ref score2, ref bound1, ref bound2, ref isLiquidVoronoiTransition); }
 
                         foreach ((BiomeTraits traits, int percentage) tupel in biomeIndex[i, j])
                         {
@@ -538,21 +586,7 @@ namespace Cave
                             if (tupel.traits.isDegraded) { valueModifier += 3 * mult * Max(sawBladeSeesaw(value1, 13), sawBladeSeesaw(value2, 11)); }
                             if (tupel.traits.isSlimy) { valueModifier -= mult * Min(0, 20 * (Sin(i + mod2 * 0.3f + 0.5f, 16) + Sin(j + mod2 * 0.3f + 0.5f, 16)) - 10); }
 
-                            if (tupel.traits.isVoronoiCave)
-                            {
-                                (float baseSeparatorScore, float rightScore, bool isLiquid, bool forceSolid) item = voronoiStateArray[i, j];
-                                score1 += mult * 0.15f * item.baseSeparatorScore;
-                                score2 += mult * 0.15f * item.baseSeparatorScore;
-                                bound1 += mult * 0.15f * item.rightScore;
-                                bound2 += mult * 0.15f * item.rightScore;
-                                if (item.forceSolid && mult < 0.9f && mult > 0.3f) { score1 -= 100000; score2 -= 100000; }
-                                if (item.isLiquid)
-                                {
-                                    isVoronoiPool = true;
-                                    if (Abs(mult - 0.55f) < 0.2f) { separatorScore += 1000 * (0.2f - Abs(mult - 0.55f)); }
-                                }
-                            }
-                            else
+                            if (!tupel.traits.isVoronoiCave)
                             {
                                 score1 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.one, value1, (i, j), mod2) + findTextureScore(tupel.traits.textureType.one, value2) + valueModifier);   // Swapping is normal !
                                 score2 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.two, value2, (i, j), mod2) + findTextureScore(tupel.traits.textureType.two, value1) + valueModifier);   // Cause it needs to be an independant noise !
@@ -565,13 +599,17 @@ namespace Cave
                         foreach ((int separatorType, int connectionLayer) tupel in separatorDict.Keys) { separatorScore += findSeparatorScore(tupel.separatorType, separatorDict[tupel]); }
                         foreach ((int separatorType, int connectionLayer) tupel in antiSeparatorDict.Keys) { antiSeparatorScore += findSeparatorScore(tupel.separatorType, antiSeparatorDict[tupel]); }
                         separatorScore = Max(0, separatorScore - (antiSeparatorScore < 10 ? 0 : antiSeparatorScore));  // tried to fix the frozen ocean biome border but uhhhh not sure it's gonna work
+                        if (isLiquidVoronoiTransition) { separatorScore = 0; score1 += 0; score1 += 0; }  // If tile is a Voronoi pool going into an ocean of the same type, don't put separator to allow the junction
                         float separatorScore2 = Max(0, 1 - separatorScore * 0.001f);
-                        if (isVoronoiLiquidTransitionZone && isVoronoiPool) { separatorScore = 0; score1 += 10000; score2 += 10000; }
 
                         scoreArray[i, j] = (
                             score1 * separatorScore2 - separatorScore - bound1 * separatorScore2,
                             score2 * separatorScore2 - separatorScore - bound2 * separatorScore2,
                             separatorScore);
+
+                        double maxScore = Max(scoreArray[i, j].baseScore1, scoreArray[i, j].baseScore2);
+                        maxScore = 10 * Sign(maxScore) * Math.Sqrt(Abs(maxScore * 0.1f)) + maxScore * 0.05f;
+                        scoreBitmap.SetPixel(i, j, ColorFromHSV(10000 - maxScore, 0.8, 0.8));
                     }
                 }
 
@@ -585,7 +623,11 @@ namespace Cave
 
                             if (scoreArray[i, j].baseScore1 > 0 || scoreArray[i, j].baseScore2 > 0)
                             {
-                                if (mainBiomeTraits.isVoronoiCave && voronoiStateArray[i, j].isLiquid) { fillStates[i, j] = getTileTraits(mainBiomeTraits.lakeType); }
+                                if (mainBiomeTraits.isVoronoiCave && voronoiStateArray[i, j].liquidScore >= 0)
+                                {
+                                    if (voronoiStateArray[i, j].forceSolid) { fillStates[i, j] = getTileTraits(mainBiomeTraits.tileType); }
+                                    else { fillStates[i, j] = getTileTraits(mainBiomeTraits.lakeType); }
+                                }
                                 else { fillStates[i, j] = getTileTraits(mainBiomeTraits.fillType); }
                             }
                             else { fillStates[i, j] = getTileTraits(mainBiomeTraits.tileType); quartileFilledArray[(i > 16 ? 1 : 0) + (j > 16 ? 2 : 0)] = true; }
@@ -1933,7 +1975,8 @@ namespace Cave
 
                             int wetlandness = calculateBiome(ref forestness, humidity, (700 - Max(0, oceanity - 512), 999999));
                             calculateAndAddBiome(listo, (3, 4), ref wetlandness, salinity, (512, 999999));    // mangrove
-                            testAddBiome(listo, (3, 3), wetlandness);    // Add rest as swamp
+                            calculateAndAddBiome(listo, (3, 6), ref wetlandness, toxicity, (-999999, 350));   // Bayou
+                            testAddBiome(listo, (3, 3), wetlandness);   // Add rest as swamp
 
                             calculateAndAddBiome(listo, (3, 1), ref forestness, temperature, (-999999, 400));   // conifer forest
                             calculateAndAddBiome(listo, (3, 2), ref forestness, temperature, (650, 999999));    // jungle
@@ -2006,11 +2049,17 @@ namespace Cave
                 }
                 else if (dimensionType == (-1, 0)) // type == -1, TEST dimension
                 {
+                    calculateAndAddBiome(listo, (3, 4), ref percentageFree, humidity, (512, 999999)); // Mangrove
+                    calculateAndAddBiome(listo, (2, 1), ref percentageFree, temperature, (850, 999999)); // Marsh
+                    calculateAndAddBiome(listo, (3, 3), ref percentageFree, salinity, (700, 999999)); // Swamp
+                    testAddBiome(listo, (3, 6), percentageFree); // Bayou
+                    /*
                     calculateAndAddBiome(listo, (2, 6), ref percentageFree, temperature, (800, 999999)); // Cold desert
                     calculateAndAddBiome(listo, (2, 7), ref percentageFree, humidity, (750, 999999)); // Temperate desert
                     calculateAndAddBiome(listo, (2, 5), ref percentageFree, humidity, (500, 999999)); // Temperate desert
                     calculateAndAddBiome(listo, (2, 3), ref percentageFree, salinity, (512, 999999)); // Baobab desert
                     testAddBiome(listo, (2, 2), percentageFree); // Hot desert
+                    */
                 }
             }
 

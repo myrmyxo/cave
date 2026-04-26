@@ -220,6 +220,7 @@ namespace Cave
             // Lupin !!!
             // lily of the valleys
             // Frankinsence
+            // Kapok tree (the cool amazon one)
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.
@@ -282,7 +283,7 @@ namespace Cave
             if (e.KeyCode == Keys.K && !dimensionChangePress) { craftPress = true; }
             if (e.KeyCode == Keys.M) { debugMode = !debugMode; }
             if (e.KeyCode == Keys.L && !craftPress) { dimensionChangePress = true; }
-            if (e.KeyCode == Keys.O && !specificDebugTestPress) { specificDebugTestPress = true; }
+            if (e.KeyCode == Keys.O) { specificDebugTestPress = !specificDebugTestPress; }
             if ((Control.ModifierKeys & Keys.Shift) != 0) { shiftPress = true; }
         }
         private void KeyIsUp(object sender, KeyEventArgs e)
@@ -598,6 +599,11 @@ namespace Cave
 
 
 
+        public static double Max(double a, double b)
+        {
+            if (a > b) { return a; }
+            return b;
+        }
         public static float Max(float a, float b)
         {
             if (a > b) { return a; }
@@ -649,6 +655,12 @@ namespace Cave
         {
             if (Abs(a) > Abs(b)) { return a; }
             return b;
+        }
+        public static double Clamp(double min, double value, double max)
+        {
+            if (value > max) { return max; }
+            if (value < min) { return min; }
+            return value;
         }
         public static float Clamp(float min, float value, float max)
         {
@@ -739,6 +751,11 @@ namespace Cave
             if (a >= 0) { return 1; }
             return -1;
         }
+        public static int Sign(double a)
+        {
+            if (a >= 0) { return 1; }
+            return -1;
+        }
         public static int SignZero(int a)
         {
             if (a == 0) { return 0; }
@@ -750,6 +767,11 @@ namespace Cave
             if (a == 0) { return 0; }
             if (a > 0) { return 1; }
             return -1;
+        }
+        public static double Abs(double a)
+        {
+            if (a >= 0) { return a; }
+            return -a;
         }
         public static float Abs(float a)
         {

@@ -378,7 +378,8 @@ namespace Cave
             public ((int, int, int, int), (bool, bool, bool))? eW;
 
             public int[,] fS;
-            public int[] oIA;   // offsets indexes array (for all the little ints)
+            public int[] oIA;       // offsets indexes array (for all the little ints)
+            public float[] oIAF;    // offsets indexes array (for all the little floats)
 
             public List<PlantElementJson> pEs;
             public PlantElementJson(PlantElement plantElement)
@@ -395,7 +396,8 @@ namespace Cave
                 gR = plantElement.growthLevel;
                 fGSVF = plantElement.forceGrowthSpeedVariationFactor;
                 fS = fillstatesToArray(plantElement.fillStates);
-                oIA = new int[10] { plantElement.currentFrameArrayIdx, plantElement.frameArrayOffset, plantElement.currentChildArrayIdx, plantElement.childArrayOffset, plantElement.currentDirectionArrayIdx, plantElement.directionArrayOffset, plantElement.currentModArrayIdx, plantElement.modArrayOffset, plantElement.currentElementWideningArrayIdx, plantElement.ElementWideningArrayOffset };
+                oIA = new int[6] { plantElement.currentFrameArrayIdx, plantElement.frameArrayOffset, plantElement.currentChildArrayIdx, plantElement.currentDirectionArrayIdx, plantElement.currentModArrayIdx, plantElement.currentElementWideningArrayIdx };
+                oIAF = new float[4] { plantElement.childArrayOffset, plantElement.directionArrayOffset, plantElement.modArrayOffset, plantElement.ElementWideningArrayOffset };
                 pEs = new List<PlantElementJson>();
                 foreach (PlantElement childPlantElement in plantElement.childPlantElements)
                 {

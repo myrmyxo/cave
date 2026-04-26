@@ -482,13 +482,13 @@ namespace Cave
             public int frameArrayOffset = 0;
 
             public int currentChildArrayIdx = -1;
-            public int childArrayOffset = 1;
+            public float childArrayOffset = 1;
             public int currentDirectionArrayIdx = -1;
-            public int directionArrayOffset = 1;
+            public float directionArrayOffset = 1;
             public int currentModArrayIdx = -1;
-            public int modArrayOffset = 1;
+            public float modArrayOffset = 1;
             public int currentElementWideningArrayIdx = -1;
-            public int ElementWideningArrayOffset = 1;
+            public float ElementWideningArrayOffset = 1;
 
             public Dictionary<(int type, int subType), Color> colorOverrideDict = null;
             public Dictionary<(int x, int y), (int type, int subType)> fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
@@ -517,13 +517,14 @@ namespace Cave
                 currentFrameArrayIdx = plantElementJson.oIA[0];
                 frameArrayOffset = plantElementJson.oIA[1];
                 currentChildArrayIdx = plantElementJson.oIA[2];
-                childArrayOffset = plantElementJson.oIA[3];
-                currentDirectionArrayIdx = plantElementJson.oIA[4];
-                directionArrayOffset = plantElementJson.oIA[5];
-                currentModArrayIdx = plantElementJson.oIA[6];
-                modArrayOffset = plantElementJson.oIA[7];
-                currentElementWideningArrayIdx = plantElementJson.oIA[8];
-                ElementWideningArrayOffset = plantElementJson.oIA[9];
+                currentDirectionArrayIdx = plantElementJson.oIA[3];
+                currentModArrayIdx = plantElementJson.oIA[4];
+                currentElementWideningArrayIdx = plantElementJson.oIA[5];
+
+                childArrayOffset = plantElementJson.oIAF[0];
+                directionArrayOffset = plantElementJson.oIAF[1];
+                modArrayOffset = plantElementJson.oIAF[2];
+                ElementWideningArrayOffset = plantElementJson.oIAF[3];
 
                 fillStates = arrayToFillstates(plantElementJson.fS);
 
@@ -857,7 +858,7 @@ namespace Cave
                     foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item in traits.plantGrowthRules.childrenOnGrowthStart)
                     {
                         if (childrenPassed && passedChildren.Contains(item.child)) { continue; }
-                        if (item.chance != 100 && getRandValue((int)maxGrowthLevel + childArrayOffset + 20000, 100) > item.chance) { continue; }
+                        if (item.chance != 100 && getRandValue((int)maxGrowthLevel + (int)childArrayOffset + 20000, 100) > item.chance) { continue; }
                         makeBabyStart(item, lastDrawPos, 0, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset);
                         offset += 1;
                     }
@@ -894,7 +895,7 @@ namespace Cave
                     }
                     if (growthLevel > maxGrowthLevel)   // If was final growth
                     {
-                        if (traits.deathChild != null && (traits.deathChild.Value.chance == 100 || getRandValue((int)maxGrowthLevel + childArrayOffset + 20000, 100) <= traits.deathChild.Value.chance)) { makeBabyEnd((traits.deathChild.Value.plantElement, 0, traits.deathChild.Value.offset, 0, 100), lastDrawPos, growthLevel, 1, true); }
+                        if (traits.deathChild != null && (traits.deathChild.Value.chance == 100 || getRandValue((int)maxGrowthLevel + (int)childArrayOffset + 20000, 100) <= traits.deathChild.Value.chance)) { makeBabyEnd((traits.deathChild.Value.plantElement, 0, traits.deathChild.Value.offset, 0, 100), lastDrawPos, growthLevel, 1, true); }
                         if (traits.transitionToOtherPlantElementOnGrowthEnd != null)
                         {
                             transitionToOtherPlantElement(traits.transitionToOtherPlantElementOnGrowthEnd.Value);
@@ -916,13 +917,13 @@ namespace Cave
                         {
                             ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance) item = traits.plantGrowthRules.directionGrowthArray[(currentDirectionArrayIdx + 1) % traits.plantGrowthRules.directionGrowthArray.Length];
 
-                            int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue(directionArrayOffset + 10000, item.changeFrame.range + 1)));
+                            int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue((int)directionArrayOffset + 10000, item.changeFrame.range + 1)));
                             if (growthLevelToTest - directionArrayOffset < cost) { break; }
 
                             directionArrayOffset += cost;
                             currentDirectionArrayIdx++;
 
-                            if (item.chance == 100 || getRandValue(growthLevelToTest + directionArrayOffset + 20000, 100) <= item.chance)
+                            if (item.chance == 100 || getRandValue(growthLevelToTest + (int)directionArrayOffset + 20000, 100) <= item.chance)
                             {
                                 if (traits.plantGrowthRules.rotationalDG) { growthDirection = directionPositionArray[PosMod(directionPositionDictionary[growthDirection] + item.direction.x * (item.canBeFlipped.x ? baseDirection.x : 1), 8)]; }
                                 else { growthDirection = (item.direction.x * (item.canBeFlipped.x ? (item.canBeFlipped.independant ? (rand.Next(2) * 2 - 1) : baseDirection.x) : 1), item.direction.y * (item.canBeFlipped.y ? (item.canBeFlipped.independant ? (rand.Next(2) * 2 - 1) : baseDirection.y) : 1)); }
@@ -936,13 +937,13 @@ namespace Cave
                     {
                         ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance) item = traits.plantGrowthRules.growthPosModArray[(currentModArrayIdx + 1) % traits.plantGrowthRules.growthPosModArray.Length];
 
-                        int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue(modArrayOffset + 20000, item.changeFrame.range + 1)));
+                        int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue((int)modArrayOffset + 20000, item.changeFrame.range + 1)));
                         if (growthLevelToTest - modArrayOffset >= cost)
                         {
                             modArrayOffset += cost;
                             currentModArrayIdx++;
 
-                            if (item.chance == 100 || getRandValue(growthLevelToTest + modArrayOffset + 20000, 100) <= item.chance) { drawPos = (drawPos.x + item.mod.x * (item.canBeFlipped.x ? (item.canBeFlipped.independant ? (rand.Next(2) * 2 - 1) : baseDirection.x) : 1), drawPos.y + item.mod.y * (item.canBeFlipped.y ? (item.canBeFlipped.independant ? (rand.Next(2) * 2 - 1) : baseDirection.y) : 1)); }
+                            if (item.chance == 100 || getRandValue(growthLevelToTest + (int)modArrayOffset + 20000, 100) <= item.chance) { drawPos = (drawPos.x + item.mod.x * (item.canBeFlipped.x ? (item.canBeFlipped.independant ? (rand.Next(2) * 2 - 1) : baseDirection.x) : 1), drawPos.y + item.mod.y * (item.canBeFlipped.y ? (item.canBeFlipped.independant ? (rand.Next(2) * 2 - 1) : baseDirection.y) : 1)); }
                         }
                     }
 
@@ -1012,7 +1013,7 @@ namespace Cave
                     {
                         (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame) item = traits.plantGrowthRules.elementWideningArray[(currentElementWideningArrayIdx + 1) % traits.plantGrowthRules.elementWideningArray.Length];
 
-                        int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue(ElementWideningArrayOffset + 60000, item.changeFrame.range + 1)));
+                        int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue((int)ElementWideningArrayOffset + 60000, item.changeFrame.range + 1)));
                         if (growthLevelToTest - ElementWideningArrayOffset >= cost)
                         {
                             currentElementWidening = item.Item1;
@@ -1029,14 +1030,14 @@ namespace Cave
                         {
                             if (growthLevelToTest == traits.plantGrowthRules.growthAbortiveChild.Value.growthLevel.baseValue + getRandValue(seed + 35893, traits.plantGrowthRules.growthAbortiveChild.Value.growthLevel.variation + 1))
                             {
-                                int sameChance = getRandValue((int)maxGrowthLevel + childArrayOffset + 8539213, 100);
+                                int sameChance = getRandValue((int)maxGrowthLevel + (int)childArrayOffset + 8539213, 100);
                                 int successfulAbortiveChildren = 0;
                                 drawPos = lastDrawPos;
                                 int offset = 0;
                                 foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, int chance) item in traits.plantGrowthRules.growthAbortiveChild.Value.array)
                                 {
                                     offset += 1;
-                                    if (item.chance != 100 && (traits.plantGrowthRules.sameChanceForEndChildren ? sameChance : getRandValue((int)maxGrowthLevel + childArrayOffset + 20000 + offset, 100)) > item.chance) { continue; }
+                                    if (item.chance != 100 && (traits.plantGrowthRules.sameChanceForEndChildren ? sameChance : getRandValue((int)maxGrowthLevel + (int)childArrayOffset + 20000 + offset, 100)) > item.chance) { continue; }
                                     if (makeBabyEndAbortive(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset, !traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd)) { successfulAbortiveChildren++; }
                                 }
                                 if (traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd && successfulAbortiveChildren > 0) { transmitStickyChildren(successfulAbortiveChildren); }
@@ -1049,10 +1050,10 @@ namespace Cave
                     {
                         ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance) item = traits.plantGrowthRules.childArray[(currentChildArrayIdx + 1) % traits.plantGrowthRules.childArray.Length];
 
-                        int cost = (int)(growthSpeedVariation * (item.birthFrame.frame + getRandValue(childArrayOffset + 30000, item.birthFrame.range + 1)));
+                        int cost = (int)(growthSpeedVariation * (item.birthFrame.frame + getRandValue((int)childArrayOffset + 30000, item.birthFrame.range + 1)));
                         if (growthLevelToTest - childArrayOffset >= cost)
                         {   // This part here will make it so it the baby chance is not 100 AND fails it still proceeds in the array even without spawning the bebe
-                            if ((item.chance < 100 && getRandValue(growthLevelToTest + childArrayOffset + 20000, 100) > item.chance) || makeBabyNormal(item, drawPos, growthLevelToTest))  // Only increase cost and position when the growth of the child succeeds. Might add that as a parameter idk to make some kids skippable
+                            if ((item.chance < 100 && getRandValue(growthLevelToTest + (int)childArrayOffset + 20000, 100) > item.chance) || makeBabyNormal(item, drawPos, growthLevelToTest))  // Only increase cost and position when the growth of the child succeeds. Might add that as a parameter idk to make some kids skippable
                             {
                                 currentChildArrayIdx++;
                                 childArrayOffset += cost;
@@ -1065,7 +1066,7 @@ namespace Cave
 
                     if (growthLevelToTest == maxGrowthLevel + 1) // Should only happen when plants has childrenOnGrowthEnd and has done its last growth already
                     {
-                        int sameChance = getRandValue((int)maxGrowthLevel + childArrayOffset + 582012, 100);
+                        int sameChance = getRandValue((int)maxGrowthLevel + (int)childArrayOffset + 582012, 100);
                         int successfulEndChildren = 0;
                         if (traits.plantGrowthRules.childrenOnGrowthEnd != null)
                         {
@@ -1074,7 +1075,7 @@ namespace Cave
                             foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item in traits.plantGrowthRules.childrenOnGrowthEnd)
                             {
                                 offset += 1;
-                                if (item.chance != 100 && (traits.plantGrowthRules.sameChanceForEndChildren ? sameChance : getRandValue((int)maxGrowthLevel + childArrayOffset + 20000 + offset, 100)) > item.chance) { continue; }
+                                if (item.chance != 100 && (traits.plantGrowthRules.sameChanceForEndChildren ? sameChance : getRandValue((int)maxGrowthLevel + (int)childArrayOffset + 20000 + offset, 100)) > item.chance) { continue; }
                                 if (makeBabyEnd(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset, !traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd)) { successfulEndChildren++; }
                             }
                         }
@@ -1085,7 +1086,7 @@ namespace Cave
                             foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (float baseValue, float variation)? childMaxGrowthVariation, (float baseValue, float variation)? forceGrowthSpeedVariationFactor, int chance) item in traits.plantGrowthRules.childrenOnGrowthEndSpecial)
                             {
                                 offset += 1;
-                                if (item.chance != 100 && (traits.plantGrowthRules.sameChanceForEndChildren ? sameChance : getRandValue((int)maxGrowthLevel + childArrayOffset + 284392 + offset, 100)) > item.chance) { continue; }
+                                if (item.chance != 100 && (traits.plantGrowthRules.sameChanceForEndChildren ? sameChance : getRandValue((int)maxGrowthLevel + (int)childArrayOffset + 284392 + offset, 100)) > item.chance) { continue; }
                                 if (makeBabyEndSpecial(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset, !traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd)) { successfulEndChildren++; }
                             }
                         }

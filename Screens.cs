@@ -77,7 +77,7 @@ namespace Cave
                 bool isPngToExport = false;
 
                 if (true) { forceBiome = (-1, 0); isMonoeBiomeToPut = false; }
-                if (false) { forceBiome = (2, 7); isMonoeBiomeToPut = true; }
+                if (false) { forceBiome = (3, 3); isMonoeBiomeToPut = true; }
 
                 int PNGsize = 150;
                 PNGsize = 100;
@@ -1097,10 +1097,21 @@ namespace Cave
                 gg.Clear(Color.White);
                 gg.Dispose();
 
-                List<(int x, int y, int radius, Color color)> lightPositions = new List<(int x, int y, int radius, Color color)>();
-
                 Player player = game.playerList[0];
                 (int x, int y) camPos = (player.camPosX - game.zoomLevel, player.camPosY - game.zoomLevel);
+
+                if (specificDebugTestPress)
+                {
+                    drawChunkScoresOnScreen(gameBitmap, camPos, isPngToBeExported);
+
+                    Bitmap finalBitmap2 = game.finalBitmap;
+                    if (game.PNGmultiplicator > 1) { pasteImage(finalBitmap2, gameBitmap, (0, 0), (0, 0), game.PNGmultiplicator); }
+
+                    finalBitmap2.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                    return finalBitmap2;
+                }
+
+                List<(int x, int y, int radius, Color color)> lightPositions = new List<(int x, int y, int radius, Color color)>();
 
                 drawChunksOnScreen(gameBitmap, camPos, isPngToBeExported);
 
@@ -1132,6 +1143,20 @@ namespace Cave
 
                 finalBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 return finalBitmap;
+            }
+            public void drawChunkScoresOnScreen(Bitmap gameBitmap, (int x, int y) camPos, bool isPngToBeExported)
+            {
+                Chunk chunko;
+                for (int i = -game.effectiveRadius; i <= game.effectiveRadius; i++)
+                {
+                    for (int j = -game.effectiveRadius; j <= game.effectiveRadius; j++)
+                    {
+                        chunko = getChunkFromChunkPos((chunkX + i, chunkY + j), !isPngToBeExported);
+                        if (chunko.scoreBitmap is null) { continue; }
+                        pasteImage(gameBitmap, chunko.scoreBitmap, (chunko.pos.x * 32, chunko.pos.y * 32), camPos);
+                        //if (debugMode) { drawPixel(Color.Red, (chunko.position.x*32, chunko.position.y*32)); } // if want to show chunk origin
+                    }
+                }
             }
             public void drawChunksOnScreen(Bitmap gameBitmap, (int x, int y) camPos, bool isPngToBeExported)
             {
