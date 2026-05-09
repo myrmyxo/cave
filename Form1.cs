@@ -221,6 +221,7 @@ namespace Cave
             // lily of the valleys
             // Frankinsence
             // Kapok tree (the cool amazon one)
+            // Water Tupelo in Bayous
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.
@@ -377,13 +378,12 @@ namespace Cave
 
             bitmap.Save($"{currentDirectory}\\BiomeDiagrams\\biomeDiagram   -{name}-   {dicto[fixedValuesIdx[0]]}={fixedValues[0]}, {dicto[fixedValuesIdx[1]]}={fixedValues[1]}, {dicto[fixedValuesIdx[2]]}={fixedValues[2]}, {dicto[fixedValuesIdx[3]]}={fixedValues[3]}, {dicto[fixedValuesIdx[4]]}={fixedValues[4]}, .png");
         }
-        public static void makeSTATS(Screens.Screen screen)
+        public static void makeSTATS(Screens.Screen screen, int chunksToSample)
         {
             spawnEntitiesBool = false;
             spawnPlants = false;
 
             Dictionary<string, float> biomePercentageStats = new Dictionary<string, float>();
-            int chunksToSample = 25000;
             for (int i = 0; i < chunksToSample; i++)
             {
                 (int x, int y) chunkPos = (rand.Next(-1000000, 1000000), rand.Next(-1000000, 1000000));

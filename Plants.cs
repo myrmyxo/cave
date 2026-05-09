@@ -245,7 +245,7 @@ namespace Cave
             {
                 isStable = false;
                 int maxIterations = -1;
-                if (plantElement.traits.isMold) { maxIterations = 2 + rand.Next(100); }
+                if (plantElement.traits.plantGrowthRules != null && plantElement.traits.plantGrowthRules.isPropagativeGrowth) { maxIterations = 2 + rand.Next(100); }
                 int i = 0;
                 while (!isStable && (maxIterations == -1 || i < maxIterations))
                 {
@@ -289,13 +289,14 @@ namespace Cave
             }
             public bool testIfPlantPositionValid()
             {
-                if (screen.getChunkFromPixelPos((posX, posY)).fillStates[PosMod(posX), PosMod(posY)].isSolid) { return false; } // Full tile -> Fail
-                if (traits.isEveryAttach)
+                if (screen.getTileContent((posX, posY)).isSolid) { return false; } // Full tile -> Fail
+                if (traits.isJesus) { if (screen.getTileContent((posX, posY)).isLiquid && screen.getTileContent((posX, posY + 1)).isAir) { return true; } }
+                else if (traits.isEveryAttach)   // If not solid tile in the 8 neighbouring tile failscreen.getTileContent((posX, posY))
                 {
                     foreach ((int x, int y) mod in neighbourArray) { if (screen.getTileContent((posX + mod.x, posY + mod.y)).isSolid) { return true; } }
                 }
-                else if (traits.isSide) { if (!screen.getChunkFromPixelPos((posX - 1, posY)).fillStates[PosMod(posX - 1), PosMod(posY)].isAir || !screen.getChunkFromPixelPos((posX + 1, posY)).fillStates[PosMod(posX + 1), PosMod(posY)].isAir) { return true; } }   // tile left XOR right full -> Success
-                else if (screen.getChunkFromPixelPos((posX, posY + (traits.isCeiling ? 1 : -1))).fillStates[PosMod(posX), PosMod(posY + (traits.isCeiling ? 1 : -1))].isSolid) { return true; }    // tile under/over full -> Success
+                else if (traits.isSide) { if (!screen.getTileContent((posX - 1, posY)).isAir || !screen.getTileContent((posX + 1, posY)).isAir) { return true; } }  // tile left XOR right full -> Success
+                else if (screen.getTileContent((posX, posY + (traits.isCeiling ? 1 : -1))).isSolid) { return true; }    // tile under/over full -> Success
                 return false;
             }
             public PlantElement[] returnAnimatedPlantElements(List<PlantElement> plantElements = null)
@@ -763,7 +764,7 @@ namespace Cave
                     else if (!testPositionEmpty((1, 0))) { baseDirection = (-1, baseDirection.y); }
                     if (baseDirection == (0, 0)) { return 0; }  // Plant was floating. Wadafak.
                 }
-                else if (traits.isMold) { baseDirection = (0, 0); }  // temp, so mold doesn't get moved lol
+                else if (traits.plantGrowthRules != null && traits.plantGrowthRules.isPropagativeGrowth) { baseDirection = (0, 0); }  // temp, so mold doesn't get moved lol
                 else if (motherPlant.traits.isCeiling) { baseDirection = (0, -1); }
                 else if (motherPlant.traits.isSide)
                 {
@@ -1103,7 +1104,7 @@ namespace Cave
                         goto SuccessButStop;  // Necessary else might make children again when getting loaded
                     }
 
-                    if (traits.isMold)
+                    if (traits.plantGrowthRules.isPropagativeGrowth)
                     {
                         if (growthLevel >= maxGrowthLevel) { goto Fail; }    // If overgrown
 
@@ -1115,10 +1116,25 @@ namespace Cave
                                 drawPos = getRandomKey(fillStates);
                                 Chunk chunko = motherPlant.screen.getChunkFromPixelPos(motherPlant.getRealPos(drawPos));
                                 if (chunko.fireDict != null && chunko.fireDict.ContainsKey(motherPlant.getRealPos(drawPos))) { goto FailButContinue; }  // Abort if tile to propagate from is one fire lol
-                                int rando = rand.Next(5);
-                                if (rando != 4) { drawPos = (drawPos.x + neighbourArray[rando].Item1, drawPos.y + neighbourArray[rando].Item2); }
+                                
+                                if (traits.plantGrowthRules.canPropagateDiagonally)
+                                {
+                                    int rando = rand.Next(8);
+                                    drawPos = (drawPos.x + directionPositionArray[rando].Item1, drawPos.y + directionPositionArray[rando].Item2);
+                                }
+                                else
+                                {
+                                    int rando = rand.Next(4);
+                                    drawPos = (drawPos.x + neighbourArray[rando].Item1, drawPos.y + neighbourArray[rando].Item2);
+                                }
+
+                                if (traits.plantGrowthRules.requiredTileStateToPropagate != null)
+                                {
+                                    TileTraits tileTraits = getTileFromRelPos((drawPos.x + traits.plantGrowthRules.requiredTileStateToPropagate.Value.pos.x, drawPos.y + traits.plantGrowthRules.requiredTileStateToPropagate.Value.pos.y));
+                                    if ((traits.plantGrowthRules.requiredTileStateToPropagate.Value.state == 0 && !tileTraits.isAir) || (traits.plantGrowthRules.requiredTileStateToPropagate.Value.state == 1 && !tileTraits.isLiquid) || (traits.plantGrowthRules.requiredTileStateToPropagate.Value.state == 2 && !tileTraits.isSolid)) { goto FailButContinue; }
+                                }
                             }
-                            if (tryMoldConversion(drawPos)) { goto Success; }
+                            if (traits.plantGrowthRules.tileToConvertToPropagative != null && fillStates.Count > 0) { tryPropagativeTileConversion(getRandomKey(fillStates), traits.plantGrowthRules.tileToConvertToPropagative.Value); }
                             if (!fillStates.ContainsKey(drawPos) && tryFill(drawPos, traits.plantGrowthRules.materalToFillWith)) { goto Success; }
                         }
                         goto FailButContinue;
@@ -1264,7 +1280,7 @@ namespace Cave
                     }
                 }
             }
-            public bool tryMoldConversion((int x, int y) pos)
+            public bool tryPropagativeTileConversion((int x, int y) pos, (int type, int subType) tileToConvertTo)
             {
                 if (!fillStates.ContainsKey(pos)) { return false; }
                 int moldyTiles = 0;
@@ -1287,7 +1303,7 @@ namespace Cave
             }
             public bool tryToMakeParticle()
             {
-                if (traits.isMold && fillStates.Count > 0)
+                if (traits.plantGrowthRules != null && traits.plantGrowthRules.isPropagativeGrowth && fillStates.Count > 0)
                 {
                     if (rand.Next(10) == 0)
                     {

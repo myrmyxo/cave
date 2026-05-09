@@ -498,7 +498,7 @@ namespace Cave
                     if (liquidVoronoiTransitionScore > 0.95f && oceanity > 0) { isLiquidVoronoiTransition = true; }
 
                     // Noise for variation in height of bottom of pools
-                    int noiseScore = Abs((int)(terrainValues[i, j, 1] * voronoiNoisePonderation));
+                    int noiseScore = Abs((int)(terrainValues[i, j, 1] * voronoiNoisePonderation));  // Put noisescore outside to have bumps and shit in bogs
 
                     // Apply max liquid depth (replace liquid under max depth by solid), with smoothing of the pool's edge
                     float voronoiDepthPercentage = item.liquidScore / voronoiDepth;
@@ -937,6 +937,37 @@ namespace Cave
 
                         noiseValue = LCGxy(((7483231, j + mod), 743175), screen.seed) % 500 + LCGxy(((7483231, j + mod + 1), 743175), screen.seed) % 500;
                     }
+                    else if (tFT.transitionRules == 13) // Peat
+                    {
+                        valueRequired += tFT.baseThreshold;
+                        noiseValue = noiseValue1;
+                        TileTraits tileTested = screen.getTileContent((pos.x * 32 + i, pos.y * 32 + j - 1), false);
+
+                        if (tileTested.isSolid)
+                        {
+                            tileTested = screen.getTileContent((pos.x * 32 + i, pos.y * 32 + j + 1), false);
+                            if (tileTested.isAir) { typeToFill = (2, 1); }
+                            else { typeToFill = (2, 3); }
+
+                            for (int k = 0; k < 10; k++)
+                            {
+                                (int valid, int invalid) score = sandScoreArray[k];
+
+                                tileTested = screen.getTileContent((pos.x * 32 + i, pos.y * 32 + j + k + 1), false);
+                                if (tileTested.isSolid) { noiseValue += score.invalid; }
+                                else { noiseValue += score.valid; }
+
+                                tileTested = screen.getTileContent((pos.x * 32 + i - 1, pos.y * 32 + j + k + 1), false);
+                                if (tileTested.isSolid) { noiseValue += score.invalid * 0.2f; }
+                                else { noiseValue += score.valid * 0.2f; }
+
+                                tileTested = screen.getTileContent((pos.x * 32 + i + 1, pos.y * 32 + j + k + 1), false);
+                                if (tileTested.isSolid) { noiseValue += score.invalid * 0.2f; }
+                                else { noiseValue += score.valid * 0.2f; }
+                            }
+                        }
+                        else { noiseValue -= 1000; }
+                    }
                     else { noiseValue = -999999; }
 
                     if (noiseValue >= valueRequired)
@@ -1088,7 +1119,7 @@ namespace Cave
                 maturity = 2;
                 manyValues = null;
 
-                (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) spawnLocations = getSpawnLocations();
+                (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithAirOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) spawnLocations = getSpawnLocations();
 
                 BiomeTraits mainBiomeTraits = biomeIndex[16, 16][0].traits;  // Middle of chunk
                 if (spawnEntitiesBool) { spawnChunkEntities(mainBiomeTraits, spawnLocations); }
@@ -1104,7 +1135,7 @@ namespace Cave
 
                 saveChunk(this);
             }
-            public (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) getSpawnLocations()
+            public (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithAirOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) getSpawnLocations()
             {
                 HashSet<(int x, int y)> airTilesWithSoilUnder = new HashSet<(int x, int y)>();
                 HashSet<(int x, int y)> airTilesWithSoilNext = new HashSet<(int x, int y)>();
@@ -1112,6 +1143,7 @@ namespace Cave
                 HashSet<(int x, int y)> liquidTilesWithSoilUnder = new HashSet<(int x, int y)>();
                 HashSet<(int x, int y)> liquidTilesWithSoilNext = new HashSet<(int x, int y)>();
                 HashSet<(int x, int y)> liquidTilesWithSoilOver = new HashSet<(int x, int y)>();
+                HashSet<(int x, int y)> liquidTilesWithAirOver = new HashSet<(int x, int y)>();
                 HashSet<(int x, int y)> airTiles = new HashSet<(int x, int y)>();
                 HashSet<(int x, int y)> liquidTiles = new HashSet<(int x, int y)>();
                 HashSet<(int x, int y)> solidTiles = new HashSet<(int x, int y)>();
@@ -1137,14 +1169,16 @@ namespace Cave
                             liquidTiles.Add(randPos);
                             if (screen.getTileContent((randPos.x, randPos.y - 1)).isSolid) { liquidTilesWithSoilUnder.Add(randPos); }
                             if (screen.getTileContent((randPos.x - 1, randPos.y)).isSolid || screen.getTileContent((randPos.x + 1, randPos.y)).isSolid) { liquidTilesWithSoilNext.Add(randPos); }
-                            if (screen.getTileContent((randPos.x, randPos.y + 1)).isSolid) { liquidTilesWithSoilOver.Add(randPos); }
+                            tileTraits = screen.getTileContent((randPos.x, randPos.y + 1));
+                            if (tileTraits.isSolid) { liquidTilesWithSoilOver.Add(randPos); }
+                            else if (tileTraits.isAir) { liquidTilesWithAirOver.Add(randPos); }
                         }
                     }
                 }
 
-                return (airTilesWithSoilUnder, airTilesWithSoilNext, airTilesWithSoilOver, liquidTilesWithSoilUnder, liquidTilesWithSoilNext, liquidTilesWithSoilOver, airTiles, liquidTiles, solidTiles);
+                return (airTilesWithSoilUnder, airTilesWithSoilNext, airTilesWithSoilOver, liquidTilesWithSoilUnder, liquidTilesWithSoilNext, liquidTilesWithSoilOver, liquidTilesWithAirOver, airTiles, liquidTiles, solidTiles);
             }
-            public void spawnChunkEntities(BiomeTraits mainBiomeTraits, (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) spawnLocations)
+            public void spawnChunkEntities(BiomeTraits mainBiomeTraits, (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithAirOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) spawnLocations)
             {
                 HashSet<(int x, int y)> forbiddenPositions = new HashSet<(int x, int y)>();
                 foreach (((int type, int subType) type, float percentage) in mainBiomeTraits.entitySpawnTypes)
@@ -1205,7 +1239,7 @@ namespace Cave
                     }
                 }
             }
-            public void spawnChunkPlants(BiomeTraits mainBiomeTraits, (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) spawnLocations)
+            public void spawnChunkPlants(BiomeTraits mainBiomeTraits, (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithAirOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) spawnLocations)
             {
                 HashSet<(int x, int y)> forbiddenPositions = new HashSet<(int x, int y)>();
                 foreach (((int type, int subType) type, float percentage) in mainBiomeTraits.plantSpawnTypes)
@@ -1216,7 +1250,7 @@ namespace Cave
                     }
                 }
             }
-            public void testSpawnOneChunkPlant((int type, int subType) type, HashSet<(int x, int y)> forbiddenPositions, (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) spawnLocations, ((int x, int y) motherPos, (int x, int y) range)? propagation = null)
+            public void testSpawnOneChunkPlant((int type, int subType) type, HashSet<(int x, int y)> forbiddenPositions, (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithAirOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) spawnLocations, ((int x, int y) motherPos, (int x, int y) range)? propagation = null)
             {
                 PlantTraits traits = plantTraitsDict.ContainsKey(type) ? plantTraitsDict[type] : plantTraitsDict[(-1, 0)];
 
@@ -1239,7 +1273,8 @@ namespace Cave
                 (int x, int y) attachTileMod;
                 bool testOtherSide = false;
                 HashSet<(int x, int y)> setToUse;
-                if ((!traits.isAmphibious && !traits.isWater) || forceChooseAir)
+                if (traits.isJesus) { setToUse = spawnLocations.liquidTilesWithAirOver; attachTileMod = (0, 0); }   // For plants like bladderworts and lilypads
+                else if ((!traits.isAmphibious && !traits.isWater) || forceChooseAir)
                 {
                     if (traits.isEveryAttach)
                     {
@@ -1298,9 +1333,8 @@ namespace Cave
                     }
                 plantNeededFound:;
 
-                    TileTraits tileTraits = screen.getTileContent((spawnPos.x + attachTileMod.x, spawnPos.y + attachTileMod.y));
-                    if (forbiddenPositions.Contains(spawnPos) ||
-                        ((traits.soilType is null ? screen.getTileContent((spawnPos.x + attachTileMod.x, spawnPos.y + attachTileMod.y)).isSterile : !traits.soilType.Contains(screen.getTileContent((spawnPos.x + attachTileMod.x, spawnPos.y + attachTileMod.y)).type)) &&
+                    if (forbiddenPositions.Contains(spawnPos)) { continue; }
+                    if (((traits.soilType is null ? screen.getTileContent((spawnPos.x + attachTileMod.x, spawnPos.y + attachTileMod.y)).isSterile : !traits.soilType.Contains(screen.getTileContent((spawnPos.x + attachTileMod.x, spawnPos.y + attachTileMod.y)).type)) &&
       (!testOtherSide || (traits.soilType is null ? screen.getTileContent((spawnPos.x - attachTileMod.x, spawnPos.y + attachTileMod.y)).isSterile : !traits.soilType.Contains(screen.getTileContent((spawnPos.x - attachTileMod.x, spawnPos.y + attachTileMod.y)).type)))))
                     { continue; }
 
@@ -1973,7 +2007,7 @@ namespace Cave
                         {
                             int forestness = calculateBiome(ref temperateness, Min(illumination - 600), (0, 999999));    // normal forest
 
-                            int wetlandness = calculateBiome(ref forestness, humidity, (700 - Max(0, oceanity - 512), 999999));
+                            int wetlandness = calculateBiome(ref forestness, humidity, (700 - Clamp(0, oceanity - 512, 256), 999999));
                             calculateAndAddBiome(listo, (3, 4), ref wetlandness, salinity, (512, 999999));    // mangrove
                             calculateAndAddBiome(listo, (3, 6), ref wetlandness, toxicity, (-999999, 350));   // Bayou
                             testAddBiome(listo, (3, 3), wetlandness);   // Add rest as swamp
@@ -1983,16 +2017,17 @@ namespace Cave
                             calculateAndAddBiome(listo, (3, 5), ref forestness, acidity, (850, 999999));    // bluebell forest
                             testAddBiome(listo, (3, 0), forestness);    // Add rest as forest
 
-                            // -> if humidity is TOO LOW, no forests ? but deserts instead ?
-
-                            // low humidity : baobab forest ?????? desert ???
                             // -> Garrigue when alcaline ?
                         }
                         if (temperateness <= 0) { goto AfterTemperateTest; }
                         if (illumination > 350)
                         {
                             int prairieness = calculateBiome(ref temperateness, Min(illumination - 350), (0, 999999));
-                            calculateAndAddBiome(listo, (2, 1), ref prairieness, humidity, (700 - Max(0, oceanity - 512), 999999));    // Marsh
+
+                            int wetlandness = calculateBiome(ref prairieness, humidity, (700 - Clamp(0, oceanity - 512, 256), 999999));
+                            calculateAndAddBiome(listo, (2, 8), ref prairieness, (int)(600 + toxicity * 0.25f - temperature - oceanity * 0.25f), (0, 999999)); // Bog
+                            testAddBiome(listo, (2, 1), wetlandness);   // Add rest as marsh
+
                             testAddBiome(listo, (2, 0), prairieness);   // Add rest as flower forest (for now)
                         }
                         percentageFree += temperateness;    // if not all temperateness allocated a biome
@@ -2049,10 +2084,11 @@ namespace Cave
                 }
                 else if (dimensionType == (-1, 0)) // type == -1, TEST dimension
                 {
-                    calculateAndAddBiome(listo, (3, 4), ref percentageFree, humidity, (512, 999999)); // Mangrove
-                    calculateAndAddBiome(listo, (2, 1), ref percentageFree, temperature, (850, 999999)); // Marsh
-                    calculateAndAddBiome(listo, (3, 3), ref percentageFree, salinity, (700, 999999)); // Swamp
-                    testAddBiome(listo, (3, 6), percentageFree); // Bayou
+                    calculateAndAddBiome(listo, (2, 8), ref percentageFree, humidity, (512, 999999)); // Bog
+                    testAddBiome(listo, (2, 1), percentageFree); // Marsh
+                    // calculateAndAddBiome(listo, (2, 1), ref percentageFree, temperature, (850, 999999)); // Marsh
+                    // calculateAndAddBiome(listo, (3, 3), ref percentageFree, salinity, (700, 999999)); // Swamp
+                    // testAddBiome(listo, (3, 6), percentageFree); // Bayou
                     /*
                     calculateAndAddBiome(listo, (2, 6), ref percentageFree, temperature, (800, 999999)); // Cold desert
                     calculateAndAddBiome(listo, (2, 7), ref percentageFree, humidity, (750, 999999)); // Temperate desert
