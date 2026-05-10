@@ -278,6 +278,8 @@ namespace Cave
                 { (1, 4), new MaterialTraits("Grain", F:(75, 250), bT:((7, 0), true, 2),
                 col:famousColorRanges["CerealGrain"]                                                                    ) },
 
+                { (2, -1), new MaterialTraits("Petal 2 (for cool colors)", F:(75, 250), bT:((7, 0), true, 2), tOG:(2, 0, 3),
+                col:new ColorRange((170, 20, 30), (120, 0, 30), (150, -20, 30))                                         ) },
                 { (2, 0), new MaterialTraits("Petal", F:(75, 250), bT:((7, 0), true, 2),
                 col:new ColorRange((170, 20, 30), (120, 0, 30), (150, -20, 30))                                         ) },
                 { (2, 1), new MaterialTraits("Pollen", F:(75, 250), bT:((7, 0), true, 2),
@@ -1054,6 +1056,69 @@ namespace Cave
                 framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "SinglePixel", 1),
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), null) }) },
 
+                { (1, 4, 0), new PlantElementTraits("DragonsMouthOrchidStem", rET:(from number in Enumerable.Range(0, 3) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(1, 1), hPP:fHPP["Up2Gap"],
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((1, 4, 1), 0, (0, 1), 0, 100) }
+                )) },
+                { (1, 4, 1), new PlantElementTraits("DragonsMouthOrchidFlower",
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "SinglePixel", 1)
+                ) },
+
+                { (1, 5, 0), new PlantElementTraits("RosePogoniaStem", rET:(from number in Enumerable.Range(0, 4) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(2, 1), hPP:fHPP["Up2Gap"],
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((1, 5, 1), 0, (0, 1), 0, 100) }
+                )) },
+                { (1, 5, 1), new PlantElementTraits("RosePogoniaFlower",
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "SinglePixel", 1)
+                ) },
+
+                { (1, 6, 0), new PlantElementTraits("SmallWhiteLadysSlipperStem", rET:(from number in Enumerable.Range(0, 3) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(0, 1), hPP:fHPP["Up2Gap"],
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((1, 6, 1), 0, (0, 1), 0, 100) }
+                )) },
+                { (1, 6, 1), new PlantElementTraits("SmallWhiteLadysSlipperFlower",
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "SinglePixel", 1)
+                ) },
+
+                { (1, 7, 0), new PlantElementTraits("PoisonFlagStem", rET:(from number in Enumerable.Range(0, 6) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(3, 2), hPP:fHPP["Up2Gap"],
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[]{ ((1, 7, 1), 0, (0, 1), 0, 100) },
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((1, 7, -1), 5, (-1, 0), 0, 65 ), ((1, 7, -1), 5, (1, 0), 0, 35 ) },
+                    lC:true, lICO:1,
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (2, 1), 10), ((1, 0), (true, false, false), (3, 2), 60) }
+                )) },
+                { (1, 7, -1), new PlantElementTraits("PoisonFlagLeaf",
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(2, 1), sD:((0, 1), (true, false, false)), hPP:fHPP["Up1Gap"],
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 1), 100), }
+                ), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), null) }) },
+                { (1, 7, 1), new PlantElementTraits("PoisonFlagFlower",
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "SinglePixel", 1)
+                ) },
+
+                { (1, 8, 0), new PlantElementTraits("GoldenrodStem", rET:(from number in Enumerable.Range(0, 12) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(5, 3), hPP:fHPP["Up4Gap"],
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((1, 8, 3), 0, (0, 1), 0, 100) },
+                    C:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((1, 8, 1), 5, (-1, 0), 0, (0, 0), 100), ((1, 8, 1), 5, (1, 0), 0, (0, 0), 100),     ((1, 8, 2), 5, (-1, 0), 0, (1, 0), 100), ((1, 8, 2), 5, (1, 0), 0, (1, 0), 50),   ((1, 8, -1), 5, (-1, 1), 0, (0, 0), 100), ((1, 8, -1), 5, (1, 1), 0, (1, 0), 75),   ((1, 8, 4), 5, (-1, 1), 0, (1, 0), 100), ((1, 8, 4), 5, (1, 1), 0, (1, 0), 100), ((1, 8, 4), 5, (-1, 1), 0, (1, 0), 100), ((1, 8, 4), 5, (1, 1), 0, (1, 0), 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (2, 1), 35) }
+                )) },
+                { (1, 8, -1), new PlantElementTraits("GoldenrodBranch",
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(1, 0),
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((1, 8, 4), 5, (1, 1), 0, 100) }
+                )) },
+                { (1, 8, 1), new PlantElementTraits("GoldenrodLeaf", fMG:(1, 0),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (1, 0) }, "LongHorizontalBar", 10),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((110, -5, 15), (135, -5, 15), (55, 10, 10))) }) },
+                { (1, 8, 2), new PlantElementTraits("GoldenrodLeafShort",
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (1, 0) }, "SinglePixel", 1),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((110, -5, 15), (135, -5, 15), (55, 10, 10))) }) },
+                { (1, 8, 3), new PlantElementTraits("GoldenrodFlowerVertical", fMG:(1, 1),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "LongVerticalBar", 10),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), null) }) },
+                { (1, 8, 4), new PlantElementTraits("GoldenrodFlowerShort",
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "SinglePixel", 1),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), null) }) },
+
+
                 { (2, 0, 0), new PlantElementTraits("CattailStem", rET:(from number in Enumerable.Range(0, 5) select ((0, number), (true, false))).ToArray(), sRET:new ((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip)[] { ((0, 3), (0, 0), (true, false)) },
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(4, 4), hPP:fHPP["Up3Gap"],
                     C:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((2, 0, 1), 0, (0, 0), 0, (1, 1), 100) }
@@ -1071,10 +1136,11 @@ namespace Cave
                 pGR:new PlantGrowthRules(t:(1, 4), mG:(2, 1),
                     DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 1), (true, false, false), (0, 2), 75), ((1, 0), (true, false, false), (1, 1), 50), ((1, -1), (true, false, false), (1, 1), 50) }
                 )) },
+
                 { (2, 2, 0), new PlantElementTraits("ReedStem", rET:(from number in Enumerable.Range(0, 20) select ((0, number), (true, false))).ToArray(),
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(6, 4), lIMG:1, hPP:fHPP["Up1Gap"],
                     cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[]{ ((2, 2, 1), 0, (0, 0), 0, 100) },
-                    C:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((2, 2, -1), 1, (-1, 0), 0, (1, 1), 75 ), ((2, 2, -1), 0, (1, 0), 0, (1, 1), 75 ) },
+                    C:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((2, 2, -1), 1, (-1, 0), 0, (1, 1), 75 ), ((2, 2, -1), 1, (1, 0), 0, (1, 1), 75 ) },
                     lC:true, lICO:1,
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (2, 1), 10), ((1, 0), (true, false, false), (3, 2), 60) }
                 )) },
@@ -1085,6 +1151,7 @@ namespace Cave
                 { (2, 2, 1), new PlantElementTraits("ReedFlower", stick:((0, 1), (false, false)), fMG:(5, 2),
                 framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0), (2, 1) }, "CortaderiaFlower", 8)
                 ) },
+
                 { (2, 3, 0), new PlantElementTraits("PapyrusStem", rET:(from number in Enumerable.Range(0, 12) select ((0, number), (true, false))).ToArray(),
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(4, 4), lIMG:1, hPP:fHPP["Up1Gap"],
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (3, 4), 66) }
@@ -1184,7 +1251,7 @@ namespace Cave
                 framez:makeStructureFrameArray(new (int type, int subType)[]{ (1, 0) }, "SinglePixel", 1)
                 ) },
                 { (3, 3, 2), new PlantElementTraits("CardinalFlowerFlower", fMG:(1, 1),
-                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "TallVerticalBar1x10y", 10)
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "LongVerticalBar", 10)
                 ) },
 
                 { (3, 4, 0), new PlantElementTraits("WhorlGrassBase", rET:(from number in Enumerable.Range(0, 12) select ((0, number), (true, false))).ToArray(),
@@ -1200,7 +1267,41 @@ namespace Cave
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(2, 3), sD:((0, 1), (true, false, true)), hPP:fHPP["Up1Gap"],
                     PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 0), 100), ((1, 0), (true, false, false), (2, 0), 35) }
                 ), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), null) }) },
-                
+
+                { (3, 5, 0), new PlantElementTraits("GlaucousParnassiaBase", rET:(from number in Enumerable.Range(0, 12) select ((0, number), (true, false))).ToArray(), sRET:new ((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip)[] { ((0, 1), (0, 0), (true, false)) },
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(0, 0), hPP:fHPP["Up1Gap"],
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[]{ ((3, 5, -1), 0, (0, 0), 0, 100), ((3, 5, -1), 5, (-1, 0), 0, 65), ((3, 5, -1), 5, (1, 0), 0, 25) }
+                )) },
+                { (3, 5, -1), new PlantElementTraits("GlaucousParnassiaStem", sRET:new ((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip)[] { ((0, 1), (0, 0), (true, false)) },
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(1, 2), sD:((0, 1), (true, false, true)), hPP:fHPP["Up1Gap"],
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((3, 5, 1), 0, (0, 1), 0, 100 ), ((3, 5, 2), 0, (1, 1), 0, 75), ((3, 5, 2), 0, (-1, 1), 0, 35) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 1), 35), }
+                ), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), null) }) },
+                { (3, 5, 1), new PlantElementTraits("GlaucousParnassiaFlower", stick:((0, 1), (false, false)),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0) }, "SinglePixel", 1),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), null) }
+                ) },
+                { (3, 5, 2), new PlantElementTraits("GlaucousParnassiaLeaves",
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (1, 0) }, "SinglePixel", 1),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), null) }
+                ) },
+
+                { (3, 6, 0), new PlantElementTraits("MarshCinquefoilStem", rET:(from number in Enumerable.Range(0, 12) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(4, 2), hPP:fHPP["Up4Gap"],
+                    cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((3, 6, 3), 0, (0, 1), 0, 100) },
+                    C:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((3, 6, 1), 5, (-1, 0), 0, (0, 0), 100), ((3, 6, 1), 5, (1, 0), 0, (1, 0), 100),     ((3, 6, 2), 5, (-1, 0), 0, (1, 0), 100), ((3, 6, 2), 5, (1, 0), 0, (1, 0), 90), ((3, 6, 2), 5, (-1, 0), 0, (1, 1), 50) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (2, 1), 25) }
+                )) },
+                { (3, 6, 1), new PlantElementTraits("MarshCinquefoilLeaf", fMG:(1, 0),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (1, 0) }, "LongHorizontalBar", 10),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((110, -5, 15), (135, -5, 15), (55, 10, 10))) }) },
+                { (3, 6, 2), new PlantElementTraits("MarshCinquefoilLeafShort",
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (1, 0) }, "SinglePixel", 1),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((110, -5, 15), (135, -5, 15), (55, 10, 10))) }) },
+                { (3, 6, 3), new PlantElementTraits("MarshCinquefoilFlower",
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0), (2, -1), (2, 1) }, "MarshCinquefoilFlower", 5),
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), null) }) },
+
 
                 { (4, 0, 0), new PlantElementTraits("CactusStem", rET:(from number in Enumerable.Range(0, 5) select ((number % 2, number), (true, false))).ToArray(),
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(8, 12), sEW:((1, 0, 0, 0), (true, false, false)),
@@ -2146,6 +2247,7 @@ namespace Cave
             public (int r, int g, int b)? fullPlantShade;
             public bool doesFPSOverride;
             public ((int type, int subType) type, ColorRange colorRange)[] colorOverrideArray;
+            public float renderingPriority;
 
             public bool isGround;
             public bool isCeiling;
@@ -2161,7 +2263,7 @@ namespace Cave
 
             public ((int baseValue, int variation) chance, (int x, int y) range)? propagateOnSuccess;
 
-            public PlantTraits(string n, string sName = "", (int type, int subType)? iFT = null, int mGFV = 1,
+            public PlantTraits(string n, string sName = "", float rP = 0, (int type, int subType)? iFT = null, int mGFV = 1,
                 HashSet<(int type, int subType)> sT = null, ((int type, int subType) tile, (int x, int y) range)? tNC = null, (HashSet<(int type, int subType)> plantType, (int x, int y) range)? pNC = null,
                 ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, ((int r, int g, int b) shade, bool overridePlantElementShade)? fPS = null, ((int r, int g, int b) hue, bool overridePlantElementHue)? fPH = null,
                 bool C = false, bool S = false, bool EA = false, bool J = false, bool W = false, bool A = false, bool lum = false, bool cl = false, ((int baseValue, int variation) chance, (int x, int y) range)? pOS = null)
@@ -2176,11 +2278,12 @@ namespace Cave
                 tileNeededClose = tNC;
                 plantNeededClose = pNC;
 
-                colorOverrideArray = cOverride;
                 fullPlantHue = fPH != null ? fPH.Value.hue : globalNullTuple3;
                 doesFPHOverride = fPH != null && fPH.Value.overridePlantElementHue;
                 fullPlantShade = fPS != null ? fPS.Value.shade : globalNullTuple3;
                 doesFPSOverride = fPS != null && fPS.Value.overridePlantElementShade;
+                colorOverrideArray = cOverride;
+                renderingPriority = rP;
 
                 isCeiling = C;
                 isSide = S;
@@ -2205,198 +2308,212 @@ namespace Cave
             {
                 { (-1, 0), new PlantTraits("Error Plant") },
 
-                { (0, 0), new PlantTraits("Grass", pOS:((1, 5), (7, 5))) },
-                { (0, 1), new PlantTraits("Wheat", pOS:((5, 7), (7, 5)),
+                { (0, 0), new PlantTraits("Grass", rP:0, pOS:((1, 5), (7, 5))) },
+                { (0, 1), new PlantTraits("Wheat", rP:4, pOS:((5, 7), (7, 5)),
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["CerealStem"]) }) },
-                { (0, 2), new PlantTraits("Cortaderia", sName:"Cortaderia selloana", pOS:((0, 4), (3, 2)),
+                { (0, 2), new PlantTraits("Cortaderia", rP:-1, sName:"Cortaderia selloana", pOS:((0, 4), (3, 2)),
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((50, 0, 20), (120, 20, 30), (50, 0, 20))), ((2, 0), new ColorRange((255, 0, 10), (210, 20, 15), (160, -10, 20))) }) },
-                { (0, 3), new PlantTraits("Red Glasswort", pOS:((1, 6), (5, 2)),
+                { (0, 3), new PlantTraits("Red Glasswort", rP:200, pOS:((1, 6), (5, 2)),
                 sT:new HashSet<(int type, int subType)> { (1, 0), (6, 0), (6, 1) }, tNC:((-2, 2), (6, 3)), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((150, -15, 20), (60, 10, 15), (65, 15, 15))) }) },
 
 
-                { (1, 0), new PlantTraits("Tulip",
+                { (1, 0), new PlantTraits("Tulip", rP:10,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), new ColorRange((220, 0, 30), (110, -50, 30), (130, 50, 30))) }) },
-                { (1, 1), new PlantTraits("Allium",
+                { (1, 1), new PlantTraits("Allium", rP:5,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), new ColorRange((140, 0, 30), (80, 50, 30), (220, 0, 30))) }) },
-                { (1, 2), new PlantTraits("Big Flower",
+                { (1, 2), new PlantTraits("Big Flower", rP:-1,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), new ColorRange((170, 0, 30), (80, 50, 30), (190, 0, 30))) }) },
-                { (1, 3), new PlantTraits("Bluebell", pOS:((2, 6), (12, 5)),
+                { (1, 3), new PlantTraits("Bluebell", rP:1, pOS:((2, 6), (12, 5)),
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), new ColorRange((120, -10, 10), (100, 0, 10), (230, 10, 15))) }) },
+                { (1, 4), new PlantTraits("Dragon's mouth orchid", rP:80, pOS:((0, 3), (8, 2)),
+                sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), new ColorRange((205, -10, 15), (105, 0, 15), (235, 10, 15))) }) },
+                { (1, 5), new PlantTraits("Rose Pogonia", rP:60, pOS:((0, 3), (8, 2)),
+                sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), new ColorRange((235, -10, 15), (190, 0, 15), (235, 10, 15))) }) },
+                { (1, 6), new PlantTraits("Small White Lady's Slipper", rP:100, pOS:((2, 4), (6, 2)),
+                sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), new ColorRange((235, 10, 10), (240, 5, 10), (245, 0, 10))) }) },
+                { (1, 7), new PlantTraits("Poison Flag", rP:20, pOS:((2, 4), (6, 2)),
+                sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), new ColorRange((75, 15, 15), (20, 10, 10), (160, -15, 20))) }) },
+                { (1, 8), new PlantTraits("Goldenrod", sName:"Solidago patula", rP:4, pOS:((0, 2), (14, 3)),
+                sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((50, 5, 15), (55, -5, 15), (15, 0, 5))), ((2, 0), new ColorRange((245, 5, 15), (215, -5, 15), (25, 0, 5))) }) },
 
-                { (2, 0), new PlantTraits("Cattail", pOS:((0, 4), (5, 2)),                  W:true,
+                { (2, 0), new PlantTraits("Cattail", rP:3, pOS:((0, 4), (5, 2)), W:true,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), new ColorRange((120, 30, 30), (40, 0, 20), (20, -10, 10))), ((2, 1), new ColorRange((235, 0, 10), (225, 5, 10), (190, 15, 10))) }) },
-                { (2, 1), new PlantTraits("Rice", pOS:((4, 8), (9, 3)),                     W:true,
+                { (2, 1), new PlantTraits("Rice", rP:4, pOS:((4, 8), (9, 3)), W:true,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }) },
-                { (2, 2), new PlantTraits("Reed", pOS:((3, 7), (11, 4)),                    W:true,
+                { (2, 2), new PlantTraits("Reed", rP:-10, pOS:((3, 7), (11, 4)), W:true,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((25, 0, 15), (80, -10, 20), (45, 10, 20))), ((2, 0), new ColorRange((70, 10, 10), (30, 0, 5), (40, -10, 5))) }) },
-                { (2, 3), new PlantTraits("Papyrus", pOS:((1, 2), (15, 4)), fPS:((30, 40, 25), false), W:true,
+                { (2, 3), new PlantTraits("Papyrus", rP:-8, pOS:((1, 2), (15, 4)), fPS:((30, 40, 25), false), W:true,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((165, 20, 15), (230, -15, 20), (120, 10, 10))), ((2, 0), new ColorRange((255, 0, 10), (210, 20, 15), (160, -10, 20))) }) },
-                { (2, 4), new PlantTraits("Bladderwort", sName:"Utricularia vulgaris", pOS:((1, 3), (11, 0)),             J:true,
+                { (2, 4), new PlantTraits("Bladderwort", rP:50, sName:"Utricularia vulgaris", pOS:((1, 3), (11, 0)), J:true,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((100, 5, 10), (60, -5, 10), (75, -10, 10))), ((2, 0), new ColorRange((220, 10, 20), (220, -10, 20), (25, 0, 5))) }) },
 
-                { (3, 0), new PlantTraits("Rush", sName:"Juncus effusus", pOS:((0, 2), (5, 2)),         A:true,
+                { (3, 0), new PlantTraits("Rush", rP:2, sName:"Juncus effusus", pOS:((0, 2), (5, 2)), A:true,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, fPS:((15, 15, 15), false), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((75, 10, 10), (140, -15, 15), (10, 5, 5))), ((2, 0), new ColorRange((90, -15, 15), (45, 10, 10), (10, 5, 5))) }) },
-                { (3, 1), new PlantTraits("Butomus", sName:"Butomus umbellatus", pOS:((0, 2), (5, 2)),  A:true,
+                { (3, 1), new PlantTraits("Butomus", rP:1, sName:"Butomus umbellatus", pOS:((0, 2), (5, 2)), A:true,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, fPS:((20, 20, 20), false), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((75, 10, 10), (140, -15, 15), (10, 5, 5))), ((2, 0), new ColorRange((255, -15, 15), (255, 10, 10), (255, 5, 5))), ((2, 1), new ColorRange((255, -15, 15), (180, 10, 10), (180, 5, 5))) }) },
-                { (3, 2), new PlantTraits("Marsh Pea", pOS:((1, 3), (5, 2)),                            A:true,
+                { (3, 2), new PlantTraits("Marsh Pea", rP:8, pOS:((1, 3), (5, 2)), A:true,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((35, 0, 15), (100, -10, 20), (55, 10, 20))), ((2, 0), new ColorRange((175, 20, 20), (60, -10, 10), (295, -20, 20))) }) },
-                { (3, 3), new PlantTraits("Cardinal Flower", pOS:((3, 5), (7, 2)),                      A:true,
+                { (3, 3), new PlantTraits("Cardinal Flower", rP:5, pOS:((3, 5), (7, 2)), A:true,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((45, 0, 15), (125, -10, 20), (75, 10, 20))), ((2, 0), new ColorRange((175, 10, 20), (40, -10, 10), (50, -10, 10))) }) },
-                { (3, 4), new PlantTraits("Whorl Grass", pOS:((0, 2), (12, 3)),                         A:true,
+                { (3, 4), new PlantTraits("Whorl Grass", rP:2, pOS:((0, 2), (12, 3)), A:true,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((120, 5, 15), (165, -10, 30), (110, 15, 20))) }) },
-                
-                { (4, 0), new PlantTraits("Cactus",
+                { (3, 5), new PlantTraits("Glaucous Parnassia", rP:7, pOS:((0, 2), (9, 2)), A:true,
+                sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((35, 5, 10), (55, 15, 15), (10, 0, 5))), ((2, 0), new ColorRange((225, 0, 15), (225, 0, 15), (225, 10, 15))) }) },
+                { (3, 6), new PlantTraits("Marsh Cinquefoil", rP:5, pOS:((3, 5), (11, 3)), A:true,
+                sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 3) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((90, -10, 20), (60, 10, 15), (30, 0, 10))), ((2, -1), new ColorRange((90, 15, 20), (15, 0, 10), (65, -10, 15))), ((2, 0), new ColorRange((130, 15, 20), (30, 0, 10), (60, -10, 15))), ((2, 1), new ColorRange((40, 10, 10), (10, 0, 5), (10, -5, 5))) }) },
+
+                { (4, 0), new PlantTraits("Cactus", rP:-10,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((150, 0, 10), (175, 15, 15), (80, -10, 10))) }) },
                 
-                { (4, 10), new PlantTraits("Filamentous Yucca", pOS:((0, 2), (25, 16)),
+                { (4, 10), new PlantTraits("Filamentous Yucca", rP:-8, pOS:((0, 2), (25, 16)),
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((65, 10, 15), (85, -15, 20), (30, 5, 10))), ((1, 0), new ColorRange((90, 10, 15), (110, -15, 20), (50, 10, 10))), ((2, 0), new ColorRange((250, 10, 15), (250, 10, 15), (220, -10, 15))) }) },
-                { (4, 11), new PlantTraits("Flaccid Yucca", pOS:((0, 2), (25, 16)),
+                { (4, 11), new PlantTraits("Flaccid Yucca", rP:-8, pOS:((0, 2), (25, 16)),
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((65, 10, 15), (85, -15, 20), (30, 5, 10))), ((1, 0), new ColorRange((90, 10, 15), (110, -15, 20), (50, 10, 10))), ((2, 0), new ColorRange((250, 10, 15), (250, 10, 15), (220, -10, 15))) }) },
 
-                { (4, 20), new PlantTraits("Desert Thumb", sName:"Cynomorium coccineum", pOS:((0, 2), (4, 2)),
+                { (4, 20), new PlantTraits("Desert Thumb", sName:"Cynomorium coccineum", rP:1000, pOS:((0, 2), (4, 2)),
                 pNC:(new HashSet<(int type, int subType)> { (14, 30), (14, 31) }, (6, 3)), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((105, -5, 10), (55, 0, 5), (15, 5, 5))), ((2, 0), new ColorRange((60, -5, 10), (25, 0, 5), (30, 5, 5))) }) },
 
-                { (4, 30), new PlantTraits("Yellow Cistanche", sName:"Cistanche deserticola", pOS:((0, 3), (8, 2)),
+                { (4, 30), new PlantTraits("Yellow Cistanche", sName:"Cistanche deserticola", rP:200, pOS:((0, 3), (8, 2)),
                 pNC:(new HashSet<(int type, int subType)> { (14, 30), (14, 31) }, (8, 4)), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((140, 10, 15), (115, 10, 15), (30, -10, 10))), ((2, 0), new ColorRange((225, 5, 15), (215, 5, 15), (80, -10, 10))), ((2, 1), new ColorRange((190, 5, 15), (180, 5, 15), (65, -10, 10))) }) },
 
-                { (4, 40), new PlantTraits("Saltbush", sName:"Atriplex polycarpa",
+                { (4, 40), new PlantTraits("Saltbush", sName:"Atriplex polycarpa", rP:0.5f,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((140, 5, 10), (145, 0, 10), (125, 10, 15))), ((1, 0), new ColorRange((95, 5, 10), (115, 0, 10), (80, 10, 15))) }) },
 
-                { (5, 0), new PlantTraits("Sphagnum Moss",                                  A:true,
+                { (5, 0), new PlantTraits("Sphagnum Moss", rP:-2, A:true,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((140, 20, 20), (175, -20, 25), (0, 5, -15))) }) },
-                { (5, 1), new PlantTraits("Red Sphagnum Moss",                              A:true,
+                { (5, 1), new PlantTraits("Red Sphagnum Moss", rP:-1, A:true,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((160, 15, 20), (70, -10, 10), (100, -10, 10))) }) },
 
 
 
-                { (10, 0), new PlantTraits("Tree",
+                { (10, 0), new PlantTraits("Tree", rP:-35,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }) },
-                { (10, 1), new PlantTraits("Jungle Tree",
+                { (10, 1), new PlantTraits("Jungle Tree", rP:-40,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }) },
-                { (10, 2), new PlantTraits("Weeping Willow",
+                { (10, 2), new PlantTraits("Weeping Willow", rP:-65,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }, tNC:((-2, 0), (3, 3)), fPS:((35, 35, 35), false), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((60, -10, 20), (145, 20, 20), (80, -15, 20))), ((1, 1), new ColorRange((100, -10, 15), (85, 5, 15), (80, 10, 15))) }) },
-                { (10, 3), new PlantTraits("Alder",                                         A:true,
+                { (10, 3), new PlantTraits("Alder", rP:-130, A:true,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((40, 10, 15), (80, -15, 15), (20, 5, 10))), ((1, 1), new ColorRange((85, -5, 10), (75, 5, 10), (60, -10, 10))) }) },
 
-                { (11, 0), new PlantTraits("Fir",
+                { (11, 0), new PlantTraits("Fir", rP:-100,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 2) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((5, 0, 20), (65, -15, 20), (45, 15, 20))), ((1, 1), new ColorRange((80, -10, 20), (55, 10, 20), (35, -10, 20))) }) },
-                { (11, 1), new PlantTraits("Up Fir",
+                { (11, 1), new PlantTraits("Up Fir", rP:-120,
                 sT:new HashSet<(int type, int subType)> { (2, 0), (2, 1), (2, 2) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((5, 0, 20), (65, -15, 20), (45, 15, 20))), ((1, 1), new ColorRange((80, -10, 20), (55, 10, 20), (35, -10, 20))) }) },
 
-                { (12, 0), new PlantTraits("Mangrove Tree",                                 W:true,
+                { (12, 0), new PlantTraits("Mangrove Tree", rP:-50, W:true,
                 sT:new HashSet<(int type, int subType)> { (2, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 1), new ColorRange((115, -10, 20), (85, 10, 20), (65, -10, 20))) }) },
-                { (12, 1), new PlantTraits("Bald Cypress",                                  W:true,
+                { (12, 1), new PlantTraits("Bald Cypress", rP:-200, W:true,
                 sT:new HashSet<(int type, int subType)> { (2, 1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((180, -25, 15), (90, 15, 10), (15, 5, 5))), ((1, 1), new ColorRange((165, -10, 20), (145, 10, 20), (125, -10, 20))) }) },
 
-                { (13, 0), new PlantTraits("Cheering Willow",
+                { (13, 0), new PlantTraits("Cheering Willow", rP:-60,
                 tNC:((-3, 0), (3, 3)), fPS:((50, 50, 50), false), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((220, -10, 20), (140, 20, 20), (180, -15, 20))), ((1, 1), new ColorRange((100, -10, 15), (85, 5, 15), (80, 10, 15))) }) },
 
-                { (14, 0), new PlantTraits("Giant Baobab",
+                { (14, 0), new PlantTraits("Giant Baobab", rP:-400,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((90, -5, 20), (80, 15, 15), (35, -10, 10))), ((1, 1), new ColorRange((215, 10, 15), (155, 0, 10), (105, -20, 10))) }) },
-                { (14, 1), new PlantTraits("Suarez Baobab",
+                { (14, 1), new PlantTraits("Suarez Baobab", rP:-300,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((90, -5, 20), (80, 15, 15), (35, -10, 10))), ((1, 1), new ColorRange((160, 10, 0), (135, 5, 0), (105, -10, 0))) }) },
 
-                { (14, 10), new PlantTraits("Yucca Tree",
+                { (14, 10), new PlantTraits("Yucca Tree", rP:-25,
                 fPS:((25, 25, 15), false), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((65, 10, 15), (85, -15, 20), (30, 5, 10))), ((1, 0), new ColorRange((90, 10, 15), (110, -15, 20), (50, 10, 10))), ((1, 1), new ColorRange((135, 10, 0), (125, 5, 0), (110, -10, 0))) }) },
-                { (14, 11), new PlantTraits("Beaked Yucca", pOS:((0, 2), (25, 16)),
+                { (14, 11), new PlantTraits("Beaked Yucca", rP:-20, pOS:((0, 2), (25, 16)),
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((65, 10, 15), (85, -15, 20), (30, 5, 10))), ((1, 0), new ColorRange((90, 10, 15), (110, -15, 20), (50, 10, 10))), ((1, 1), new ColorRange((135, 10, 15), (125, 5, 20), (110, -10, 10))) }) },
                 
-                { (14, 20), new PlantTraits("Desert Rose", sName:"Adenium obesum",
+                { (14, 20), new PlantTraits("Desert Rose", sName:"Adenium obesum", rP:-15,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((90, -5, 20), (80, 15, 15), (35, -10, 10))), ((1, 1), new ColorRange((160, 10, 0), (135, 5, 0), (105, -10, 0))), ((2, 0), new ColorRange((255, 10, 30), (110, -20, 15), (165, 10, 20))), ((2, 1), new ColorRange((255, 10, 20), (190, -10, 15), (225, 5, 15))) }) },
 
-                { (14, 30), new PlantTraits("Black Saxaul", sName:"Haloxylon ammodendron",
+                { (14, 30), new PlantTraits("Black Saxaul", sName:"Haloxylon ammodendron", rP:-30,
                 fPS:((10, 15, 5), false), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((35, 5, 15), (85, 0, 20), (25, -5, 10))), ((1, 1), new ColorRange((115, 5, 20), (95, 0, 15), (80, -5, 10))) }) },
-                { (14, 31), new PlantTraits("White Saxaul", sName:"Haloxylon persicum",
+                { (14, 31), new PlantTraits("White Saxaul", sName:"Haloxylon persicum", rP:-10,
                 fPS:((10, 15, 5), false), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((70, 5, 15), (115, 0, 20), (60, -5, 10))), ((1, 1), new ColorRange((165, 5, 20), (145, 0, 15), (130, -5, 10))) }) },
 
-                { (14, 40), new PlantTraits("Quiver tree", sName:"Aloidendron dichotomum",
+                { (14, 40), new PlantTraits("Quiver tree", sName:"Aloidendron dichotomum", rP:-27,
                 fPH:((10, 0, -10), false), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((140, -15, 15), (125, 15, 15), (25, 0, 10))), ((1, 0), new ColorRange((185, -15, 15), (160, 15, 15), (25, 0, 10))), ((1, 1), new ColorRange((150, 0, 15), (135, 0, 15), (120, 0, 10))) }) },
-                { (14, 41), new PlantTraits("Giant Quiver tree", sName:"Aloidendron pillansii",
+                { (14, 41), new PlantTraits("Giant Quiver tree", sName:"Aloidendron pillansii", rP:-123,
                 fPH:((10, 0, -10), false), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, -1), new ColorRange((140, -15, 15), (125, 15, 15), (25, 0, 10))), ((1, 0), new ColorRange((185, -15, 15), (160, 15, 15), (25, 0, 10))), ((1, 1), new ColorRange((150, 0, 15), (135, 0, 15), (120, 0, 10))) }) },
 
 
 
-                { (20, 0), new PlantTraits("Vine",                                  C:true,
+                { (20, 0), new PlantTraits("Vine", rP:-120, C:true,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((50, 0, 30), (120, 50, 30), (50, 0, 30))) }) },
-                { (20, 1), new PlantTraits("Obsidian Vine",                         C:true,
+                { (20, 1), new PlantTraits("Obsidian Vine", rP:-100, C:true,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), famousColorRanges["Obsidian"]), ((2, 1), famousColorRanges["ObsidianPollen"]) }) },
-                { (20, 2), new PlantTraits("Ice Vine",                              C:true,
+                { (20, 2), new PlantTraits("Ice Vine", rP:-110, C:true,
                 sT:new HashSet<(int type, int subType)> { (-2, -1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
-                { (20, 3), new PlantTraits("Bluebell Vine",                         C:true,
+                { (20, 3), new PlantTraits("Bluebell Vine", rP:-130, C:true,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((50, 0, 30), (120, 50, 30), (50, 0, 30))), ((2, 0), new ColorRange((100, -10, 10), (80, 0, 10), (220, 10, 15))), ((2, 1), new ColorRange((160, -10, 10), (140, 0, 10), (240, 5, 10))) }) },
 
 
-                { (30, 0), new PlantTraits("KelpUpwards",                                    W:true,
+                { (30, 0), new PlantTraits("KelpUpwards", rP:0.01f, W:true,
                 iFT:(2, 0)) },
-                { (30, 1), new PlantTraits("KelpDownwards",                          C:true, W:true ) },
+                { (30, 1), new PlantTraits("KelpDownwards", rP:0.01f, C:true, W:true ) },
 
-                { (31, 0), new PlantTraits("Algae 1",                                        W:true,
+                { (31, 0), new PlantTraits("Algae 1", rP:11, W:true,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((65, 0, 20), (110, -10, 20), (50, 30, 20))) }) },
-                { (31, 1), new PlantTraits("Algae Bulbous",                                  W:true,
+                { (31, 1), new PlantTraits("Algae Bulbous", rP:-16, W:true,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((45, 0, 10), (80, 10, 10), (30, 20, 10))) }) },
-                { (31, 2), new PlantTraits("Algae Ceiling 1",                        C:true, W:true,
+                { (31, 2), new PlantTraits("Algae Ceiling 1", rP:10, C:true, W:true,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), new ColorRange((65, 0, 20), (110, -10, 20), (50, 30, 20))) }) },
 
 
 
-                { (40, 0), new PlantTraits("Mushroom") },
-                { (41, 0), new PlantTraits("Mold",                                  EA:true) },
+                { (40, 0), new PlantTraits("Mushroom", rP:50) },
+                { (41, 0), new PlantTraits("Mold", rP:10000, EA:true) },
 
 
-                { (50, 0), new PlantTraits("ObsidianPlant") },
+                { (50, 0), new PlantTraits("ObsidianPlant", rP:100) },
 
 
-                { (60, 0), new PlantTraits("IceGrass",
+                { (60, 0), new PlantTraits("IceGrass", rP:0.1f,
                 sT:new HashSet<(int type, int subType)> { (-2, -1) }, pOS:((7, 17), (15, 10)), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
-                { (60, 1), new PlantTraits("IceBrutic",
+                { (60, 1), new PlantTraits("IceBrutic", rP:15,
                 sT:new HashSet<(int type, int subType)> { (-2, -1) }, pOS:((0, 4), (8, 5)), cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
                 
-                { (61, 0), new PlantTraits("IceTromel",
+                { (61, 0), new PlantTraits("IceTromel", rP:14,
                 sT:new HashSet<(int type, int subType)> { (-2, -1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
-                { (61, 1), new PlantTraits("IceKital",
+                { (61, 1), new PlantTraits("IceKital", rP:13,
                 sT:new HashSet<(int type, int subType)> { (-2, -1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
                 
-                { (62, 0), new PlantTraits("IceFlokan",
+                { (62, 0), new PlantTraits("IceFlokan", rP:12,
                 sT:new HashSet<(int type, int subType)> { (-2, -1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
-                { (62, 1), new PlantTraits("IceOctam",
+                { (62, 1), new PlantTraits("IceOctam", rP:11,
                 sT:new HashSet<(int type, int subType)> { (-2, -1) }, cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 0), famousColorRanges["IceStem"]), ((2, 0), famousColorRanges["IcePetal"]), ((2, 1), famousColorRanges["IcePollen"]) }) },
 
 
 
-                { (100, 0), new PlantTraits("LanternTree",                                   lum:true) },
-                { (100, 1), new PlantTraits("LanternVine",                           C:true, lum:true) },
-                { (100, 2), new PlantTraits("SideLantern",                           S:true, lum:true) },
+                { (100, 0), new PlantTraits("LanternTree", rP:-100, lum:true) },
+                { (100, 1), new PlantTraits("LanternVine", rP:-20, C:true, lum:true) },
+                { (100, 2), new PlantTraits("SideLantern", rP:10, S:true, lum:true) },
 
 
-                { (101, 0), new PlantTraits("Candle",                                        lum:true,
+                { (101, 0), new PlantTraits("Candle", rP:100, lum:true,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), famousColorRanges["Fire"]) }) },
-                { (101, 1), new PlantTraits("Chandelier",                                    lum:true,
+                { (101, 1), new PlantTraits("Chandelier", rP:-1, lum:true,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), famousColorRanges["Fire"]) }) },
-                { (101, 2), new PlantTraits("Candelabrum",                                   lum:true,
+                { (101, 2), new PlantTraits("Candelabrum", rP:-100, lum:true,
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((11, 1), famousColorRanges["Fire"]) }) },
 
 
 
 
-                { (200, 0), new PlantTraits("FleshVine",                             C:true,
+                { (200, 0), new PlantTraits("FleshVine", rP:10, C:true,
                 mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
-                { (200, 1), new PlantTraits("FleshTendril",
+                { (200, 1), new PlantTraits("FleshTendril", rP:10,
                 mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
-                { (200, 2), new PlantTraits("FleshTree1",
+                { (200, 2), new PlantTraits("FleshTree1", rP:-100,
                 mGFV:1, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
-                { (200, 3), new PlantTraits("FleshTree2",
+                { (200, 3), new PlantTraits("FleshTree2", rP:-90,
                 mGFV:1, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
 
 
-                { (201, 0), new PlantTraits("BoneStalactite",                        C:true,
+                { (201, 0), new PlantTraits("BoneStalactite", rP:9, C:true,
                 mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 1) }) },
-                { (201, 1), new PlantTraits("BoneStalagmite",
+                { (201, 1), new PlantTraits("BoneStalagmite", rP:9,
                 mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 1) }) },
 
 
-                { (202, 0), new PlantTraits("Body Hair",                            EA:true, cl:true,
+                { (202, 0), new PlantTraits("Body Hair", rP:5, EA:true, cl:true,
                 mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
-                { (202, 1), new PlantTraits("Long Hair",                             C:true, cl:true,
+                { (202, 1), new PlantTraits("Long Hair", rP:4, C:true, cl:true,
                 mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
             };
 
@@ -2710,6 +2827,12 @@ namespace Cave
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 400), ((4, 0), 25), ((2, 0), 150), ((5, 0), 200), ((10, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 35), ((3, 2), 15), ((2, 4), 15), ((3, 3), 10), ((5, 0), 350), ((5, 1), 50), ((3, 4), 100), ((2, 2), 10), ((3, 0), 100), ((3, 1), 30), ((2, 1), 1), ((20, 0), 100), ((2, 0), 15) },
                 cT:(7, 7), vD:3, vNP:0.25f, lT:(-2, 0), txT:(0, 0),  // Grass         Marsh Pea     Bladderwort   Cardinal Flow Sphagnum Moss  Red Sph Moss  Whorl Grass   Reed          Rush           Butomus       Rice         Vine            Cattail
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["Mud/Peat"] }) },
+                { (2, 9),  new BiomeTraits("Fen",                   (Color.Green.R - 20, Color.Green.G + 30, Color.Green.B + 80), null,
+                                                                     // Frog           Worm          Fish           WaterSkipper   Dragonfly
+                new ((int type, int subType) type, float percentage)[]{ ((1, 0), 400), ((4, 0), 25), ((2, 0), 150), ((5, 0), 200), ((10, 0), 100), },
+                new ((int type, int subType) type, float percentage)[]{ ((0, 0), 65), ((1, 4), 15), ((1, 5), 15), ((1, 6), 10), ((1, 7), 10), ((3, 5), 10), ((3, 6), 10), ((1, 8), 10), ((3, 2), 5), ((2, 4), 5), ((5, 0), 150), ((3, 4), 200), ((2, 2), 15), ((3, 0), 100), ((3, 1), 30), ((2, 1), 1), ((20, 0), 100), ((2, 0), 15) },
+                cT:(7, 7), vD:2, vNP:0.2f, lT:(-2, 0), txT:(0, 0),  // Grass         DragMouthOrch Rose Pogonia  SmlWhtLdySlip Poison Flag   Glauc Parnass MrshCinqufoil Goldenrod     Marsh Pea    Bladderwort  Sphagnum Moss  Whorl Grass    Reed          Rush           Butomus       Rice         Vine            Cattail
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Mud/Peat"] }) },
 
                 { (3, 0),  new BiomeTraits("Forest",                (Color.Green.R, Color.Green.G, Color.Green.B), null,

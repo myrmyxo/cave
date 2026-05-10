@@ -2025,8 +2025,12 @@ namespace Cave
                             int prairieness = calculateBiome(ref temperateness, Min(illumination - 350), (0, 999999));
 
                             int wetlandness = calculateBiome(ref prairieness, humidity, (700 - Clamp(0, oceanity - 512, 256), 999999));
-                            calculateAndAddBiome(listo, (2, 8), ref prairieness, (int)(600 + toxicity * 0.25f - temperature - oceanity * 0.25f), (0, 999999)); // Bog
-                            testAddBiome(listo, (2, 1), wetlandness);   // Add rest as marsh
+
+                            int mireness = calculateBiome(ref wetlandness, humidity, ((int)(600 + toxicity * 0.25f - temperature - oceanity * 0.25f), 999999));
+                            calculateAndAddBiome(listo, (2, 8), ref mireness, acidity, (512, 999999));  // Bog
+                            testAddBiome(listo, (2, 9), mireness);  // Add rest of mireness as fen
+
+                            testAddBiome(listo, (2, 1), wetlandness);   // Add rest of wetlandness as marsh
 
                             testAddBiome(listo, (2, 0), prairieness);   // Add rest as flower forest (for now)
                         }
@@ -2085,7 +2089,7 @@ namespace Cave
                 else if (dimensionType == (-1, 0)) // type == -1, TEST dimension
                 {
                     calculateAndAddBiome(listo, (2, 8), ref percentageFree, humidity, (512, 999999)); // Bog
-                    testAddBiome(listo, (2, 1), percentageFree); // Marsh
+                    testAddBiome(listo, (2, 9), percentageFree); // Fen
                     // calculateAndAddBiome(listo, (2, 1), ref percentageFree, temperature, (850, 999999)); // Marsh
                     // calculateAndAddBiome(listo, (3, 3), ref percentageFree, salinity, (700, 999999)); // Swamp
                     // testAddBiome(listo, (3, 6), percentageFree); // Bayou

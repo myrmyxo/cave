@@ -65,18 +65,8 @@ namespace Cave
             makeTheFilledChunk();
 
             //     ---- - - CURRENTLY DOING - - ----
-            // 
-            // add wild onion and bindweed
-            //  
-            // Oasises in deserts ! Deserts are when no humidity but high illumination ?
-            // NEW PLANTS
-            //  -> add Ghost Gum, Yareta, Colocynths (wild desert gourd),
-            //     Camel Thorn, Panicum Turgidum, Pachypodium mikea, Pachypodium namaquanum
-            // Add Elm also
             //
             // Then prairies and heathlands and shrublands and stuff HEATHHH
-            // -> Separate Bayou and Swamp (Bayou is rare variant)
-            // Add moss that grows on rock and shit
             // Biomes with low light and with fungi when illumination is low ? And if it gets under 0 it gets very dangerous, like deep dark in minefart or idk ?
 
             //          --- - TO DO LIST - ---
@@ -177,6 +167,7 @@ namespace Cave
             // Soap biome. And uhhh soap dimension ?? idk ??
             // Jungle with ferns. And a special rare variant called the Fern Jungle with Fern Trees (fougères arborescentes) and no other type of tree ?
             // A forest biome with a CACA D OIE color ??? With CACA D OIE trees ??? Like for real not caca d'oie but the shit i ate in vietnamese restaut color. I have trop la vision genre
+            // Oasis biome in deserts ? like mushroom in MC idk ?
 
             // Entities ideas !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. And add LITHOPEDIONS
@@ -222,6 +213,14 @@ namespace Cave
             // Frankinsence
             // Kapok tree (the cool amazon one)
             // Water Tupelo in Bayous
+            // Wild onion and Bindweed in cold desert
+            // Elms !
+            // Yareta
+            // Ghost Gum,
+            // Colocynths (wild desert gourd)
+            // Camel Thorn in desert
+            // Panicum Turgidum in desert
+            // Pachypodium mikea and Pachypodium namaquanum in desert
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.
@@ -558,6 +557,37 @@ namespace Cave
                 }
                 idx = Max(0, idx + 1);
             }
+        }
+
+        public static Plant[] MergeSortByPlantRenderingPriority(Plant[] plantArray)
+        {
+            if (plantArray.Length <= 1) { return plantArray; }
+            int separationIdx = (int)(plantArray.Length * 0.5f);
+            Plant[] leftArray = new Plant[separationIdx];
+            Plant[] rightArray = new Plant[plantArray.Length - separationIdx];
+            for (int i = 0; i < separationIdx; i++) { leftArray[i] = plantArray[i]; }
+            int x = 0;
+            for (int i = separationIdx; i < plantArray.Length; i++) { rightArray[x] = plantArray[i]; x++; }
+            leftArray = MergeSortByPlantRenderingPriority(leftArray);
+            rightArray = MergeSortByPlantRenderingPriority(rightArray);
+            return MergeSortByPlantRenderingPriorityMergeArrays(leftArray, rightArray);
+        }
+
+        public static Plant[] MergeSortByPlantRenderingPriorityMergeArrays(Plant[] leftArray, Plant[] rightArray)
+        {
+            Plant[] mergedArray = new Plant[leftArray.Length + rightArray.Length];
+            int leftIdx = 0;
+            int rightIdx = 0;
+            int mergedIdx = 0;
+            while (leftIdx < leftArray.Length && rightIdx < rightArray.Length)
+            {
+                if (leftArray[leftIdx].traits.renderingPriority <= rightArray[rightIdx].traits.renderingPriority) { mergedArray[mergedIdx] = leftArray[leftIdx]; leftIdx++; }
+                else { mergedArray[mergedIdx] = rightArray[rightIdx]; rightIdx++; }
+                mergedIdx++;
+            }
+            while (leftIdx < leftArray.Length) { mergedArray[mergedIdx] = leftArray[leftIdx]; leftIdx++; mergedIdx++; }
+            while (rightIdx < rightArray.Length) { mergedArray[mergedIdx] = rightArray[rightIdx]; rightIdx++; mergedIdx++; }
+            return mergedArray;
         }
 
         // In the future there MIGHT be bugs if a TFT in in a biome but that TFT doesn't have the biome in its biomeDependantTiles

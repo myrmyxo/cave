@@ -77,7 +77,7 @@ namespace Cave
                 bool isPngToExport = false;
 
                 if (false) { forceBiome = (-1, 0); isMonoeBiomeToPut = false; }
-                if (false) { forceBiome = (2, 8); isMonoeBiomeToPut = true; }
+                if (true) { forceBiome = (2, 9); isMonoeBiomeToPut = true; }
 
                 int PNGsize = 150;
                 PNGsize = 100;
@@ -1117,7 +1117,7 @@ namespace Cave
 
                 foreach (Structure structure in activeStructures.Values) { drawStructureOnScreen(gameBitmap, camPos, lightPositions, structure); }
 
-                foreach (Plant plant in activePlants.Values) { drawPlantOnScreen(gameBitmap, camPos, lightPositions, plant); }
+                foreach (Plant plant in MergeSortByPlantRenderingPriority(activePlants.Values.ToArray())) { drawPlantOnScreen(gameBitmap, camPos, lightPositions, plant); }
                 foreach (Entity entity in activeEntities.Values) { drawEntityOnScreen(gameBitmap, camPos, lightPositions, entity); }
                 foreach (Particle particle in activeParticles) { drawParticleOnScreen(gameBitmap, camPos, lightPositions, particle); }
                 drawPlayerOnScreen(gameBitmap, camPos, lightPositions, player);
