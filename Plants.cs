@@ -82,7 +82,7 @@ namespace Cave
                 growthLevel = plantJson.grLvl;
                 timeAtLastGrowth = plantJson.lastGr;
                 transformPlant(plantJson.type);
-                plantElement = new PlantElement(this, plantJson.pE);
+                plantElement = new PlantElement(this, null, plantJson.pE);
                 testAddExtraMaterialsToColorDict();     // In case fire turned wood into charcoal, so it doesn't forget to add charcoal to the dict
                 makeBitmap();
             }
@@ -459,6 +459,7 @@ namespace Cave
         public class PlantElement
         {
             public Plant motherPlant;
+            public PlantElement motherPlantElement;
             public PlantElementTraits traits;
 
             public List<PlantElement> childPlantElements = new List<PlantElement>();
@@ -495,9 +496,10 @@ namespace Cave
             public Dictionary<(int x, int y), (int type, int subType)> fillStates = new Dictionary<(int x, int y), (int type, int subType)>();
 
             public bool isDeadAndShouldDisappear = false;
-            public PlantElement(Plant motherPlantToPut, PlantElementJson plantElementJson)
+            public PlantElement(Plant motherPlantToPut, PlantElement motherPlantElementToPut, PlantElementJson plantElementJson)
             {
                 motherPlant = motherPlantToPut;
+                motherPlantElement = motherPlantElementToPut;
 
                 seed = plantElementJson.s;
                 type = plantElementJson.t;
@@ -529,14 +531,15 @@ namespace Cave
 
                 fillStates = arrayToFillstates(plantElementJson.fS);
 
-                foreach (PlantElementJson baby in plantElementJson.pEs) { childPlantElements.Add(new PlantElement(motherPlant, baby)); }
+                foreach (PlantElementJson baby in plantElementJson.pEs) { childPlantElements.Add(new PlantElement(motherPlant, this, baby)); }
             }
             public PlantElement(Plant motherPlantToPut, (int x, int y) posToPut, (int type, int subType, int subSubType) typeToPut, int seedToPut,
-                PlantElement motherPlantElement, bool isMainPlantElement = false, ((int x, int y) dir, bool isApplyAfter)? forceDirection = null,
+                PlantElement motherPlantElementToPut, bool isMainPlantElement = false, ((int x, int y) dir, bool isApplyAfter)? forceDirection = null,
                 (float baseValue, float variation)? childMaxGrowthVariation = null, (float baseValue, float variation)? forceGrowthSpeedVariationFactorToPut = null,
                 bool spawnStartBabiesToPut = true)
             {
                 motherPlant = motherPlantToPut;
+                motherPlantElement = motherPlantElementToPut;
                 pos = posToPut;
                 type = typeToPut;
                 seed = seedToPut;
@@ -622,8 +625,13 @@ namespace Cave
             }
             public void makeColorOverrideDict()
             {
-                if (traits.colorOverrideArray is null) { return; }
+                if (traits.colorOverrideArray is null && (motherPlantElement is null || motherPlantElement.colorOverrideDict is null)) { return; }
                 colorOverrideDict = new Dictionary<(int type, int subType), Color>();
+                if (motherPlantElement != null && motherPlantElement.colorOverrideDict != null) // If motherPlantElement has color overrides, copy them (priority for motherPlantElement over motherPlant so it looks better lol)
+                {
+                    foreach ((int type, int subType) type in motherPlantElement.colorOverrideDict.Keys) { colorOverrideDict[type] = motherPlantElement.colorOverrideDict[type]; }
+                }
+                if (traits.colorOverrideArray is null) { return; }
                 foreach (((int type, int subType) type, ColorRange colorRange) tuple in traits.colorOverrideArray)
                 {
                     ColorRange c = tuple.colorRange;
@@ -910,7 +918,47 @@ namespace Cave
                 {
                     (int x, int y) drawPos = lastDrawPos;
                     int growthLevelToTest = growthLevel + 1;
-                    if (growthLevelToTest > maxGrowthLevel + (traits.plantGrowthRules.childrenOnGrowthEnd != null || traits.plantGrowthRules.childrenOnGrowthEndSpecial != null ? 1 : 0)) { goto SuccessButStop; }
+                    if (growthLevelToTest > maxGrowthLevel) // Test if plant growth finished and would overgrow. If it has endChildren spawn them before stopping plant growth forever
+                    {
+                        if (traits.plantGrowthRules.childrenOnGrowthEnd != null || traits.plantGrowthRules.childrenOnGrowthEndSpecial != null)
+                        {
+                            int sameChance = getRandValue((int)maxGrowthLevel + (int)childArrayOffset + 582012, 100);
+                            int successfulEndChildren = 0;
+                            if (traits.plantGrowthRules.childrenOnGrowthEnd != null)
+                            {
+                                drawPos = lastDrawPos;
+                                int offset = 0;
+                                foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item in traits.plantGrowthRules.childrenOnGrowthEnd)
+                                {
+                                    offset += 1;
+                                    if (item.chance != 100 && (traits.plantGrowthRules.sameChanceForEndChildren ? sameChance : getRandValue((int)maxGrowthLevel + (int)childArrayOffset + 20000 + offset, 100)) > item.chance) { continue; }
+                                    if (makeBabyEnd(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset, !traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd)) { successfulEndChildren++; }
+                                }
+                            }
+                            if (traits.plantGrowthRules.childrenOnGrowthEndSpecial != null)
+                            {
+                                drawPos = lastDrawPos;
+                                int offset = 0;
+                                foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (float baseValue, float variation)? childMaxGrowthVariation, (float baseValue, float variation)? forceGrowthSpeedVariationFactor, int chance) item in traits.plantGrowthRules.childrenOnGrowthEndSpecial)
+                                {
+                                    offset += 1;
+                                    if (item.chance != 100 && (traits.plantGrowthRules.sameChanceForEndChildren ? sameChance : getRandValue((int)maxGrowthLevel + (int)childArrayOffset + 284392 + offset, 100)) > item.chance) { continue; }
+                                    if (makeBabyEndSpecial(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset, !traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd)) { successfulEndChildren++; }
+                                }
+                            }
+                            if (traits.transitionToOtherPlantElementOnGrowthEnd != null)    // wait according to the comment on top it should not happen if plantElement doesn't have children on growth end ??? yet it does ??? Who coded this shit i am confused
+                            {
+                                lastDrawPos = drawPos;
+                                transitionToOtherPlantElement(traits.transitionToOtherPlantElementOnGrowthEnd.Value);
+                                return 2;   // return not goto !! improtant ig ?
+                            }
+                            else if (traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd && successfulEndChildren > 0)  // It's in the else because if there's a transition it's NOT YET the time to transmit the children because the plant isn't really fully grown
+                            {
+                                transmitStickyChildren(successfulEndChildren);
+                            }
+                        }
+                        goto SuccessButStop;    // Stop the growth forever.
+                    }
 
                     if (traits.plantGrowthRules.directionGrowthArray != null && traits.plantGrowthRules.directionGrowthArray.Length > 0)
                     {
@@ -918,7 +966,7 @@ namespace Cave
                         {
                             ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance) item = traits.plantGrowthRules.directionGrowthArray[(currentDirectionArrayIdx + 1) % traits.plantGrowthRules.directionGrowthArray.Length];
 
-                            int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue((int)directionArrayOffset + 10000, item.changeFrame.range + 1)));
+                            float cost = growthSpeedVariation * (item.changeFrame.frame + getRandValue((int)directionArrayOffset + 10000, item.changeFrame.range + 1));
                             if (growthLevelToTest - directionArrayOffset < cost) { break; }
 
                             directionArrayOffset += cost;
@@ -938,7 +986,7 @@ namespace Cave
                     {
                         ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance) item = traits.plantGrowthRules.growthPosModArray[(currentModArrayIdx + 1) % traits.plantGrowthRules.growthPosModArray.Length];
 
-                        int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue((int)modArrayOffset + 20000, item.changeFrame.range + 1)));
+                        float cost = growthSpeedVariation * (item.changeFrame.frame + getRandValue((int)modArrayOffset + 20000, item.changeFrame.range + 1));
                         if (growthLevelToTest - modArrayOffset >= cost)
                         {
                             modArrayOffset += cost;
@@ -1014,7 +1062,7 @@ namespace Cave
                     {
                         (((int left, int right, int up, int down) width, (bool x, bool y, bool independant) canBeFlipped)?, (int frame, int range) changeFrame) item = traits.plantGrowthRules.elementWideningArray[(currentElementWideningArrayIdx + 1) % traits.plantGrowthRules.elementWideningArray.Length];
 
-                        int cost = (int)(growthSpeedVariation * (item.changeFrame.frame + getRandValue((int)ElementWideningArrayOffset + 60000, item.changeFrame.range + 1)));
+                        float cost = growthSpeedVariation * (item.changeFrame.frame + getRandValue((int)ElementWideningArrayOffset + 60000, item.changeFrame.range + 1));
                         if (growthLevelToTest - ElementWideningArrayOffset >= cost)
                         {
                             currentElementWidening = item.Item1;
@@ -1051,7 +1099,7 @@ namespace Cave
                     {
                         ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance) item = traits.plantGrowthRules.childArray[(currentChildArrayIdx + 1) % traits.plantGrowthRules.childArray.Length];
 
-                        int cost = (int)(growthSpeedVariation * (item.birthFrame.frame + getRandValue((int)childArrayOffset + 30000, item.birthFrame.range + 1)));
+                        float cost = (traits.plantGrowthRules.doNotApplyGrowthSpeedVariationToChildren ? 1 : growthSpeedVariation) * (item.birthFrame.frame + getRandValue((int)childArrayOffset + 30000, item.birthFrame.range + 1));
                         if (growthLevelToTest - childArrayOffset >= cost)
                         {   // This part here will make it so it the baby chance is not 100 AND fails it still proceeds in the array even without spawning the bebe
                             if ((item.chance < 100 && getRandValue(growthLevelToTest + (int)childArrayOffset + 20000, 100) > item.chance) || makeBabyNormal(item, drawPos, growthLevelToTest))  // Only increase cost and position when the growth of the child succeeds. Might add that as a parameter idk to make some kids skippable
@@ -1062,46 +1110,6 @@ namespace Cave
                             else { break; }
                         }
                         else { break; }
-                    }
-
-
-                    if (growthLevelToTest == maxGrowthLevel + 1) // Should only happen when plants has childrenOnGrowthEnd and has done its last growth already
-                    {
-                        int sameChance = getRandValue((int)maxGrowthLevel + (int)childArrayOffset + 582012, 100);
-                        int successfulEndChildren = 0;
-                        if (traits.plantGrowthRules.childrenOnGrowthEnd != null)
-                        {
-                            drawPos = lastDrawPos;
-                            int offset = 0;
-                            foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance) item in traits.plantGrowthRules.childrenOnGrowthEnd)
-                            {
-                                offset += 1;
-                                if (item.chance != 100 && (traits.plantGrowthRules.sameChanceForEndChildren ? sameChance : getRandValue((int)maxGrowthLevel + (int)childArrayOffset + 20000 + offset, 100)) > item.chance) { continue; }
-                                if (makeBabyEnd(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset, !traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd)) { successfulEndChildren++; }
-                            }
-                        }
-                        if (traits.plantGrowthRules.childrenOnGrowthEndSpecial != null)
-                        {
-                            drawPos = lastDrawPos;
-                            int offset = 0;
-                            foreach (((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (float baseValue, float variation)? childMaxGrowthVariation, (float baseValue, float variation)? forceGrowthSpeedVariationFactor, int chance) item in traits.plantGrowthRules.childrenOnGrowthEndSpecial)
-                            {
-                                offset += 1;
-                                if (item.chance != 100 && (traits.plantGrowthRules.sameChanceForEndChildren ? sameChance : getRandValue((int)maxGrowthLevel + (int)childArrayOffset + 284392 + offset, 100)) > item.chance) { continue; }
-                                if (makeBabyEndSpecial(item, drawPos, 1, traits.plantGrowthRules.mirrorTwinChildren ? 0 : offset, !traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd)) { successfulEndChildren++; }
-                            }
-                        }
-                        if (traits.transitionToOtherPlantElementOnGrowthEnd != null)    // wait according to the comment on top it should not happen if plantElement doesn't have children on growth end ??? yet it does ??? Who coded this shit i am confused
-                        {
-                            lastDrawPos = drawPos;
-                            transitionToOtherPlantElement(traits.transitionToOtherPlantElementOnGrowthEnd.Value);
-                            return 2;   // return not goto !! improtant ig ?
-                        }
-                        else if (traits.plantGrowthRules.transmitStickyChildrenOnGrowthEnd && successfulEndChildren > 0)  // It's in the else because if there's a transition it's NOT YET the time to transmit the children because the plant isn't really fully grown
-                        {
-                            transmitStickyChildren(successfulEndChildren);
-                        }
-                        goto SuccessButStop;  // Necessary else might make children again when getting loaded
                     }
 
                     if (traits.plantGrowthRules.isPropagativeGrowth)
@@ -1145,8 +1153,11 @@ namespace Cave
                     (int type, int subType) materialToFillTileWith = traits.plantGrowthRules.materalToFillWith;
                     if (traits.plantGrowthRules.fillWithOtherMaterial != null)
                     {
-                        int growthLevelRequired = traits.plantGrowthRules.fillWithOtherMaterial.Value.threshold + getRandValue(6853932, traits.plantGrowthRules.fillWithOtherMaterial.Value.variation + 1);
-                        if (traits.plantGrowthRules.fillWithOtherMaterial.Value.fromEnd ? (maxGrowthLevel - growthLevelToTest) < growthLevelRequired : growthLevelToTest >= growthLevelRequired) { materialToFillTileWith = traits.plantGrowthRules.fillWithOtherMaterial.Value.material; }
+                        foreach (((int type, int subType) material, int threshold, int variation, bool fromEnd) item in traits.plantGrowthRules.fillWithOtherMaterial)
+                        {
+                            int growthLevelRequired = item.threshold + getRandValue(6853932, item.variation + 1);
+                            if (item.fromEnd ? (maxGrowthLevel - growthLevelToTest) < growthLevelRequired : growthLevelToTest >= growthLevelRequired) { materialToFillTileWith = item.material; }
+                        }
                     }
                     
                     if (currentElementWidening is null) { if (!tryFill(drawPos, materialToFillTileWith)) { goto Fail; } }
@@ -1175,7 +1186,7 @@ namespace Cave
                         }
                         if (!success) { goto Fail; }
 
-                        if (growthLevelToTest == 1 && motherPlant.plantElement == this)
+                        if (growthLevelToTest == 1 && motherPlant.plantElement == this) // Make trees hanging over jagged terrain have a downwards extension so they don't float weirdly
                         {
                             for (int i = 1; i < currentElementWidening.Value.width.left + 1; i++)
                             {

@@ -1305,7 +1305,7 @@ namespace Cave
 
                 (int x, int y) spawnPos;
                 if (setToUse.Count == 0) { return; }
-                for (int j = 0; j < 10; j++)
+                for (int k = 0; k < 10; k++)
                 {
                     spawnPos = getRandomItem(setToUse);
                     if (propagation != null && (Abs(spawnPos.x - propagation.Value.motherPos.x) > propagation.Value.range.x || Abs(spawnPos.y - propagation.Value.motherPos.y) > propagation.Value.range.y)) { continue; }
@@ -1341,7 +1341,18 @@ namespace Cave
                     Plant newPlant = new Plant(this, spawnPos, type);
                     if (newPlant.isDeadAndShouldDisappear) { continue; }
                     screen.activePlants[newPlant.id] = newPlant;
-                    forbiddenPositions.Add(spawnPos);
+
+                    if (traits.forbiddenSpawnRange != null)
+                    {
+                        for (int i = -traits.forbiddenSpawnRange.Value.x; i <= traits.forbiddenSpawnRange.Value.x; i++)
+                        {
+                            for (int j = -traits.forbiddenSpawnRange.Value.y; j <= traits.forbiddenSpawnRange.Value.y; j++)
+                            {
+                                forbiddenPositions.Add((spawnPos.x + i, spawnPos.y + j));
+                            }
+                        }
+                    }
+                    else { forbiddenPositions.Add(spawnPos); }
 
                     if (propagation is null && traits.propagateOnSuccess != null)
                     {
@@ -1989,9 +2000,9 @@ namespace Cave
                     if (temperature > 200 && temperature < 850)
                     {
                         int temperateness = calculateBiome(ref percentageFree, Min(temperature - 200, 850 - temperature), (0, 999999)); // so it's ez to calculeyt
-                        if (humidity < 275 && oceanity < 700)
+                        if (humidity < 275 && oceanity < 650)
                         {
-                            int desertness = calculateBiome(ref temperateness, Min(275 - humidity, 700 - oceanity), (0, 999999));
+                            int desertness = calculateBiome(ref temperateness, Min(275 - humidity, 650 - oceanity), (0, 999999));
                             calculateAndAddBiome(listo, (2, 4), ref desertness, salinity, (1000, 999999));      // salt desert
                             calculateAndAddBiome(listo, (2, 6), ref desertness, temperature, (-999999, 400));   // cold desert
 
@@ -2002,6 +2013,8 @@ namespace Cave
                             calculateAndAddBiome(listo, (2, 7), ref desertness, salinity, (-999999, 100));      // gray desert
                             testAddBiome(listo, (2, 5), desertness);    // Add rest as temperate desert
                         }
+                        if (temperateness <= 0) { goto AfterTemperateTest; }
+                        calculateAndAddBiome(listo, (2, 11), ref temperateness, Min(425 - humidity, 750 - oceanity), (0, 999999)); // Steppe
                         if (temperateness <= 0) { goto AfterTemperateTest; }
                         if (illumination > 600)
                         {
@@ -2088,8 +2101,8 @@ namespace Cave
                 }
                 else if (dimensionType == (-1, 0)) // type == -1, TEST dimension
                 {
-                    calculateAndAddBiome(listo, (2, 8), ref percentageFree, humidity, (512, 999999)); // Bog
-                    testAddBiome(listo, (2, 9), percentageFree); // Fen
+                    calculateAndAddBiome(listo, (2, 10), ref percentageFree, humidity, (512, 999999)); // Prairie
+                    testAddBiome(listo, (2, 11), percentageFree); // Steppe
                     // calculateAndAddBiome(listo, (2, 1), ref percentageFree, temperature, (850, 999999)); // Marsh
                     // calculateAndAddBiome(listo, (3, 3), ref percentageFree, salinity, (700, 999999)); // Swamp
                     // testAddBiome(listo, (3, 6), percentageFree); // Bayou
