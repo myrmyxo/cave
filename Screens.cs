@@ -77,7 +77,7 @@ namespace Cave
                 bool isPngToExport = false;
 
                 if (false) { forceBiome = (-1, 0); isMonoeBiomeToPut = false; }
-                if (false) { forceBiome = (2, 11); isMonoeBiomeToPut = true; }
+                if (true) { forceBiome = (2, 10); isMonoeBiomeToPut = true; }
 
                 int PNGsize = 150;
                 PNGsize = 100;
@@ -161,7 +161,8 @@ namespace Cave
                     player.placePlayer();
                 }
 
-                if (false) { makeSTATS(loadedScreens.Values.ToList()[0], 25000); }
+                if (false) { makeSTATS(loadedScreens.Values.ToList()[0], 100000); }
+                if (false) { makeBiomeMap(loadedScreens.Values.ToList()[0], 250); }
             }
             public void movePlayerStuff(Player player)
             {

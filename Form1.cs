@@ -66,6 +66,8 @@ namespace Cave
 
             //     ---- - - CURRENTLY DOING - - ----
             //
+            // Echinacea, Cornflower ?, Ratibida pinnata, Rudbeckia, Sunflowers (Helianthus), Blazing star
+            //
             // Then prairies and heathlands and shrublands and stuff HEATHHH
             // Biomes with low light and with fungi when illumination is low ? And if it gets under 0 it gets very dangerous, like deep dark in minefart or idk ?
 
@@ -379,16 +381,12 @@ namespace Cave
         }
         public static void makeSTATS(Screens.Screen screen, int chunksToSample)
         {
-            spawnEntitiesBool = false;
-            spawnPlants = false;
-
             Dictionary<string, float> biomePercentageStats = new Dictionary<string, float>();
             for (int i = 0; i < chunksToSample; i++)
             {
-                (int x, int y) chunkPos = (rand.Next(-1000000, 1000000), rand.Next(-1000000, 1000000));
-                Chunk chunk = screen.getChunkFromChunkPos(chunkPos, forceMaturityLevelOne:true);
+                Chunk chunk = new Chunk(screen, (rand.Next(-1000000, 1000000), rand.Next(-1000000, 1000000)), true);
 
-                addOrIncrementDict(biomePercentageStats, (chunk.biomeIndex[16, 16][0].traits.name, 1));
+                addOrIncrementDict(biomePercentageStats, (chunk.bottomLeftTileBiomeForStatsOnly[0].traits.name, 1));
             }
 
             foreach (string key in biomePercentageStats.Keys.ToList()) { biomePercentageStats[key] = biomePercentageStats[key] * 100 / chunksToSample; }
@@ -399,6 +397,37 @@ namespace Cave
 
             biomePercentageStats = new Dictionary<string, float>();
             foreach ((string biome, float percentage) tuple in percentageList) { biomePercentageStats[tuple.biome] = tuple.percentage; }
+
+            int a = 3;
+        }
+        public static void makeBiomeMap(Screens.Screen screen, int chunkRadius)
+        {
+            Bitmap biomeBitmap = new Bitmap(chunkRadius * 2 + 1, chunkRadius * 2 + 1);
+            for (int i = -chunkRadius; i <= chunkRadius; i++)
+            {
+                for (int j = -chunkRadius; j <= chunkRadius; j++)
+                {
+                    (Color main, Color? second, int pattern) displayColor = new Chunk(screen, (i, j), true).bottomLeftTileBiomeForStatsOnly[0].traits.displayColor;
+                    if (displayColor.second is null) { biomeBitmap.SetPixel(i + chunkRadius, j + chunkRadius, displayColor.main); }
+                    else
+                    {
+                        int score;
+                        if (displayColor.pattern == 1) { score = PosMod(i, 2); }
+                        else if (displayColor.pattern == 2) { score = PosMod(j, 2); }
+                        else if (displayColor.pattern == 3) { score = PosMod((i / 2) % 2 + j, 3); }
+                        else if (displayColor.pattern == 4) { score = PosMod(i + (j / 2) % 2, 3); }
+                        else { score = PosMod(i + j, 2); }
+
+                        if (score == 0) { biomeBitmap.SetPixel(i + chunkRadius, j + chunkRadius, displayColor.second.Value); }
+                        else { biomeBitmap.SetPixel(i + chunkRadius, j + chunkRadius, displayColor.main); }
+                    }
+                }
+            }
+
+            biomeBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
+            Bitmap upscaledBiomeBitmap = new Bitmap(biomeBitmap.Width * 4, biomeBitmap.Height * 4);
+            screen.pasteImage(upscaledBiomeBitmap, biomeBitmap, (0, 0), (0, 0), 4);
+            upscaledBiomeBitmap.Save($"{currentDirectory}\\BiomeMaps\\BiomeMap of seed {worldSeed}.png");
 
             int a = 3;
         }
@@ -715,6 +744,14 @@ namespace Cave
             if (value > 255) { return 255; }
             if (value < 0) { return 0; }
             return value;
+        }
+        public static (int r, int g, int b) ColorClamp(int r, int g, int b)
+        {
+            return (r < 0 ? 0 : (r > 255 ? 255 : r), g < 0 ? 0 : (g > 255 ? 255 : g), b < 0 ? 0 : (b > 255 ? 255 : b));
+        }
+        public static (int r, int g, int b) ColorClamp((int r, int g, int b) tup)
+        {
+            return (tup.r < 0 ? 0 : (tup.r > 255 ? 255 : tup.r), tup.g < 0 ? 0 : (tup.g > 255 ? 255 : tup.g), tup.b < 0 ? 0 : (tup.b > 255 ? 255 : tup.b));
         }
         public static int Floor(int value, int modulo)
         {

@@ -173,6 +173,7 @@ namespace Cave
             (float baseScore1, float baseScore2, float separatorScore)[,] scoreArray,
             bool[] quartileFilledArray)? manyValues = null;
 
+            public (BiomeTraits traits, int percentage)[] bottomLeftTileBiomeForStatsOnly;
             public (BiomeTraits traits, int percentage)[,][] biomeIndex;
             public HashSet<BiomeTraits> allBiomesInTheChunk;
 
@@ -223,6 +224,14 @@ namespace Cave
                 pos = posToPut;
 
                 determineContents(null);
+            }
+            public Chunk(Screens.Screen screenToPut, (int x, int y) posToPut, bool isFlashLoading)  // This is to make stats and only get the biomes and stuff
+            {
+                screen = screenToPut;
+                pos = posToPut;
+
+                chunkSeed = screen.getLCGValue((pos, 0), 32);
+                bottomLeftTileBiomeForStatsOnly = findBiome(screen.type, determineOneBiomeValuesForStats());
             }
             public void promoteFromExtraToFullyLoaded(ChunkJson chunkJson)  // Can be used both for promotion and simple loading (careful dict displacement is not made by this function !)
             {
@@ -298,6 +307,25 @@ namespace Cave
                         lightBitmap.SetPixel(i, j, colorToDraw);
                     }
                 }
+            }
+            public (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) determineOneBiomeValuesForStats()
+            {
+                int[] biomeValues = new int[18];
+                findOneNoiseValuesForStats(biomeValues, 0, 100, 512, 1636);    // small Temperature
+                findOneNoiseValuesForStats(biomeValues, 1, 101, 1024, 512);   // BIG Temperature
+                findOneNoiseValuesForStats(biomeValues, 2, 102, 512, 1636);    // small Humidity
+                findOneNoiseValuesForStats(biomeValues, 3, 103, 1024, 512);   // BIG Humidity
+                findOneNoiseValuesForStats(biomeValues, 4, 104, 512, 1636);    // small Acidity
+                findOneNoiseValuesForStats(biomeValues, 5, 105, 1024, 512);   // BIG Acidity
+                findOneNoiseValuesForStats(biomeValues, 6, 106, 512, 1636);    // small Toxicity
+                findOneNoiseValuesForStats(biomeValues, 7, 107, 1024, 512);   // BIG Toxicity
+                findOneNoiseValuesForStats(biomeValues, 8, 108, 512, 1636);    // small Salinity
+                findOneNoiseValuesForStats(biomeValues, 9, 109, 1024, 512);   // BIG Salinity
+                findOneNoiseValuesForStats(biomeValues, 10, 110, 512, 1636);   // small Illumination
+                findOneNoiseValuesForStats(biomeValues, 11, 111, 1024, 512);  // BIG Illumination
+                findOneNoiseValuesForStats(biomeValues, 12, 112, 512, 1636);   // small Oceanity
+                findOneNoiseValuesForStats(biomeValues, 13, 113, 1024, 512);  // BIG Oceanity
+                return makeTileBiomeValueArrayOneTileForStats(biomeValues);
             }
             public (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] determineAllBiomeValues(bool updateTheTiles = true)
             {
@@ -1642,6 +1670,19 @@ namespace Cave
 
 
 
+            public void findOneNoiseValuesForStats(int[] noiseValues, int layer, int realLayer, int modulo, int noiseAmplitude = 256)  // noiseValues is int[32, 32, depends]   // layer is the one set in the array, realLayer is the one actually gotten   // Modulo is the resolution : 16 for small terrain noise, 64 for big, 1024 for biome.... for example
+            {
+                (int x, int y) realPos = (pos.x * 32, pos.y * 32);
+                int scale = Max(32, modulo) / 32;
+                (int x, int y) posToGet = (ChunkIdx(realPos.x / scale), ChunkIdx(realPos.y / scale));
+
+                (int x, int y) mod = PosMod((realPos.x, realPos.y), modulo);
+                (int left, int right) preTopValues = (screen.getLCGValue(((posToGet.x, posToGet.y + 1), realLayer), noiseAmplitude), screen.getLCGValue(((posToGet.x + 1, posToGet.y + 1), realLayer), noiseAmplitude));
+                (int left, int right) prebottomValues = (screen.getLCGValue((posToGet, realLayer), noiseAmplitude), screen.getLCGValue(((posToGet.x + 1, posToGet.y), realLayer), noiseAmplitude));
+                (int left, int right) bottomValues = ((prebottomValues.left * (modulo - mod.y) + preTopValues.left * mod.y) / modulo, (prebottomValues.right * (modulo - mod.y) + preTopValues.right * mod.y) / modulo);
+       
+                noiseValues[layer] = (bottomValues.left * (modulo - mod.x) + bottomValues.right * mod.x) / modulo;
+            }
             public int[,] findNoiseValues(int realLayer, int modulo, int noiseAmplitude = 256)  // noiseValues is int[32, 32, depends]   // layer is the one set in the array, realLayer is the one actually gotten   // Modulo is the resolution : 16 for small terrain noise, 64 for big, 1024 for biome.... for example
             {
                 if (modulo < 32) { return findNoiseValuesQuartile(realLayer, modulo, noiseAmplitude); }
@@ -1908,6 +1949,19 @@ namespace Cave
             int mod2 = values[posX, posY, 16] + values[posX, posY, 17] - 512;
             return (temperature, humidity, acidity, toxicity, salinity, illumination, oceanity, mod1, mod2);
         }
+        public static (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2) makeTileBiomeValueArrayOneTileForStats(int[] values)
+        {
+            int temperature = values[0] + values[1] - 512;
+            int humidity = values[2] + values[3] - 512;
+            int acidity = values[4] + values[5] - 512;
+            int toxicity = values[6] + values[7] - 512;
+            int salinity = values[8] + values[9] - 512;
+            int illumination = values[10] + values[11] - 512;
+            int oceanity = values[12] + values[13] - 512;
+            int mod1 = values[14] + values[15] - 512;
+            int mod2 = values[16] + values[17] - 512;
+            return (temperature, humidity, acidity, toxicity, salinity, illumination, oceanity, mod1, mod2);
+        }
         public static int testAddBiome(List<((int biome, int subBiome), int)> biomeList, (int biome, int subBiome) biomeToTest, int biomeness)
         {
             if (biomeness > 0) { biomeList.Add((biomeToTest, biomeness)); }
@@ -2039,13 +2093,13 @@ namespace Cave
 
                             int wetlandness = calculateBiome(ref prairieness, humidity, (700 - Clamp(0, oceanity - 512, 256), 999999));
 
-                            int mireness = calculateBiome(ref wetlandness, humidity, ((int)(600 + toxicity * 0.25f - temperature - oceanity * 0.25f), 999999));
+                            int mireness = calculateBiome(ref wetlandness, (int)(temperature * 0.5f + toxicity * 0.25f - oceanity * 0.25f - 256), (0, 999999));
                             calculateAndAddBiome(listo, (2, 8), ref mireness, acidity, (512, 999999));  // Bog
                             testAddBiome(listo, (2, 9), mireness);  // Add rest of mireness as fen
 
                             testAddBiome(listo, (2, 1), wetlandness);   // Add rest of wetlandness as marsh
 
-                            testAddBiome(listo, (2, 0), prairieness);   // Add rest as flower forest (for now)
+                            testAddBiome(listo, (2, 10), prairieness);  // Add rest as prairie
                         }
                         percentageFree += temperateness;    // if not all temperateness allocated a biome
                     }

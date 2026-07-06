@@ -812,6 +812,7 @@ namespace Cave
         }
         public static void createFolders(long seed)
         {
+            testCreateOneFolder($"{currentDirectory}\\BiomeMaps");
             testCreateOneFolder($"{currentDirectory}\\BiomeDiagrams");
             testCreateOneFolder($"{currentDirectory}\\bitmapos");
             testCreateOneFolder($"{currentDirectory}\\CaveData\\{seed}\\ChunkNoise");
