@@ -86,11 +86,11 @@ namespace Cave
 
             public ColorRange colorRange;
             public float biomeColorBlend;
-            public (int x, int y)? isTextured;
+            public (int x, int y, int z)? isTextured;
             public bool isTransparent;
             public TileTraits(string namee, ColorRange cR = null, bool Air = false, bool Liq = false, bool San = false, bool L = false, bool A = false, bool T = false,
                 bool S = false, (int propagationThreshold, int destructionThreshold)? F = null, ((int type, int subType) type, float chance)? bT = null, bool? iFC = null,
-                bool B = false, bool St = false, bool iTF = false, float bCB = 0.1f, (int x, int y)? Tex = null, bool Tr = false)
+                bool B = false, bool St = false, bool iTF = false, float bCB = 0.1f, (int x, int y, int z)? Tex = null, bool Tr = false)
             {
                 name = namee;
 
@@ -126,6 +126,9 @@ namespace Cave
         {
             tileTraitsDict = new Dictionary<(int type, int subType), TileTraits>()
             {
+                { (-9, 0), new TileTraits("Liquid Caramel Tile", bCB:0.1f,
+                cR:new ColorRange((100, 0, 0), (30, 0, 0), (15, 0, 0)),           Liq:true                                  ) },
+
                 { (-8, 0), new TileTraits("Slime", bCB:0.2f,
                 cR:new ColorRange((145, 0, 0), (175, 0, 0), (115, 0, 0)),         Liq:true                                  ) },
 
@@ -138,8 +141,8 @@ namespace Cave
                 cR:new ColorRange((65, 0, 0), (5, 0, 0), (35, 0, 0)),             Liq:true                                  ) },
 
                 { (-5, 0), new TileTraits("Honey", bCB:0.2f,
-                cR:new ColorRange((160, 0, 0), (120, 0, 0), (70, 0, 0)),          Liq:true                                  ) },
-
+                cR:new ColorRange((210, 0, 0), (145, 0, 0), (35, 0, 0)),          Liq:true                                  ) },
+                
                 { (-4, 0), new TileTraits("Lava", bCB:0.05f,
                 cR:new ColorRange((255, 0, 0), (90, 0, 0), (0, 0, 0)),            Liq:true, L:true                          ) },
 
@@ -177,7 +180,7 @@ namespace Cave
                 { (2, 1), new TileTraits("Mud", bCB:0.3f,
                 cR:new ColorRange((65, 0, 0), (45, 0, 0), (30, 0, 0))                                                       ) },
                 { (2, 2), new TileTraits("Litter", bCB:0.2f, F:(45, 150), bT:((7, 0), 5),
-                cR:new ColorRange((180, 0, 0), (75, 0, 0), (40, 0, 0)),           Tex:(1, 1)                                ) },
+                cR:new ColorRange((180, 0, 0), (75, 0, 0), (40, 0, 0)),           Tex:(1, 1, 0)                             ) },
                 { (2, 3), new TileTraits("Peat", bCB:0.1f,
                 cR:new ColorRange((55, 0, 0), (55, 0, 0), (60, 0, 0))                                                       ) },
 
@@ -192,37 +195,61 @@ namespace Cave
                 cR:new ColorRange((200, 0, 0), (150, 0, 0), (130, 0, 0))                                                    ) },
 
                 { (5, 0), new TileTraits("Mold Tile", bCB:0.1f, F:(15, 60), bT:((7, 0), 5),
-                cR:new ColorRange((50, 0, 0), (50, 0, 0), (100, 0, 0)),           Tex:(1, 1), B:true                  ) },
+                cR:new ColorRange((50, 0, 0), (50, 0, 0), (100, 0, 0)),           Tex:(1, 1, 0), B:true                     ) },
 
                 { (6, 0), new TileTraits("Salt Tile", bCB:0.1f,
-                cR:new ColorRange((210, 0, 0), (210, 0, 0), (210, 0, 0)),         Tex:(1, 1), Tr:true, St:true        ) },
+                cR:new ColorRange((210, 0, 0), (210, 0, 0), (210, 0, 0)),         Tex:(1, 1, 0), Tr:true, St:true           ) },
                 { (6, 1), new TileTraits("Pink Salt Tile", bCB:0.1f,
-                cR:new ColorRange((170, 0, 0), (120, 0, 0), (140, 0, 0)),         Tex:(1, 1), Tr:true, St:true        ) },
+                cR:new ColorRange((170, 0, 0), (120, 0, 0), (140, 0, 0)),         Tex:(1, 1, 0), Tr:true, St:true           ) },
 
                 { (7, 0), new TileTraits("Ash Tile", bCB:0.1f,
-                cR:new ColorRange((120, 0, 0), (120, 0, 0), (125, 0, 0)),         San:true, Tex:(1, 1), iFC:false, B:true ) },
+                cR:new ColorRange((120, 0, 0), (120, 0, 0), (125, 0, 0)),         San:true, Tex:(1, 1, 0), iFC:false, B:true) },
 
                 { (8, 0), new TileTraits("Yellow Sand Tile", bCB:0.1f,
-                cR:new ColorRange((220, 0, 0), (180, 0, 0), (50, 0, 0)),         San:true, Tex:(1, 1), B:true        ) },
+                cR:new ColorRange((220, 0, 0), (180, 0, 0), (50, 0, 0)),         San:true, Tex:(4, 1, 0), B:true            ) },
                 { (8, 1), new TileTraits("Orange Sand Tile", bCB:0.1f,
-                cR:new ColorRange((225, 0, 0), (150, 0, 0), (50, 0, 0)),         San:true, Tex:(1, 1), B:true        ) },
+                cR:new ColorRange((225, 0, 0), (150, 0, 0), (50, 0, 0)),         San:true, Tex:(4, 1, 0), B:true            ) },
                 { (8, 2), new TileTraits("Red Sand Tile", bCB:0.1f,
-                cR:new ColorRange((230, 0, 0), (120, 0, 0), (50, 0, 0)),         San:true, Tex:(1, 1), B:true        ) },
+                cR:new ColorRange((230, 0, 0), (120, 0, 0), (50, 0, 0)),         San:true, Tex:(4, 1, 0), B:true            ) },
                 { (8, 3), new TileTraits("Gray Sand Tile", bCB:0.1f,
-                cR:new ColorRange((175, 0, 0), (160, 0, 0), (145, 0, 0)),        San:true, Tex:(1, 1), B:true        ) },
+                cR:new ColorRange((175, 0, 0), (160, 0, 0), (145, 0, 0)),        San:true, Tex:(4, 1, 0), B:true            ) },
                 { (8, 4), new TileTraits("Brown Sand Tile", bCB:0.1f,
-                cR:new ColorRange((200, 0, 0), (155, 0, 0), (100, 0, 0)),         San:true, Tex:(1, 1), B:true       ) },
+                cR:new ColorRange((200, 0, 0), (155, 0, 0), (100, 0, 0)),         San:true, Tex:(4, 1, 0), B:true           ) },
 
                 { (9, 0), new TileTraits("Yellow Sandstone Tile", bCB:0.1f,
-                cR:new ColorRange((185, 0, 0), (150, 0, 0), (75, 0, 0)),         Tex:(2, 1)                         ) },
+                cR:new ColorRange((185, 0, 0), (150, 0, 0), (75, 0, 0)),         Tex:(2, 1, 0)                              ) },
                 { (9, 1), new TileTraits("Orange Sandstone Tile", bCB:0.1f,
-                cR:new ColorRange((190, 0, 0), (130, 0, 0), (75, 0, 0)),         Tex:(2, 1)                         ) },
+                cR:new ColorRange((190, 0, 0), (130, 0, 0), (75, 0, 0)),         Tex:(2, 1, 0)                              ) },
                 { (9, 2), new TileTraits("Red Sandstone Tile", bCB:0.1f,
-                cR:new ColorRange((195, 0, 0), (110, 0, 0), (75, 0, 0)),         Tex:(2, 1)                         ) },
+                cR:new ColorRange((195, 0, 0), (110, 0, 0), (75, 0, 0)),         Tex:(2, 1, 0)                              ) },
                 { (9, 3), new TileTraits("Gray Sandstone Tile", bCB:0.1f,
-                cR:new ColorRange((135, 0, 0), (125, 0, 0), (115, 0, 0)),        Tex:(2, 1)                         ) },
+                cR:new ColorRange((135, 0, 0), (125, 0, 0), (115, 0, 0)),        Tex:(2, 1, 0)                              ) },
                 { (9, 4), new TileTraits("Brown Sandstone Tile", bCB:0.1f,
-                cR:new ColorRange((165, 0, 0), (130, 0, 0), (95, 0, 0)),         Tex:(2, 1)                         ) },
+                cR:new ColorRange((165, 0, 0), (130, 0, 0), (95, 0, 0)),         Tex:(2, 1, 0)                              ) },
+
+                { (10, 0), new TileTraits("White Hard Candy Tile", bCB:0.1f,
+                cR:new ColorRange((245, 0, 0), (235, 0, 0), (240, 0, 0))                                                    ) },
+                { (10, 1), new TileTraits("Icing Tile", bCB:0.1f,
+                cR:new ColorRange((210, 0, 0), (210, 0, 0), (220, 0, 0))                                                    ) },
+                { (10, 2), new TileTraits("Pink Sugar Tile", bCB:0.1f,
+                cR:new ColorRange((205, 0, 0), (115, 0, 10), (140, 0, 0)),                  Tex:(5, 8, 15)                  ) },
+                { (10, 3), new TileTraits("Caramel Tile", bCB:0.1f,
+                cR:new ColorRange((160, 0, 0), (85, 0, 0), (10, 0, 0)),                     Tex:(6, 7, 0)                   ) },
+                { (10, 4), new TileTraits("Pink Hard Candy Tile", bCB:0.1f,
+                cR:new ColorRange((210, 0, 0), (155, 0, 0), (195, 0, 0))                                                    ) },
+
+                { (11, 0), new TileTraits("Powdered Sugar Tile", bCB:0.1f,
+                cR:new ColorRange((240, 0, 0), (240, 0, 0), (250, 0, 0)),         San:true, Tex:(3, 32, 0), B:true          ) },
+                { (11, 1), new TileTraits("Pink Granulated Sugar Tile", bCB:0.1f,
+                cR:new ColorRange((200, 0, 0), (90, 0, 10), (125, 0, 0)),         San:true, Tex:(4, 1, 0), B:true           ) },
+
+                { (12, 0), new TileTraits("Gingerbread Tile", bCB:0.1f,
+                cR:new ColorRange((130, 0, 0), (60, 0, 0), (30, 0, 0)),                     Tex:(3, 16, 0)                  ) },
+                { (12, 1), new TileTraits("Gingerbread Crust Tile", bCB:0.1f,
+                cR:new ColorRange((70, 0, 0), (40, 0, 0), (35, 0, 0)),                      Tex:(3, 64, 0)                  ) },
+
+                { (13, 0), new TileTraits("Honeycomb Tile", bCB:0.1f,
+                cR:new ColorRange((230, 0, 0), (180, 0, 0), (65, 0, 0)),                    Tex:(7, 8, 5)                   ) },
             };
 
             foreach ((int type, int subType) typeToSet in tileTraitsDict.Keys) { tileTraitsDict[typeToSet].setType(typeToSet); }
@@ -265,7 +292,7 @@ namespace Cave
                 { (0, 0), new MaterialTraits("Error/Air", 
                 col:new ColorRange((255, 0, 0), (0, 0, 0), (255, 0, 0))                                                 ) },
 
-                { (1, -3), new MaterialTraits("Plant Matter 3 (for cool colors)", F:(75, 250), bT:((7, 0), true, 2), tOG:(1, 0, 3),
+                { (1, -3), new MaterialTraits("Plant Matter 4 (for cool colors)", F:(75, 250), bT:((7, 0), true, 2), tOG:(1, 0, 3),
                 col:new ColorRange((50, 0, 30), (170, 50, 30), (50, 0, 30))                                             ) },
                 { (1, -2), new MaterialTraits("Plant Matter 3 (for cool colors)", F:(75, 250), bT:((7, 0), true, 2), tOG:(1, 0, 3),
                 col:new ColorRange((50, 0, 30), (170, 50, 30), (50, 0, 30))                                             ) },
@@ -318,6 +345,15 @@ namespace Cave
 
                 { (12, 0), new MaterialTraits("Wax",
                 col:new ColorRange((210, 0, 10), (210, 0, 10), (200, 0, 10))                                            ) },
+
+                { (13, -2), new MaterialTraits("I'm just like Candy I can be sweet (Candy 3)", tOG:(13, 0, 3),
+                col:new ColorRange((225, 0, 0), (230, 0, 10), (230, 0, 0))                                            ) },
+                { (13, -1), new MaterialTraits("Candy 2", tOG:(13, 0, 3),
+                col:new ColorRange((225, 0, 0), (230, 0, 10), (230, 0, 0))                                            ) },
+                { (13, 0), new MaterialTraits("Candy",
+                col:new ColorRange((225, 0, 0), (230, 0, 10), (230, 0, 0))                                            ) },
+                { (13, 1), new MaterialTraits("Cotton Candy",
+                col:new ColorRange((240, 0, 0), (160, 0, 10), (180, 0, 0))                                            ) },
             };
         }
 
@@ -464,7 +500,7 @@ namespace Cave
 
                 { (0, 0), new EntityTraits("Fairy",           4,  ((-3, 0, 0), 1),      //  --> Fairy Liquid
                 new ColorRange((130, 50, 30), (130, -50, 30), (210, 0, 30)), lR:7, wT:(0, (0, 0), 0.02165f, 0.75f, (false, (50, 220, 220, 200))),
-                iW:1, iA:1, iG:3) },                                                                        
+                iW:1, iA:1, iG:3) },
                 { (0, 1), new EntityTraits("ObsidianFairy",   10, ((-3, 0, 0), 1),      //  --> Fairy Liquid
                 new ColorRange((30, 0, 30), (30, 0, 30), (30, 0, 30)), lR:7, wT:(0, (0, 0), 0.02165f, 0.75f, (false, (50, 0, 0, 0))),
                 iW:1, iA:1, iG:3) },
@@ -661,6 +697,26 @@ namespace Cave
                 { (202, 0), new EntityTraits("Louse",           2,  ((8, 0, 3), 1),       //  --> Flesh
                 new ColorRange((160, -10, 30), (180, 10, 30), (200, 10, 30)),
                 iW:1, oW:2, iA:0, oG:4, iG:1, oP:1, jS:(1, 1.5f), jC:0.1f) },
+
+
+
+                { (300, 0), new EntityTraits("Gingerbread Man", 5,  ((12, 0, 0), 1),      //  --> Gingerbread Tile
+                new ColorRange((130, 20, 20), (60, -10, 15), (30, -10, 10)),
+                iW:1, oW:2, iA:0, oG:1, iG:1, jS:(2, 2.5f), jC:0.1f, RsA:true) },
+
+                { (301, 0), new EntityTraits("Fluffer",         2,  ((13, 1, 3), 1),      //  --> Cotton candy
+                new ColorRange((220, -20, 20), (170, 25, 15), (190, 15, 15)), L:(2, 0), wT:(1, (0, 0), 0.03f, 0.75f, (true, (-150, 40, -20, 15))),
+                tM:new (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[]
+                {
+                    (0, false, true, 0, (0, 0), (true, null, (0, 0, 0, 0))),
+                    (0, false, true, 1, (1, 0), (true, null, (-200, 20, -10, 7))),
+                    (0, false, true, 3, (1, 0), (true, null, (-150, 10, -10, 5))),
+                    (0, false, true, 4, (1, 0), (true, null, (-200, 40, -20, 15))),
+                    (0, false, true, 5, (1, 0), (true, null, (-200, 30, -20, 10))),
+                    (0, false, true, 7, (1, 0), (true, null, (-120, 20, -10, 7))),
+                    (0, false, true, 0, (1, 0), (true, null, (-170, 40, -20, 15)))
+                }, tT:true,
+                iW:1, iA:1, iG:3) },
             };
         }
 
@@ -700,6 +756,7 @@ namespace Cave
 
             public (int type, int subType) materalToFillWith;
             public ((int type, int subType) material, int threshold, int variation, bool fromEnd)[] fillWithOtherMaterial;
+            public ((int type, int subType)[] materials, int variation)? fillWithOtherMaterialPeriodic;
             public (int type, int subType)[] tileContentNeededToGrow;
             public ((int x, int y, bool stopGrowth)[] left, (int x, int y, bool stopGrowth)[] right, (int x, int y, bool stopGrowth)[] down, (int x, int y, bool stopGrowth)[] up)? hindrancePreventionPositions;
 
@@ -744,7 +801,8 @@ namespace Cave
             public ((int x, int y) pos, int state)? requiredTileStateToPropagate;   // 0 air, 1 liquid, 2 solid
             public ((int x, int y) pos, (int type, int subType) tile)[] requiredTilesToPropagate;   // Not yet implemented !
 
-            public PlantGrowthRules((int type, int subType) t, ((int type, int subType) material, int threshold, int variation, bool fromEnd)[] fWOM = null, (int type, int subType)[] tCNTG = null,
+            public PlantGrowthRules((int type, int subType) t, ((int type, int subType) material, int threshold, int variation, bool fromEnd)[] fWOM = null,
+                ((int type, int subType)[] materials, int variation)? fWOMP = null, (int type, int subType)[] tCNTG = null,
                 (int frame, int range)? mG = null, (float step, bool fromEnd)? mGPRV = null, bool oMGV = false, (float baseValue, float variation)? gSVF = null, float? lIMG = null,
                 ((int x, int y, bool stopGrowth)[] left, (int x, int y, bool stopGrowth)[] right, (int x, int y, bool stopGrowth)[] down, (int x, int y, bool stopGrowth)[] up)? hPP = null,
                 ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] cOGS = null,
@@ -767,6 +825,7 @@ namespace Cave
 
                 materalToFillWith = t;
                 fillWithOtherMaterial = fWOM;
+                fillWithOtherMaterialPeriodic = fWOMP;
                 tileContentNeededToGrow = tCNTG;
                 hindrancePreventionPositions = hPP;
 
@@ -1354,7 +1413,7 @@ namespace Cave
                 framez:makeStructureFrameArray(new (int type, int subType)[]{ (2, 0), (2, 1) }, "ButomusFlower", 4),
                 cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((2, 0), null), ((2, 1), null) }
                 ) },
-                
+
                 { (3, 2, 0), new PlantElementTraits("MarshPeaStem", rET:(from number in Enumerable.Range(0, 6) select ((0, number), (true, false))).ToArray(), sRET:new ((int x, int y) pos, (int type, int subType) type, (bool x, bool y) baseDirectionFlip)[] { ((0, 1), (0, 0), (true, false)) },
                 pGR:new PlantGrowthRules(t:(1, 0), mG:(3, 1), hPP:fHPP["Up1Gap"],
                     cOGE:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((3, 2, 1), 0, (1, 1), 0, 100) },
@@ -1485,7 +1544,7 @@ namespace Cave
                     cOGESp:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (float baseValue, float variation)? childMaxGrowthVariation, (float baseValue, float variation)? forceGrowthSpeedVariationFactor, int chance)[] { ((4, 40, -1), 1, (-1, 1), 0, null, null, 100), ((4, 40, -1), 1, (1, 1), 0, null, null, 100),   ((4, 40, -2), 5, (1, 0), 0, null, (15, 0), 35) }
                 )) },
                 { (4, 40, -1), new PlantElementTraits("SaltbushBase2", rET:(from number in Enumerable.Range(0, 12) select ((0, number), (true, false))).ToArray(),
-                pGR:new PlantGrowthRules(t:(1, 0), mG:(0, 0), hPP:fHPP["Up1Gap"], 
+                pGR:new PlantGrowthRules(t:(1, 0), mG:(0, 0), hPP:fHPP["Up1Gap"],
                     cOGESp:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (float baseValue, float variation)? childMaxGrowthVariation, (float baseValue, float variation)? forceGrowthSpeedVariationFactor, int chance)[] { ((4, 40, -2), 5, (2, 0), 0, (-2, 0), (0.9f, 0.2f), 20), ((4, 40, -2), 5, (2, 0), 0, null, (1.15f, 0.2f), 20),    ((4, 40, -2), 5, (2, 0), 0, (-2, 0), (1.4f, 0.2f), 55), ((4, 40, -2), 5, (2, 0), 0, null, (1.65f, 0.2f), 55),   ((4, 40, -2), 5, (1, 0), 0, (-2, 0), (1.9f, 0.2f), 75), ((4, 40, -2), 5, (1, 0), 0, null, (2.15f, 0.25f), 75),    ((4, 40, -2), 5, (1, 0), 0, (-2, 0), (2.5f, 0.25f), 90), ((4, 40, -2), 5, (1, 0), 0, null, (2.8f, 0.3f), 90),    ((4, 40, -2), 7, (1, 0), 0, (-2, 0), (3.25f, 0.5f), 100), ((4, 40, -2), 7, (1, 0), 0, null, (4, 1), 100) },
                     sCFEC:true
                 )) },
@@ -2336,6 +2395,82 @@ namespace Cave
                     PM:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (1, 1), 100), ((-1, 0), (true, false, false), (3, 2), 100), ((-1, 0), (true, false, false), (1, 1), 100), ((1, 0), (true, false, false), (3, 2), 100) },
                     lPM:true
                 )) },
+
+
+
+
+                { (300, 0, 0), new PlantElementTraits("LollipopSpiralTrunk", rET:(from number in Enumerable.Range(0, 32) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(18, 10), hPP:fHPP["Leaves"],// sEW:((1, 0, 0, 0), (true, false, false)),
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((300, 0, 1), 0, (0, 1), 0, 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, true), (4, 8), 65) }
+                )) },
+                { (300, 0, 1), new PlantElementTraits("LollipopSpiralFlower", stick:((0, 1), (true, false)), fMG:(4, 1),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (13, 0), (13, -1), (13, -2) }, "LollipopSpiralFlower", 6)
+                ) },
+
+                { (300, 1, 0), new PlantElementTraits("LollipopRayTrunk", rET:(from number in Enumerable.Range(0, 26) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(12, 10), hPP:fHPP["Leaves"],// sEW:((1, 0, 0, 0), (true, false, false)),
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((300, 1, 1), 0, (0, 1), 0, 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, true), (4, 6), 65) }
+                )) },
+                { (300, 1, 1), new PlantElementTraits("LollipopRayFlower", stick:((0, 1), (true, false)), fMG:(4, 1),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (13, 0), (13, -1) }, "LollipopRayFlower", 6)
+                ) },
+
+                { (300, 10, 0), new PlantElementTraits("LollipopRoundTrunk", rET:(from number in Enumerable.Range(0, 26) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(5, 4), hPP:fHPP["Leaves"],
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((300, 10, 1), 0, (0, 1), 0, 100) },
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, true), (2, 1), 35) }
+                )) },
+                { (300, 10, 1), new PlantElementTraits("LollipopRoundFlower", stick:((0, 1), (true, false)), fMG:(2, 3),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (13, 0), (13, -1) }, "LollipopRoundFlower", 6)
+                ) },
+
+                { (301, 0, 0), new PlantElementTraits("CandyCaneSmall", rET:(from number in Enumerable.Range(0, 6) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(13, 0), mG:(4, 4),
+                    fWOMP:(new (int type, int subType)[]{ (13, 0), (13, -1), (13, -1), (13, 0), (13, 0), (13, -1) }, 6),
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, true, false), (1, 0), 100), ((2, 0), (true, true, false), (1, 0), 100) },
+                    rDG:true, dGO:(-3, 1, 1),
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, true), (1, 1), 20) }
+                )) },
+
+                { (301, 1, 0), new PlantElementTraits("CandyCaneMedium", rET:(from number in Enumerable.Range(0, 15) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(13, 0), mG:(14, 6),
+                    fWOMP:(new (int type, int subType)[]{ (13, 0), (13, -1), (13, -1), (13, 0), (13, 0), (13, -1) }, 6),
+                    DG:new ((int x, int y) direction, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, true, false), (1, 0), 100) },
+                    lDG:true, rDG:true, dGO:(-6, 2, 1),
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, true), (3, 3), 35) }
+                )) },
+
+                { (302, 0, 0), new PlantElementTraits("CottonCandyTreeTrunk", rET:(from number in Enumerable.Range(0, 26) select ((0, number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(1, 1), mG:(15, 20), hPP:fHPP["Leaves"],
+                    cOGS:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, int chance)[] { ((302, 0, 1), 0, (0, 1), 0, 100) },
+                    C:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((302, 0, 2), 0, (-2, 0), 0, (2, 1), 75), ((302, 0, 2), 0, (2, 0), 0, (0, 1), 100), ((302, 0, 2), 0, (0, 0), 0, (1, 0), 75) },
+                    cO:(3, 1, 0.3f), lC:true,
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, true), (4, 4), 35) }
+                )) },
+                { (302, 0, 1), new PlantElementTraits("CottonCandyTreeFlowerSticky", stick:((0, 1), (true, false)), fMG:(6, 3),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (13, 1), }, "CottonCandyFlower", 10)
+                ) },
+                { (302, 0, 2), new PlantElementTraits("CottonCandyTreeFlower", fMG:(6, 3),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (13, 1), }, "CottonCandyFlower", 10)
+                ) },
+
+                { (302, 1, 0), new PlantElementTraits("CottonCandyBush", fMG:(6, 6), rET:(from number in Enumerable.Range(0, 8) select ((0, number), (true, false))).ToArray(),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (13, 1), }, "CottonCandyBushFlower", 13)
+                ) },
+
+
+                { (302, 2, 0), new PlantElementTraits("CottonCandyVine", rET:(from number in Enumerable.Range(0, 20) select ((0, -number), (true, false))).ToArray(),
+                pGR:new PlantGrowthRules(t:(13, 1), mG:(10, 25),
+                    C:new ((int type, int subType, int subSubType) child, int dirType, (int x, int y) mod, float failMGIncrease, (int frame, int range) birthFrame, int chance)[] { ((302, 2, 1), 0, (0, 0), 0, (4, 3), 90) },
+                    lC:true,
+                    PM:new ((int x, int y) mod, (bool x, bool y, bool independant) canBeFlipped, (int frame, int range) changeFrame, int chance)[] { ((1, 0), (true, false, false), (2, 0), 100), ((-1, 0), (true, false, false), (2, 0), 100) },
+                    lPM:true
+                )) },
+                { (302, 2, 1), new PlantElementTraits("CottonCandyTreeFlower", fMG:(4, 4),
+                framez:makeStructureFrameArray(new (int type, int subType)[]{ (13, 1), }, "CottonCandyFlower", 10)
+                ) },
             };
 
             foreach ((int type, int subType, int subSubType) typeToSet in plantElementTraitsDict.Keys) { plantElementTraitsDict[typeToSet].setType(typeToSet); }
@@ -2659,6 +2794,28 @@ namespace Cave
                 mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
                 { (202, 1), new PlantTraits("Long Hair", rP:4, C:true, cl:true,
                 mGFV:4, sT:new HashSet<(int type, int subType)> { (4, 0), (4, 2) }) },
+
+
+
+
+                { (300, 0), new PlantTraits("Spiral Lollipop", rP:-110,
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 1), new ColorRange((165, -10, 20), (145, 0, 20), (125, 10, 20))), ((13, 0), new ColorRange((230, 0, 20), (235, 0, 20), (235, 0, 20))), ((13, -1), new ColorRange((155, -20, 15), (110, 0, 15), (180, 30, 20))), ((13, -2), new ColorRange((115, -20, 15), (70, 0, 15), (140, 30, 20))) }) },
+                { (300, 1), new PlantTraits("Ray Lollipop", rP:-100,
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 1), new ColorRange((165, -10, 20), (145, 0, 20), (125, 10, 20))), ((13, 0), new ColorRange((230, 0, 20), (235, 0, 20), (235, 0, 20))), ((13, -1), new ColorRange((175, 10, 20), (70, -25, 20), (85, 25, 20))) }) },
+                { (300, 10), new PlantTraits("Round Lollipop", rP:-20,
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 1), new ColorRange((190, -10, 20), (150, 0, 20), (130, 10, 20))), ((13, 0), new ColorRange((210, -25, 20), (110, -10, 20), (165, 25, 20))) }) },
+
+                { (301, 0), new PlantTraits("Small Candy Cane", rP:-0.4325f,
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((13, 1), new ColorRange((220, -20, 20), (170, 25, 15), (190, 15, 15))), ((13, -1), new ColorRange((200, 35, 20), (35, -5, 20), (55, -10, 20))) }) },
+                { (301, 1), new PlantTraits("Medium Candy Cane", rP:-10,
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((13, 1), new ColorRange((220, -20, 20), (170, 25, 15), (190, 15, 15))), ((13, -1), new ColorRange((200, 35, 20), (35, -5, 20), (55, -10, 20))) }) },
+
+                { (302, 0), new PlantTraits("Cotton Candy Tree", rP:-120,
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((1, 1), new ColorRange((165, -10, 20), (145, 0, 20), (125, 10, 20))), ((13, 1), new ColorRange((220, -20, 20), (170, 25, 15), (190, 15, 15))) }) },
+                { (302, 1), new PlantTraits("Cotton Candy Bush", rP:-15,
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((13, 1), new ColorRange((220, -20, 20), (170, 25, 15), (190, 15, 15))) }) },
+                { (302, 2), new PlantTraits("Cotton Candy Vine", rP:-100, C:true,
+                cOverride:new ((int type, int subType) type, ColorRange colorRange)[]{ ((13, 1), new ColorRange((220, -20, 20), (170, 25, 15), (190, 15, 15))) }) },
             };
 
             foreach ((int type, int subType) key in plantTraitsDict.Keys) { plantTraitsDict[key].plantElementType = (key.type, key.subType, 0); }
@@ -2775,6 +2932,12 @@ namespace Cave
                 { "Skin90", new TerrainFeaturesTraits((4, 2), 0, 7, mL:1, iS:true, bT:205, nM:(32, null)) },
                 { "Skin75", new TerrainFeaturesTraits((4, 2), 0, 7, mL:1, iS:true, bT:512, nM:(32, null)) },
                 { "Skin40", new TerrainFeaturesTraits((4, 2), 0, 7, mL:1, iS:true, bT:1229, nM:(32, null)) },
+
+                { "PowderedSugar", new TerrainFeaturesTraits((11, 0), 0, 10, mL:1, iS:true, bT:1250, bER:(3000, 0), nM:(32, null), nVR:(1500, null)) },
+                { "PinkGranulatedSugar", new TerrainFeaturesTraits((11, 1), 0, 10, mL:1, iS:true, bT:1250, bER:(3000, 0), nM:(32, null), nVR:(1500, null)) },
+                { "GingerbreadBoulders", new TerrainFeaturesTraits((12, 0), 0, 14, mL:1, iA:true, iL:true, iS:true, bT:900, nM:(16, 8), nVR:(1000, 200), bER:(1000, 0)) },
+                { "GingerbreadCrust", new TerrainFeaturesTraits((12, 1), 0, 15, mL:2, iS:true, nM:(null, null)) },
+                { "HardCandy", new TerrainFeaturesTraits((10, 0), 0, 16, mL:1, iS:true, bT:0, bER:(100, 500), nM:(96, 64), nVR:(800, 400)) },
             };
             int counto = 0;
             foreach (string TFTname in famousTFT.Keys) { famousTFT[TFTname].layer = counto * 2; counto++; famousTFT[TFTname].name = TFTname; }
@@ -2803,6 +2966,7 @@ namespace Cave
             public bool invertedLakes;
 
             public (int one, int two) caveType;
+            public bool scoreIsAdditive;
             public bool isVoronoiCave;
             public float voronoiDepth;
             public float voronoiNoisePonderation;
@@ -2822,7 +2986,7 @@ namespace Cave
             public ((int type, int subType) type, float percentage)[] plantSpawnTypes;
 
             public BiomeTraits(string namee, (int r, int g, int b) colorToPut, ((int r, int g, int b) color, bool isVariation)? backgroundColorToPut, (Color main, Color? second, int pattern) displayColorToPut, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes, ((int type, int subType) type, int percentage)[] ePS = null,
-                (int one, int two)? cT = null, int vD = 0, float vNP = 0.15f, (int one, int two)? txT = null, int cL = 0, int sT = 0, int aST = 0, float cW = 1, TerrainFeaturesTraits[] tFT = null,
+                (int one, int two)? cT = null, bool sIA = false, int vD = 0, float vNP = 0.15f, (int one, int two)? txT = null, int cL = 0, int sT = 0, int aST = 0, float cW = 1, TerrainFeaturesTraits[] tFT = null,
                 (int type, int subType)? fT = null, (int type, int subType)? tT = null, (int type, int subType)? lT = null, (int minHeight, int minTiles, int maxTiles)? lS = null,
                 bool S = false, bool Dg = false, bool Da = false)
             {
@@ -2843,6 +3007,7 @@ namespace Cave
                 invertedLakes = lakeType == (0, 0);
 
                 caveType = cT ?? (1, 2);
+                scoreIsAdditive = sIA;
                 isVoronoiCave = caveType.one == 7 || caveType.two == 7;
                 voronoiDepth = vD;
                 voronoiNoisePonderation = vNP;
@@ -3045,7 +3210,7 @@ namespace Cave
                                                                      // Fairy          Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((4, 0), 25), ((2, 0), 200), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((40, 0), 400), ((13, 0), 100), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                lT:(-3, 0), lS:(2, 6, 100)) },                        // Mushroom        CheeringWillow  Vine           Cattail        Kelp            CeilingKelp
+                lT:(-3, 0), lS:(2, 6, 100)) },                       // Mushroom        CheeringWillow  Vine            Cattail        Kelp            CeilingKelp
                 { (6, 0),  new BiomeTraits("Mold",                  (Color.DarkBlue.R, Color.DarkBlue.G + 20, Color.DarkBlue.B + 40), null, (Color.DarkBlue, Color.DarkSlateBlue, 0),
                                                                      // Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), },
@@ -3094,7 +3259,7 @@ namespace Cave
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((101, 0), 200), ((101, 1), 200), ((101, 2), 100), },
                 cT:(1, 5), txT:(0, 0), Da:true) },                   // Candle           Chandelier       Candelabrum 
-                { (101, 0), new BiomeTraits("Dark Ocean",            (Color.DarkSlateBlue.R, Color.DarkSlateBlue.G, Color.DarkSlateBlue.B), null, (Color.FromArgb(40, 50, 120), Color.FromArgb(10, 20, 90), 3),
+                { (101, 0), new BiomeTraits("Dark Ocean",           (Color.DarkSlateBlue.R, Color.DarkSlateBlue.G, Color.DarkSlateBlue.B), null, (Color.FromArgb(40, 50, 120), Color.FromArgb(10, 20, 90), 3),
                                                                      // Fish           Shark        Anglerfish     Waterdog        WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 300), ((8, 0), 5), ((100, 0), 3), ((9, 0), 0.5f), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((2, 0), 800), ((2, 1), 800), },
@@ -3102,54 +3267,84 @@ namespace Cave
 
 
 
-                { (200, 0), new BiomeTraits("Flesh",                 (Color.Red.R, Color.Red.G, Color.Red.B), null, (Color.FromArgb(175, 15, 30), null, 0),
+                { (200, 0), new BiomeTraits("Flesh",                (Color.Red.R, Color.Red.G, Color.Red.B), null, (Color.FromArgb(175, 15, 30), null, 0),
                                                                      // Carnal           Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 100), ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 400), ((200, 1), 400) },
                 lT:(-7, 0), tT:(4, 0),                               // Flesh Vine       Flesh Tendril
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Skin40"] }) },
-                { (200, 1), new BiomeTraits("FleshForest",           (Color.DarkRed.R + 20, Color.DarkRed.G - 20, Color.DarkRed.B - 20), null, (Color.FromArgb(175, 15, 30), Color.FromArgb(140, 5, 30), 1),
+                { (200, 1), new BiomeTraits("FleshForest",          (Color.DarkRed.R + 20, Color.DarkRed.G - 20, Color.DarkRed.B - 20), null, (Color.FromArgb(175, 15, 30), Color.FromArgb(140, 5, 30), 1),
                                                                      // Carnal           Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 100), ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 300), ((200, 1), 300), ((200, 2), 50), ((200, 3), 50) },
                 cT:(1, 5), txT:(0, 0), lT:(-7, 0), tT:(4, 0)) },     // Flesh Vine       Flesh Tendril    Flesh Tree 1    Flesh Tree 2
-                { (200, 2), new BiomeTraits("Flesh and Bone",        (Color.Pink.R, Color.Pink.G, Color.Pink.B), null, (Color.FromArgb(175, 35, 70), Color.FromArgb(205, 190, 180), 0),
+                { (200, 2), new BiomeTraits("Flesh and Bone",       (Color.Pink.R, Color.Pink.G, Color.Pink.B), null, (Color.FromArgb(175, 35, 70), Color.FromArgb(205, 190, 180), 0),
                                                                      // Carnal           Skeletal         Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 50),  ((200, 1), 50),  ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 300), ((200, 1), 300), ((201, 0), 100), ((201, 1), 100) },
                 lT:(-6, 0), tT:(4, 0),                               // Flesh Vine       Flesh Tendril    Bone Stalagmi    Bone Stalactite
                 tFT:new TerrainFeaturesTraits[] { famousTFT["Bone"] }) },
-                { (200, 3), new BiomeTraits("Body Hair Forest",      (Color.DarkRed.R - 20, Color.DarkRed.G - 50, Color.DarkRed.B - 70), null, (Color.FromArgb(150, 15, 20), Color.FromArgb(55, 40, 30), 0),
+                { (200, 3), new BiomeTraits("Body Hair Forest",     (Color.DarkRed.R - 20, Color.DarkRed.G - 50, Color.DarkRed.B - 70), null, (Color.FromArgb(150, 15, 20), Color.FromArgb(55, 40, 30), 0),
                                                                      // Louse             Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((202, 0), 100),  ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((202, 0), 1000) },
                 cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f,           // Body Hair
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Skin90"] }) },
-                { (200, 4), new BiomeTraits("Long Hair Forest",      (Color.DarkRed.R - 20, Color.DarkRed.G - 50, Color.DarkRed.B - 70), null, (Color.FromArgb(150, 15, 20), Color.FromArgb(55, 40, 30), 4),
+                { (200, 4), new BiomeTraits("Long Hair Forest",     (Color.DarkRed.R - 20, Color.DarkRed.G - 50, Color.DarkRed.B - 70), null, (Color.FromArgb(150, 15, 20), Color.FromArgb(55, 40, 30), 4),
                                                                      // Louse             Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((202, 0), 100),  ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((202, 1), 1000) },
                 cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f,           // Long Hair
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Skin75"] }) },
                 
-                { (201, 0), new BiomeTraits("Bone",                  (Color.White.R, Color.White.G, Color.White.B), null, (Color.FromArgb(195, 200, 205), null, 0),
+                { (201, 0), new BiomeTraits("Bone",                 (Color.White.R, Color.White.G, Color.White.B), null, (Color.FromArgb(195, 200, 205), null, 0),
                                                                      // Skeletal         Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((200, 1), 100), ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((201, 0), 100), ((201, 1), 100) },
                 lT:(-6, 0), tT:(4, 1)) },                            // Bone Stalagmite  Bone Stalactite
 
-                { (202, 0), new BiomeTraits("Blood Ocean",           (Color.DarkRed.R, Color.DarkRed.G, Color.DarkRed.B), null, (Color.FromArgb(130, 10, 35), Color.FromArgb(105, 0, 10), 3),
+                { (202, 0), new BiomeTraits("Blood Ocean",          (Color.DarkRed.R, Color.DarkRed.G, Color.DarkRed.B), null, (Color.FromArgb(130, 10, 35), Color.FromArgb(105, 0, 10), 3),
                                                                      // Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((201, 0), 200), },
                 new ((int type, int subType) type, float percentage)[]{ },
                 cT:(0, 3), txT:(0, 0), sT:1, tT:(4, 0), fT:(-6, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Bone"] }) },
-                { (202, 1), new BiomeTraits("Acid Ocean",            (Color.YellowGreen.R, Color.YellowGreen.G, Color.YellowGreen.B), null, (Color.FromArgb(130, 190, 30), Color.FromArgb(100, 155, 10), 3),
+                { (202, 1), new BiomeTraits("Acid Ocean",           (Color.YellowGreen.R, Color.YellowGreen.G, Color.YellowGreen.B), null, (Color.FromArgb(130, 190, 30), Color.FromArgb(100, 155, 10), 3),
                                                                      // Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ },
                 cT:(0, 3), txT:(0, 0), sT:1, tT:(4, 0), fT:(-7, 0), cL:1,
                 tFT:new TerrainFeaturesTraits[] { famousTFT["Bone"] }) },
+
+
+                { (300, 0), new BiomeTraits("Lollipop Forest",      (Color.Gray.R - 50, Color.Gray.G - 10, Color.Gray.B + 40), ((550, 490, 525), false), (Color.FromArgb(245, 235, 240), Color.FromArgb(210, 155, 195), 1),
+                                                                     // 
+                new ((int type, int subType) type, float percentage)[]{  },
+                new ((int type, int subType) type, float percentage)[]{ ((300, 0), 100), ((300, 1), 100), ((300, 10), 200) },
+                cT:(1, 5), lT:(0, 0), tT:(10, 0), txT:(0, 0),        // Spiral Lollipop  Ray Lollipop     Round Lollipop
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["HardCandy"] }) },
+                { (300, 1), new BiomeTraits("Candy Cane Forest",    (Color.Gray.R, Color.Gray.G, Color.Gray.B), ((420, 440, 490), false), (Color.FromArgb(220, 210, 215), Color.FromArgb(200, 35, 55), 1),
+                                                                     // 
+                new ((int type, int subType) type, float percentage)[]{ ((300, 0), 20) },
+                new ((int type, int subType) type, float percentage)[]{ ((301, 0), 250), ((301, 1), 125) },
+                cT:(1, 5), lT:(0, 0), tT:(10, 1), txT:(0, 0),        // Small Candy Cane Medium CandCane
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["PowderedSugar"], famousTFT["GingerbreadBoulders"], famousTFT["GingerbreadCrust"] }) },
+                { (300, 2), new BiomeTraits("Cotton Candy Forest",  (255, 190, 210), ((510, 380, 410), false), (Color.FromArgb(205, 105, 140), Color.FromArgb(175, 80, 130), 1),
+                                                                     // 
+                new ((int type, int subType) type, float percentage)[]{ ((301, 0), 25) },
+                new ((int type, int subType) type, float percentage)[]{ ((302, 0), 175), ((302, 1), 300), ((302, 2), 200), },
+                cT:(1, 5), lT:(0, 0), tT:(10, 2), txT:(0, 0),        // CottonCandy Tree CottonCandy Bush CottonCandy Vine
+                tFT:new TerrainFeaturesTraits[]{ famousTFT["PinkGranulatedSugar"] }) },
+                { (301, 0), new BiomeTraits("Caramel Desert",       (Color.Gray.R + 50, Color.Gray.G + 10, Color.Gray.B - 40), ((520, 360, 235), false), (Color.FromArgb(160, 85, 10), Color.FromArgb(130, 60, 15), 2),
+                                                                     // 
+                new ((int type, int subType) type, float percentage)[]{  },
+                new ((int type, int subType) type, float percentage)[]{  },
+                cT:(1, 5), lT:(-9, 0), tT:(10, 3), txT:(0, 0)) },    // 
+                { (302, 0), new BiomeTraits("Honey Ocean",          (Color.Honeydew.R, Color.DarkSlateBlue.G, Color.DarkSlateBlue.B), null, (Color.FromArgb(210, 145, 35), Color.FromArgb(230, 180, 65), 3),
+                                                                     // 
+                new ((int type, int subType) type, float percentage)[]{  },
+                new ((int type, int subType) type, float percentage)[]{  },
+                cT:(8, 3), sIA:true, lT:(-5, 0), tT:(13, 0), txT:(0, 0), fT:(-5, 0), sT:1) }, // 
             };
 
             foreach ((int type, int subType) typeToSet in biomeTraitsDict.Keys) { biomeTraitsDict[typeToSet].setType(typeToSet); }
@@ -3203,7 +3398,7 @@ namespace Cave
                 { (0, 0), new DimensionTraits("Normal Dimension") },
                 { (1, 0), new DimensionTraits("Chandelier Dimension", true) },
                 { (2, 0), new DimensionTraits("Living Dimension") },
-
+                { (3, 0), new DimensionTraits("Sweet Dimension") },
             };
 
             foreach ((int type, int subType) typeToSet in dimensionTraitsDict.Keys) { dimensionTraitsDict[typeToSet].setType(typeToSet); }

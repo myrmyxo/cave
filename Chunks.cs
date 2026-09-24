@@ -261,7 +261,7 @@ namespace Cave
                 }
                 else { fogOfWar = null; }
 
-                if (maturity < 2) { screen.chunksToMature.Add(pos); }
+                if (maturity < 2) { /* screen.chunksToMature.Addd(pos); */ matureChunkToLevelTwo(); }    // DUBIOUS fix for the GINGERBREAD. this will have surely FUCKED someh
                 else
                 {
                     for (int i = 0; i < 32; i++)
@@ -616,8 +616,8 @@ namespace Cave
 
                             if (!tupel.traits.isVoronoiCave)
                             {
-                                score1 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.one, value1, (i, j), mod2) + findTextureScore(tupel.traits.textureType.one, value2) + valueModifier);   // Swapping is normal !
-                                score2 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.two, value2, (i, j), mod2) + findTextureScore(tupel.traits.textureType.two, value1) + valueModifier);   // Cause it needs to be an independant noise !
+                                score1 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.one, value1, i, j, mod2) + findTextureScore(tupel.traits.textureType.one, value2) + valueModifier);   // Swapping is normal !
+                                score2 += mult * (findFillScore(tupel.traits, tupel.traits.caveType.two, value2, i, j, mod2) + findTextureScore(tupel.traits.textureType.two, value1) + valueModifier);   // Cause it needs to be an independant noise !
                             }
 
                             if (tupel.traits.separatorType != 0) { addOrIncrementDict(separatorDict, ((tupel.traits.separatorType, tupel.traits.connectionLayer), mult)); }
@@ -649,7 +649,7 @@ namespace Cave
                         {
                             BiomeTraits mainBiomeTraits = biomeIndex[i, j][0].traits;
 
-                            if (scoreArray[i, j].baseScore1 > 0 || scoreArray[i, j].baseScore2 > 0)
+                            if (mainBiomeTraits.scoreIsAdditive ? (scoreArray[i, j].baseScore1 + scoreArray[i, j].baseScore2 > 0) : (scoreArray[i, j].baseScore1 > 0 || scoreArray[i, j].baseScore2 > 0))
                             {
                                 if (mainBiomeTraits.isVoronoiCave && voronoiStateArray[i, j].liquidScore >= 0)
                                 {
@@ -666,7 +666,7 @@ namespace Cave
 
                 return (derivative2, scoreArray, quartileFilledArray);
             }
-            public float findFillScore(BiomeTraits biomeTraits, int type, int value, (int x, int y) mod32pos, int mod2)
+            public float findFillScore(BiomeTraits biomeTraits, int type, int value, int i, int j, int mod2)
             {
                 if (type == 0) { return -999999; }                                          // 0 - nothing
                 if (type == 1) { return -Abs(value - 128) + 10 * biomeTraits.caveWidth; }   // 1 - normal slither caves
@@ -674,16 +674,34 @@ namespace Cave
                 if (type == 3) { return value - 138 + 10 * biomeTraits.caveWidth; }         // 3 - normal ocean 
                 if (type == 4)                                                              // 4 - obsidian biome
                 {
-                    float see1 = Obs((pos.x * 32) % 64 + 64 + mod32pos.x + mod2 * 0.15f + 0.5f, 64);
-                    float see2 = Obs((pos.y * 32) % 64 + 64 + mod32pos.y + mod2 * 0.15f + 0.5f, 64);
+                    float see1 = Obs((pos.x * 32) % 64 + 64 + i + mod2 * 0.15f + 0.5f, 64);
+                    float see2 = Obs((pos.y * 32) % 64 + 64 + j + mod2 * 0.15f + 0.5f, 64);
                     return 500 * (see1 + see2) - 250;
                 }
                 if (type == 5) { return Max(value - 200, 75 - value); }                     // 5 - forest biome
                 if (type == 6)                                                              // 6 - plateaus
                 {
                     int plateauPos = (int)(chunkSeed % 32);
-                    float plateauScore = 160 - (Abs(plateauPos - mod32pos.y) - 5) * 10;
+                    float plateauScore = 160 - (Abs(plateauPos - j) - 5) * 10;
                     return plateauScore;
+                }                                                                           // 7 is Voronoi cave !!!!
+                if (type == 8)                                                              // 8 - honey ocean biome
+                {
+                    int scoreX1 = PosMod(pos.x * 32 + i, 8);
+                    if (scoreX1 > 3) { scoreX1 = 7 - scoreX1; }
+                    int scoreY1 = PosMod(pos.y * 32 + j, 14);
+                    if (scoreY1 > 3) { scoreY1 = Min(3, 9 - scoreY1) - 3; }
+                    else { scoreY1 -= 3; }
+
+                    int scoreX2 = PosMod(pos.x * 32 + i + 4, 8);
+                    if (scoreX2 > 3) { scoreX2 = 7 - scoreX2; }
+                    int scoreY2 = PosMod(pos.y * 32 + j + 7, 14);
+                    if (scoreY2 > 3) { scoreY2 = Min(3, 9 - scoreY2) - 3; }
+                    else { scoreY2 -= 3; }
+
+                    int finalScore = 10 * Max(Min(scoreX1, scoreX1 + scoreY1), Min(scoreX2, scoreX2 + scoreY2)) - 5;
+                    if (finalScore > 0) { finalScore += 15; }
+                    return finalScore;
                 }
                 return -999999;
             }
@@ -702,6 +720,7 @@ namespace Cave
             public void applyTerrainFeatures((BiomeTraits traits, int percentage)[,][] biomeTraits, int maturityLevelToApply)
             {
                 Dictionary<int, int[,]> terrainFeaturesNoiseDict = new Dictionary<int, int[,]>();
+                bool returno = true;
                 foreach (BiomeTraits traits in allBiomesInTheChunk)
                 {
                     if (traits.TFTArrays[maturityLevelToApply] is null) { continue; }
@@ -709,9 +728,10 @@ namespace Cave
                     {
                         if (TFT.makeNoiseMaps.one && !terrainFeaturesNoiseDict.ContainsKey(TFT.layer)) { terrainFeaturesNoiseDict[TFT.layer] = findNoiseValues(TFT.layer + 10000, TFT.noiseModulos.one, TFT.noiseValueRanges.one); }
                         if (TFT.makeNoiseMaps.two && !terrainFeaturesNoiseDict.ContainsKey(TFT.layer + 1)) { terrainFeaturesNoiseDict[TFT.layer + 1] = findNoiseValues(TFT.layer + 10001, TFT.noiseModulos.two, TFT.noiseValueRanges.two); }
+                        returno = false;
                     }
                 }
-                if (terrainFeaturesNoiseDict.Count == 0) { return; }
+                if (returno) { return; }    // Return if no TFTs to apply to not waster resources
 
                 (int temp, int humi, int acid, int toxi, int sali, int illu, int ocea, int mod1, int mod2)[,] biomeValues;
                 ((int x, int y) topLeft, (int x, int y) topRight, (int x, int y) bottomLeft, (int x, int y) bottomRight) derivative;
@@ -894,7 +914,7 @@ namespace Cave
                     {
                         valueRequired += tFT.baseThreshold;
                         noiseValue = noiseValue1;
-                        if (screen.getTileContent((pos.x * 32 + i, pos.y * 32 + j), false).type == (2, 0))
+                        if (tileTraits.type == (2, 0))
                         {
                             if (screen.getTileContent((pos.x * 32 + i, pos.y * 32 + j + 1), false).isAir) { noiseValue += 800; }
                             else { noiseValue -= 10000; }
@@ -996,6 +1016,27 @@ namespace Cave
                         }
                         else { noiseValue -= 1000; }
                     }
+                    else if (tFT.transitionRules == 14) // Gingerbread Boulders
+                    {
+                        valueRequired += tFT.baseThreshold;
+                        noiseValue = noiseValue1 + noiseValue2;
+                    }
+                    else if (tFT.transitionRules == 15) // Gingerbread Crust
+                    {
+                        if (i == 31) {; }
+                        if (tileTraits.type != (12, 0)) { noiseValue = -999999; }   // If not gingerbread tile, do nothing.     If gingerbread and exposed to non gingerbread tile, turn into crust
+                        else if (screen.getTileContent((pos.x * 32 + i + 1, pos.y * 32 + j), true).type.type != 12) { noiseValue = 999999; }
+                        else if (screen.getTileContent((pos.x * 32 + i - 1, pos.y * 32 + j), true).type.type != 12) { noiseValue = 999999; }
+                        else if (screen.getTileContent((pos.x * 32 + i, pos.y * 32 + j + 1), true).type.type != 12) { noiseValue = 999999; }
+                        else if (screen.getTileContent((pos.x * 32 + i, pos.y * 32 + j - 1), true).type.type != 12) { noiseValue = 999999; }
+                        else { noiseValue = -999999; }
+                    }
+                    else if (tFT.transitionRules == 16) // Hard Candy Tile
+                    {
+                        noiseValue = PosMod((pos.x * 32 + i - pos.y * 32 - j) * 10 + noiseValue1 + noiseValue2, 100);
+                        if (noiseValue > 50) { typeToFill = (10, 4); noiseValue -= 50; }
+                        else { typeToFill = (10, 0); }
+                    }
                     else { noiseValue = -999999; }
 
                     if (noiseValue >= valueRequired)
@@ -1050,7 +1091,67 @@ namespace Cave
                 int rando = 0;
                 if (traits.isTextured != null)
                 {
+                    long randoLong = 0;
                     int mod = 0;
+
+                    if (traits.isTextured.Value.x == 3) // The uhhhh powdered sugar texture
+                    {
+                        int adjusto = (int)(LCGxy(((pos.x * 32 + i, pos.y * 32 + j), 5931), screen.seed)) % 1024;
+
+                        (int x, int y) adjustedPos = (pos.x * 32 + i + adjusto / 32, pos.y * 32 + j + adjusto % 32);
+                        (int x, int y) posDiv = (PosDiv(adjustedPos.x, traits.isTextured.Value.y), PosDiv(adjustedPos.y, traits.isTextured.Value.y));
+
+                        randoLong += Abs(LCGxPos(posDiv.x) % 153);
+                        randoLong += Abs(LCGyPos(posDiv.y) % 247);
+                        rando = Abs((int)(LCGyNeg(randoLong) % 279)) % 40 - 20;
+
+                        goto TextureApplied;
+                    }
+                    if (traits.isTextured.Value.x == 4) // Sandy texture
+                    {
+                        rando = (int)(LCGxy(((pos.x * 32 + i, pos.y * 32 + j), 54379), screen.seed)) % 20 - 10;
+                        goto TextureApplied;
+                    }
+                    if (traits.isTextured.Value.x == 5) // Diamond texture
+                    {
+                        (int x, int y) poso = rotate8((pos.x * 32 + i, pos.y * 32 + j), 1);
+                        poso = (PosDiv(poso.x, traits.isTextured.Value.y), PosDiv(poso.y, traits.isTextured.Value.y));
+                        rando = (int)(LCGxy((poso, 65893), screen.seed)) % (traits.isTextured.Value.y * 2) - traits.isTextured.Value.y;
+                        goto TextureApplied;
+                    }
+                    if (traits.isTextured.Value.x == 6) // Caramel
+                    {
+                        int stripe1 = PosDiv(pos.y * 32 + j, traits.isTextured.Value.y);
+                        int yVar1 = (int)(LCGxy(((pos.x * 32, stripe1), 8542017), screen.seed)) % 8;
+                        int yVar2 = (int)(LCGxy(((pos.x * 32 + 32, stripe1), 8542017), screen.seed)) % 8;
+                        int yVar = (int)(((float)yVar1 * (32 - i) + (float)yVar2 * i) * 0.03125f);
+                        int stripe2 = PosDiv(pos.y * 32 + j - yVar, traits.isTextured.Value.y);
+                        rando = (int)(LCGxy(((0, stripe2), 584302), screen.seed)) % 20 - 10;
+                        goto TextureApplied;
+                    }
+                    if (traits.isTextured.Value.x == 7) // Honeycomb texture
+                    {
+                        int scoreX1 = PosMod(pos.x * 32 + i, 8);
+                        if (scoreX1 > 3) { scoreX1 = 7 - scoreX1; }
+                        int scoreY1 = PosMod(pos.y * 32 + j, 14);
+                        if (scoreY1 > 3) { scoreY1 = Min(3, 9 - scoreY1) - 3; }
+                        else { scoreY1 -= 3; }
+
+                        int scoreX2 = PosMod(pos.x * 32 + i + 4, 8);
+                        if (scoreX2 > 3) { scoreX2 = 7 - scoreX2; }
+                        int scoreY2 = PosMod(pos.y * 32 + j + 7, 14);
+                        if (scoreY2 > 3) { scoreY2 = Min(3, 9 - scoreY2) - 3; }
+                        else { scoreY2 -= 3; }
+
+                        (int x, int y) poso = (0, 0);
+                        if (Min(scoreX1, scoreX1 + scoreY1) > Min(scoreX2, scoreX2 + scoreY2)) { rando = traits.isTextured.Value.z; }
+                        else { rando = -traits.isTextured.Value.z; poso = (4, 7); };
+                        poso = (PosDiv(pos.x * 32 + i + poso.x, 8), PosDiv(pos.y * 32 + j + poso.y, 14));
+
+                        rando += (int)(LCGxy((poso, 584391), screen.seed)) % (traits.isTextured.Value.z * 2) - traits.isTextured.Value.z;
+                        goto TextureApplied;
+                    }
+
                     if (traits.isTextured.Value.x == 2)
                     {
                         float modFloat = (((int)LCGxy(((pos.x, 0), 5423), screen.seed) % 100) * (31 - i) + ((int)LCGxy(((pos.x + 1, 0), 5423), screen.seed) % 100) * i);
@@ -1062,12 +1163,12 @@ namespace Cave
                         mod = (int)(modFloat * 0.0025f);
                     }
 
-                    long randoLong = 0;
                     if (traits.isTextured.Value.x == 1) { randoLong += LCGxPos(pos.x * 32 + i) % 153; }
                     if (traits.isTextured.Value.y == 1) { randoLong += LCGyPos(pos.y * 32 + j + mod) % 247; }
                     rando = Abs((int)(LCGyNeg(randoLong) % 279)) % 40 - 20;
 
                 }
+            TextureApplied:;
 
                 colorArray[0] += (int)(materialColor.r * (1 - materialColor.mult)) + rando;
                 colorArray[1] += (int)(materialColor.g * (1 - materialColor.mult)) + rando;
@@ -1134,15 +1235,16 @@ namespace Cave
                     }
                 }
             }
-            public void matureChunkToLevelOne(bool saveTheChunk = true)
+            public void matureChunkToLevelOne(bool saveTheChunk = true, bool forced = false)
             {
                 applyTerrainFeatures(biomeIndex, 1);
                 maturity = 1;
                 if (saveTheChunk) { saveChunk(this); }
+                screen.game.DebugMessageLogs.Add($"t={timeElapsed} : Matured chunk {pos.x}, {pos.y} to maturity level 1 !{(forced ? " (forcing 2)" : "")}");
             }
             public void matureChunkToLevelTwo()
             {
-                if (maturity < 1) { matureChunkToLevelOne(false); }
+                if (maturity < 1) { matureChunkToLevelOne(false, true); }
                 applyTerrainFeatures(biomeIndex, 2);
                 maturity = 2;
                 manyValues = null;
@@ -1162,6 +1264,7 @@ namespace Cave
                 }
 
                 saveChunk(this);
+                screen.game.DebugMessageLogs.Add($"t={timeElapsed} : Matured chunk {pos.x}, {pos.y} to maturity level 2 !");
             }
             public (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithAirOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) getSpawnLocations()
             {
@@ -2034,7 +2137,7 @@ namespace Cave
             }
             else    // The GOOD version of the biome shit
             {
-                if (dimensionType == (0, 0)) // type == 1, normal dimension
+                if (dimensionType == (0, 0)) // type == 0, normal dimension
                 {
                     listo = new List<((int biome, int subBiome), int)>();
 
@@ -2152,6 +2255,18 @@ namespace Cave
                     }
                     calculateAndAddBiome(listo, (201, 0), ref percentageFree, humidity, (-999999, 250)); // bone
                     testAddBiome(listo, (200, 2), percentageFree); // flesh and bone
+                }
+                else if (dimensionType == (3, 0)) // type == 3, sweet dimension
+                {
+                    if (humidity > 450)
+                    {
+                        int forestness = calculateBiome(ref percentageFree, humidity, (450, 999999));
+                        calculateAndAddBiome(listo, (300, 1), ref forestness, temperature, (-999999, 350)); // Candy Cane Forest
+                        calculateAndAddBiome(listo, (300, 2), ref forestness, temperature, (750, 999999)); // Cotton Candy Forest
+                        testAddBiome(listo, (300, 0), forestness); // Lollipop Forest
+                    }
+                    calculateAndAddBiome(listo, (302, 0), ref percentageFree, oceanity, (750, 999999)); // Honey Ocean
+                    testAddBiome(listo, (301, 0), percentageFree); // Caramel
                 }
                 else if (dimensionType == (-1, 0)) // type == -1, TEST dimension
                 {

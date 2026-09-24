@@ -40,6 +40,7 @@ namespace Cave
     {
         public class Game
         {
+            public List<string> DebugMessageLogs = new List<string>();
             public List<string> structureGenerationLogs = new List<string>();
             public Dictionary<(int dim, int x, int y), int> structureGenerationLogsStructureUpdateCount = new Dictionary<(int dim, int x, int y), int>();
 
@@ -76,8 +77,8 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                if (false) { forceBiome = (-1, 0); isMonoeBiomeToPut = false; }
-                if (true) { forceBiome = (2, 10); isMonoeBiomeToPut = true; }
+                if (true) { forceBiome = (3, 0); isMonoeBiomeToPut = false; }
+                if (false) { forceBiome = (302, 0); isMonoeBiomeToPut = true; }
 
                 int PNGsize = 150;
                 PNGsize = 100;
@@ -301,8 +302,9 @@ namespace Cave
 
                     screen.addRemoveEntities();
 
-                    foreach ((int x, int y) pos in screen.chunksToMature) { if (screen.loadedChunks.ContainsKey(pos)) { screen.loadedChunks[pos].matureChunkToLevelTwo(); } }
-                    screen.chunksToMature = new HashSet<(int x, int y)>();
+                    // GINGERBREAD caused this to be REMOVED there will now be 109402349 bugs
+                    // foreach ((int x, int y) pos in screen.chunksToMature) { if (screen.loadedChunks.ContainsKey(pos)) { screen.loadedChunks[pos].matureChunkToLevelTwo(); } }
+                    // screen.chunksToMature = new HashSet<(int x, int y)>();
 
                     foreach (Plant plant in screen.activePlants.Values) { plant.testPlantGrowth(false); }
                     screen.putPlantsInChunks();
@@ -578,7 +580,7 @@ namespace Cave
         {
             public Game game;
 
-            public HashSet<(int x, int y)> chunksToMature = new HashSet<(int x, int y)>();
+            // public HashSet<(int x, int y)> chunksToMature = new HashSet<(int x, int y)>();   // Gingernbread made this remov
             public Dictionary<(int x, int y), Chunk> loadedChunks = new Dictionary<(int x, int y), Chunk>();
             public Dictionary<(int x, int y), Chunk> extraLoadedChunks = new Dictionary<(int x, int y), Chunk>();
             public Dictionary<(int x, int y), MegaChunk> megaChunks = new Dictionary<(int x, int y), MegaChunk>();
@@ -678,9 +680,10 @@ namespace Cave
                 Player player = game.playerList[0];
                 chunkX = ChunkIdx(player.posX);
                 chunkY = ChunkIdx(player.posY);
-                if (player.dimension == id) { forceLoadChunksForAllPoints(); }
+                if (player.dimension == id) { forceLoadChunksForOnePoint(ChunkIdx(player.posX, player.posY), game.effectiveRadius); }
 
-                foreach ((int x, int y) pos in chunksToMature) { if (loadedChunks.ContainsKey(pos)) { loadedChunks[pos].matureChunkToLevelTwo(); } }
+                // due to GINGERBREAD this has been REMOVING so now it will BUG
+                // foreach ((int x, int y) pos in chunksToMature) { if (loadedChunks.ContainsKey(pos)) { loadedChunks[pos].matureChunkToLevelTwo(); } }
             }
             public int getLCGValue(((int x, int y) pos, int layer) key, int noiseAmplitude)
             {
@@ -1266,17 +1269,9 @@ namespace Cave
             }
             public (int x, int y) findPreviousPastPosition(Entity entity, int segment, (int x, int y) segmentPos, (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color) item)
             {
-                if (segment == 1) {; }
-                if (entity.pastPositions.Count < 2) { return (entity.posX, entity.posY); }
+                if (entity.pastPositions.Count == 0) { return (entity.posX, entity.posY); }
                 (int x, int y) tempPos = segmentPos;
-                if (segment <= 0)
-                {
-                    for (int i = Clamp(0, segment + 1, entity.pastPositions.Count); i < entity.pastPositions.Count && i >= 0; i++)
-                    {
-                        tempPos = entity.pastPositions[i];
-                        if (tempPos != segmentPos) { return (entity.posX - (tempPos.x - entity.posX), entity.posY - (tempPos.y - entity.posY)); }
-                    }
-                }
+                if (segment <= 0) { return entity.pastPositions[0]; }
                 else
                 {
                     for (int i = Clamp(0, segment - 1, entity.pastPositions.Count); i < entity.pastPositions.Count && i >= 0; i--)

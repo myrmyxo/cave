@@ -64,6 +64,7 @@ namespace Cave
             errorSprite = new OneSprite("Error", true);
             tileSprites = new Dictionary<(int type, int subType), OneSprite>
             {
+                { (-9, 0), new OneSprite("CaramelLiquid", true) },
                 { (-8, 0), new OneSprite("Slime", true) },
                 { (-7, 0), new OneSprite("Acid", true) },
                 { (-6, 1), new OneSprite("DeoxygenatedBlood", true) },
@@ -89,7 +90,7 @@ namespace Cave
                 { (4, 0), new OneSprite("FleshTile", true) },
                 { (4, 1), new OneSprite("BoneTile", true) },
                 { (4, 2), new OneSprite("SkinTile", true) },
-                { (5, 0), new OneSprite("MoldTile", true) },       
+                { (5, 0), new OneSprite("MoldTile", true) },
                 { (6, 0), new OneSprite("SaltTile", true) },
                 { (6, 1), new OneSprite("SaltTile", true) },
                 { (7, 0), new OneSprite("AshTile", true) },
@@ -103,7 +104,17 @@ namespace Cave
                 { (9, 2), new OneSprite("SandstoneRedTile", true) },
                 { (9, 3), new OneSprite("SandstoneGrayTile", true) },
                 { (9, 4), new OneSprite("SandstoneBrownTile", true) },
-            };                                                               
+                { (10, 0), new OneSprite("HardCandyTileWhite", true) },
+                { (10, 1), new OneSprite("IcingTile", true) },
+                { (10, 2), new OneSprite("SugarPinkTile", true) },
+                { (10, 3), new OneSprite("CaramelTile", true) },
+                { (10, 4), new OneSprite("HardCandyTileMauve", true) },
+                { (11, 0), new OneSprite("SugarPowderedTile", true) },
+                { (11, 1), new OneSprite("SugarGranulatedPinkTile", true) },
+                { (12, 0), new OneSprite("GingerbreadTile", true) },
+                { (12, 1), new OneSprite("GingerbreadCrustTile", true) },
+                { (13, 0), new OneSprite("HoneycombTile", true) },
+            };
             entitySprites = new Dictionary<(int type, int subType), OneSprite>
             {
                 { (-1, 0), errorSprite },
@@ -134,6 +145,8 @@ namespace Cave
                 { (200, 1), new OneSprite("Skeletal", true) },
                 { (201, 0), new OneSprite("Nematode", true) },
                 { (202, 0), new OneSprite("Louse", true) },
+                { (300, 0), new OneSprite("GingerbreadMan", true) },
+                { (301, 0), new OneSprite("Fluffer", true) },
             };                                                               
             plantSprites = new Dictionary<(int type, int subType), OneSprite>
             {
@@ -231,6 +244,14 @@ namespace Cave
                 { (201, 1), new OneSprite("BoneStalagmite", true) },
                 { (202, 0), new OneSprite("HairBody", true) },
                 { (202, 1), new OneSprite("HairLong", true) },
+                { (300, 0), new OneSprite("LollipopSpiral", true) },
+                { (300, 1), new OneSprite("LollipopRay", true) },
+                { (300, 10), new OneSprite("LollipopRound", true) },
+                { (301, 0), new OneSprite("CandyCaneSmall", true) },
+                { (301, 1), new OneSprite("CandyCaneMedium", true) },
+                { (302, 0), new OneSprite("CottonCandyTree", true) },
+                { (302, 1), new OneSprite("CottonCandyBush", true) },
+                { (302, 2), new OneSprite("CottonCandyVine", true) },
             };
             materialSprites = new Dictionary<(int type, int subType), OneSprite>
             {
@@ -255,6 +276,8 @@ namespace Cave
                 { (11, 0), new OneSprite("Metal", true ) },
                 { (11, 1), new OneSprite("LightBulb", true ) },
                 { (12, 0), new OneSprite("Wax", true ) },
+                { (13, 0), new OneSprite("Candy", true ) },
+                { (13, 1), new OneSprite("CottonCandy", true ) },
             };
             toolsSprites = new Dictionary<(int type, int subType), OneSprite>
             {
@@ -352,7 +375,8 @@ namespace Cave
                     contentString = findSpritesPath() + $"\\{contentString}";
                     turnPngIntoStringFromFilepath(contentString);
                     contentString = contentString + ".txt";
-                    using (StreamReader f = new StreamReader(contentString)) { contentString = f.ReadToEnd(); }
+                    try { using (StreamReader f = new StreamReader(contentString)) { contentString = f.ReadToEnd(); } }
+                    catch { using (StreamReader f = new StreamReader(findSpritesPath() + $"\\Error.txt")) { contentString = f.ReadToEnd(); } }                    
                 }
                 else { contentString = SpriteStrings.spriteStringsDict[contentString]; }
                 bitmap = makeBitmapFromContentString(contentString);

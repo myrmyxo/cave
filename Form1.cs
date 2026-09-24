@@ -66,9 +66,13 @@ namespace Cave
 
             //     ---- - - CURRENTLY DOING - - ----
             //
+            // Whipped Cream biome, Chocolate Biome, bubblegum biome ? Bubblegum bubble baloons floating mongolfiere ??
+            // Sour candy biomes when acidity high ???, Salty caramel and Salty licorice biomes when salinity high ? Mints when its COLD ??? Sugar desert/plains ?
+            // Syrup oceans with sugar crystals growing ? AND SYRUP SWAMPS ??? Sounds cool lol ICE CREAM BIOME
+            //
             // Echinacea, Cornflower ?, Ratibida pinnata, Rudbeckia, Sunflowers (Helianthus), Blazing star
             //
-            // Then prairies and heathlands and shrublands and stuff HEATHHH
+            // heathlands and shrublands and stuff HEATHHH
             // Biomes with low light and with fungi when illumination is low ? And if it gets under 0 it gets very dangerous, like deep dark in minefart or idk ?
 
             //          --- - TO DO LIST - ---
@@ -83,7 +87,7 @@ namespace Cave
             // Message from player character portrait (LMFAO LIKE IF THERE WAS ONE) : "I feel like i'm very much not wanted here..." to tell player that hornet did a warning attack. "I should really get out before they get angry" on the second one.
             // They a loud BUZZ and every hornet aggroes on the player
             // GoHome function for hornets. They go to main room/random room in the nest
-            // Upside down trees ! And other plants like that !
+            // Upside down trees ! And other plants like that ! A WHOLE Upside down forest ?? That would be hella cool actually
             // Fix the fucking mold... or make it interesting. Make that, on mold conversion, it Digs ALL tiles in plants present. As an ATTACK like all diggings will be made.
             // The uh... menu... and uh text... and uh dialogues... and uh villages... and uhhhhhhh make an actual fucking game uhhh
             // nornet nests disappear when they empty, FIX THE OUTSIDE ENTITY SHIT FFS
@@ -113,8 +117,6 @@ namespace Cave
             // When growing plants, make the new tile always be plant material for trees ? THEN on next growth or last growth replace it with wood. So it looks like a bud.
             // Add the option to prevent spawn of new children in plants when too close to max growth level. Would be useful if children of growth end to prevent overlaps.
             // FIX ALL THE PLANTS AS THEY HAD THEIR CHILD SPAWNING decalé DUE TO uh the lastDrawPos being used instead of drawPos (bug fixed but made lots of shit).
-
-            // Candy dimension !! Candy Cane trees, Lollipop trees, Whipped Cream biome, Chocolate Biome
 
             // - - - Le Evil Bugz... - - -
             // Raycast : In diagonal can bypass if 2*2 oxxo, and when faraway sometimes even passes through 1 line thick full 1D walls... wtf
@@ -160,6 +162,7 @@ namespace Cave
             // Hair in living dimension become gray then white/transparent as they age before dying
             // Shave ice worms for wool lol
             // Lorax and lorax trees. Lorax dimension. With oncelers cutting them lmfao.
+            // When visiting Candimension, it starts a decaying of it with mold ? Or when exiting, everything sweet starts decaying back ?
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
@@ -223,6 +226,8 @@ namespace Cave
             // Camel Thorn in desert
             // Panicum Turgidum in desert
             // Pachypodium mikea and Pachypodium namaquanum in desert
+            // Giant Hogweed
+            // Heart trees. Like their leaves their heart
 
             // Lore ideas shit !
             // Carnals and Skeletals in the living dimension are at war. However, due to being made of flesh, only carnals can reproduce. So they end up killing all skeletals.
@@ -235,6 +240,7 @@ namespace Cave
             // In living dimension, bone plants are acutally bone tumors ? And flesh plants parasitic ?? idk
             // Salt worms are chemotrophic and take energy from the salt ! Stfu istg it makes sense
             // Icealt worms are sterile. Because they're a hybrid. Wow this is insane lore fr fr
+            // Gingerbread Men make clothes with frosting and uh idk liquids they get from ??? from granulated sugar
 
             //
             // cool seeds !!!! DO NOT DELETE      yeah actually since world gen keeps on changing they're fucking useless LMFAO
@@ -779,6 +785,10 @@ namespace Cave
         {
             if (value % modulo == 0) { return value; }
             return Floor(value, modulo) + modulo;
+        }
+        public static int PosDiv(int pos, int mod)  // Like ChunkIdx but with a choosable modulo
+        {
+            return Floor(pos, mod) / mod;
         }
         public static (int x, int y) ChunkIdx(int pixelPosX, int pixelPosY)
         {

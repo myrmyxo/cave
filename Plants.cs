@@ -1159,6 +1159,7 @@ namespace Cave
                             if (item.fromEnd ? (maxGrowthLevel - growthLevelToTest) < growthLevelRequired : growthLevelToTest >= growthLevelRequired) { materialToFillTileWith = item.material; }
                         }
                     }
+                    if (traits.plantGrowthRules.fillWithOtherMaterialPeriodic != null) { materialToFillTileWith = traits.plantGrowthRules.fillWithOtherMaterialPeriodic.Value.materials[PosMod(growthLevelToTest + getRandValue(58392903, traits.plantGrowthRules.fillWithOtherMaterialPeriodic.Value.variation + 1), Max(1, traits.plantGrowthRules.fillWithOtherMaterialPeriodic.Value.materials.Length))];}
                     
                     if (currentElementWidening is null) { if (!tryFill(drawPos, materialToFillTileWith)) { goto Fail; } }
                     else
