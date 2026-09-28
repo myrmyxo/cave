@@ -81,8 +81,8 @@ namespace Cave
                 bool isMonoeBiomeToPut = false;
                 bool isPngToExport = false;
 
-                if (true) { forceBiome = (3, 0); isMonoeBiomeToPut = false; }
-                if (true) { forceBiome = (300, 2); isMonoeBiomeToPut = true; }
+                if (false) { forceBiome = (3, 0); isMonoeBiomeToPut = false; }
+                if (false) { forceBiome = (3, 4); isMonoeBiomeToPut = true; }
 
                 int PNGsize = 150;
                 PNGsize = 100;
@@ -304,6 +304,7 @@ namespace Cave
                 foreach (Screen screen in loadedScreens.Values.ToArray())
                 {
                     if (screen == playerScreen) { thingPointedAt = findMouseTarget(gameBitmap, gamePictureBox, playerScreen, player); }
+                    screen.putEntitiesAndPlantsInChunks();
                     screen.removeEntitiesAndPlantsFromChunks(true);
                     screen.addRemoveEntities();
                     if (screen == playerScreen) { playerScreen.forceLoadChunksForOnePoint(ChunkIdx(player.posX, player.posY), playerScreen.game.effectiveRadius); }
@@ -343,6 +344,7 @@ namespace Cave
                     screen.attacksToRemove = new HashSet<Attack>();
                     foreach (((int x, int y) pos, Attack attack) attack in screen.attacksToDo) { attack.attack.sendAttack(attack.pos); }
                     foreach (Attack attack in screen.attacksToRemove) { screen.activeAttacks.Remove(attack); }
+                    screen.addRemoveEntities();
                     screen.removePlants();
                     screen.makeBitmapsOfPlants();
 
@@ -471,19 +473,32 @@ namespace Cave
                 
                 drawInventory(player.screen.game, player.inventoryQuantities, player.inventoryElements, player.inventoryCursor);
 
-                if (targetEntity != null) { Sprites.drawSpriteOnCanvas(overlayBitmap, entitySprites[targetEntity.traits.type].bitmap, (20, 60), 4, false); }
+                if (targetEntity != null)
+                {
+                    Sprites.drawSpriteOnCanvas(overlayBitmap, entitySprites[targetEntity.traits.type].bitmap, (40, 60), 4, true);
+                    drawString(overlayBitmap, "Name : " + targetEntity.traits.name, (90, 40), 1, true);
+                    drawString(overlayBitmap, "HP : " + targetEntity.hp.ToString(), (90, 52), 1, true);
+                    drawString(overlayBitmap, "Food : " + targetEntity.food.ToString(), (90, 64), 1, true);
+                    drawString(overlayBitmap, "ID : " + targetEntity.id, (90, 76), 1, true);
+                }
                 else
                 {
                     Dictionary<(int type, int subType), OneSprite> dictToUse = null;
-                    if (thingPointedAt.megaType == 0) { dictToUse = tileSprites; }
+                    if (thingPointedAt.megaType == 0)
+                    {
+                        if (thingPointedAt.type == (0, 0)) { goto Skip; }
+                        dictToUse = tileSprites;
+                    }
                     else if (thingPointedAt.megaType == 1) { dictToUse = entitySprites; }
                     else if (thingPointedAt.megaType == 2) { dictToUse = plantSprites; }
                     else if (thingPointedAt.megaType == 3) { dictToUse = materialSprites; }
                     else if (thingPointedAt.megaType == 4) { dictToUse = toolsSprites; }
                     else if (thingPointedAt.megaType == 5) { dictToUse = attacksSprites; }
-                    if (dictToUse is null) { Sprites.drawSpriteOnCanvas(overlayBitmap, errorSprite.bitmap, (20, 60), 4, false); }
-                    else { Sprites.drawSpriteOnCanvas(overlayBitmap, dictToUse[thingPointedAt.type].bitmap, (20, 60), 4, false); }
+                    if (dictToUse is null) { Sprites.drawSpriteOnCanvas(overlayBitmap, errorSprite.bitmap, (40, 60), 4, true); }
+                    else { Sprites.drawSpriteOnCanvas(overlayBitmap, dictToUse[thingPointedAt.type].bitmap, (40, 60), 4, true); }
+                    drawString(overlayBitmap, "Name : " + thingPointedAt.name, (90, 40), 1, true);
                 }
+            Skip:;
 
                 overlayPictureBox.Refresh();
             }
@@ -790,7 +805,7 @@ namespace Cave
             }
             public void addRemoveEntities()
             {
-                foreach (Entity entity in entitiesToRemove.Values) { activeEntities.Remove(entity.id); }
+                foreach (Entity entity in entitiesToRemove.Values) { activeEntities.Remove(entity.id); getChunkFromPixelPos((entity.posX, entity.posY)).entityList.Remove(entity); }
                 foreach (Entity entity in entitiesToAdd.Values) { activeEntities[entity.id] = entity; }
                 entitiesToRemove = new Dictionary<int, Entity>();
                 entitiesToAdd = new Dictionary<int, Entity>();
@@ -1344,7 +1359,8 @@ namespace Cave
             {
                 if (entity.pastPositions.Count == 0) { return (entity.posX, entity.posY); }
                 (int x, int y) tempPos = segmentPos;
-                if (segment <= 0) { return entity.pastPositions[0]; }
+                if (segment < 0) { return entity.pastPositions[0]; }
+                if (segment == 0) { return (entity.posX, entity.posY); }
                 else
                 {
                     for (int i = Clamp(0, segment - 1, entity.pastPositions.Count); i < entity.pastPositions.Count && i >= 0; i--)

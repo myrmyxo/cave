@@ -434,7 +434,7 @@ namespace Cave
                     else if (currentItem.typeOfElement == 1)
                     {
                         Entity newEntity = new Entity(screen, posToPlace, (currentItem.type, currentItem.subType));
-                        screen.activeEntities[newEntity.id] = newEntity;
+                        screen.entitiesToAdd[newEntity.id] = newEntity;
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (currentItem.typeOfElement == 2)

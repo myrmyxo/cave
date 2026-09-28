@@ -45,15 +45,18 @@ namespace Cave
         public static Dictionary<(int, int), OneSprite> attacksSprites;
         public static Dictionary<(int, int), OneSprite> portraitSprites;
         public static OneSprite numbersSprite;
-        public static Dictionary<int, OneSprite> numberSprites;
         public static OneSprite lettersUpSprite;
-        public static Dictionary<string, OneSprite> letterUpSprites;
         public static OneSprite lettersLowSprite;
-        public static Dictionary<string, OneSprite> letterLowSprites;
         public static OneSprite arrowsSprite;
-        public static Dictionary<int, OneSprite> arrowSprites;
         public static OneSprite operationSignsSprite;
+        public static OneSprite symbolsSprite;
+        public static Dictionary<int, OneSprite> numberSprites;
+        public static Dictionary<string, OneSprite> letterUpSprites;
+        public static Dictionary<string, OneSprite> letterLowSprites;
+        public static Dictionary<int, OneSprite> arrowSprites;
         public static Dictionary<int, OneSprite> operationSignSprites;
+        public static Dictionary<string, OneSprite> symbolsSprites;
+        public static Dictionary<string, OneSprite> letterAllSprites;
         public static OneSprite overlayBackground;
         public static OneSprite errorSprite;
         public static OneSprite cursorSprite;
@@ -322,9 +325,10 @@ namespace Cave
 
             numbersSprite = new OneSprite("Numbers", false);
             lettersUpSprite = new OneSprite("LettersUp", true);
-            lettersLowSprite = new OneSprite("LettersMin", true);   // be careful also it's LettersMin and not LettersLow that are 2 different fonts ! LetterMin look better so i chose it lol
+            lettersLowSprite = new OneSprite("LettersLow", true);   // be careful also it's LettersMin and not LettersLow that are 2 different fonts ! LetterMin look better so i chose it lol
             arrowsSprite = new OneSprite("Arrows", true);
             operationSignsSprite = new OneSprite("OperationSigns", true);
+            symbolsSprite = new OneSprite("Symbols", true);
 
             fireAnimation = new OneAnimation("Fire", false, 6, (-1, 0));
             livingPortalAnimation = new OneAnimation("LivingPortal", true, 4);
@@ -340,6 +344,16 @@ namespace Cave
             Bitmap[] letterLowBitmapArray = slice(lettersLowSprite.bitmap, 26, 1);
             letterLowSprites = new Dictionary<string, OneSprite>();
             for (int i = 0; i < letterLowBitmapArray.Count(); i++) { letterLowSprites.Add("abcdefghijklmnopqrstuvwxyz"[i].ToString(), new OneSprite(letterLowBitmapArray[i])); }
+            
+            Bitmap[] symbolsBitmapArray = slice(symbolsSprite.bitmap, 27, 1);
+            symbolsSprites = new Dictionary<string, OneSprite>();
+            for (int i = 0; i < symbolsBitmapArray.Count(); i++) { symbolsSprites.Add(" !?.…,;:'-—_()[]{}<>/\\*&#%°"[i].ToString(), new OneSprite(symbolsBitmapArray[i])); }
+
+            letterAllSprites = new Dictionary<string, OneSprite>();
+            foreach (int key in numberSprites.Keys) { letterAllSprites[key.ToString()] = numberSprites[key]; }
+            foreach (string key in letterUpSprites.Keys) { letterAllSprites[key] = letterUpSprites[key]; }
+            foreach (string key in letterLowSprites.Keys) { letterAllSprites[key] = letterLowSprites[key]; }
+            foreach (char key in " !?.…,;:'-—_()[]{}<>/\\*&#%°") { letterAllSprites[key.ToString()] = symbolsSprites[key.ToString()]; }
 
             Bitmap[] arrowBitmapArray = slice(arrowsSprite.bitmap, 4, 1);
             arrowSprites = new Dictionary<int, OneSprite>();
@@ -657,7 +671,7 @@ namespace Cave
         }
         public static int drawNumber(Bitmap bitmap, int number, (int x, int y) pos, int scaleFactor, bool centeredDraw)
         {
-            int counto = 0;
+            int counto = 0; // The count of pixels the print takes
             List<int> numberList = new List<int>();
             if (number == 0) { numberList.Add(0); }
             for (int i = 0; number > 0; i++)
@@ -668,6 +682,17 @@ namespace Cave
             for (int i = 0; i < numberList.Count; i++)
             {
                 Sprites.drawSpriteOnCanvas(bitmap, numberSprites[numberList[i]].bitmap, (pos.x + i * 8 * scaleFactor, pos.y), scaleFactor, centeredDraw);
+                counto += 8 * scaleFactor;
+            }
+
+            return counto;
+        }
+        public static int drawString(Bitmap bitmap, string stringo, (int x, int y) pos, int scaleFactor, bool centeredDraw)
+        {
+            int counto = 0; // The count of pixels the print takes
+            for (int i = 0; i < stringo.Length; i++)
+            {
+                Sprites.drawSpriteOnCanvas(bitmap, letterAllSprites[stringo[i].ToString()].bitmap, (pos.x + i * 8 * scaleFactor, pos.y), scaleFactor, centeredDraw);
                 counto += 8 * scaleFactor;
             }
 

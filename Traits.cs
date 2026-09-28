@@ -551,8 +551,8 @@ namespace Cave
                 new ColorRange((170, -5, 5), (120, 5, 5), (140, 5, 5)), L:(3, 3),
                 tM:new (int segment, bool fromEnd, bool oriented, int angleMod, (int x, int y) pos, (bool isVariation, int? lightRadius, (int a, int r, int g, int b) value)? color)[]
                 {
-                    (0, false, true, 1,  (1, 0), (true, null, (0, -15, -15, -20))), (0, false, true, 1,  (2, 0), (true, null, (-128, -30, -30, -35))),
-                    (0, false, true, -1, (1, 0), (true, null, (0, -15, -15, -20))), (0, false, true, -1, (2, 0), (true, null, (-128, -30, -30, -35)))
+                    (0, false, true, 3,  (1, 0), (true, null, (0, -15, -15, -20))), (0, false, true, 3,  (2, 0), (true, null, (-128, -30, -30, -35))),
+                    (0, false, true, 5, (1, 0), (true, null, (0, -15, -15, -20))), (0, false, true, 5, (2, 0), (true, null, (-128, -30, -30, -35)))
                 },
                 dT:new HashSet<(int type, int subType)>{ (6, 0), (6, 1) },
                 iW:2, oW:2, iA:0, oG:3, iG:2) },
