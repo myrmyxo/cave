@@ -45,6 +45,7 @@ namespace Cave
         }
         private void Form1_Load(object sender, EventArgs e)
         {
+            Cursor.Hide();
             currentDirectory = System.IO.Directory.GetCurrentDirectory();
 
             makeBlackBitmap();
@@ -66,6 +67,7 @@ namespace Cave
 
             //     ---- - - CURRENTLY DOING - - ----
             //
+            // fix the facing of worms
             // Whipped Cream biome, Chocolate Biome, bubblegum biome ? Bubblegum bubble baloons floating mongolfiere ??
             // Sour candy biomes when acidity high ???, Salty caramel and Salty licorice biomes when salinity high ? Mints when its COLD ??? Sugar desert/plains ?
             // Syrup oceans with sugar crystals growing ? AND SYRUP SWAMPS ??? Sounds cool lol ICE CREAM BIOME
@@ -259,18 +261,14 @@ namespace Cave
             // 3548078961 : giant fish in oceaon omggggg also banger terrain like wtf
             // 3452270044 : chill start frost inside ocean
 
-            Game game = new Game();
+            Game game = new Game(this);
             timer1.Tag = game;
             timeAtLauch = DateTime.Now;
-        }
-        private void pictureBox1_Click(object sender, EventArgs e)
-        {
-            //Form1_Load(new object(), new EventArgs());
         }
         private void timer1_Tick(object sender, EventArgs e)
         {
             Game game = (Game)timer1.Tag;
-            game.runGame(gamePictureBox, overlayPictureBox);
+            game.runGame(this, gamePictureBox, overlayPictureBox);
         }
         private void KeyIsDown(object sender, KeyEventArgs e)
         {
@@ -315,6 +313,11 @@ namespace Cave
             if (e.KeyCode == Keys.L) { }
             if (e.KeyCode == Keys.O) { }
             if ((Control.ModifierKeys & Keys.Shift) == 0) { shiftPress = false; }
+        }
+        private void gamePictureBox_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left) { leftMouseClick = true; }
+            if (e.Button == MouseButtons.Right) { rightMouseClick = true; }
         }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {

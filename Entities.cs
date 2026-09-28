@@ -111,6 +111,7 @@ namespace Cave
             public float wingTimer = 0;
 
             public bool isDeadAndShouldDisappear = false;
+            public bool hasBeenUnloadedOrKilled = false;
 
             public Nest nest = null;
             public int nestId = -1;
@@ -911,7 +912,7 @@ namespace Cave
                             Room room = nest.rooms[nest.getRoomId(targetPos)];
                             if (room.type == 3 && Place(targetPos, (3, 0, 1), true))
                             {
-                                Entity kiddo = screen.entitesToAdd.Values.ToArray()[screen.entitesToAdd.Count - 1];
+                                Entity kiddo = screen.entitiesToAdd.Values.ToArray()[screen.entitiesToAdd.Count - 1];
                                 kiddo.nest = nest;
                                 room.assignedEntities.Add(kiddo);  // since it's the last to be added, add last entity in entity list to the room
                                 nest.larvae.Add(kiddo);
@@ -1157,6 +1158,7 @@ namespace Cave
             public void dieAndDrop(Entity entityToGive = null)
             {
                 isDeadAndShouldDisappear = true;
+                hasBeenUnloadedOrKilled = true;
                 if (entityToGive != null)
                 {
                     ((int type, int subType, int megaType) element, int count) entityDrop = traits.drops;
@@ -1169,7 +1171,7 @@ namespace Cave
                     if(screen.activeStructures.ContainsKey(nestId)) { screen.activeStructures[nestId].addEntityToStructure(this); }
                     nest.adults.Remove(this); nest.larvae.Remove(this); nest.outsideEntities.Remove(id);
                 }
-                screen.entitesToRemove[id] = this;
+                screen.entitiesToRemove[id] = this;
             }
             public void findLength()
             {
@@ -1348,12 +1350,13 @@ namespace Cave
                 posX = posToTest.x;
                 posY = posToTest.y;
                 saveEntity(this);
-                screen.entitesToRemove[id] = this;
+                screen.entitiesToRemove[id] = this;
+                hasBeenUnloadedOrKilled = true;
             }
             public virtual void teleport((int x, int y) newPos, int screenIdToTeleport)
             {
                 Screens.Screen screenToTeleportTo = screen.game.getScreen(screenIdToTeleport);
-                screen.entitesToRemove[id] = this;
+                screen.entitiesToRemove[id] = this;
                 screenToTeleportTo.activeEntities[id] = this;
                 screen = screenToTeleportTo;
                 setEntityPos(newPos);
@@ -1443,7 +1446,7 @@ namespace Cave
                     else if (elementToPlace.typeOfElement == 1)
                     {
                         Entity newEntity = new Entity(screen, posToDig, (elementToPlace.type, elementToPlace.subType));
-                        screen.entitesToAdd[newEntity.id] = newEntity;
+                        screen.entitiesToAdd[newEntity.id] = newEntity;
                         timeAtLastPlace = timeElapsed;
                     }
                     else if (elementToPlace.typeOfElement == 2)

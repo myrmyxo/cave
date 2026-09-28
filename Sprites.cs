@@ -56,12 +56,16 @@ namespace Cave
         public static Dictionary<int, OneSprite> operationSignSprites;
         public static OneSprite overlayBackground;
         public static OneSprite errorSprite;
+        public static OneSprite cursorSprite;
 
+        public static OneAnimation cursorSprite2;
         public static OneAnimation fireAnimation;
         public static OneAnimation livingPortalAnimation;
         public static void loadSpriteDictionaries()
         {
             errorSprite = new OneSprite("Error", true);
+            cursorSprite = new OneSprite("Cursor", true);
+            cursorSprite2 = new OneAnimation("Cursor2", true, 7);
             tileSprites = new Dictionary<(int type, int subType), OneSprite>
             {
                 { (-9, 0), new OneSprite("CaramelLiquid", true) },
@@ -588,7 +592,14 @@ namespace Cave
             }
 
             Screens.Screen screen = game.playerList[0].screen;
-            if (debugMode) { drawNumber(game.overlayBitmap, screen.activeStructureLoadedChunkIndexes.Count, (420, 120), 1, true); }
+            if (debugMode)
+            {
+                drawNumber(game.overlayBitmap, screen.activeStructureLoadedChunkIndexes.Count, (420, 120), 1, true);    // Active Structures count
+                drawNumber(game.overlayBitmap, game.mousePosition.x, (320, 120), 1, true);    // Mouse pos X
+                drawNumber(game.overlayBitmap, game.mousePosition.y, (350, 120), 1, true);    // Mouse pos Y
+                drawNumber(game.overlayBitmap, game.screenMousePosition.x, (320, 108), 1, true);    // Mouse pos X
+                drawNumber(game.overlayBitmap, game.screenMousePosition.y, (350, 108), 1, true);    // Mouse pos Y
+            }
         }
         public static void drawCraftRecipe(Game game, ((int type, int subType, int megaType) material, int count)[] Recipe)
         {

@@ -38,6 +38,12 @@ namespace Cave
 {
     public class Traits
     {
+        public class BaseTraits
+        {
+            public string name = "Undefined";
+            public (int type, int subType) type;
+            public int megaType = -1;
+        }
         public class ColorRange
         {
             public (int v, int h, int s) r;
@@ -59,11 +65,8 @@ namespace Cave
             { "Fire", new ColorRange((200, 0, 10), (120, 0, 10), (40, 0, 10)) },
         };
         public static Color fireColor = famousColorRanges["Fire"].getLightColor();
-        public class TileTraits
+        public class TileTraits : BaseTraits
         {
-            public (int type, int subType) type;
-            public string name;
-
             public bool isAir;
             public bool isLiquid;
             public bool isSolid;
@@ -92,6 +95,7 @@ namespace Cave
                 bool S = false, (int propagationThreshold, int destructionThreshold)? F = null, ((int type, int subType) type, float chance)? bT = null, bool? iFC = null,
                 bool B = false, bool St = false, bool iTF = false, float bCB = 0.1f, (int x, int y, int z)? Tex = null, bool Tr = false)
             {
+                megaType = 0;
                 name = namee;
 
                 isAir = Air;
@@ -259,9 +263,8 @@ namespace Cave
 
 
 
-        public class MaterialTraits
+        public class MaterialTraits : BaseTraits
         {
-            public string name;
             public (int type, int subType, int megaType)? toolGatheringRequirement;
             public (int propagationThreshold, int destructionThreshold)? flammability;
             public ((int type, int subType) type, bool isTile, float chance)? burnTransformation;
@@ -270,6 +273,7 @@ namespace Cave
             //public float biomeColorBlend;
             public MaterialTraits(string namee, (int propagationThreshold, int destructionThreshold)? F = null, ((int type, int subType) type, bool isTile, float chance)? bT = null, (int type, int subType, int megaType)? tool = null, (int type, int subType, int megaType)? tOG = null, ColorRange col = null)
             {
+                megaType = 3;
                 name = namee;
                 toolGatheringRequirement = tool;
                 colorRange = col;
@@ -362,9 +366,8 @@ namespace Cave
 
 
 
-        public class EntityTraits
+        public class EntityTraits : BaseTraits
         {
-            public string name;
             public int startingHp;
             public ((int type, int subType, int megaType) element, int count) drops;
 
@@ -427,6 +430,7 @@ namespace Cave
                 float sS = 0.1f, float sMS = 0.5f, (float x, float y)? jS = null, float jC = 0, float mC = 0, int gHD = 50,
                 HashSet<(int type, int subType)> dT = null)
             {
+                megaType = 1;
                 name = namee;
                 startingHp = hp;
                 drops = drps;
@@ -488,6 +492,7 @@ namespace Cave
                 goHomeDistance = gHD;
                 diggableTiles = dT ?? new HashSet<(int type, int subType)>();
             }
+            public void setType((int type, int subType) typeToSet) { type = typeToSet; }
         }
         public static Dictionary<(int type, int subType), EntityTraits> entityTraitsDict;
         public static void makeEntityTraitsDict()
@@ -718,6 +723,8 @@ namespace Cave
                 }, tT:true,
                 iW:1, iA:1, iG:3) },
             };
+
+            foreach ((int type, int subType) typeToSet in entityTraitsDict.Keys) { entityTraitsDict[typeToSet].setType(typeToSet); }
         }
 
 
@@ -900,10 +907,9 @@ namespace Cave
             { "Down3Gap", (null, null, new (int x, int y, bool stopGrowth)[]{ (0, -3, true) }, null) },
             { "Down4Gap", (null, null, new (int x, int y, bool stopGrowth)[]{ (0, -4, true) }, null) },
         };
-        public class PlantElementTraits
+        public class PlantElementTraits : BaseTraits
         {
-            public (int type, int subType, int subSubType) type;
-            public string name;
+            new public (int type, int subType, int subSubType) type;
             public bool isRegenerative;
             public (int maxLevel, int range) maxGrowth;
             public (float step, bool fromEnd)? maxGrowthParentRelatedVariation;
@@ -2489,9 +2495,8 @@ namespace Cave
 
 
 
-        public class PlantTraits
+        public class PlantTraits : BaseTraits
         {
-            public string name;
             public string scientificName;
 
             public (int type, int subType, int subSubType) plantElementType;
@@ -2529,6 +2534,7 @@ namespace Cave
                 ((int type, int subType) type, ColorRange colorRange)[] cOverride = null, ((int r, int g, int b) shade, bool overridePlantElementShade)? fPS = null, ((int r, int g, int b) hue, bool overridePlantElementHue)? fPH = null,
                 bool C = false, bool S = false, bool EA = false, bool J = false, bool W = false, bool A = false, bool lum = false, bool cl = false, (int x, int y)? fSR = null, ((int baseValue, int variation) chance, (int x, int y) range)? pOS = null)
             {
+                megaType = 2;
                 name = n;
                 scientificName = sName;
 
@@ -2819,6 +2825,7 @@ namespace Cave
             };
 
             foreach ((int type, int subType) key in plantTraitsDict.Keys) { plantTraitsDict[key].plantElementType = (key.type, key.subType, 0); }
+            foreach ((int type, int subType) key in plantTraitsDict.Keys) { plantTraitsDict[key].type = key; }
         }
 
 
@@ -2826,9 +2833,8 @@ namespace Cave
 
 
 
-        public class TerrainFeaturesTraits
+        public class TerrainFeaturesTraits : BaseTraits
         {
-            public string name;
             public (int type, int subType) tileType;
             public int layer;
             public int priority;
@@ -2949,10 +2955,8 @@ namespace Cave
 
 
 
-        public class BiomeTraits        // -> Additional spawn attempts ? Like for modding idfk, on top of existing ones... idk uirehqdmsoijq
+        public class BiomeTraits : BaseTraits   // -> Additional spawn attempts ? Like for modding idfk, on top of existing ones... idk uirehqdmsoijq
         {
-            public (int type, int subType) type;
-            public string name;
             public int difficulty = 1;
             public (int r, int g, int b) color;
             public (int r, int g, int b) backgroundColor;
@@ -2990,6 +2994,7 @@ namespace Cave
                 (int type, int subType)? fT = null, (int type, int subType)? tT = null, (int type, int subType)? lT = null, (int minHeight, int minTiles, int maxTiles)? lS = null,
                 bool S = false, bool Dg = false, bool Da = false)
             {
+                megaType = 2;
                 name = namee;
                 color = colorToPut;
                 backgroundColor = backgroundColorToPut is null ? (colorToPut.r / 2 + 266, colorToPut.g / 2 + 266, colorToPut.b / 2 + 266) : (backgroundColorToPut.Value.isVariation ? (colorToPut.r / 2 + 266 + backgroundColorToPut.Value.color.r, colorToPut.g / 2 + 266 + backgroundColorToPut.Value.color.g, colorToPut.b / 2 + 266 + backgroundColorToPut.Value.color.b) : backgroundColorToPut.Value.color);
@@ -3371,11 +3376,8 @@ namespace Cave
 
 
 
-        public class DimensionTraits
+        public class DimensionTraits : BaseTraits
         {
-            public (int type, int subType) type;
-            public string name;
-
             public bool containsDarkBiomes;
 
             public DimensionTraits(string namee, bool cDB = false)
@@ -3407,9 +3409,8 @@ namespace Cave
 
 
 
-        public class AttackTraits
+        public class AttackTraits : BaseTraits
         {
-            public string name;
             public float damage;
             public float manaCost;
             public bool isHitting;
@@ -3425,6 +3426,7 @@ namespace Cave
 
             public AttackTraits(string namee, float d = 0, float m = 0, bool H = false, bool T = false, bool tP = false, bool P = false, bool Bu = false, bool fS = false, bool A = false, bool B = false, bool mH = false, (int type, int subType)? tM = null)
             {
+                megaType = 4;
                 name = namee;
                 damage = d;
                 manaCost = m;

@@ -54,6 +54,8 @@ namespace Cave
         public static bool dimensionSelection = false;
         public static int currentTargetDimension = 0;
         public static bool specificDebugTestPress = false;
+        public static bool leftMouseClick = false;
+        public static bool rightMouseClick = false;
         public static DateTime timeAtLauch;
         public static float timeElapsed = 0;
 

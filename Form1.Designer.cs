@@ -39,6 +39,7 @@
             // 
             // gamePictureBox
             // 
+            this.gamePictureBox.Cursor = System.Windows.Forms.Cursors.No;
             this.gamePictureBox.Location = new System.Drawing.Point(0, 0);
             this.gamePictureBox.Margin = new System.Windows.Forms.Padding(0);
             this.gamePictureBox.Name = "gamePictureBox";
@@ -46,6 +47,7 @@
             this.gamePictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.gamePictureBox.TabIndex = 0;
             this.gamePictureBox.TabStop = false;
+            this.gamePictureBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.gamePictureBox_MouseDown);
             // 
             // timer1
             // 
@@ -61,6 +63,7 @@
             // 
             // overlayPictureBox
             // 
+            this.overlayPictureBox.Cursor = System.Windows.Forms.Cursors.No;
             this.overlayPictureBox.Location = new System.Drawing.Point(0, 511);
             this.overlayPictureBox.Margin = new System.Windows.Forms.Padding(0);
             this.overlayPictureBox.Name = "overlayPictureBox";

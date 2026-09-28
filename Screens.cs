@@ -62,11 +62,15 @@ namespace Cave
             public int PNGmultiplicator;
             public float zoomingSpeed = 0;
 
+            public Entity targetEntity;
+            public (int x, int y) mousePosition;
+            public (int x, int y) screenMousePosition;
+
             public Bitmap gameBitmap;
             public Bitmap lightBitmap;
             public Bitmap finalBitmap;
             public bool isLight = true;
-            public Game()
+            public Game(Form form)
             {
                 devMode = true;
                 bool randomSeed = true;
@@ -78,7 +82,7 @@ namespace Cave
                 bool isPngToExport = false;
 
                 if (true) { forceBiome = (3, 0); isMonoeBiomeToPut = false; }
-                if (false) { forceBiome = (302, 0); isMonoeBiomeToPut = true; }
+                if (true) { forceBiome = (300, 2); isMonoeBiomeToPut = true; }
 
                 int PNGsize = 150;
                 PNGsize = 100;
@@ -147,9 +151,10 @@ namespace Cave
                     player.placePlayer();
                     timeAtLauch = DateTime.Now;
 
-                    runGame(null, null);
+                    runGame(form, null, null);
                     makeGameBitmaps();
-                    loadedScreens[idToPut].updateScreen(true).Save($"{currentDirectory}\\caveMap.png");
+                    loadedScreens[idToPut].updateScreen(true);
+                    upscaleGameBitmap(loadedScreens[idToPut], player, true).Save($"{currentDirectory}\\caveMap.png");
                     makeGameBitmaps();
                     chunkLoadMininumRadius = oldChunkLength;
                     findEffectiveChunkLoadingRadius();
@@ -219,7 +224,7 @@ namespace Cave
                     }
                 }
             }
-            public void runGame(PictureBox gamePictureBox, PictureBox overlayPictureBox)
+            public void runGame(Form form, PictureBox gamePictureBox, PictureBox overlayPictureBox)
             {
                 if (pausePress) { return; }
 
@@ -232,8 +237,8 @@ namespace Cave
                 {
                     screen.liquidsThatCantGoLeft = new HashSet<(int, int)>();
                     screen.liquidsThatCantGoRight = new HashSet<(int, int)>();
-                    screen.entitesToRemove = new Dictionary<int, Entity>();
-                    screen.entitesToAdd = new Dictionary<int, Entity>();
+                    screen.entitiesToRemove = new Dictionary<int, Entity>();
+                    screen.entitiesToAdd = new Dictionary<int, Entity>();
                     screen.particlesToRemove = new HashSet<Particle>();
                     screen.particlesToAdd = new List<Particle>();
                     screen.attacksToDo = new List<((int x, int y) pos, Attack attack)>();
@@ -269,11 +274,11 @@ namespace Cave
                     craftPress = false;
                 }
                 zoomUpdate();
-                
 
-
-
+                // Mouse stuff (need to put here white plants/entities in chunks)
                 Screen playerScreen = getScreen(player.dimension);
+                findMousePos(gameBitmap, gamePictureBox, player);
+
                 if (dimensionSelection && player.timeAtLastMenuChange + 0.2f < timeElapsed)
                 {
                     if (arrowKeysState[0] || arrowKeysState[2]) { currentTargetDimension--; player.timeAtLastMenuChange = timeElapsed; }
@@ -284,7 +289,7 @@ namespace Cave
                     if (arrowKeysState[0] || arrowKeysState[2]) { player.moveCraftCursor(-1); player.timeAtLastMenuChange = timeElapsed; }
                     if (arrowKeysState[1] || arrowKeysState[3]) { player.moveCraftCursor(1); player.timeAtLastMenuChange = timeElapsed; }
                 }
-                movePlayerStuff(player); // move player, load new chunks, test craft, and stuff
+                movePlayerStuff(player); // move player, test craft, and stuff
                 playerScreen.chunkX = ChunkIdx(player.posX);
                 playerScreen.chunkY = ChunkIdx(player.posY);
 
@@ -293,13 +298,18 @@ namespace Cave
 
                 foreach (Screen screen in loadedScreens.Values) { screen.chunkLoadingPoints = new Dictionary<(int x, int y), int>(); }
                 makeChunkLoadingPoints(new HashSet<int>(), playerScreen.game.effectiveRadius);
-                playerScreen.forceLoadChunksForOnePoint(ChunkIdx(player.posX, player.posY), playerScreen.game.effectiveRadius);
 
+                BaseTraits thingPointedAt = null;
                 List<int> dimensionsToUnload = new List<int>();
                 foreach (Screen screen in loadedScreens.Values.ToArray())
                 {
-                    screen.loadCloseChunks();
+                    if (screen == playerScreen) { thingPointedAt = findMouseTarget(gameBitmap, gamePictureBox, playerScreen, player); }
+                    screen.removeEntitiesAndPlantsFromChunks(true);
+                    screen.addRemoveEntities();
+                    if (screen == playerScreen) { playerScreen.forceLoadChunksForOnePoint(ChunkIdx(player.posX, player.posY), playerScreen.game.effectiveRadius); }
 
+                    screen.loadCloseChunks();
+                    
                     screen.addRemoveEntities();
 
                     // GINGERBREAD caused this to be REMOVED there will now be 109402349 bugs
@@ -369,12 +379,11 @@ namespace Cave
                 foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.unloadFarawayChunks(); }
                 foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.manageExtraLoadedChunksAndMegaChunks(); }
                 setUnloadingImmunity(); // Prevent MegaChunks/Chunks/Structures to be unloaded when they should not be
+
                 foreach (Screen screen in loadedScreens.Values.ToArray())
                 {
                     screen.unloadMegaChunks();
 
-                    screen.removeEntitiesAndPlantsFromChunks(true);
-                    screen.addRemoveEntities();
                     foreach (Particle particle in screen.particlesToAdd)    { screen.activeParticles.Add(particle); }
                     foreach (Particle particle in screen.particlesToRemove) { screen.activeParticles.Remove(particle); }
                     screen.particlesToRemove = new HashSet<Particle>();
@@ -392,21 +401,91 @@ namespace Cave
                     goto LoopStart;
                 }
 
+
                 // render screen and update game image box thing
-                playerScreen = getScreen(player.dimension);
-                gamePictureBox.Image = playerScreen.updateScreen();
+                Bitmap screenBitmap = playerScreen.updateScreen();
+                drawMouseCursors(screenBitmap, player);
+                drawOverlay(overlayPictureBox, player, thingPointedAt);
+
+                gamePictureBox.Image = upscaleGameBitmap(playerScreen, player);
                 gamePictureBox.Refresh();
-                overlayPictureBox.Image = overlayBitmap;
-                Sprites.drawSpriteOnCanvas(overlayBitmap, overlayBackground.bitmap, (0, 0), 4, false);
-                if (dimensionSelection) { drawNumber(overlayBitmap, currentTargetDimension, (200, 64), 4, true); }
-                else if (craftSelection) { drawCraftRecipe(this, craftRecipes[player.craftCursor]); }
-                drawInventory(player.screen.game, player.inventoryQuantities, player.inventoryElements, player.inventoryCursor);
-                overlayPictureBox.Refresh();
 
                 updateStructureLogFile(this);
 
                 int gouga = liquidSlideCount;
                 gouga = gouga + 1 - 1;
+            }
+            public Bitmap upscaleGameBitmap(Screen playerScreen, Player player, bool isPngToBeExported = false)
+            {
+                // Upscale 1*1 bitmap into the pngmult*pngmult bitmap !
+                if (PNGmultiplicator > 1) { playerScreen.pasteImage(finalBitmap, gameBitmap, (0, 0), (0, 0), PNGmultiplicator); }
+
+                if (debugMode && !isPngToBeExported) { playerScreen.drawChunksAndMegachunksDebugOnScreen(finalBitmap, player); } // debug shit for chunks and megachunks
+
+                finalBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                return finalBitmap;
+            }
+            public void findMousePos(Bitmap gameBitmap, PictureBox gamePictureBox, Player player)
+            {
+                Point mousePoint = gamePictureBox.PointToClient(Control.MousePosition);
+                mousePosition = ((int)((mousePoint.X * gameBitmap.Width / 512f) + 0.5f), (int)(((gamePictureBox.Height - mousePoint.Y) * gameBitmap.Height / 512f) + 0.5f));
+                screenMousePosition = (player.camPosX - zoomLevel + mousePosition.x - 1, player.camPosY - zoomLevel + mousePosition.y - 1);
+            }
+            public BaseTraits findMouseTarget(Bitmap gameBitmap, PictureBox gamePictureBox, Screen playerScreen, Player player)
+            {
+                Chunk targetedChunk = playerScreen.getChunkFromPixelPos(screenMousePosition);
+
+                if (targetEntity != null && (targetEntity.hasBeenUnloadedOrKilled || targetEntity.isDeadAndShouldDisappear)) { targetEntity = null; }
+                if (leftMouseClick)
+                {
+                    targetEntity = null;
+                    leftMouseClick = false;
+                    foreach (Entity entity in targetedChunk.entityList)
+                    {
+                        if (Abs(entity.posX - screenMousePosition.x) <= 2 && Abs(entity.posY - screenMousePosition.y) <= 2)
+                        {
+                            targetEntity = entity;
+                            return entity.traits;
+                        }
+                    }
+                }
+                foreach (Entity entity in targetedChunk.entityList) { if ((entity.posX, entity.posY) == screenMousePosition) { return entity.traits; } }
+                foreach (Plant plant in targetedChunk.plants.Values)
+                {
+                    if (plant.returnAllPlantElementsWhichMaterialsAtPos(screenMousePosition).Count > 0) { return plant.traits; }
+                }
+                return playerScreen.getTileContent(screenMousePosition);
+            }
+            public void drawMouseCursors(Bitmap gameBitmap, Player player)
+            {
+                Sprites.drawSpriteOnCanvas(gameBitmap, cursorSprite.bitmap, mousePosition, 1, true);
+                if (targetEntity != null) { Sprites.drawSpriteOnCanvas(gameBitmap, cursorSprite2.frames[(int)(timeElapsed * 20) % cursorSprite2.frameCount], (zoomLevel - player.camPosX + targetEntity.posX + 1, zoomLevel - player.camPosY + targetEntity.posY + 1), 1, true); }
+            }
+            public void drawOverlay(PictureBox overlayPictureBox, Player player, BaseTraits thingPointedAt)
+            {
+                overlayPictureBox.Image = overlayBitmap;
+                Sprites.drawSpriteOnCanvas(overlayBitmap, overlayBackground.bitmap, (0, 0), 4, false);
+
+                if (dimensionSelection) { drawNumber(overlayBitmap, currentTargetDimension, (200, 64), 4, true); }
+                else if (craftSelection) { drawCraftRecipe(this, craftRecipes[player.craftCursor]); }
+                
+                drawInventory(player.screen.game, player.inventoryQuantities, player.inventoryElements, player.inventoryCursor);
+
+                if (targetEntity != null) { Sprites.drawSpriteOnCanvas(overlayBitmap, entitySprites[targetEntity.traits.type].bitmap, (20, 60), 4, false); }
+                else
+                {
+                    Dictionary<(int type, int subType), OneSprite> dictToUse = null;
+                    if (thingPointedAt.megaType == 0) { dictToUse = tileSprites; }
+                    else if (thingPointedAt.megaType == 1) { dictToUse = entitySprites; }
+                    else if (thingPointedAt.megaType == 2) { dictToUse = plantSprites; }
+                    else if (thingPointedAt.megaType == 3) { dictToUse = materialSprites; }
+                    else if (thingPointedAt.megaType == 4) { dictToUse = toolsSprites; }
+                    else if (thingPointedAt.megaType == 5) { dictToUse = attacksSprites; }
+                    if (dictToUse is null) { Sprites.drawSpriteOnCanvas(overlayBitmap, errorSprite.bitmap, (20, 60), 4, false); }
+                    else { Sprites.drawSpriteOnCanvas(overlayBitmap, dictToUse[thingPointedAt.type].bitmap, (20, 60), 4, false); }
+                }
+
+                overlayPictureBox.Refresh();
             }
             public void setUnloadingImmunity()
             {
@@ -550,7 +629,7 @@ namespace Cave
             public void unloadDimension(int id)
             {
                 Screen screen = loadedScreens[id];
-                screen.putEntitiesAndPlantsInChunks();
+                screen.putEntitiesAndPlantsInChunks();  // Should have been already put in chunks due to cursor update but i'll leave it in case
                 saveAllChunks(screen);
                 loadedScreens.Remove(id);
             }
@@ -601,8 +680,8 @@ namespace Cave
             public (int x, int y)? generatingMegachunk;
 
             public Dictionary<int, Entity> activeEntities = new Dictionary<int, Entity>();
-            public Dictionary<int, Entity> entitesToRemove = new Dictionary<int, Entity>();
-            public Dictionary<int, Entity> entitesToAdd = new Dictionary<int, Entity>();
+            public Dictionary<int, Entity> entitiesToRemove = new Dictionary<int, Entity>();
+            public Dictionary<int, Entity> entitiesToAdd = new Dictionary<int, Entity>();
             public Dictionary<int, Plant> activePlants = new Dictionary<int, Plant>();
             public Dictionary<int, Plant> plantsToRemove = new Dictionary<int, Plant>();
             public Dictionary<int, Plant> plantsToMakeBitmapsOf = new Dictionary<int, Plant>();
@@ -666,7 +745,7 @@ namespace Cave
                         }
                         else
                         {
-                            type = (rand.Next(3), 0);
+                            type = (rand.Next(4), 0);
                             isMonoBiome = false;
                         }
                     }
@@ -681,6 +760,7 @@ namespace Cave
                 chunkX = ChunkIdx(player.posX);
                 chunkY = ChunkIdx(player.posY);
                 if (player.dimension == id) { forceLoadChunksForOnePoint(ChunkIdx(player.posX, player.posY), game.effectiveRadius); }
+                putEntitiesAndPlantsInChunks();
 
                 // due to GINGERBREAD this has been REMOVING so now it will BUG
                 // foreach ((int x, int y) pos in chunksToMature) { if (loadedChunks.ContainsKey(pos)) { loadedChunks[pos].matureChunkToLevelTwo(); } }
@@ -710,10 +790,10 @@ namespace Cave
             }
             public void addRemoveEntities()
             {
-                foreach (Entity entity in entitesToRemove.Values) { activeEntities.Remove(entity.id); }
-                foreach (Entity entity in entitesToAdd.Values) { activeEntities[entity.id] = entity; }
-                entitesToRemove = new Dictionary<int, Entity>();
-                entitesToAdd = new Dictionary<int, Entity>();
+                foreach (Entity entity in entitiesToRemove.Values) { activeEntities.Remove(entity.id); }
+                foreach (Entity entity in entitiesToAdd.Values) { activeEntities[entity.id] = entity; }
+                entitiesToRemove = new Dictionary<int, Entity>();
+                entitiesToAdd = new Dictionary<int, Entity>();
             }
             public void removePlants()
             {
@@ -752,7 +832,7 @@ namespace Cave
                             }
                         }
                     }
-                    activePlants.Remove(plant.id);
+                    // activePlants.Remove(plant.id);
                 }
             }
             public void putEntitiesInChunks()
@@ -767,7 +847,7 @@ namespace Cave
                     chunkIndex = ChunkIdx(entity.posX, entity.posY);
                     if (loadedChunks.ContainsKey(chunkIndex)) { getChunkFromChunkPos(chunkIndex).entityList.Add(activeEntities[entity.id]); }
                     else if (activeEntities.ContainsKey(id)) { cringeEntities.Add(activeEntities[id]); }    // Cuz sometimes they disappear ?????????? what ???
-                    activeEntities.Remove(entity.id);
+                    // activeEntities.Remove(entity.id);
                 }
                 foreach (Entity entito in cringeEntities) { activeEntities[entito.id] = entito; }
             }
@@ -1139,14 +1219,7 @@ namespace Cave
                 if (debugMode && !isPngToBeExported && false) { drawMiscDebugOnScreen(gameBitmap, camPos); } // debug misc
                 if (true) { game.miscDebugList = new HashSet<((int x, int y) pos, Color col)>(); }  // For memory leak ig blah blah
 
-                // Upscale 1*1 bitmap into the pngmult*pngmult bitmap !
-                Bitmap finalBitmap = game.finalBitmap;
-                if (game.PNGmultiplicator > 1) { pasteImage(finalBitmap, gameBitmap, (0, 0), (0, 0), game.PNGmultiplicator); }
-
-                if (debugMode && !isPngToBeExported) { drawChunksAndMegachunksDebugOnScreen(finalBitmap, player); } // debug shit for chunks and megachunks
-
-                finalBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
-                return finalBitmap;
+                return gameBitmap;
             }
             public void drawChunkScoresOnScreen(Bitmap gameBitmap, (int x, int y) camPos, bool isPngToBeExported)
             {

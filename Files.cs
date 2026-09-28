@@ -254,6 +254,7 @@ namespace Cave
                 {
                     saveEntity(entity);
                     eLst.Add(entity.id);
+                    entity.hasBeenUnloadedOrKilled = true;
                 }
                 chunk.entityList = new List<Entity>();
                 pLst = new List<int>();

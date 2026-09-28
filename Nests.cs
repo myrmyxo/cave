@@ -541,7 +541,7 @@ namespace Cave
                 for (int i = 0; i < 5; i++)
                 {
                     Entity hornet = new Entity(screen, posToPut, (3, 3));
-                    screen.entitesToAdd[hornet.id] = hornet;
+                    screen.entitiesToAdd[hornet.id] = hornet;
                     addEntityToStructure(hornet);
                 }
                 updateTiles();
