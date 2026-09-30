@@ -143,8 +143,7 @@ namespace Cave
             // looping dimensions ???? Could be cool. And serve as TELEPORT HUBS ???
             // maybe depending on a parameter of the dimension, some living world dimensions would be more dead or not dead at all.
             // -> rotten biomes in living dimension ?? Like the corpse in isaac LMFAO. Like dead bone, dead flesh and bone, dead flesh, pus/dead ocean...
-            // Lolitadimension ?? ? ? or CANDYDIMENSION ???? idk ? ? ? sugar cane trees would be poggers. Or a candy dimension with candies... yeah and uh idk a lolita biome and a super rare variant being a gothic lolita biome ??? idk wtf i'm on ngl
-            // Whipped cream biome, chocolate biome... idk
+            // Lolitadimension ?? ? ? yeah and uh idk a lolita biome and a super rare variant being a gothic lolita biome ??? idk wtf i'm on ngl
             // Add a portal that is inside lava oceans; in a structure (obsidian city ?), that needs to be turned on with maybe liquid obsidian or oil, and teleports to like hell, or an obsidian dimension made ouf of only obsidian shit ?.
             // Amnesia spell that makes u forget parts of the map lol
             // Make it so lakes that are big enough (megaLakes) have stuff similar to ocean in them. Like idk mermaids or other shite ? Since they're huge and are like mini oceans.
@@ -176,6 +175,7 @@ namespace Cave
             // Jungle with ferns. And a special rare variant called the Fern Jungle with Fern Trees (fougères arborescentes) and no other type of tree ?
             // A forest biome with a CACA D OIE color ??? With CACA D OIE trees ??? Like for real not caca d'oie but the shit i ate in vietnamese restaut color. I have trop la vision genre
             // Oasis biome in deserts ? like mushroom in MC idk ?
+            // A biome that has the same colors as the drawing of bathtub mermaid by Mili cuz it's fucking awesome saucy baka
 
             // Entities ideas !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. And add LITHOPEDIONS
@@ -291,6 +291,10 @@ namespace Cave
             if (e.KeyCode == Keys.M) { debugMode = !debugMode; }
             if (e.KeyCode == Keys.L && !craftPress) { dimensionChangePress = true; }
             if (e.KeyCode == Keys.O) { specificDebugTestPress = !specificDebugTestPress; }
+            if (e.KeyCode == Keys.T) { talkPress = true; }
+            if (e.KeyCode == Keys.Enter) { enterPress = true; }
+            if (e.KeyCode == Keys.Back) { backPress = true; }
+            if (e.KeyCode == Keys.Escape) { escapePress = true; }
             if ((Control.ModifierKeys & Keys.Shift) != 0) { shiftPress = true; }
         }
         private void KeyIsUp(object sender, KeyEventArgs e)

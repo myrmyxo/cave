@@ -385,9 +385,18 @@ namespace Cave
                         }
                         entity.hp -= traits.damage;
                         entity.timeAtLastGottenHit = timeElapsed;
+                        loseReputation(entity);
                         entity.testDeath(motherEntity);
                     }
                 }
+            }
+            public void loseReputation(Entity targetedEntity)
+            {
+                if (motherEntity is null) { return; }
+                OneRelationship relationship = getOneRelationship(motherEntity, targetedEntity);
+                if (relationship is null) { relationship = new OneRelationship(motherEntity, targetedEntity); }
+                if (relationship.entityId1 == targetedEntity.id) { relationship.reputation1 = -100; }
+                else { relationship.reputation2 = -100; }
             }
             public Entity findTransformant(List<Entity> entityList)
             {

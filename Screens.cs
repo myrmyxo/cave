@@ -66,10 +66,13 @@ namespace Cave
             public (int x, int y) mousePosition;
             public (int x, int y) screenMousePosition;
 
+            public Dialogue currentDialogue;
+
             public Bitmap gameBitmap;
             public Bitmap lightBitmap;
             public Bitmap finalBitmap;
             public bool isLight = true;
+
             public Game(Form form)
             {
                 devMode = true;
@@ -129,12 +132,12 @@ namespace Cave
                     while (b == a) { b = rand.Next(4); }
                     int c = rand.Next(1024);
                     int d = rand.Next(1024);
-                    makeBiomeDiagram((0, 0), (a, b), new int[]{ c, d, 512, 512, 512 }, "-");
+                    makeBiomeDiagram((0, 0), (a, b), new int[] { c, d, 512, 512, 512 }, "-");
                 }
                 int counti = 0;
                 for (int i = -512; i < -1000/*1536*/; i += 64)
                 {
-                    makeBiomeDiagram((0, 0), (0, 1), new int[]{ 512, 512, 512, 512, i }, counti.ToString());
+                    makeBiomeDiagram((0, 0), (0, 1), new int[] { 512, 512, 512, 512, i }, counti.ToString());
                     counti++;
                 }
 
@@ -386,7 +389,7 @@ namespace Cave
                 {
                     screen.unloadMegaChunks();
 
-                    foreach (Particle particle in screen.particlesToAdd)    { screen.activeParticles.Add(particle); }
+                    foreach (Particle particle in screen.particlesToAdd) { screen.activeParticles.Add(particle); }
                     foreach (Particle particle in screen.particlesToRemove) { screen.activeParticles.Remove(particle); }
                     screen.particlesToRemove = new HashSet<Particle>();
                     screen.particlesToAdd = new List<Particle>();
@@ -394,6 +397,9 @@ namespace Cave
                     if (screen != playerScreen && screen.loadedChunks.Count == 0) { dimensionsToUnload.Add(screen.id); }
                 }
                 foreach (int id in dimensionsToUnload) { unloadDimension(id); }
+
+                updateCurrentDialogue(player);
+
                 saveSettings(this);
 
                 // go back 10 times if fastForward
@@ -458,6 +464,28 @@ namespace Cave
                 }
                 return playerScreen.getTileContent(screenMousePosition);
             }
+            public void updateCurrentDialogue(Player player)
+            {
+                if (currentDialogue == null)
+                {
+                    enterPress = false; backPress = false; escapePress = false; // To not accidentally skip the first dialogue
+                    if (talkPress == false || targetEntity == null) { return; }
+                    currentDialogue = new Dialogue(new Entity[] { player, targetEntity });  // if no current dialogue, having selected an entity with cursor, and pressing T, make new Dialogue
+                    talkPress = false;
+                    return;
+                }
+
+                if (escapePress) { currentDialogue = null; talkPress = false; enterPress = false; backPress = false; escapePress = false; return; } // If exiting talk mode, exit out of current dialogue (might change in future)
+
+                if (enterPress || talkPress) // If pressing enter, proceed
+                {
+                    if (currentDialogue.proceed()) { currentDialogue = null; }  // If the talk finished, exit dialogue
+                }
+                else if (backPress) { currentDialogue.goBack(); }   // If pressing back, go back one sentence
+                talkPress = false; enterPress = false; backPress = false; escapePress = false;
+
+                // Make it so if it dies it says ARRRRGHHH and it's not possible to do anything else
+            }
             public void drawMouseCursors(Bitmap gameBitmap, Player player)
             {
                 Sprites.drawSpriteOnCanvas(gameBitmap, cursorSprite.bitmap, mousePosition, 1, true);
@@ -473,7 +501,12 @@ namespace Cave
                 
                 drawInventory(player.screen.game, player.inventoryQuantities, player.inventoryElements, player.inventoryCursor);
 
-                if (targetEntity != null)
+                if (currentDialogue != null)
+                {
+                    currentDialogue.renderSpeakerSprite(overlayBitmap, (40, 60));
+                    currentDialogue.renderCurrentSentence(overlayBitmap, (90, 40));
+                }
+                else if (targetEntity != null)
                 {
                     Sprites.drawSpriteOnCanvas(overlayBitmap, entitySprites[targetEntity.traits.type].bitmap, (40, 60), 4, true);
                     drawString(overlayBitmap, "Name : " + targetEntity.traits.name, (90, 40), 1, true);

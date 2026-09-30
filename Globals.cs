@@ -56,6 +56,10 @@ namespace Cave
         public static bool specificDebugTestPress = false;
         public static bool leftMouseClick = false;
         public static bool rightMouseClick = false;
+        public static bool enterPress = false;
+        public static bool backPress = false;
+        public static bool escapePress = false;
+        public static bool talkPress = false;
         public static DateTime timeAtLauch;
         public static float timeElapsed = 0;
 
