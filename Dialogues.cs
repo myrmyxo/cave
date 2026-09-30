@@ -80,14 +80,16 @@ namespace Cave
 
         public class Dialogue
         {
+            public Game game;
             public Entity[] speakers;
             OneSentence currentSentence;
             List<OneSentence> previousSentences = new List<OneSentence>();
             List<OneSentence> nextSentences = new List<OneSentence>();
             public bool isFinished = false;
 
-            public Dialogue(Entity[] speakersToPut)
+            public Dialogue(Game gameToPut, Entity[] speakersToPut)
             {
+                game = gameToPut;
                 speakers = speakersToPut;
 
                 chooseDialogue();
@@ -135,11 +137,11 @@ namespace Cave
             public void chooseDialogue()
             {
                 (Entity one, Entity two) relationshipTuple = getRelationshipTuple(speakers[0], speakers[1]);
+                OneRelationship relationship = getOneRelationship(game, relationshipTuple.one, relationshipTuple.two);
 
-                if (!relationshipsDict.ContainsKey((relationshipTuple.one.id, relationshipTuple.two.id))) { introductionDialogue(relationshipTuple); }
+                if (relationship is null) { introductionDialogue(relationshipTuple); }
                 else
                 {
-                    OneRelationship relationship = relationshipsDict[(relationshipTuple.one.id, relationshipTuple.two.id)];
                     if (speakers[0] == relationshipTuple.one ? (relationship.reputation2 < 0) : (relationship.reputation1 < 0)) { hateDialogue(relationship); }
                     else { randomDialogue(relationship); }
                 }
@@ -168,24 +170,10 @@ namespace Cave
             }
         }
 
-        public static (Entity one, Entity two) getRelationshipTuple(Entity entity1, Entity entity2)
-        {
-            (Entity one, Entity two) relationshipTuple;
-            if (entity1.id < entity2.id) { relationshipTuple = (entity1, entity2); }
-            else { relationshipTuple = (entity2, entity1); }
-            return relationshipTuple;
-        }
-        public static OneRelationship getOneRelationship(Entity entity1, Entity entity2)
-        {
-            (int one, int two) relationshipTuple;
-            if (entity1.id < entity2.id) { relationshipTuple = (entity1.id, entity2.id); }
-            else { relationshipTuple = (entity1.id, entity2.id); }
-            if (relationshipsDict.ContainsKey(relationshipTuple)) { return relationshipsDict[relationshipTuple]; }
-            return null;
-        }
-
         public class OneRelationship
         {
+            public Game game;
+
             public int entityId1;
             public int entityId2;
 
@@ -195,20 +183,64 @@ namespace Cave
             public int reputation1; // Reputation of entity 1 towards entity 2
             public int reputation2; // Reputation of entity 1 towards entity 2
 
-            public OneRelationship(Entity entityOne, Entity entityTwo)  // It is assumed that the entities are in sorted ID
+            public OneRelationship(OneRelationshipJson oneRelationshipJson, Entity entityOne, Entity entityTwo)  // It is assumed that the entities are in sorted ID
             {
+                game = entityOne.screen.game;
+
                 entity1 = entityOne;
                 entity2 = entityTwo;
 
                 entityId1 = entity1.id;
                 entityId2 = entity2.id;
 
-                reputation1 = 1;
-                reputation2 = 1;
+                reputation1 = oneRelationshipJson.V[0];
+                reputation2 = oneRelationshipJson.V[1];
 
-                if (relationshipsDict.ContainsKey((entityId1, entityId2))) {; }  // This should NEVER happen
+                if (relationshipsDict.ContainsKey((entityId1, entityId2))) { return; }  // This should NEVER happen
                 relationshipsDict[(entityId1, entityId2)] = this;
             }
+            public OneRelationship(Entity entityOne, Entity entityTwo)  // It is assumed that the entities are in sorted ID
+            {
+                game = entityOne.screen.game;
+
+                entity1 = entityOne;
+                entity2 = entityTwo;
+
+                entityId1 = entity1.id;
+                entityId2 = entity2.id;
+
+                setRelationshipScoreTo(entityId1, 1, false);
+                setRelationshipScoreTo(entityId2, 1, false);
+
+                if (relationshipsDict.ContainsKey((entityId1, entityId2))) { return; }  // This should NEVER happen
+                relationshipsDict[(entityId1, entityId2)] = this;
+
+                saveOneRelationship(game, this);
+            }
+            public void setRelationshipScoreTo(int entityId, int scoreToPut, bool save = true)
+            {
+                if (entityId1 == entityId) { reputation1 = scoreToPut; }
+                else { reputation2 = scoreToPut; }
+                if (save) { saveOneRelationship(game, this); }
+            }
+        }
+
+        public static (Entity one, Entity two) getRelationshipTuple(Entity entity1, Entity entity2)
+        {
+            (Entity one, Entity two) relationshipTuple;
+            if (entity1.id < entity2.id) { relationshipTuple = (entity1, entity2); }
+            else { relationshipTuple = (entity2, entity1); }
+            return relationshipTuple;
+        }
+        public static OneRelationship getOneRelationship(Game game, Entity entity1, Entity entity2)
+        {
+            (int one, int two) relationshipTuple;
+            if (entity1.id < entity2.id) { relationshipTuple = (entity1.id, entity2.id); }
+            else { relationshipTuple = (entity1.id, entity2.id); }
+            if (relationshipsDict.ContainsKey(relationshipTuple)) { return relationshipsDict[relationshipTuple]; }
+            OneRelationshipJson json = tryLoadOneRelationship(game, entity1.id, entity2.id);
+            if (json is null) { return null; }
+            return new OneRelationship(json, entity1, entity2);
         }
     }
 }

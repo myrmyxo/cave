@@ -399,6 +399,7 @@ namespace Cave
                 foreach (int id in dimensionsToUnload) { unloadDimension(id); }
 
                 updateCurrentDialogue(player);
+                if (relationshipsDict.Count > 100) { relationshipsDict = new Dictionary<(int entityId1, int entityId2), OneRelationship>(); }   // To prevent it becoming infinite (would not happen but whatever)
 
                 saveSettings(this);
 
@@ -470,7 +471,7 @@ namespace Cave
                 {
                     enterPress = false; backPress = false; escapePress = false; // To not accidentally skip the first dialogue
                     if (talkPress == false || targetEntity == null) { return; }
-                    currentDialogue = new Dialogue(new Entity[] { player, targetEntity });  // if no current dialogue, having selected an entity with cursor, and pressing T, make new Dialogue
+                    currentDialogue = new Dialogue(this, new Entity[] { player, targetEntity });  // if no current dialogue, having selected an entity with cursor, and pressing T, make new Dialogue
                     talkPress = false;
                     return;
                 }

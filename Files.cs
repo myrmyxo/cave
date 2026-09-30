@@ -31,6 +31,7 @@ using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
 using static Cave.Traits;
+using static Cave.Dialogues;
 
 namespace Cave
 {
@@ -494,6 +495,18 @@ namespace Cave
             }
             public NestJson() { }
         }
+        public class OneRelationshipJson
+        {
+            public int[] V;
+            public OneRelationshipJson(OneRelationship oneRelationship)
+            {
+                V = new int[2] { oneRelationship.reputation1, oneRelationship.reputation2 };
+            }
+            public OneRelationshipJson() { }
+        }
+        
+        
+        
         public static int[,] tileListToArray(HashSet<(int x, int y)> listo)
         {
             int[,] arrayo = new int[listo.Count, 2];
@@ -823,6 +836,7 @@ namespace Cave
             testCreateOneFolder($"{currentDirectory}\\CaveData\\{seed}\\StructureData");
             testCreateOneFolder($"{currentDirectory}\\CaveData\\{seed}\\PlantData");
             testCreateOneFolder($"{currentDirectory}\\CaveData\\{seed}\\EntityData");
+            testCreateOneFolder($"{currentDirectory}\\CaveData\\{seed}\\RelationshipData");
         }
         public static void testCreateOneFolder(string path)
         {
@@ -860,6 +874,36 @@ namespace Cave
             }
             game.structureGenerationLogs = new List<string>();
             game.structureGenerationLogsStructureUpdateCount = new Dictionary<(int dim, int x, int y), int>();
+        }
+        public static void saveOneRelationship(Game game, OneRelationship oneRelationship)
+        {
+            JsonSerializer serializer = new JsonSerializer();
+            serializer.Converters.Add(new JavaScriptDateTimeConverter());
+            serializer.NullValueHandling = NullValueHandling.Ignore;
+
+            OneRelationshipJson oneRelationshipJson = new OneRelationshipJson(oneRelationship);
+
+            using (StreamWriter sw = new StreamWriter($"{currentDirectory}\\CaveData\\{game.seed}\\RelationshipData\\{oneRelationship.entityId1}.{oneRelationship.entityId2}.json"))
+            {
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    serializer.Serialize(writer, oneRelationshipJson);
+                }
+            }
+        }
+        public static OneRelationshipJson tryLoadOneRelationship(Game game, int id1, int id2)
+        {
+            string fileName = $"{currentDirectory}\\CaveData\\{game.seed}\\RelationshipData\\{id1}.{id2}.json";
+
+            if (!System.IO.File.Exists(fileName)) { return null; }
+
+            OneRelationshipJson oneRelationshipJson;
+            using (StreamReader f = new StreamReader(fileName))
+            {
+                string content = f.ReadToEnd();
+                oneRelationshipJson = JsonConvert.DeserializeObject<OneRelationshipJson>(content);
+            }
+            return oneRelationshipJson;
         }
     }
 }
