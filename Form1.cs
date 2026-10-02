@@ -67,7 +67,6 @@ namespace Cave
 
             //     ---- - - CURRENTLY DOING - - ----
             //
-            // fix the facing of worms
             // Whipped Cream biome, Chocolate Biome, bubblegum biome ? Bubblegum bubble baloons floating mongolfiere ??
             // Sour candy biomes when acidity high ???, Salty caramel and Salty licorice biomes when salinity high ? Mints when its COLD ??? Sugar desert/plains ?
             // Syrup oceans with sugar crystals growing ? AND SYRUP SWAMPS ??? Sounds cool lol ICE CREAM BIOME
@@ -442,8 +441,6 @@ namespace Cave
             Bitmap upscaledBiomeBitmap = new Bitmap(biomeBitmap.Width * 4, biomeBitmap.Height * 4);
             screen.pasteImage(upscaledBiomeBitmap, biomeBitmap, (0, 0), (0, 0), 4);
             upscaledBiomeBitmap.Save($"{currentDirectory}\\BiomeMaps\\BiomeMap of seed {worldSeed}.png");
-
-            int a = 3;
         }
     }
     public class MathF
@@ -885,21 +882,21 @@ namespace Cave
         public static int PosModSeesaw(int n, int mod)
         {
             n = PosMod(n, mod);
-            n = n % mod;
+            n %= mod;
             int n2 = n % (mod / 2);
             if (n == n2) { return n; }
             return n - n2 * 2;
         }
         public static int Seesaw(int n, int mod)
         {
-            n = n % mod;
+            n %= mod;
             int n2 = n % (mod / 2);
             if (n == n2) { return n; }
             return n - n2*2;
         }
         public static float Seesaw(float n, float mod)
         {
-            n = n % mod;
+            n %= mod;
             float n2 = n % (mod*0.5f);
             if (n == n2) { return n; }
             return n - n2 * 2;

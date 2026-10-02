@@ -259,8 +259,6 @@ namespace Cave
             }
             public void makeBubbleRoom((int x, int y) centerPos, int forceSize)
             {
-                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
-
                 int tileAmount;
                 if (forceSize == 0) { tileAmount = (int)(25 + (seed % 750)); }
                 else { tileAmount = forceSize; }
@@ -312,7 +310,6 @@ namespace Cave
 
             public ((int x, int y) pos, bool found) findEntrancePoint(List<(int x, int y)> tilesToTest)
             {
-                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
                 HashSet<(int x, int y)> visitedTiles = new HashSet<(int x, int y)>();
 
                 foreach ((int x, int y) pos in tilesToTest) { visitedTiles.Add(pos); }
@@ -351,8 +348,6 @@ namespace Cave
             }
             public void makeCorridorBetweenPoints(HashSet<(int x, int y)> startPosList, (int x, int y) targetPos, int randomness)
             {
-                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
-
                 long seedo = seed;
 
                 HashSet<(int x, int y)> tilesToFill = new HashSet<(int x, int y)>();
@@ -442,7 +437,6 @@ namespace Cave
                 contentCount = 0;
 
                 // capacity of list of tiles, count, and shit, idkkkkk broooo
-                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
 
                 if (type == 2)
                 {
@@ -460,8 +454,6 @@ namespace Cave
             }
             public ((int x, int y) pos, bool found) findTileOfTypeInRoom(int typeToFind)
             {
-                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
-
                 List<(int x, int y)> tileList = new List<(int x, int y)>(tiles);
                 (int x, int y) posToTest;
                 int idxToTest;
@@ -611,8 +603,6 @@ namespace Cave
             }
             public bool testRoomAvailability((int x, int y) centerPos, int amountToTest)
             {
-                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
-
                 (int x, int y) currentPos;
                 List<(int x, int y)> tilesToTest = new List<(int x, int y)> { centerPos };
                 (int x, int y) posToAdd;
@@ -782,8 +772,6 @@ namespace Cave
             public void updateDigErrands()
             {
                 setAllRoomsAsFinished();
-
-                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
 
                 digErrands = new HashSet<(int x, int y)>();
                 foreach ((int x, int y) pos in tiles)

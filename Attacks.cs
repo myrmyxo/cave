@@ -393,8 +393,7 @@ namespace Cave
             public void loseReputation(Game game, Entity targetedEntity)
             {
                 if (motherEntity is null) { return; }
-                OneRelationship relationship = getOneRelationship(game, motherEntity, targetedEntity);
-                if (relationship is null) { relationship = new OneRelationship(motherEntity, targetedEntity); }
+                OneRelationship relationship = getOneRelationship(game, motherEntity, targetedEntity) ?? new OneRelationship(motherEntity, targetedEntity);
                 if (relationship.entityId1 == targetedEntity.id) { relationship.setRelationshipScoreTo(1, -100); }
                 else { relationship.setRelationshipScoreTo(2, -100); }
             }

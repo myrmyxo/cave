@@ -861,11 +861,11 @@ namespace Cave
             string text = "";
 
             if (System.IO.File.Exists(path)) { text = File.ReadAllText(path); }
-            foreach (string stringo in game.structureGenerationLogs) { text = text + stringo; }
+            foreach (string stringo in game.structureGenerationLogs) { text += stringo; }
 
             foreach ((int dim, int x, int y) pos in game.structureGenerationLogsStructureUpdateCount.Keys)
             {
-                text = text + $"    - {game.structureGenerationLogsStructureUpdateCount[pos]} new structures added in Dimension {pos.dim}, MegaChunk ({pos.x}, {pos.y})\n";
+                text += $"    - {game.structureGenerationLogsStructureUpdateCount[pos]} new structures added in Dimension {pos.dim}, MegaChunk ({pos.x}, {pos.y})\n";
             }
 
             using (StreamWriter writetext = new StreamWriter(path))

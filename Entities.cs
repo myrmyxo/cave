@@ -52,6 +52,22 @@ namespace Cave
     }
     public class Entities
     {
+        public class EntityPersonality
+        {
+            public int talkingSpeed;
+            public int emotivity;
+            public int shyness;
+            public int letterHoverSpeed;
+
+            public EntityPersonality(Entity entity)
+            {
+                talkingSpeed = 25 + Abs((int)LCGxPos(entity.seed)) % 175;
+                emotivity = Abs((int)LCGxNeg(entity.seed)) % 100;
+                shyness = Abs((int)LCGyNeg(entity.seed)) % 100;
+                letterHoverSpeed = Max(0, Abs((int)LCGyPos(entity.seed)) % 8 - 4);
+            }
+        }
+
         public class Entity
         {
             public Screens.Screen screen;
@@ -99,6 +115,8 @@ namespace Cave
             public int food = 0;
             public float mana = 0;
             public float? fireTimer;
+
+            public EntityPersonality personality = null;
 
             public (int x, int y) homePosition = (0, 0);
 
@@ -1496,6 +1514,11 @@ namespace Cave
                 }
                 targetEntity.nest.hungryLarvae.Remove(targetEntity);
                 return false;
+            }
+            public EntityPersonality GetPersonality()
+            {
+                if (personality is null) { personality = new EntityPersonality(this); }
+                return personality;
             }
         }
     }   

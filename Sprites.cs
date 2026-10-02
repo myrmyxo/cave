@@ -392,7 +392,7 @@ namespace Cave
                 {
                     contentString = findSpritesPath() + $"\\{contentString}";
                     turnPngIntoStringFromFilepath(contentString);
-                    contentString = contentString + ".txt";
+                    contentString += ".txt";
                     try { using (StreamReader f = new StreamReader(contentString)) { contentString = f.ReadToEnd(); } }
                     catch { using (StreamReader f = new StreamReader(findSpritesPath() + $"\\Error.txt")) { contentString = f.ReadToEnd(); } }                    
                 }
@@ -419,7 +419,7 @@ namespace Cave
                 {
                     contentString = findSpritesPath() + $"\\{contentString}";
                     turnPngIntoStringFromFilepath(contentString);
-                    contentString = contentString + ".txt";
+                    contentString += ".txt";
                     using (StreamReader f = new StreamReader(contentString)) { contentString = f.ReadToEnd(); }
                 }
                 else { contentString = SpriteStrings.spriteStringsDict[contentString]; }
@@ -677,7 +677,7 @@ namespace Cave
             for (int i = 0; number > 0; i++)
             {
                 numberList.Insert(0, number % 10);
-                number = number / 10;
+                number /= 10;
             }
             for (int i = 0; i < numberList.Count; i++)
             {
@@ -687,12 +687,13 @@ namespace Cave
 
             return counto;
         }
-        public static int drawString(Bitmap bitmap, string stringo, (int x, int y) pos, int scaleFactor, bool centeredDraw)
+        public static int drawString(Bitmap bitmap, string stringo, (int x, int y) pos, int scaleFactor, bool centeredDraw, int letterHoverSpeed = 0)
         {
             int counto = 0; // The count of pixels the print takes
             for (int i = 0; i < stringo.Length; i++)
             {
-                Sprites.drawSpriteOnCanvas(bitmap, letterAllSprites[stringo[i].ToString()].bitmap, (pos.x + i * 8 * scaleFactor, pos.y), scaleFactor, centeredDraw);
+                if (letterHoverSpeed > 0) {; }
+                Sprites.drawSpriteOnCanvas(bitmap, letterAllSprites[stringo[i].ToString()].bitmap, (pos.x + i * 8 * scaleFactor, pos.y + (letterHoverSpeed == 0 ? 0 : (int)(Sin(timeElapsed * 10 + i * letterHoverSpeed * 0.1f, 10) * 4.99f - 2))), scaleFactor, centeredDraw);
                 counto += 8 * scaleFactor;
             }
 
@@ -727,7 +728,7 @@ namespace Cave
             {
                 for (int i = 0; i < dimensions.Item1; i++)
                 {
-                    int colorIdx = -1;
+                    int colorIdx;
                     Color pixelColor = bitmap.GetPixel(i, j);
                     for (int k = 0; k < palette.Count(); k++) { if (pixelColor == palette[k]) { colorIdx = k; goto afterTest; } }
                     colorIdx = palette.Count();
@@ -755,7 +756,7 @@ namespace Cave
             int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6;
             double f = hue / 60 - Math.Floor(hue / 60);
 
-            value = value * 255;
+            value *= 255;
             int v = Convert.ToInt32(value);
             int p = Convert.ToInt32(value * (1 - saturation));
             int q = Convert.ToInt32(value * (1 - f * saturation));

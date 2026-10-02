@@ -293,7 +293,7 @@ namespace Cave
                 updateDirection();
 
                 // Actually move the player
-                bool hasIntMoved = actuallyMoveTheEntity(timeElapsed - timeAtLastIntPosChange < 0.2f ? isCurrentlyClimbing : false, true);
+                bool hasIntMoved = actuallyMoveTheEntity(isCurrentlyClimbing && timeElapsed - timeAtLastIntPosChange >= 0.2f, true);
                 if (hasIntMoved) { timeAtLastIntPosChange = timeElapsed; }
 
                 // camera stuff (not really working anymore which makes it better than it was before yayyy) 

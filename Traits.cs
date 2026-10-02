@@ -457,11 +457,11 @@ namespace Cave
                 if (cP is null) { collisionPoints = (doubleZeroArray, doubleZeroArray, doubleZeroArray); }
                 else { collisionPoints = cP.Value; }
 
-                isFlying = fIF || iA > 0 ? true : false;
-                isSwimming = fIS || iW == 2 ? true : false;
-                isDigging = fID || iG == 2 ? true : false;
-                isJesus = fIJ || oW == 1 ? true : false;
-                isCliming = fIC || oP != 0 ? true : false;
+                isFlying = fIF || iA > 0;
+                isSwimming = fIS || iW == 2;
+                isDigging = fID || iG == 2;
+                isJesus = fIJ || oW == 1;
+                isCliming = fIC || oP != 0;
 
                 spawnsInAir = isFlying;
                 spawnsInLiquid = isSwimming;
@@ -988,7 +988,7 @@ namespace Cave
         {
             fileName = findSpritesPath(true) + $"\\{fileName}";
             turnPngIntoStringFromFilepath(fileName);
-            fileName = fileName + ".txt";
+            fileName += ".txt";
             using (StreamReader f = new StreamReader(fileName)) { fileName = f.ReadToEnd(); }
 
             if (amountOfFrames < 1 || types == null || types.Length == 0) { return null; }    // ERROR ERROR ! ! ! ! !!

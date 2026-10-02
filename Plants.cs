@@ -351,7 +351,7 @@ namespace Cave
                     if (element.fillStates.TryGetValue((posToTest.x, posToTest.y), out (int type, int subType) value))
                     {
                         MaterialTraits traits = getMaterialTraits(value);
-                        if ((targetMaterialNullable is null ? true : targetMaterialNullable == value) && (!toolRestrictions || traits.toolGatheringRequirement == null || traits.toolGatheringRequirement.Value == currentItem))
+                        if ((targetMaterialNullable is null || targetMaterialNullable == value) && (!toolRestrictions || traits.toolGatheringRequirement == null || traits.toolGatheringRequirement.Value == currentItem))
                         {
                             element.fillStates.Remove((posToTest.x, posToTest.y));
                             screen.plantsToMakeBitmapsOf[id] = this;
@@ -634,8 +634,7 @@ namespace Cave
                 if (traits.colorOverrideArray is null) { return; }
                 foreach (((int type, int subType) type, ColorRange colorRange) tuple in traits.colorOverrideArray)
                 {
-                    ColorRange c = tuple.colorRange;
-                    if (c is null) { c = colorOverrideOfTypeIfPresentInMotherPlant(tuple.type) ?? getMaterialTraits(tuple.type).colorRange; }
+                    ColorRange c = tuple.colorRange ?? colorOverrideOfTypeIfPresentInMotherPlant(tuple.type) ?? getMaterialTraits(tuple.type).colorRange;
                     float hueVar = (float)((seed % 11) * 0.2f - 1);
                     float shadeVar = (float)((LCGz(seed) % 11) * 0.2f - 1);
                     colorOverrideDict[tuple.type] = Color.FromArgb(
@@ -1128,7 +1127,7 @@ namespace Cave
                                 if (traits.plantGrowthRules.canPropagateDiagonally)
                                 {
                                     int rando = rand.Next(8);
-                                    drawPos = (drawPos.x + directionPositionArray[rando].Item1, drawPos.y + directionPositionArray[rando].Item2);
+                                    drawPos = (drawPos.x + directionPositionArray[rando].x, drawPos.y + directionPositionArray[rando].y);
                                 }
                                 else
                                 {

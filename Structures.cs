@@ -363,7 +363,7 @@ namespace Cave
             public bool cubeAmalgam()
             {
                 size = ((int)(seed % 5) + 1, (int)(LCGxPos(seed) % 5) + 1);
-                int squaresToDig = (int)(seed % (10 + (size.Item1 * size.Item2))) + (int)(size.Item1 * size.Item2 * 0.2f) + 1;
+                int squaresToDig = (int)(seed % (10 + (size.x * size.y))) + (int)(size.x * size.y * 0.2f) + 1;
                 long seedoX = seed;
                 long seedoY = seed;
 
@@ -373,8 +373,8 @@ namespace Cave
                     seedoX = LCGxNeg(seedoX);
                     seedoY = LCGyNeg(seedoY);
                     int sizo = (int)((LCGxNeg(seedoY)) % 7 + 7) % 7 + 1;
-                    int centerX = (int)(pos.x + sizo + seedoX % (size.Item1 * 32 - 2 * sizo));
-                    int centerY = (int)(pos.x + sizo + seedoY % (size.Item2 * 32 - 2 * sizo));
+                    int centerX = (int)(pos.x + sizo + seedoX % (size.x * 32 - 2 * sizo));
+                    int centerY = (int)(pos.x + sizo + seedoY % (size.y * 32 - 2 * sizo));
                     for (int i = -sizo; i <= sizo; i++)
                     {
                         for (int j = -sizo; j <= sizo; j++)
@@ -395,15 +395,15 @@ namespace Cave
                 int angleOfShape = (int)LCGz(seed) % 360;
                 (int x, int y) posToTest;
 
-                for (int i = -size.Item1 * 16; i < size.Item1 * 16; i++)
+                for (int i = -size.x * 16; i < size.x * 16; i++)
                 {
-                    for (int j = -size.Item2 * 16; j < size.Item2 * 16; j++)
+                    for (int j = -size.y * 16; j < size.y * 16; j++)
                     {
                         int angleMod = (int)(Math.Atan2(i, j) * 180 / Math.PI);
                         int angle = (3600 + angleOfShape - angleMod) % 360;
                         float distance = (float)Math.Sqrt(i * i + j * j);
 
-                        float sizo = (size.Item1 * (8 - sawBladeSeesaw(angle, 72) * 0.1f));
+                        float sizo = (size.x * (8 - sawBladeSeesaw(angle, 72) * 0.1f));
 
                         if (distance < sizo)
                         {
@@ -436,15 +436,15 @@ namespace Cave
                 int angleOfShape = (int)LCGz(seed) % 360;
                 (int x, int y) posToTest;
 
-                for (int i = -size.Item1 * 16; i < size.Item1 * 16; i++)
+                for (int i = -size.x * 16; i < size.x * 16; i++)
                 {
-                    for (int j = -size.Item2 * 16; j < size.Item2 * 16; j++)
+                    for (int j = -size.y * 16; j < size.y * 16; j++)
                     {
                         int angleMod = (int)(Math.Atan2(i, j) * 180 / Math.PI);
                         int angle = (3600 + angleOfShape - angleMod) % 360;
                         float distance = (float)Math.Sqrt(i * i + j * j);
 
-                        float sizo = (size.Item1 * (8 - Seesaw(angle, 72) * 0.1f));
+                        float sizo = (size.x * (8 - Seesaw(angle, 72) * 0.1f));
 
                         if (distance < sizo)
                         {

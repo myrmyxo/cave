@@ -87,8 +87,7 @@ namespace Cave
                 if (false) { forceBiome = (3, 0); isMonoeBiomeToPut = false; }
                 if (false) { forceBiome = (3, 4); isMonoeBiomeToPut = true; }
 
-                int PNGsize = 150;
-                PNGsize = 100;
+                int PNGsize = 100;
 
                 zoomLevel = 42;
                 realZoomLevel = zoomLevel;
@@ -505,7 +504,7 @@ namespace Cave
                 if (currentDialogue != null)
                 {
                     currentDialogue.renderSpeakerSprite(overlayBitmap, (40, 60));
-                    currentDialogue.renderCurrentSentence(overlayBitmap, (90, 40));
+                    currentDialogue.currentSentence.renderSentence(overlayBitmap, (90, 40));
                 }
                 else if (targetEntity != null)
                 {

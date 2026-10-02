@@ -89,8 +89,8 @@ namespace Cave
                     destructionThreshold = Max(destructionThreshold, materialTraits.flammability.Value.destructionThreshold);
                 }
                 if (destructionThreshold <= 0) { isInvalidOnStartupOrGotKilled = true; return; }
-                propagationThreshold = propagationThreshold + (int)(rand.Next((int)(propagationThreshold * 0.3f)) - (propagationThreshold * 0.1f));
-                destructionThreshold = destructionThreshold + (int)(rand.Next((int)(destructionThreshold * 0.3f)) - (destructionThreshold * 0.1f));
+                propagationThreshold += (int)(rand.Next((int)(propagationThreshold * 0.3f)) - (propagationThreshold * 0.1f));
+                destructionThreshold += (int)(rand.Next((int)(destructionThreshold * 0.3f)) - (destructionThreshold * 0.1f));
                 propagationThresholdDiag = propagationThreshold + rand.Next((int)(0.3f + propagationThreshold * 0.7f));
                 new Attack(chunk.screen, null, (0, 0, 0, 0), pos, (0, 0), this);
             }
