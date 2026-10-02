@@ -95,6 +95,7 @@ namespace Cave
             public Entity nonSpeaker;
             public int type = -1;
             public string sentence;
+            public int[] textWrappingIdx;
             public Color? color;
             public int font;
             public int size = 1;
@@ -122,9 +123,27 @@ namespace Cave
                 if (type == 4) { greetingFinalResponse(previousSentence); }
                 if (forceTextAspect == 1) { sentence = replaceAllCharactersByDict(sentence, lowToUpDict); }
                 if (forceTextAspect == 2) { sentence = replaceAllCharactersByDict(sentence, upToLowDict); }
+                findTextWrappingIdx();
                 speakingStartTime = timeElapsed;
             }
 
+            public void findTextWrappingIdx()
+            {
+                List<int> listo = new List<int>();
+                int lastWordStartIdx = 0;
+                int j = 0;
+                for (int i = 0; i < sentence.Length; i++)
+                {
+                    if (sentence[i] == ' ') { lastWordStartIdx = i + 1; }
+                    if (j >= 39)
+                    {
+                        j = i - lastWordStartIdx;
+                        listo.Add(lastWordStartIdx);
+                    }
+                    j++;
+                }
+                textWrappingIdx = listo.ToArray();
+            }
             public void pickSentencePart(string type, bool[] stateBool, string terminator = "", float c = 1)
             {
                 if (c < 1 && (float)rand.NextDouble() > c) { return; }
@@ -192,6 +211,12 @@ namespace Cave
                 {
                     pickSentencePart("!", S);
                     pickSentencePart("FuckOff", S);
+                    int amount = rand.Next(50) == 0 ? rand.Next(15) + 5 : 0;
+                    for (int i = 0; i < amount; i++)
+                    {
+                        pickSentencePart("!", S);
+                        pickSentencePart("FuckOff", S);
+                    }
                 }
                 pickSentencePart("!", S);
             }
@@ -227,7 +252,7 @@ namespace Cave
             {
                 EntityPersonality personality = speaker.GetPersonality();
                 string sentenceToPrint = sentence.Substring(0, Clamp(0, (int)(personality.talkingSpeed * (timeElapsed - speakingStartTime)), sentence.Length));
-                return drawString(bitmap, sentenceToPrint, pos, size, true, personality.letterHoverSpeed);
+                return drawString(bitmap, sentenceToPrint, pos, size, true, personality.letterHoverSpeed, this);
             }
         }
 

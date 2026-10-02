@@ -71,6 +71,7 @@
             this.overlayPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.overlayPictureBox.TabIndex = 1;
             this.overlayPictureBox.TabStop = false;
+            this.overlayPictureBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.overlayPictureBox_MouseDown);
             // 
             // Form1
             // 

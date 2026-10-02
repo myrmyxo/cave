@@ -800,7 +800,7 @@ namespace Cave
                     {
                         if (inventoryElements.Contains((-5, 0, 0)) && nest.availableHoneyRooms.Count > 0)
                         {
-                            Room targetRoom = getRandomValue(nest.rooms);
+                            Room targetRoom = nest.rooms[getRandomItem(nest.availableHoneyRooms)];
                             targetPos = getRandomItem(targetRoom.dropPositions);
 
                             if (pathfindToLocation(targetPos)) { state = 10007; }

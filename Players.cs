@@ -87,6 +87,8 @@ namespace Cave
 
                 findColor();
                 findLightColor();
+
+                currentEntityId++;
             }
             public void placePlayer()
             {

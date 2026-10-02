@@ -383,6 +383,7 @@ namespace Cave
                 foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.unloadFarawayChunks(); }
                 foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.manageExtraLoadedChunksAndMegaChunks(); }
                 setUnloadingImmunity(); // Prevent MegaChunks/Chunks/Structures to be unloaded when they should not be
+                foreach (Screen screen in loadedScreens.Values.ToArray()) { screen.addRemoveEntities(); }
 
                 foreach (Screen screen in loadedScreens.Values.ToArray())
                 {

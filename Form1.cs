@@ -323,6 +323,11 @@ namespace Cave
             if (e.Button == MouseButtons.Left) { leftMouseClick = true; }
             if (e.Button == MouseButtons.Right) { rightMouseClick = true; }
         }
+        private void overlayPictureBox_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left) { leftMouseClick = true; }
+            if (e.Button == MouseButtons.Right) { rightMouseClick = true; }
+        }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             Game game = (Game)timer1.Tag;
@@ -655,7 +660,7 @@ namespace Cave
         }
 
 
-
+        // Will throw an error when the collection is empty
         public static T getRandomItem<T>(List<T> collection) { return collection[rand.Next(collection.Count)]; }
         public static T getRandomItem<T>(T[] collection) { return collection[rand.Next(collection.Length)]; }
         public static T getRandomItem<T>(HashSet<T> collection) { return collection.ToArray()[rand.Next(collection.Count)]; }

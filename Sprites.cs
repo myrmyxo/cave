@@ -30,6 +30,7 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
+using static Cave.Dialogues;
 
 namespace Cave
 {
@@ -592,16 +593,16 @@ namespace Cave
             if (inventoryElements.Count > 0)
             {
                 (int type, int subType, int megaType) element = inventoryElements[inventoryCursor];
-                drawElement(game.overlayBitmap, element, (360, 64), 4, true);
+                drawElement(game.overlayBitmap, element, (394, 64), 4, true);
 
                 int quantity = inventoryQuantities[element];
-                if (quantity == -999) { Sprites.drawSpriteOnCanvas(game.overlayBitmap, numberSprites[10].bitmap, (420, 64), 4, true); }
+                if (quantity == -999) { Sprites.drawSpriteOnCanvas(game.overlayBitmap, numberSprites[10].bitmap, (456, 64), 4, true); }
                 else
                 {
-                    int scaleFactor = 4;
-                    if (quantity >= 10000) { scaleFactor = 2; }
-                    else if (quantity >= 1000) { scaleFactor = 3; }
-                    drawNumber(game.overlayBitmap, quantity, (420, 64), scaleFactor, true);
+                    int scaleFactor = 3;
+                    if (quantity >= 10000) { scaleFactor = 1; }
+                    else if (quantity >= 1000) { scaleFactor = 2; }
+                    drawNumber(game.overlayBitmap, quantity, (444, 64), scaleFactor, true);
                 }
             }
 
@@ -687,14 +688,17 @@ namespace Cave
 
             return counto;
         }
-        public static int drawString(Bitmap bitmap, string stringo, (int x, int y) pos, int scaleFactor, bool centeredDraw, int letterHoverSpeed = 0)
+        public static int drawString(Bitmap bitmap, string stringo, (int x, int y) pos, int scaleFactor, bool centeredDraw, int letterHoverSpeed = 0, OneSentence sentence = null)
         {
             int counto = 0; // The count of pixels the print takes
+            int printI = 0;
+            int jMod = 0;
             for (int i = 0; i < stringo.Length; i++)
             {
-                if (letterHoverSpeed > 0) {; }
-                Sprites.drawSpriteOnCanvas(bitmap, letterAllSprites[stringo[i].ToString()].bitmap, (pos.x + i * 8 * scaleFactor, pos.y + (letterHoverSpeed == 0 ? 0 : (int)(Sin(timeElapsed * 10 + i * letterHoverSpeed * 0.1f, 10) * 4.99f - 2))), scaleFactor, centeredDraw);
+                if (sentence != null && jMod < sentence.textWrappingIdx.Count() && i == sentence.textWrappingIdx[jMod]) { printI = 0; jMod++; }
+                Sprites.drawSpriteOnCanvas(bitmap, letterAllSprites[stringo[i].ToString()].bitmap, (pos.x + printI * 7 * scaleFactor, pos.y + jMod * 12 + (letterHoverSpeed == 0 ? 0 : (int)(Sin(timeElapsed * 10 + i * letterHoverSpeed * 0.1f, 10) * 4.99f - 2))), scaleFactor, centeredDraw);
                 counto += 8 * scaleFactor;
+                printI++;
             }
 
             return counto;
