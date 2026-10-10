@@ -133,7 +133,6 @@ namespace Cave
             // Transition between Mangrove, Algae Ocean + Salt Ocean is buggy. The individual mangrove/salt and magrove algae work but when it's in the middle of algae/salt transition they get chopped up ??
             // Prevent Entities and Plants from spawning in Nests/Structures (depending on the type of structure). With a "forbiddenLocations" HashSet that's applied to ChunkJson when the Structure/Nest is applied to Chunks.
             // Downwards Flesh Tree looks WEIRD now. Due to changes in plant system (need to fix and maybe other plants are buggy now).
-            // AFTER THE cursor UPDATE THE hornets don't spawn in nests anymore fuk
 
             // - - - Cool Ideas For Later ! - - -
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
@@ -175,6 +174,7 @@ namespace Cave
             // A forest biome with a CACA D OIE color ??? With CACA D OIE trees ??? Like for real not caca d'oie but the shit i ate in vietnamese restaut color. I have trop la vision genre
             // Oasis biome in deserts ? like mushroom in MC idk ?
             // A biome that has the same colors as the drawing of bathtub mermaid by Mili cuz it's fucking awesome saucy baka
+            // Cloud forest/Mossy forest !!
 
             // Entities ideas !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. And add LITHOPEDIONS
@@ -768,6 +768,12 @@ namespace Cave
         public static (int r, int g, int b) ColorClamp((int r, int g, int b) tup)
         {
             return (tup.r < 0 ? 0 : (tup.r > 255 ? 255 : tup.r), tup.g < 0 ? 0 : (tup.g > 255 ? 255 : tup.g), tup.b < 0 ? 0 : (tup.b > 255 ? 255 : tup.b));
+        }
+        public static int AbsFloor(int value, int modulo)
+        {
+            int sign = Sign(value);
+            value = Abs(value);
+            return sign * (value - (((value % modulo) + modulo) % modulo));
         }
         public static int Floor(int value, int modulo)
         {

@@ -2962,6 +2962,8 @@ namespace Cave
             public (int r, int g, int b) backgroundColor;
             public (Color main, Color? second, int pattern) displayColor;
 
+            public string[] characteristics;
+
             public (int type, int subType) fillType;
             public (int type, int subType) tileType;
 
@@ -2989,7 +2991,8 @@ namespace Cave
             public ((int type, int subType) type, float percentage)[] entitySpawnTypes;
             public ((int type, int subType) type, float percentage)[] plantSpawnTypes;
 
-            public BiomeTraits(string namee, (int r, int g, int b) colorToPut, ((int r, int g, int b) color, bool isVariation)? backgroundColorToPut, (Color main, Color? second, int pattern) displayColorToPut, ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes, ((int type, int subType) type, int percentage)[] ePS = null,
+            public BiomeTraits(string namee, (int r, int g, int b) colorToPut, ((int r, int g, int b) color, bool isVariation)? backgroundColorToPut, (Color main, Color? second, int pattern) displayColorToPut,
+                ((int type, int subType) type, float percentage)[] entityTypes, ((int type, int subType) type, float percentage)[] plantTypes, string[] C = null, ((int type, int subType) type, int percentage)[] ePS = null,
                 (int one, int two)? cT = null, bool sIA = false, int vD = 0, float vNP = 0.15f, (int one, int two)? txT = null, int cL = 0, int sT = 0, int aST = 0, float cW = 1, TerrainFeaturesTraits[] tFT = null,
                 (int type, int subType)? fT = null, (int type, int subType)? tT = null, (int type, int subType)? lT = null, (int minHeight, int minTiles, int maxTiles)? lS = null,
                 bool S = false, bool Dg = false, bool Da = false)
@@ -2999,6 +3002,8 @@ namespace Cave
                 color = colorToPut;
                 backgroundColor = backgroundColorToPut is null ? (colorToPut.r / 2 + 266, colorToPut.g / 2 + 266, colorToPut.b / 2 + 266) : (backgroundColorToPut.Value.isVariation ? (colorToPut.r / 2 + 266 + backgroundColorToPut.Value.color.r, colorToPut.g / 2 + 266 + backgroundColorToPut.Value.color.g, colorToPut.b / 2 + 266 + backgroundColorToPut.Value.color.b) : backgroundColorToPut.Value.color);
                 displayColor = displayColorToPut;
+
+                characteristics = C ?? new string[0];
 
                 isDark = Da;
                 isSlimy = S;
@@ -3047,6 +3052,7 @@ namespace Cave
         }
         public static BiomeTraits getBiomeTraits((int type, int subType) biomeType) { return biomeTraitsDict.ContainsKey(biomeType) ? biomeTraitsDict[biomeType] : biomeTraitsDict[(-1, 0)]; }
 
+        public static Dictionary<string, (int type, int subType)> biomeNamesToTypesDict;
         public static Dictionary<(int type, int subType), BiomeTraits> biomeTraitsDict;
         public static void makeBiomeTraitsDict()
         {
@@ -3055,195 +3061,228 @@ namespace Cave
                 { (-1, 0), new BiomeTraits("Error Biome",           (1200, -100, 1200), null, (Color.Fuchsia, Color.Black, 0),
                 new ((int type, int subType) type, float percentage)[]{ },
                 new ((int type, int subType) type, float percentage)[]{ ((-1, 0), 400) },
-                tT:(0, -1), lT:(0, -2), fT:(0, -3)) },               // Error Plant
+                C:new string[]{ "Error" },                           // Error Plant
+                tT:(0, -1), lT:(0, -2), fT:(0, -3)) },
 
                 { (0, 0),  new BiomeTraits("Cold",                  (Color.Blue.R, Color.Blue.G, Color.Blue.B), null, (Color.Blue, null, 0),
                                                                      // Frog          Worm          Fish          WaterSkipper  Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 20), ((4, 0), 10), ((2, 0), 50), ((5, 0), 25), ((10, 0), 5), },
-                new ((int type, int subType) type, float percentage)[]{ ((0, 0), 400), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), }
-                ) },                                                 // Grass          Vine            Cattail        Kelp            CeilingKelp
+                new ((int type, int subType) type, float percentage)[]{ ((0, 0), 400), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
+                C:new string[]{ "Cold" }                             // Grass          Vine            Cattail        Kelp            CeilingKelp
+                ) },
                 { (0, 1),  new BiomeTraits("Frost",                 (Color.LightBlue.R, Color.LightBlue.G, Color.LightBlue.B), null, (Color.LightBlue, null, 0),
                                                                      // Frost Fairy
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), },
                 new ((int type, int subType) type, float percentage)[]{ },
-                lT:(-2, -1)) },                                      // Nothing lol
+                C:new string[]{ "Cold", "Frozen" },                  // Nothing lol
+                lT:(-2, -1)) },
                 { (0, 2),  new BiomeTraits("Acid",                  (Color.Fuchsia.R, Color.Fuchsia.G, Color.Fuchsia.B), null, (Color.FromArgb(205, 0, 205), Color.FromArgb(170, 10, 170), 0),
                                                                      // Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), ((2, 0), 200), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 400), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                Dg:true) },                                          // Grass          Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Cold", "Acid" },                    // Grass          Vine            Cattail        Kelp            CeilingKelp
+                Dg:true) },
 
                 { (1, 0),  new BiomeTraits("Hot",                   (Color.OrangeRed.R, Color.OrangeRed.G, Color.OrangeRed.B), null, (Color.FromArgb(190, 80, 40), null, 0),
                                                                      // Frog           Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((2, 0), 200), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 400), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                lT:(-4, 0)) },                                       // Grass          Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Hot" },                             // Grass          Vine            Cattail        Kelp            CeilingKelp
+                lT:(-4, 0)) },
                 { (1, 1),  new BiomeTraits("Lava Ocean",            (Color.OrangeRed.R + 90, Color.OrangeRed.G + 30, Color.OrangeRed.B), null, (Color.FromArgb(255, 130, 0), null, 0),
                                                                      // Fish
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 200), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 400), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                lT:(0, 0), lS:(3, 50, 3000),                         // Grass          Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Hot", "Lava" },                     // Grass          Vine            Cattail        Kelp            CeilingKelp
+                lT:(0, 0), lS:(3, 50, 3000),
                 cT:(0, 3), txT:(0, 0), sT:1, fT:(-4, 0)) },
                 { (1, 2),  new BiomeTraits("Obsidian",              (-100, -100, -100), null, (Color.Black, Color.FromArgb(30, 30, 35), 0),
                                                                      // Obsidian Fairy
                 new ((int type, int subType) type, float percentage)[]{ ((0, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((50, 0), 400), ((20, 1), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                cT:(1, 4), txT:(0, 0), cW:0.3f) },                   // ObsidianPlant   ObsidianVine    Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Hot" },                             // ObsidianPlant   ObsidianVine    Cattail        Kelp            CeilingKelp
+                cT:(1, 4), txT:(0, 0), cW:0.3f) },
 
                 { (2, 0),  new BiomeTraits("Flower Forest",         (Color.Green.R, Color.Green.G + 40, Color.Green.B + 80), null, (Color.MediumSeaGreen, null, 0),
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 25), ((2, 0), 200), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 480), ((1, 0), 560), ((1, 1), 560), ((10, 2), 100), ((20, 0), 300), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                txT:(0, 0),                                          // Grass          Suave Tulip    Allium         WeepingWillow   Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Forest" },                          // Grass          Suave Tulip    Allium         WeepingWillow   Vine            Cattail        Kelp            CeilingKelp
+                txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
                 { (2, 1),  new BiomeTraits("Marsh",                 (Color.Green.R + 15, Color.Green.G + 30, Color.Green.B + 60), null, (Color.FromArgb(60, 190, 150), Color.FromArgb(40, 160, 120), 2),
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 400), ((4, 0), 25), ((2, 0), 150), ((5, 0), 200), ((10, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 35), ((0, 2), 25), ((2, 3), 5), ((2, 2), 75), ((3, 0), 200), ((3, 1), 50), ((2, 1), 5), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                cT:(7, 7), vD:5, lT:(-2, 0), txT:(0, 0),             // Grass         Cortaderia    Papyrus      Reed          Rush           Butomus       Rice         Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Grassland", "Wetland" },            // Grass         Cortaderia    Papyrus      Reed          Rush           Butomus       Rice         Vine            Cattail        Kelp            CeilingKelp
+                cT:(7, 7), vD:5, lT:(-2, 0), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
                 { (2, 2),  new BiomeTraits("Hot Desert",                (Color.LightYellow.R + 120, Color.LightYellow.G + 100, Color.LightYellow.B - 40), ((210, 150, 50), true), (Color.FromArgb(245, 230, 130), null, 0),
                                                                      // Desert Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 5), 10), },
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), ((4, 10), 5), ((4, 11), 5), ((14, 10), 10), ((14, 11), 5) },
-                cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Cactus        Yucca filament Yucca flaccid Yucca Tree      Beaked Yucca 
+                C:new string[]{ "Hot", "Desert" },                   // Cactus        Yucca filament Yucca flaccid Yucca Tree      Beaked Yucca 
+                cT:(1, 5), lT:(0, 0), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
                 { (2, 3),  new BiomeTraits("Baobab Desert",         (Color.LightYellow.R + 160, Color.LightYellow.G + 80, Color.LightYellow.B - 80), ((250, 120, 70), true), (Color.FromArgb(245, 155, 130), null, 0),
                                                                      // Desert Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 5), 10), },
                 new ((int type, int subType) type, float percentage)[]{ ((14, 0), 15), ((14, 1), 20), ((14, 20), 10) },
-                cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Giant Baobab   Suarez Baobab   Desert Rose
+                C:new string[]{ "Hot", "Desert" },                 // Giant Baobab   Suarez Baobab   Desert Rose
+                cT:(1, 5), lT:(0, 0), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
                 { (2, 4),  new BiomeTraits("Salt Desert",           (Color.White.R, Color.White.G, Color.White.B), null, (Color.FromArgb(255, 255, 255), Color.FromArgb(220, 220, 220), 0),
 
                 new ((int type, int subType) type, float percentage)[]{ },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 3), 80) },
-                cT:(1, 5), lT:(-2, 2), txT:(0, 0),                   // Red Glasswort
+                C:new string[]{ "Desert", "Salt" },                  // Red Glasswort
+                cT:(1, 5), lT:(-2, 2), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Salt Ground"] }) },
                 { (2, 5),  new BiomeTraits("Temperate Desert",      (Color.LightYellow.R + 80, Color.LightYellow.G + 20, Color.LightYellow.B - 20), ((180, 140, 100), true), (Color.FromArgb(220, 190, 150), null, 0),
                                                                      // Desert Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 5), 10), },
                 new ((int type, int subType) type, float percentage)[]{ ((14, 40), 40), ((14, 41), 15) },
-                cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Quiver Tree     Giant Quiver Tree
+                C:new string[]{ "Desert" },                          // Quiver Tree     Giant Quiver Tree
+                cT:(1, 5), lT:(0, 0), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
                 { (2, 6),  new BiomeTraits("Cold Desert",           (Color.LightYellow.R + 140, Color.LightYellow.G + 90, Color.LightYellow.B - 60), ((230, 135, 60), true), (Color.FromArgb(245, 170, 75), null, 0),
                                                                      // Desert Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 5), 10), },
                 new ((int type, int subType) type, float percentage)[]{ ((14, 30), 25), ((14, 31), 35), ((4, 20), 15), ((4, 30), 5), },
-                cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Black Saxaul     White Saxaul   Desert Thumb   Yellow Cistanche
+                C:new string[]{ "Cold, Desert" },                    // Black Saxaul     White Saxaul   Desert Thumb   Yellow Cistanche
+                cT:(1, 5), lT:(0, 0), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
                 { (2, 7),  new BiomeTraits("Gray Desert",           (Color.LightGray.R, Color.LightGray.G, Color.LightGray.B), ((160, 150, 140), true), (Color.FromArgb(215, 200, 185), null, 0),
                                                                      // Desert Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 5), 10), },
                 new ((int type, int subType) type, float percentage)[]{ ((4, 40), 75), },
-                cT:(1, 5), lT:(0, 0), txT:(0, 0),                    // Saltbush
+                C:new string[]{ "Desert" },                          // Saltbush
+                cT:(1, 5), lT:(0, 0), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
                 { (2, 8),  new BiomeTraits("Bog",                   (Color.Green.R + 20, Color.Green.G - 10, Color.Green.B - 40), null, (Color.FromArgb(30, 140, 110), Color.FromArgb(70, 130, 60), 2),
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 400), ((4, 0), 25), ((2, 0), 150), ((5, 0), 200), ((10, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 35), ((3, 2), 15), ((2, 4), 15), ((3, 3), 10), ((5, 0), 350), ((5, 1), 50), ((3, 4), 100), ((2, 2), 10), ((3, 0), 100), ((3, 1), 30), ((2, 1), 1), ((20, 0), 100), ((2, 0), 15) },
-                cT:(7, 7), vD:3, vNP:0.25f, lT:(-2, 0), txT:(0, 0),  // Grass         Marsh Pea     Bladderwort   Cardinal Flow Sphagnum Moss  Red Sph Moss  Whorl Grass   Reed          Rush           Butomus       Rice         Vine            Cattail
+                C:new string[]{ "Wetland", "Peatland" },             // Grass         Marsh Pea     Bladderwort   Cardinal Flow Sphagnum Moss  Red Sph Moss  Whorl Grass   Reed          Rush           Butomus       Rice         Vine            Cattail
+                cT:(7, 7), vD:3, vNP:0.25f, lT:(-2, 0), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Mud/Peat"] }) },
                 { (2, 9),  new BiomeTraits("Fen",                   (Color.Green.R - 20, Color.Green.G + 30, Color.Green.B + 80), null, (Color.FromArgb(20, 150, 130), Color.FromArgb(40, 120, 100), 2),
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 400), ((4, 0), 25), ((2, 0), 150), ((5, 0), 200), ((10, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 65), ((1, 4), 15), ((1, 5), 15), ((1, 6), 10), ((1, 7), 10), ((3, 5), 10), ((3, 6), 10), ((1, 8), 10), ((3, 2), 5), ((2, 4), 5), ((5, 0), 150), ((3, 4), 200), ((2, 2), 15), ((3, 0), 100), ((3, 1), 30), ((2, 1), 1), ((20, 0), 100), ((2, 0), 15) },
-                cT:(7, 7), vD:2, vNP:0.2f, lT:(-2, 0), txT:(0, 0),  // Grass         DragMouthOrch Rose Pogonia  SmlWhtLdySlip Poison Flag   Glauc Parnass MrshCinqufoil Goldenrod     Marsh Pea    Bladderwort  Sphagnum Moss  Whorl Grass    Reed          Rush           Butomus       Rice         Vine            Cattail
+                C:new string[]{ "Wetland", "Peatland" },             // Grass         DragMouthOrch Rose Pogonia  SmlWhtLdySlip Poison Flag   Glauc Parnass MrshCinqufoil Goldenrod     Marsh Pea    Bladderwort  Sphagnum Moss  Whorl Grass    Reed          Rush           Butomus       Rice         Vine            Cattail
+                cT:(7, 7), vD:2, vNP:0.2f, lT:(-2, 0), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Mud/Peat"] }) },
                 { (2, 10),  new BiomeTraits("Prairie",              (Color.Green.R, Color.Green.G, Color.Green.B), null, (Color.FromArgb(70, 200, 80), null, 0),
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 25), ((2, 0), 200), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 5), 150), ((0, 6), 150), ((0, 7), 150), ((0, 8), 250), ((0, 1), 10), ((20, 0), 100), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                cT:(1, 5), txT:(0, 0),                               // Big Bluestem   Switchgrass    Woodgrass      Vetiver        Wheat         Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Grassland" },                       // Big Bluestem   Switchgrass    Woodgrass      Vetiver        Wheat         Vine            Cattail        Kelp            CeilingKelp
+                cT:(1, 5), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
                 { (2, 11),  new BiomeTraits("Steppe",              (Color.Green.R + 60, Color.Green.G + 20, Color.Green.B - 60), null, (Color.FromArgb(170, 190, 130), null, 0),
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 25), ((2, 0), 200), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((1, 12), 7), ((1, 10), 10), ((1, 9), 25), ((1, 0), 3), ((1, 11), 5), ((0, 1), 10), ((0, 4), 600), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                cT:(1, 5), txT:(0, 0),                               // Noddin Thistl Nodding Sage   Wild Sage     Suave TUlip  Wild Tulip    Wheat         Feather Grass  Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Grassland", "Arid" },               // Noddin Thistl Nodding Sage   Wild Sage     Suave TUlip  Wild Tulip    Wheat         Feather Grass  Vine            Cattail        Kelp            CeilingKelp
+                cT:(1, 5), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
 
                 { (3, 0),  new BiomeTraits("Forest",                (Color.Green.R, Color.Green.G, Color.Green.B), null, (Color.FromArgb(20, 130, 40), Color.FromArgb(10, 100, 20), 1),
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 25), ((2, 0), 200), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 600), ((0, 1), 10), ((10, 0), 200), ((10, 2), 100), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                cT:(1, 5), txT:(0, 0),                               // Grass          Wheat         Tree            WeepingWillow   Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Forest", "Deciduous" },             // Grass          Wheat         Tree            WeepingWillow   Vine            Cattail        Kelp            CeilingKelp
+                cT:(1, 5), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
                 { (3, 1),  new BiomeTraits("Conifer Forest",        (Color.Green.R - 120, Color.Green.G - 40, Color.Green.B + 40), null, (Color.FromArgb(30, 90, 60), Color.FromArgb(10, 60, 35), 1),
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 25), ((2, 0), 200), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 600), ((11, 0), 200), ((11, 1), 100), ((10, 2), 100), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                cT:(1, 5), txT:(0, 0),                               // Grass          Fir             UpFir           WeepingWillow   Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Forest", "Coniferous" },            // Grass          Fir             UpFir           WeepingWillow   Vine            Cattail        Kelp            CeilingKelp
+                cT:(1, 5), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"], famousTFT["Litter"] }) },
                 { (3, 2),  new BiomeTraits("Jungle",                (Color.Green.R + 80, Color.Green.G + 160, Color.Green.B + 40), null, (Color.FromArgb(50, 200, 40), Color.FromArgb(25, 170, 20), 1),
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 25), ((2, 0), 200), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 600), ((10, 1), 400), ((10, 2), 100), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                cT:(1, 5), txT:(0, 0),                               // Grass          JungleTree      WeepingWillow   Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Forest", "Deciduous" },             // Grass          JungleTree      WeepingWillow   Vine            Cattail        Kelp            CeilingKelp
+                cT:(1, 5), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
                 { (3, 3),  new BiomeTraits("Swamp",                 (Color.Green.R - 40, Color.Green.G + 40, Color.Green.B + 140), null, (Color.FromArgb(20, 130, 40), Color.FromArgb(20, 70, 90), 1),
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 300), ((4, 0), 25), ((2, 0), 200), ((5, 0), 150), ((10, 0), 75), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 35), ((10, 3), 100), ((10, 2), 50), ((2, 3), 2), ((2, 2), 10), ((3, 0), 200), ((3, 1), 25), ((2, 1), 5), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                cT:(7, 7), vD:7, lT:(-2, 0), txT:(0, 0),             // Grass         Alder           WeepingWillow  Papyrus      Reed          Rush           Butomus       Rice         Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Forest", "Deciduous", "Wetland" },  // Grass         Alder           WeepingWillow  Papyrus      Reed          Rush           Butomus       Rice         Vine            Cattail        Kelp            CeilingKelp
+                cT:(7, 7), vD:7, lT:(-2, 0), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
                 { (3, 4),  new BiomeTraits("Mangrove",              (Color.DarkSeaGreen.R + 20, Color.DarkSeaGreen.G + 60, Color.DarkSeaGreen.B + 30), null, (Color.FromArgb(20, 130, 40), Color.FromArgb(130, 160, 145), 1),
                                                                      // Frog           Worm          Fish           Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 25), ((2, 0), 300), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 600), ((12, 0), 125), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                cT:(7, 7), vD:12, lT:(-2, 2), txT:(0, 0),            // Grass          MangroveTree    Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Forest", "Deciduous", "Wetland", "Salt" }, // Grass   MangroveTree    Vine            Cattail        Kelp            CeilingKelp
+                cT:(7, 7), vD:12, lT:(-2, 2), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
                 { (3, 5),  new BiomeTraits("Bluebell Forest",       (Color.Green.R - 30, Color.Green.G + 10, Color.Green.B + 50), null, (Color.FromArgb(40, 150, 80), Color.CornflowerBlue, 1),
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 25), ((2, 0), 200), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((1, 3), 300), ((10, 0), 200), ((10, 2), 100), ((20, 3), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                cT:(1, 5), txT:(0, 0),                               // Grass          Bluebell      Tree            WeepingWillow    Bluebell Vine   Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Forest", "Deciduous" },             // Grass          Bluebell      Tree            WeepingWillow    Bluebell Vine   Cattail        Kelp            CeilingKelp
+                cT:(1, 5), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
                 { (3, 6),  new BiomeTraits("Bayou",                 (Color.Green.R + 60, Color.Green.G + 40, Color.Green.B + 80), null, (Color.SeaGreen, Color.DarkOrange, 1),
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 300), ((4, 0), 25), ((2, 0), 200), ((5, 0), 150), ((10, 0), 75), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 35), ((12, 1), 75), ((2, 3), 2), ((2, 2), 10), ((3, 0), 200), ((3, 1), 25), ((2, 1), 5), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                cT:(7, 7), vD:15, lT:(-2, 0), txT:(0, 0),            // Grass         BaldCypress    Papyrus       Reed         Rush           Butomus       Rice         Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Forest", "Deciduous", "Wetland" },  // Grass         BaldCypress    Papyrus       Reed         Rush           Butomus       Rice         Vine            Cattail        Kelp            CeilingKelp
+                cT:(7, 7), vD:15, lT:(-2, 0), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
 
                 { (4, 0),  new BiomeTraits("Toxic",                 (Color.GreenYellow.R, Color.GreenYellow.G, Color.GreenYellow.B), null, (Color.FromArgb(185, 210, 60), Color.FromArgb(150, 175, 30), 0),
                                                                      // Frog           Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 25), ((2, 0), 200), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 400), ((10, 2), 100), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                lT:(-8, 0), txT:(0, 0), S:true ) },                  // Grass          WeepingWillow   Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Toxic" },                           // Grass          WeepingWillow   Vine            Cattail        Kelp            CeilingKelp
+                lT:(-8, 0), txT:(0, 0), S:true ) },
                 { (5, 0),  new BiomeTraits("Fairy",                 (Color.LightPink.R, Color.LightPink.G, Color.LightPink.B), null, (Color.Pink, null, 0),
                                                                      // Fairy          Worm          Fish           WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 100), ((4, 0), 25), ((2, 0), 200), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((40, 0), 400), ((13, 0), 100), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                lT:(-3, 0), lS:(2, 6, 100)) },                       // Mushroom        CheeringWillow  Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Cold", "Magic" },                   // Mushroom        CheeringWillow  Vine            Cattail        Kelp            CeilingKelp
+                lT:(-3, 0), lS:(2, 6, 100)) },
                 { (6, 0),  new BiomeTraits("Mold",                  (Color.DarkBlue.R, Color.DarkBlue.G + 20, Color.DarkBlue.B + 40), null, (Color.DarkBlue, Color.DarkSlateBlue, 0),
                                                                      // Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 0), 25), },
                 new ((int type, int subType) type, float percentage)[]{ ((41, 0), 100), },
-                txT:(0, 0), tFT:new TerrainFeaturesTraits[]{ famousTFT["Mold"] }) }, // Mold
+                C:new string[]{ "Cold", "Moldy" },                   // Mold
+                txT:(0, 0), tFT:new TerrainFeaturesTraits[]{ famousTFT["Mold"] }) },
 
                 { (8, 0),  new BiomeTraits("Ocean",                 (Color.LightBlue.R, Color.LightBlue.G + 60, Color.LightBlue.B + 130), null, (Color.FromArgb(80, 90, 220), Color.FromArgb(50, 60, 195), 3),
                                                                      // Fish           Shark         Waterdog     WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 300), ((8, 0), 10), ((9, 0), 1), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((30, 0), 800), ((30, 1), 800), },
-                lT:(0, 0), lS:(3, 50, 3000),                         // Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Ocean" },                           // Cattail        Kelp            CeilingKelp
+                lT:(0, 0), lS:(3, 50, 3000),
                 cT:(0, 3), txT:(0, 0), fT:(-2, 0), sT:1) },
                 { (8, 1),  new BiomeTraits("Frozen Ocean",          (Color.LightBlue.R + 60, Color.LightBlue.G + 90, Color.LightBlue.B + 150), null, (Color.FromArgb(150, 165, 225), Color.FromArgb(190, 205, 255), 3),
                                                                      // Frost Fairy    Ice Worm      Icealt Worm
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), ((4, 3), 25), ((4, 4), 0.25f) },
                 new ((int type, int subType) type, float percentage)[]{ ((60, 0), 120), ((60, 1), 30), ((61, 0), 15), ((61, 1), 20), ((62, 0), 10), ((62, 1), 4), ((20, 2), 200) },
-                lT:(0, 0), lS:(3, 50, 3000),                         // IceGrass        IceBrutic      IceTromel      IceKital       IceFlokan      IceOctam      IceVines
+                C:new string[]{ "Ocean", "Frozen" },                 // IceGrass        IceBrutic      IceTromel      IceKital       IceFlokan      IceOctam      IceVines
+                lT:(0, 0), lS:(3, 50, 3000),
                 cT:(3, 3), txT:(0, 0), fT:(-2, -1), aST:1, tFT:new TerrainFeaturesTraits[]{ famousTFT["Frost Carving"] }) },
                 { (8, 2),  new BiomeTraits("Algae Ocean",           (Color.DarkSeaGreen.R, Color.DarkSeaGreen.G, Color.DarkSeaGreen.B), null, (Color.FromArgb(60, 110, 180), Color.FromArgb(20, 135, 50), 3),
                                                                      // Fish            Shark          Waterdog     WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 1000), ((8, 0), 10),  ((9, 0), 1), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((31, 0), 700), ((31, 1), 100), ((31, 2), 800), },
-                lT:(0, 0), lS:(3, 50, 3000),                         // Algae 1         Algae Bulbous   Algae Ceiling 1
+                C:new string[]{ "Ocean", "Salty" },                  // Algae 1         Algae Bulbous   Algae Ceiling 1
+                lT:(0, 0), lS:(3, 50, 3000),
                 cT:(0, 3), txT:(0, 0), fT:(-2, 2), sT:1, cL:1) },
                 { (8, 3),  new BiomeTraits("Salt Ocean",            (Color.DeepPink.R, Color.DeepPink.G, Color.DeepPink.B), null, (Color.FromArgb(120, 65, 210), Color.FromArgb(240, 65, 200), 3),
                                                                      // Salt Worm     Icealt Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 2), 25), ((4, 4), 0.25f)},
                 new ((int type, int subType) type, float percentage)[]{ },
+                C:new string[]{ "Ocean", "Salty" },
                 lT:(-2, 2), lS:(3, 50, 3000), tFT:new TerrainFeaturesTraits[]{ famousTFT["Salt Terrain"], famousTFT["Salt Filling"], famousTFT["Salt Spikes"] },
                 cT:(1, 3), txT:(0, 0), fT:(-2, 2), sT:1, cL:1) },
 
@@ -3253,22 +3292,26 @@ namespace Cave
                                                                      // Frost Fairy
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((100, 0), 100), ((100, 1), 200), ((100, 2), 200) },
-                cT:(1, 5), txT:(0, 0), Da:true) },                   // LanternTree      LanternVine      LanternSide
+                C:new string[]{ "Dark", "Lantern" },                 // LanternTree      LanternVine      LanternSide
+                cT:(1, 5), txT:(0, 0), Da:true) },
                 { (100, 1), new BiomeTraits("MixedLuminous",        (Color.Gray.R, Color.Gray.G, Color.Gray.B), null, (Color.FromArgb(70, 50, 70), null, 0),
                                                                      // Frost Fairy
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((101, 0), 150), ((101, 1), 50), ((100, 1), 100), ((100, 2), 100) },
-                Da:true) },                                          // Candle           Chandelier      LanternVine      LanternSide
+                C:new string[]{ "Dark", "Lantern", "Candle" },       // Candle           Chandelier      LanternVine      LanternSide
+                Da:true) },
                 { (100, 2), new BiomeTraits("Chandeliers",          (Color.Gray.R + 50, Color.Gray.G + 10, Color.Gray.B - 40), null, (Color.FromArgb(55, 70, 90), null, 0),
                                                                      // Frost Fairy
                 new ((int type, int subType) type, float percentage)[]{ ((0, 2), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((101, 0), 200), ((101, 1), 200), ((101, 2), 100), },
-                cT:(1, 5), txT:(0, 0), Da:true) },                   // Candle           Chandelier       Candelabrum 
+                C:new string[]{ "Dark", "Candle" },                  // Candle           Chandelier       Candelabrum 
+                cT:(1, 5), txT:(0, 0), Da:true) },
                 { (101, 0), new BiomeTraits("Dark Ocean",           (Color.DarkSlateBlue.R, Color.DarkSlateBlue.G, Color.DarkSlateBlue.B), null, (Color.FromArgb(40, 50, 120), Color.FromArgb(10, 20, 90), 3),
                                                                      // Fish           Shark        Anglerfish     Waterdog        WaterSkipper   Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 300), ((8, 0), 5), ((100, 0), 3), ((9, 0), 0.5f), ((5, 0), 150), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((2, 0), 100), ((2, 0), 800), ((2, 1), 800), },
-                cT:(0, 3), txT:(0, 0), fT:(-2, 0), sT:1, Da:true) }, // Cattail        Kelp           CeilingKelp
+                C:new string[]{ "Dark", "Ocean" },                   // Cattail        Kelp           CeilingKelp
+                cT:(0, 3), txT:(0, 0), fT:(-2, 0), sT:1, Da:true) },
 
 
 
@@ -3276,48 +3319,56 @@ namespace Cave
                                                                      // Carnal           Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 100), ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 400), ((200, 1), 400) },
-                lT:(-7, 0), tT:(4, 0),                               // Flesh Vine       Flesh Tendril
+                C:new string[]{ "Flesh" },                           // Flesh Vine       Flesh Tendril
+                lT:(-7, 0), tT:(4, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Skin40"] }) },
                 { (200, 1), new BiomeTraits("FleshForest",          (Color.DarkRed.R + 20, Color.DarkRed.G - 20, Color.DarkRed.B - 20), null, (Color.FromArgb(175, 15, 30), Color.FromArgb(140, 5, 30), 1),
                                                                      // Carnal           Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 100), ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 300), ((200, 1), 300), ((200, 2), 50), ((200, 3), 50) },
-                cT:(1, 5), txT:(0, 0), lT:(-7, 0), tT:(4, 0)) },     // Flesh Vine       Flesh Tendril    Flesh Tree 1    Flesh Tree 2
+                C:new string[]{ "Flesh", "Forest" },                 // Flesh Vine       Flesh Tendril    Flesh Tree 1    Flesh Tree 2
+                cT:(1, 5), txT:(0, 0), lT:(-7, 0), tT:(4, 0)) },
                 { (200, 2), new BiomeTraits("Flesh and Bone",       (Color.Pink.R, Color.Pink.G, Color.Pink.B), null, (Color.FromArgb(175, 35, 70), Color.FromArgb(205, 190, 180), 0),
                                                                      // Carnal           Skeletal         Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 50),  ((200, 1), 50),  ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((200, 0), 300), ((200, 1), 300), ((201, 0), 100), ((201, 1), 100) },
-                lT:(-6, 0), tT:(4, 0),                               // Flesh Vine       Flesh Tendril    Bone Stalagmi    Bone Stalactite
+                C:new string[]{ "Flesh", "Bone" },                   // Flesh Vine       Flesh Tendril    Bone Stalagmite  Bone Stalactite
+                lT:(-6, 0), tT:(4, 0),
                 tFT:new TerrainFeaturesTraits[] { famousTFT["Bone"] }) },
                 { (200, 3), new BiomeTraits("Body Hair Forest",     (Color.DarkRed.R - 20, Color.DarkRed.G - 50, Color.DarkRed.B - 70), null, (Color.FromArgb(150, 15, 20), Color.FromArgb(55, 40, 30), 0),
                                                                      // Louse             Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((202, 0), 100),  ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((202, 0), 1000) },
-                cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f,           // Body Hair
+                C:new string[]{ "Flesh", "Forest", "Hair" },         // Body Hair
+                cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f,
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Skin90"] }) },
                 { (200, 4), new BiomeTraits("Long Hair Forest",     (Color.DarkRed.R - 20, Color.DarkRed.G - 50, Color.DarkRed.B - 70), null, (Color.FromArgb(150, 15, 20), Color.FromArgb(55, 40, 30), 4),
                                                                      // Louse             Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((202, 0), 100),  ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((202, 1), 1000) },
-                cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f,           // Long Hair
+                C:new string[]{ "Flesh", "Forest", "Hair" },         // Long Hair
+                cT:(1, 0), lT:(-6, 0), tT:(4, 0), cW:2.5f,
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Skin75"] }) },
                 
                 { (201, 0), new BiomeTraits("Bone",                 (Color.White.R, Color.White.G, Color.White.B), null, (Color.FromArgb(195, 200, 205), null, 0),
                                                                      // Skeletal         Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((200, 1), 100), ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((201, 0), 100), ((201, 1), 100) },
-                lT:(-6, 0), tT:(4, 1)) },                            // Bone Stalagmite  Bone Stalactite
+                C:new string[]{ "Bone" },                            // Bone Stalagmite  Bone Stalactite
+                lT:(-6, 0), tT:(4, 1)) },
 
                 { (202, 0), new BiomeTraits("Blood Ocean",          (Color.DarkRed.R, Color.DarkRed.G, Color.DarkRed.B), null, (Color.FromArgb(130, 10, 35), Color.FromArgb(105, 0, 10), 3),
                                                                      // Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((201, 0), 200), },
                 new ((int type, int subType) type, float percentage)[]{ },
+                C:new string[]{ "Ocean", "Blood" },
                 cT:(0, 3), txT:(0, 0), sT:1, tT:(4, 0), fT:(-6, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Bone"] }) },
                 { (202, 1), new BiomeTraits("Acid Ocean",           (Color.YellowGreen.R, Color.YellowGreen.G, Color.YellowGreen.B), null, (Color.FromArgb(130, 190, 30), Color.FromArgb(100, 155, 10), 3),
                                                                      // Nematode
                 new ((int type, int subType) type, float percentage)[]{ ((201, 0), 100), },
                 new ((int type, int subType) type, float percentage)[]{ },
+                C:new string[]{ "Ocean", "Acid" },
                 cT:(0, 3), txT:(0, 0), sT:1, tT:(4, 0), fT:(-7, 0), cL:1,
                 tFT:new TerrainFeaturesTraits[] { famousTFT["Bone"] }) },
 
@@ -3326,29 +3377,34 @@ namespace Cave
                                                                      // 
                 new ((int type, int subType) type, float percentage)[]{  },
                 new ((int type, int subType) type, float percentage)[]{ ((300, 0), 100), ((300, 1), 100), ((300, 10), 200) },
-                cT:(1, 5), lT:(0, 0), tT:(10, 0), txT:(0, 0),        // Spiral Lollipop  Ray Lollipop     Round Lollipop
+                C:new string[]{ "Sweet", "Forest" },                 // Spiral Lollipop  Ray Lollipop     Round Lollipop
+                cT:(1, 5), lT:(0, 0), tT:(10, 0), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["HardCandy"] }) },
                 { (300, 1), new BiomeTraits("Candy Cane Forest",    (Color.Gray.R, Color.Gray.G, Color.Gray.B), ((420, 440, 490), false), (Color.FromArgb(220, 210, 215), Color.FromArgb(200, 35, 55), 1),
                                                                      // 
                 new ((int type, int subType) type, float percentage)[]{ ((300, 0), 20) },
                 new ((int type, int subType) type, float percentage)[]{ ((301, 0), 250), ((301, 1), 125) },
-                cT:(1, 5), lT:(0, 0), tT:(10, 1), txT:(0, 0),        // Small Candy Cane Medium CandCane
+                C:new string[]{ "Sweet", "Forest", "Cold" },         // Small Candy Cane Medium CandCane
+                cT:(1, 5), lT:(0, 0), tT:(10, 1), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["PowderedSugar"], famousTFT["GingerbreadBoulders"], famousTFT["GingerbreadCrust"] }) },
                 { (300, 2), new BiomeTraits("Cotton Candy Forest",  (255, 190, 210), ((510, 380, 410), false), (Color.FromArgb(205, 105, 140), Color.FromArgb(175, 80, 130), 1),
                                                                      // 
                 new ((int type, int subType) type, float percentage)[]{ ((301, 0), 25) },
                 new ((int type, int subType) type, float percentage)[]{ ((302, 0), 175), ((302, 1), 300), ((302, 2), 200), },
-                cT:(1, 5), lT:(0, 0), tT:(10, 2), txT:(0, 0),        // CottonCandy Tree CottonCandy Bush CottonCandy Vine
+                C:new string[]{ "Sweet", "Forest", "Hot" },          // CottonCandy Tree CottonCandy Bush CottonCandy Vine
+                cT:(1, 5), lT:(0, 0), tT:(10, 2), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["PinkGranulatedSugar"] }) },
                 { (301, 0), new BiomeTraits("Caramel Desert",       (Color.Gray.R + 50, Color.Gray.G + 10, Color.Gray.B - 40), ((520, 360, 235), false), (Color.FromArgb(160, 85, 10), Color.FromArgb(130, 60, 15), 2),
                                                                      // 
                 new ((int type, int subType) type, float percentage)[]{  },
                 new ((int type, int subType) type, float percentage)[]{  },
-                cT:(1, 5), lT:(-9, 0), tT:(10, 3), txT:(0, 0)) },    // 
+                C:new string[]{ "Sweet", "Desert" },
+                cT:(1, 5), lT:(-9, 0), tT:(10, 3), txT:(0, 0)) },
                 { (302, 0), new BiomeTraits("Honey Ocean",          (Color.Honeydew.R, Color.DarkSlateBlue.G, Color.DarkSlateBlue.B), null, (Color.FromArgb(210, 145, 35), Color.FromArgb(230, 180, 65), 3),
                                                                      // 
                 new ((int type, int subType) type, float percentage)[]{  },
                 new ((int type, int subType) type, float percentage)[]{  },
+                C:new string[]{ "Sweet", "Ocean" },
                 cT:(8, 3), sIA:true, lT:(-5, 0), tT:(13, 0), txT:(0, 0), fT:(-5, 0), sT:1) }, // 
             };
 
@@ -3369,6 +3425,9 @@ namespace Cave
                     }
                 }
             }
+
+            biomeNamesToTypesDict = new Dictionary<string, (int type, int subType)>();
+            foreach ((int type, int subType) key in biomeTraitsDict.Keys) { biomeNamesToTypesDict[biomeTraitsDict[key].name] = key; }
         }
 
 

@@ -63,9 +63,27 @@ namespace Cave
             {"FuckOff" , new SP[] { new SP("fuck you"), new SP("get lost"), new SP("go die"), new SP("get away from me"), new SP("get the fuck away from me"), new SP("fuck off"), new SP("piss off"), new SP("go to hell"), new SP("go fuck yourself"), new SP("fuck you"), new SP("buzz off") } },
             {"Insult" , new SP[] { new SP("cunt"), new SP("piece of shit"), new SP("asshole"), new SP("dickhead"), new SP("moron") , new SP("idiot") , new SP("dumbass") , new SP("loser"), new SP("jackass"), new SP("jerk"), new SP("goon"), new SP("cretin"), new SP("imbecile"), new SP("donkey"), new SP("creep"), new SP("dick"), new SP("scum"), new SP("shitbag"), new SP("shithead"), new SP("fucker"), new SP("pig"), new SP("bastard"), new SP("motherfucker"), new SP("clown"), new SP("dipshit"), new SP("chud") } },
             {"InsultAdjective" , new SP[] { new SP("fucking"), new SP("fuckass"), new SP("freaking"), new SP("damn"), new SP("damned"), new SP("stupid"), new SP("effing"), new SP("miserable"), new SP("complete"), new SP("despicable"), new SP("filthy"), new SP("disgusting"), new SP("stinky"), new SP("smelly"), new SP("vile"), new SP("pathetic"), new SP("useless"), new SP("worthless"), new SP("lame"), new SP("degenerate"), new SP("shitty") } },
+            
+            {"So" , new SP[] { new SP("so", ",") } },
+            {"NeedQuestion" , new SP[] { new SP("do you need anything", "?"), new SP("is there anything you need", "?"), new SP("can I help you with some stuff", "?"), new SP("do you need help with something", "?"), new SP("was there anything you needed help with", "?"), new SP("do you want something", "?"), new SP("what can I help you with", "?"), new SP("what can I do for you", "?") } },
+            {"WhichBiome" , new SP[] { new SP("which biome are you looking for", "?"), new SP("which biome", "?"), new SP("what is the biome you want to find", "?"), new SP("and which biome exactly are you seeking", "?"), new SP("what's the name of the biome you want to reach", "?") } },
+            {"Alright" , new SP[] { new SP("alright"), new SP("alrighty"), new SP("all right"), new SP("okay"), new SP("very well"), new SP("fine"), new SP("got it"), new SP("sure") } },
+            {"Goodbye" , new SP[] { new SP("goodbye", "!"), new SP("bye", "!"), new SP("bye bye", "!"), new SP("see ya", "!"), new SP("see you soon", "!"), new SP("see you later", "!"), new SP("take care", "!"), new SP("cheers", "!") } },
+
+            {"ThankYou" , new SP[] { new SP("thanks", "!"), new SP("thanks a lot", "!"), new SP("thank you", "!"), new SP("thanks for your answer", "!"), new SP("thank you very much", "!"), new SP("thank you for your help", "!"), new SP("thank you so much", "!") } },
+            {"YoureWelcome" , new SP[] { new SP("you're welcome", "!"), new SP("no problem", "!"), new SP("my pleasure", "!"), new SP("no worries", "!"), new SP("always happy to help", "!"), new SP("glad I could help you", "!"), new SP("anytime", "!") } },
+
+            {"TheClosest" , new SP[] { new SP("the closest"), new SP("the nearest") } },
+            {"IsLocated" , new SP[] { new SP("is located"), new SP("is"), new SP("can be found"), new SP("should be") } },
 
             {"!" , new SP[] { new SP("!"), new SP("!!"), new SP("!!!") } },
             {"?" , new SP[] { new SP("?"), new SP("??"), new SP("???") } },
+        };
+
+        public static Dictionary<int, (string text, string nextSentenceType)[]> choicesByType = new Dictionary<int, (string text, string nextSentenceType)[]>
+        {
+            { 0 , new (string text, string nextSentenceType)[] { ("I'm looking for a biome", "BiomeSeekingQuestion"), ("I'm good", "Goodbye") } },
+            { 1 , new (string text, string nextSentenceType)[] { ("Forest", "BiomeSeeking"), ("Obsidian", "BiomeSeeking") } } //, ("Frozen Ocean", 0) } }
         };
 
         public static Dictionary<(int entityId1, int entityId2), OneRelationship> relationshipsDict = new Dictionary<(int entityId1, int entityId2), OneRelationship>();
@@ -86,8 +104,6 @@ namespace Cave
             }
         }
 
-
-
         public class OneSentence
         {
             public Dialogue dialogue;
@@ -101,6 +117,7 @@ namespace Cave
             public int size = 1;
             public float speakingStartTime;
 
+            public OneSentence() { }
             public OneSentence(Entity speakerToPut, Entity nonSpeakerToPut, string sentenceToPut)
             {
                 speaker = speakerToPut;
@@ -115,18 +132,25 @@ namespace Cave
                 nonSpeaker = nonSpeakerToPut;
                 type = typeToPut;
                 sentence = "";
-                OneSentence previousSentence = dialogue.nextSentences.Count > 0 ? dialogue.nextSentences[dialogue.nextSentences.Count - 1] : null;
+                createSentence(dialogue.nextSentences.Count > 0 ? dialogue.nextSentences[dialogue.nextSentences.Count - 1] : dialogue.currentSentence, forceTextAspect);    // yes currentSentence can be null, but that's good !! If trying to update an already existing dialogue by adding new sentences after a choice for example
+                findTextWrappingIdx();
+                speakingStartTime = timeElapsed;
+            }
+
+            public virtual void updateSpeakingStartTimes() { speakingStartTime = timeElapsed; }
+            public virtual void createSentence(OneSentence previousSentence, int forceTextAspect)
+            {
                 if (type == 0) { introductorySentence(previousSentence); }
                 if (type == 1) { introductoryReactionSentence(previousSentence); }
                 if (type == 2) { fuckOffSentence(previousSentence); }
                 if (type == 3) { greetingSentence(previousSentence); }
                 if (type == 4) { greetingFinalResponse(previousSentence); }
+                if (type == 5) { goodbyeSentence(previousSentence); }
+                if (type == 6) { biomeLocalisationSentence(previousSentence); }
+                if (type == 7) { thankYouSentence(previousSentence); }
                 if (forceTextAspect == 1) { sentence = replaceAllCharactersByDict(sentence, lowToUpDict); }
                 if (forceTextAspect == 2) { sentence = replaceAllCharactersByDict(sentence, upToLowDict); }
-                findTextWrappingIdx();
-                speakingStartTime = timeElapsed;
             }
-
             public void findTextWrappingIdx()
             {
                 List<int> listo = new List<int>();
@@ -239,7 +263,6 @@ namespace Cave
             public void greetingFinalResponse(OneSentence previousSentence)  // type = 4
             {
                 bool[] S = new bool[2] { true, false };    // 0 : Sentence ended or first sentence, force maj on next.
-                bool isResponse = previousSentence != null && previousSentence.type == type;
                 pickSentencePart("Fine", S);
                 if (rand.NextDouble() < 0.65f)
                 {
@@ -248,7 +271,57 @@ namespace Cave
                 }
                 else { writeElement(".", S); }
             }
-            public int renderSentence(Bitmap bitmap, (int x, int y) pos)
+            public void goodbyeSentence(OneSentence previousSentence)  // type = 5
+            {
+                bool[] S = new bool[2] { true, false };    // 0 : Sentence ended or first sentence, force maj on next.
+                bool isResponse = previousSentence != null && previousSentence.type == type;
+                if (!isResponse) { pickSentencePart("Alright", S, c: 0.45f); }
+                pickSentencePart("Goodbye", S);
+            }
+            public void biomeLocalisationSentence(OneSentence previousSentence)  // type = 6
+            {
+                bool[] S = new bool[2] { true, false };    // 0 : Sentence ended or first sentence, force maj on next.
+                if (previousSentence is null || !(previousSentence is OneChoice)) { writeElement("ERROR ERROR (previous sentence was null of not a choice)", S); return; }
+                TextBox chosenTextBox = ((OneChoice)previousSentence).chosenTextBox;
+                if (chosenTextBox is null) { writeElement("ERROR ERROR (chosenTextBox was null)", S); return; }
+                if (!biomeNamesToTypesDict.ContainsKey(chosenTextBox.text)) { writeElement("I have no idea what this biome is, sorry...", S); return; }
+                
+                (int x, int y)? biomeLocation = speaker.screen.findChunkWithBiome(speaker, biomeNamesToTypesDict[chosenTextBox.text]);  // This can crash if biome name doesn't exist (shouldn't).
+                if (biomeLocation is null) { writeElement("I don't know where you can find that biome, sorry...", S); return; }
+                (int x, int y) diff = (biomeLocation.Value.x * 32 - speaker.posX, biomeLocation.Value.y * 32 - speaker.posY);
+                diff = (Abs(diff.x) < 40 ? 0 : AbsFloor(diff.x, 10), Abs(diff.y) < 40 ? 0 : AbsFloor(diff.y, 10));
+
+                pickSentencePart("TheClosest", S);
+                writeElement(chosenTextBox.text + " biome", S);
+                pickSentencePart("IsLocated", S);
+                writeElement("around", S);
+                if (diff.x == 0 && diff.y == 0) { writeElement("... here !", S); return; }
+
+                if (diff.x != 0)
+                {
+                    writeElement(Abs(diff.x).ToString(), S);
+                    writeElement("tiles", S);
+                    writeElement(diff.x > 0 ? "to the right" : "to the left", S);
+                    if (diff.y != 0) { writeElement("and", S); }
+                    else { writeElement("of", S); }
+                }
+
+                if (diff.y != 0)
+                {
+                    writeElement(Abs(diff.y).ToString(), S);
+                    writeElement("tiles", S);
+                    writeElement(diff.y > 0 ? "above" : "under", S);
+                }
+                writeElement("where we are", S, ".");
+            }
+            public void thankYouSentence(OneSentence previousSentence)  // type = 7
+            {
+                bool[] S = new bool[2] { true, false };    // 0 : Sentence ended or first sentence, force maj on next.
+                bool isResponse = previousSentence != null && previousSentence.type == type;
+                if (isResponse) { pickSentencePart("YoureWelcome", S); }
+                else { pickSentencePart("ThankYou", S); }
+            }
+            public virtual int renderSentence(Bitmap bitmap, (int x, int y) pos)
             {
                 EntityPersonality personality = speaker.GetPersonality();
                 string sentenceToPrint = sentence.Substring(0, Clamp(0, (int)(personality.talkingSpeed * (timeElapsed - speakingStartTime)), sentence.Length));
@@ -289,11 +362,12 @@ namespace Cave
             }
             public bool proceed()
             {
+                if (currentSentence is OneChoice && !((OneChoice)currentSentence).choiceDone) { return false; }    // If current sentence is a choice, don't allow it to be skipped
                 previousSentences.Add(currentSentence);
                 if (nextSentences.Count == 0) { return stopTalking(); } // Finished talking
                 currentSentence = nextSentences[0];
                 nextSentences.RemoveAt(0);
-                currentSentence.speakingStartTime = timeElapsed;
+                currentSentence.updateSpeakingStartTimes();
                 return false;   // Not finished talking
             }
             public void goBack()
@@ -302,7 +376,7 @@ namespace Cave
                 nextSentences.Insert(0, currentSentence);
                 currentSentence = previousSentences[previousSentences.Count - 1];
                 previousSentences.RemoveAt(previousSentences.Count - 1);
-                currentSentence.speakingStartTime = timeElapsed;
+                currentSentence.updateSpeakingStartTimes();
             }
             public bool stopTalking()
             {
@@ -322,6 +396,12 @@ namespace Cave
                     else { greetingDialogue(); }
                 }
             }
+            public void updateDialogue(string dialogueToAdd)
+            {
+                if (dialogueToAdd == "Goodbye") { goodbyeDialogue(); }
+                if (dialogueToAdd == "BiomeSeekingQuestion") { biomeSeekingChoice(); }
+                if (dialogueToAdd == "BiomeSeeking") { biomeSeekingAnswer(); }
+            }
             public void introductionDialogue((Entity one, Entity two) speakerTuple)
             {
                 new OneRelationship(speakerTuple.one, speakerTuple.two);
@@ -336,12 +416,175 @@ namespace Cave
                 nextSentences.Add(new OneSentence(this, speakers[0], speakers[1], 3));
                 nextSentences.Add(new OneSentence(this, speakers[1], speakers[0], 3));
                 nextSentences.Add(new OneSentence(this, speakers[0], speakers[1], 4));
+                nextSentences.Add(new OneChoice(this, speakers[1], speakers[0], 0));
+            }
+            public void goodbyeDialogue()
+            {
+                nextSentences.Add(new OneSentence(this, speakers[1], speakers[0], 5));
+                nextSentences.Add(new OneSentence(this, speakers[0], speakers[1], 5));
+            }
+            public void biomeSeekingChoice()
+            {
+                nextSentences.Add(new OneChoice(this, speakers[1], speakers[0], 1));
+            }
+            public void biomeSeekingAnswer()
+            {
+                nextSentences.Add(new OneSentence(this, speakers[1], speakers[0], 6));
+                nextSentences.Add(new OneSentence(this, speakers[0], speakers[1], 7));
+                nextSentences.Add(new OneSentence(this, speakers[1], speakers[0], 7));
             }
             public void hateDialogue()
             {
                 nextSentences.Add(new OneSentence(this, speakers[1], speakers[0], 2, forceTextAspect:1));
             }
         }
+
+        public class TextBox
+        {
+            public (int x, int y) pos;
+            public string text;
+            public string nextSentenceType;
+            public int talkingSpeed = 100;
+            public float activationTime;
+            public float clickabilityTime;
+            public (int x, int y) rectPos;
+            public (int x, int y) rectSize;
+            public int minX;
+            public int maxX;
+            public int minY;
+            public int maxY;
+            public bool hasBeenSelected = false;
+
+            public TextBox((string text, string nextSentenceType) tupelo, (int x, int y) posToPut)
+            {
+                pos = posToPut;
+                text = tupelo.text;
+                nextSentenceType = tupelo.nextSentenceType;
+                findBoundaries();
+                activationTime = timeElapsed;
+                clickabilityTime = activationTime + (float)text.Length / talkingSpeed;
+            }
+
+            public void setHasBeenSelected(bool newValue) { hasBeenSelected = newValue; }
+            public void updateActivationTime(float newValue) { activationTime = newValue; }
+            public void findBoundaries()
+            {
+                rectPos = (pos.x - 16, pos.y - 16);
+                rectSize = (text.Length * 7 + 32, 32);
+                minX = pos.x - 16;
+                maxX = pos.x + text.Length * 7 + 16;
+                minY = pos.y - 16;
+                maxY = pos.y + 16;
+            }
+            public bool checkIfInBoundaries((int x, int y) posToCheck)
+            {
+                if (posToCheck.x < minX || posToCheck.x > maxX || posToCheck.y < minY || posToCheck.y > maxY) { return false; }
+                return true;
+            }
+            public void drawTextBoxBehind(Bitmap bitmap, (int x, int y) mousePos, bool dialogueDone)
+            {
+                Color colorToPaste;
+                if (hasBeenSelected || (!dialogueDone && checkIfInBoundaries(mousePos))) { colorToPaste = Color.FromArgb(120, 180, 120); }
+                else { colorToPaste = Color.FromArgb(100, 100, 100); }
+                drawRectangle(bitmap, colorToPaste, rectPos, rectSize);
+            }
+            public void drawText(Bitmap bitmap)
+            {
+                if (timeElapsed < activationTime) { return; }
+                string sentenceToPrint = text.Substring(0, Clamp(0, (int)(talkingSpeed * (timeElapsed - activationTime)), text.Length));
+                drawString(bitmap, sentenceToPrint, pos, 1, true);
+            }
+        }
+
+        public class OneChoice : OneSentence
+        {
+            public TextBox[] choiceTextBoxes;
+            public bool choiceDone = false;
+            public TextBox chosenTextBox;
+
+            public OneChoice(Entity speakerToPut, Entity nonSpeakerToPut, string sentenceToPut)
+            {
+                speaker = speakerToPut;
+                nonSpeaker = nonSpeakerToPut;
+                sentence = sentenceToPut;
+                speakingStartTime = timeElapsed;
+            }
+            public OneChoice(Dialogue dialogueToPut, Entity speakerToPut, Entity nonSpeakerToPut, int typeToPut, int forceTextAspect = 0)
+            {
+                dialogue = dialogueToPut;
+                speaker = speakerToPut;
+                nonSpeaker = nonSpeakerToPut;
+                type = typeToPut;
+                sentence = "";
+                OneSentence previousSentence = dialogue.nextSentences.Count > 0 ? dialogue.nextSentences[dialogue.nextSentences.Count - 1] : null;
+                createSentence(previousSentence, forceTextAspect);
+                findTextWrappingIdx();
+                speakingStartTime = timeElapsed;
+
+                makeTextBoxes();
+            }
+
+            public void setChoiceDone(bool newValue, TextBox chosenTextBoxToPut) { choiceDone = newValue; chosenTextBox = choiceDone ? chosenTextBoxToPut : null; }
+            public override void updateSpeakingStartTimes()
+            {
+                speakingStartTime = timeElapsed;
+                float newActivationTime = speakingStartTime + sentence.Length / (float)speaker.GetPersonality().talkingSpeed;
+                foreach(TextBox textBox in choiceTextBoxes) { textBox.updateActivationTime(newActivationTime); }
+            }
+            public override void createSentence(OneSentence previousSentence, int forceTextAspect)
+            {
+                if (type == 0) { doYouNeedAnythingChoice(previousSentence); }
+                if (type == 1) { biomeSeekingChoice(previousSentence); }
+                if (forceTextAspect == 1) { sentence = replaceAllCharactersByDict(sentence, lowToUpDict); }
+                if (forceTextAspect == 2) { sentence = replaceAllCharactersByDict(sentence, upToLowDict); }
+            }
+            public void doYouNeedAnythingChoice(OneSentence previousSentence)
+            {
+                bool[] S = new bool[2] { true, false };    // 0 : Sentence ended or first sentence, force maj on next.
+                bool isResponse = previousSentence != null && previousSentence.type == type;
+                pickSentencePart("So", S, c:0.35f);
+                pickSentencePart("NeedQuestion", S);
+            }
+            public void biomeSeekingChoice(OneSentence previousSentence)
+            {
+                bool[] S = new bool[2] { true, false };    // 0 : Sentence ended or first sentence, force maj on next.
+                bool isResponse = previousSentence != null && previousSentence.type == type;
+                pickSentencePart("So", S, c: 0.35f);
+                pickSentencePart("WhichBiome", S);
+            }
+            public void makeTextBoxes()
+            {
+                List<TextBox> listoTextoBoxo = new List<TextBox>();
+                (string text, string nextSentenceType)[] stringoArrayo = choicesByType[type];
+                int counto = stringoArrayo.Length;
+                int i = 0;
+                foreach ((string text, string nextSentenceType) choice in stringoArrayo)
+                {
+                    if (i == 0) { listoTextoBoxo.Add(new TextBox(choice, (100, 110))); }
+                    else if (i == 1) { listoTextoBoxo.Add(new TextBox(choice, (300, 110))); }
+                    i++;
+                }
+                choiceTextBoxes = listoTextoBoxo.ToArray();
+            }
+            public void drawTextBoxesBehind(Bitmap bitmap)
+            {
+                foreach(TextBox textBox in choiceTextBoxes) { textBox.drawTextBoxBehind(bitmap, dialogue.game.overlayMousePosition, choiceDone); }
+            }
+            public TextBox returnTextBoxClicked()
+            {
+                foreach (TextBox textBox in choiceTextBoxes) { if (textBox.checkIfInBoundaries(dialogue.game.overlayMousePosition)) { return textBox; } }
+                return null;
+            }
+            public override int renderSentence(Bitmap bitmap, (int x, int y) pos)
+            {
+                foreach (TextBox textBox in choiceTextBoxes) { textBox.drawText(bitmap); }
+
+                EntityPersonality personality = speaker.GetPersonality();
+                string sentenceToPrint = sentence.Substring(0, Clamp(0, (int)(personality.talkingSpeed * (timeElapsed - speakingStartTime)), sentence.Length));
+                return drawString(bitmap, sentenceToPrint, pos, size, true, personality.letterHoverSpeed, this);
+            }
+        }
+
 
         public class OneRelationship
         {

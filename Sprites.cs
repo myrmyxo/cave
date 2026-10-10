@@ -945,6 +945,13 @@ namespace Cave
             return Color.FromArgb(data[3], data[2], data[1], data[0]);
         }
 
+        public static void drawRectangle(Bitmap receiver, Color color, (int x, int y) posToDraw, (int x, int y) size)  // This is just a copy from the one in Screens
+        {
+            using (var g = Graphics.FromImage(receiver))
+            {
+                g.FillRectangle(new SolidBrush(color), posToDraw.x, posToDraw.y, size.x, size.y);
+            }
+        }
 
 
         public static Bitmap getLightBitmap(Color color, int radius)

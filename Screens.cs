@@ -64,6 +64,9 @@ namespace Cave
 
             public Entity targetEntity;
             public (int x, int y) mousePosition;
+            public bool mouseInGamePictureBox;
+            public (int x, int y) overlayMousePosition;
+            public bool mouseInOverlayPictureBox;
             public (int x, int y) screenMousePosition;
 
             public Dialogue currentDialogue;
@@ -279,7 +282,7 @@ namespace Cave
 
                 // Mouse stuff (need to put here white plants/entities in chunks)
                 Screen playerScreen = getScreen(player.dimension);
-                findMousePos(gameBitmap, gamePictureBox, player);
+                findMousePos(gameBitmap, gamePictureBox, overlayBitmap, overlayPictureBox, player);
 
                 if (dimensionSelection && player.timeAtLastMenuChange + 0.2f < timeElapsed)
                 {
@@ -413,8 +416,10 @@ namespace Cave
 
                 // render screen and update game image box thing
                 Bitmap screenBitmap = playerScreen.updateScreen();
-                drawMouseCursors(screenBitmap, player);
+                drawGameMouseCursors(screenBitmap, player);
                 drawOverlay(overlayPictureBox, player, thingPointedAt);
+                
+                leftMouseClick = false;
 
                 gamePictureBox.Image = upscaleGameBitmap(playerScreen, player);
                 gamePictureBox.Refresh();
@@ -434,10 +439,17 @@ namespace Cave
                 finalBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 return finalBitmap;
             }
-            public void findMousePos(Bitmap gameBitmap, PictureBox gamePictureBox, Player player)
+            public void findMousePos(Bitmap gameBitmap, PictureBox gamePictureBox, Bitmap overlayBitmap, PictureBox overlayPictureBox, Player player)
             {
                 Point mousePoint = gamePictureBox.PointToClient(Control.MousePosition);
+                Point overlayMousePoint = overlayPictureBox.PointToClient(Control.MousePosition);
+                
                 mousePosition = ((int)((mousePoint.X * gameBitmap.Width / 512f) + 0.5f), (int)(((gamePictureBox.Height - mousePoint.Y) * gameBitmap.Height / 512f) + 0.5f));
+                mouseInGamePictureBox = mousePosition.x >= 0 && mousePosition.x < 512 && mousePosition.y >= 0 && mousePosition.y < 512;
+                
+                overlayMousePosition = ((int)((overlayMousePoint.X * overlayBitmap.Width / 512f) + 0.5f), (int)((overlayMousePoint.Y * overlayBitmap.Height / 128f) + 0.5f));
+                mouseInOverlayPictureBox = overlayMousePosition.x >= 0 && overlayMousePosition.x < 512 && overlayMousePosition.y >= 0 && overlayMousePosition.y < 512;
+                
                 screenMousePosition = (player.camPosX - zoomLevel + mousePosition.x - 1, player.camPosY - zoomLevel + mousePosition.y - 1);
             }
             public BaseTraits findMouseTarget(Bitmap gameBitmap, PictureBox gamePictureBox, Screen playerScreen, Player player)
@@ -445,7 +457,7 @@ namespace Cave
                 Chunk targetedChunk = playerScreen.getChunkFromPixelPos(screenMousePosition);
 
                 if (targetEntity != null && (targetEntity.hasBeenUnloadedOrKilled || targetEntity.isDeadAndShouldDisappear)) { targetEntity = null; }
-                if (leftMouseClick)
+                if (leftMouseClick && mouseInGamePictureBox)
                 {
                     targetEntity = null;
                     leftMouseClick = false;
@@ -478,19 +490,44 @@ namespace Cave
 
                 if (escapePress) { currentDialogue = null; talkPress = false; enterPress = false; backPress = false; escapePress = false; return; } // If exiting talk mode, exit out of current dialogue (might change in future)
 
-                if (enterPress || talkPress) // If pressing enter, proceed
+                if (backPress) { currentDialogue.goBack(); goto Aftertest; }   // If pressing back, go back one sentence
+                if (currentDialogue.currentSentence is OneChoice)
+                {
+                    OneChoice currentChoice = (OneChoice)currentDialogue.currentSentence;
+                    if (!currentChoice.choiceDone)  // If choiceDone, it behaves like a normal currentDialogue and can proceed with enter/talk, if not it needs clicking
+                    {
+                        if (leftMouseClick && mouseInOverlayPictureBox)
+                        {
+                            Dialogues.TextBox selectedTextBox = currentChoice.returnTextBoxClicked();
+                            if (selectedTextBox != null)
+                            {
+                                currentChoice.setChoiceDone(true, selectedTextBox);
+                                selectedTextBox.setHasBeenSelected(true);
+                                currentDialogue.updateDialogue(selectedTextBox.nextSentenceType);
+                                currentDialogue.proceed();
+                            }
+                            leftMouseClick = false;
+                        }
+                        goto Aftertest;
+                    }
+                }
+                if (enterPress || talkPress)   // If pressing enter, proceed
                 {
                     if (currentDialogue.proceed()) { currentDialogue = null; }  // If the talk finished, exit dialogue
                 }
-                else if (backPress) { currentDialogue.goBack(); }   // If pressing back, go back one sentence
+            Aftertest:;
                 talkPress = false; enterPress = false; backPress = false; escapePress = false;
 
                 // Make it so if it dies it says ARRRRGHHH and it's not possible to do anything else
             }
-            public void drawMouseCursors(Bitmap gameBitmap, Player player)
+            public void drawGameMouseCursors(Bitmap gameBitmap, Player player)
             {
                 Sprites.drawSpriteOnCanvas(gameBitmap, cursorSprite.bitmap, mousePosition, 1, true);
                 if (targetEntity != null) { Sprites.drawSpriteOnCanvas(gameBitmap, cursorSprite2.frames[(int)(timeElapsed * 20) % cursorSprite2.frameCount], (zoomLevel - player.camPosX + targetEntity.posX + 1, zoomLevel - player.camPosY + targetEntity.posY + 1), 1, true); }
+            }
+            public void drawOverlayMouseCursors(Bitmap overlayBitmap)
+            {
+                Sprites.drawSpriteOnCanvas(overlayBitmap, cursorSprite.bitmap, overlayMousePosition, 4, true);
             }
             public void drawOverlay(PictureBox overlayPictureBox, Player player, BaseTraits thingPointedAt)
             {
@@ -505,6 +542,11 @@ namespace Cave
                 if (currentDialogue != null)
                 {
                     currentDialogue.renderSpeakerSprite(overlayBitmap, (40, 60));
+                    if (currentDialogue.currentSentence is OneChoice)
+                    {
+                        OneChoice choice = (OneChoice)currentDialogue.currentSentence;
+                        choice.drawTextBoxesBehind(overlayBitmap);
+                    }
                     currentDialogue.currentSentence.renderSentence(overlayBitmap, (90, 40));
                 }
                 else if (targetEntity != null)
@@ -533,6 +575,7 @@ namespace Cave
                     drawString(overlayBitmap, "Name : " + thingPointedAt.name, (90, 40), 1, true);
                 }
             Skip:;
+                drawOverlayMouseCursors(overlayBitmap);
 
                 overlayPictureBox.Refresh();
             }
@@ -1689,6 +1732,23 @@ namespace Cave
                     drawPixelFixed(finalBitmap, Color.Red, (100 + xOffset, 100), (0, 0), 2 * scaleFactor, true);
                     xOffset -= 120;
                 }
+            }
+            public (int x, int y)? findChunkWithBiome(Entity casterEntity, (int x, int y) biomeToFind, string typeToFind = "")
+            {
+                (int x, int y) entityChunkPos = ChunkIdx(casterEntity.posX, casterEntity.posY);
+                (int x, int y) currentSpiralPos = (0, 0);
+                (int x, int y) posToTest;
+                BiomeTraits mainBiome;
+
+                for (int i = 0; i < 10000; i++)
+                {
+                    currentSpiralPos = spiralProgression(currentSpiralPos);
+                    posToTest = (currentSpiralPos.x + entityChunkPos.x, currentSpiralPos.y + entityChunkPos.y);
+
+                    mainBiome = new Chunk(this, posToTest, true).bottomLeftTileBiomeForStatsOnly[0].traits;
+                    if (mainBiome.type == biomeToFind || (typeToFind != "" && mainBiome.characteristics.Contains(typeToFind))) { return posToTest; }
+                }
+                return null;
             }
             public TileTraits getTileContent((int x, int y) pos, bool forceMaturityLevelOne = true, bool onlyGetIfFullyLoaded = false)
             {

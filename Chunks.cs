@@ -218,20 +218,17 @@ namespace Cave
                     foreach (FireJson fireJson in chunkJson.f) { fireDict[fireJson.p] = new Fire(fireJson, this); }
                 }
             }
-            public Chunk(Screens.Screen screenToPut, (int x, int y) posToPut)
+            public Chunk(Screens.Screen screenToPut, (int x, int y) posToPut, bool isFlashLoading = false)  // FlashLoading is to make stats and only get the biomes and stuff
             {
                 screen = screenToPut;
                 pos = posToPut;
 
-                determineContents(null);
-            }
-            public Chunk(Screens.Screen screenToPut, (int x, int y) posToPut, bool isFlashLoading)  // This is to make stats and only get the biomes and stuff
-            {
-                screen = screenToPut;
-                pos = posToPut;
-
-                chunkSeed = screen.getLCGValue((pos, 0), 32);
-                bottomLeftTileBiomeForStatsOnly = findBiome(screen.type, determineOneBiomeValuesForStats());
+                if (isFlashLoading)
+                {
+                    chunkSeed = screen.getLCGValue((pos, 0), 32);
+                    bottomLeftTileBiomeForStatsOnly = findBiome(screen.type, determineOneBiomeValuesForStats());
+                }
+                else { determineContents(null); }
             }
             public void promoteFromExtraToFullyLoaded(ChunkJson chunkJson)  // Can be used both for promotion and simple loading (careful dict displacement is not made by this function !)
             {
