@@ -3135,7 +3135,7 @@ namespace Cave
 
                 new ((int type, int subType) type, float percentage)[]{ },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 3), 80) },
-                C:new string[]{ "Desert", "Salt" },                  // Red Glasswort
+                C:new string[]{ "Desert", "Salty" },                  // Red Glasswort
                 cT:(1, 5), lT:(-2, 2), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Salt Ground"] }) },
                 { (2, 5),  new BiomeTraits("Temperate Desert",      (Color.LightYellow.R + 80, Color.LightYellow.G + 20, Color.LightYellow.B - 20), ((180, 140, 100), true), (Color.FromArgb(220, 190, 150), null, 0),
@@ -3149,7 +3149,7 @@ namespace Cave
                                                                      // Desert Worm
                 new ((int type, int subType) type, float percentage)[]{ ((4, 5), 10), },
                 new ((int type, int subType) type, float percentage)[]{ ((14, 30), 25), ((14, 31), 35), ((4, 20), 15), ((4, 30), 5), },
-                C:new string[]{ "Cold, Desert" },                    // Black Saxaul     White Saxaul   Desert Thumb   Yellow Cistanche
+                C:new string[]{ "Cold", "Desert" },                  // Black Saxaul     White Saxaul   Desert Thumb   Yellow Cistanche
                 cT:(1, 5), lT:(0, 0), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["DesertSandstone"], famousTFT["DesertSand"] }) },
                 { (2, 7),  new BiomeTraits("Gray Desert",           (Color.LightGray.R, Color.LightGray.G, Color.LightGray.B), ((160, 150, 140), true), (Color.FromArgb(215, 200, 185), null, 0),
@@ -3220,7 +3220,7 @@ namespace Cave
                                                                      // Frog           Worm          Fish           Dragonfly
                 new ((int type, int subType) type, float percentage)[]{ ((1, 0), 100), ((4, 0), 25), ((2, 0), 300), ((10, 0), 50), },
                 new ((int type, int subType) type, float percentage)[]{ ((0, 0), 600), ((12, 0), 125), ((20, 0), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                C:new string[]{ "Forest", "Deciduous", "Wetland", "Salt" }, // Grass   MangroveTree    Vine            Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Forest", "Deciduous", "Wetland", "Salty" }, // Grass   MangroveTree    Vine            Cattail        Kelp            CeilingKelp
                 cT:(7, 7), vD:12, lT:(-2, 2), txT:(0, 0),
                 tFT:new TerrainFeaturesTraits[]{ famousTFT["Dirt/Mud"] }) },
                 { (3, 5),  new BiomeTraits("Bluebell Forest",       (Color.Green.R - 30, Color.Green.G + 10, Color.Green.B + 50), null, (Color.FromArgb(40, 150, 80), Color.CornflowerBlue, 1),
@@ -3427,7 +3427,21 @@ namespace Cave
             }
 
             biomeNamesToTypesDict = new Dictionary<string, (int type, int subType)>();
-            foreach ((int type, int subType) key in biomeTraitsDict.Keys) { biomeNamesToTypesDict[biomeTraitsDict[key].name] = key; }
+            List<string> biomeTypeChoicesList = new List<string>();
+            HashSet<string> biomeCharacteristicChoicesSet = new HashSet<string>();
+            foreach ((int type, int subType) key in biomeTraitsDict.Keys)
+            {
+                biomeNamesToTypesDict[biomeTraitsDict[key].name] = key;
+                biomeTypeChoicesList.Add(biomeTraitsDict[key].name);
+                foreach (string characteristic in biomeTraitsDict[key].characteristics) { biomeCharacteristicChoicesSet.Add(characteristic); }
+            }
+            List<string> biomeCharacteristicChoicesList = biomeCharacteristicChoicesSet.ToList();
+            biomeTypeChoicesList.Sort();
+            biomeCharacteristicChoicesList.Sort();
+            biomeTypeChoices = new (string text, string nextSentenceType)[biomeTypeChoicesList.Count];
+            biomeCharacteristicChoices = new (string text, string nextSentenceType)[biomeCharacteristicChoicesList.Count];
+            for (int i = 0; i < biomeTypeChoices.Length; i++) { biomeTypeChoices[i] = (biomeTypeChoicesList[i], "BiomeSeeking"); }
+            for (int i = 0; i < biomeCharacteristicChoices.Length; i++) { biomeCharacteristicChoices[i] = (biomeCharacteristicChoicesList[i], "BiomeSeeking"); }
         }
 
 

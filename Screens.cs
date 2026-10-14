@@ -1733,7 +1733,7 @@ namespace Cave
                     xOffset -= 120;
                 }
             }
-            public (int x, int y)? findChunkWithBiome(Entity casterEntity, (int x, int y) biomeToFind, string typeToFind = "")
+            public (BiomeTraits biome, (int x, int y) pos)? findChunkWithBiome(Entity casterEntity, (int x, int y) biomeToFind, string typeToFind = "")
             {
                 (int x, int y) entityChunkPos = ChunkIdx(casterEntity.posX, casterEntity.posY);
                 (int x, int y) currentSpiralPos = (0, 0);
@@ -1746,7 +1746,16 @@ namespace Cave
                     posToTest = (currentSpiralPos.x + entityChunkPos.x, currentSpiralPos.y + entityChunkPos.y);
 
                     mainBiome = new Chunk(this, posToTest, true).bottomLeftTileBiomeForStatsOnly[0].traits;
-                    if (mainBiome.type == biomeToFind || (typeToFind != "" && mainBiome.characteristics.Contains(typeToFind))) { return posToTest; }
+                    if (typeToFind == "" ? mainBiome.type == biomeToFind : mainBiome.characteristics.Contains(typeToFind)) { return (mainBiome, posToTest); }
+                }
+                currentSpiralPos = (currentSpiralPos.x / 2, currentSpiralPos.y / 2);
+                for (int i = 0; i < 10000; i++)
+                {
+                    currentSpiralPos = spiralProgression(currentSpiralPos);
+                    posToTest = (currentSpiralPos.x * 2 + entityChunkPos.x, currentSpiralPos.y * 2 + entityChunkPos.y);
+
+                    mainBiome = new Chunk(this, posToTest, true).bottomLeftTileBiomeForStatsOnly[0].traits;
+                    if (typeToFind == "" ? mainBiome.type == biomeToFind : mainBiome.characteristics.Contains(typeToFind)) { return (mainBiome, posToTest); }
                 }
                 return null;
             }

@@ -64,9 +64,11 @@ namespace Cave
             {"Insult" , new SP[] { new SP("cunt"), new SP("piece of shit"), new SP("asshole"), new SP("dickhead"), new SP("moron") , new SP("idiot") , new SP("dumbass") , new SP("loser"), new SP("jackass"), new SP("jerk"), new SP("goon"), new SP("cretin"), new SP("imbecile"), new SP("donkey"), new SP("creep"), new SP("dick"), new SP("scum"), new SP("shitbag"), new SP("shithead"), new SP("fucker"), new SP("pig"), new SP("bastard"), new SP("motherfucker"), new SP("clown"), new SP("dipshit"), new SP("chud") } },
             {"InsultAdjective" , new SP[] { new SP("fucking"), new SP("fuckass"), new SP("freaking"), new SP("damn"), new SP("damned"), new SP("stupid"), new SP("effing"), new SP("miserable"), new SP("complete"), new SP("despicable"), new SP("filthy"), new SP("disgusting"), new SP("stinky"), new SP("smelly"), new SP("vile"), new SP("pathetic"), new SP("useless"), new SP("worthless"), new SP("lame"), new SP("degenerate"), new SP("shitty") } },
             
-            {"So" , new SP[] { new SP("so", ",") } },
+            {"So" , new SP[] { new SP("so", ","), new SP("and", ",") } },
             {"NeedQuestion" , new SP[] { new SP("do you need anything", "?"), new SP("is there anything you need", "?"), new SP("can I help you with some stuff", "?"), new SP("do you need help with something", "?"), new SP("was there anything you needed help with", "?"), new SP("do you want something", "?"), new SP("what can I help you with", "?"), new SP("what can I do for you", "?") } },
-            {"WhichBiome" , new SP[] { new SP("which biome are you looking for", "?"), new SP("which biome", "?"), new SP("what is the biome you want to find", "?"), new SP("and which biome exactly are you seeking", "?"), new SP("what's the name of the biome you want to reach", "?") } },
+            {"WhichBiomeHow" , new SP[] { new SP("are you looking for a specific biome or a biome with a particular characteristic", "?"), new SP("do you want to find a particular biome ? Or do you want to find a biome with a particular characteristic", "?"), new SP("a biome in particular, or a type of biome", "?") } },
+            {"WhichBiomeSpecific" , new SP[] { new SP("which biome are you looking for", "?"), new SP("which biome", "?"), new SP("what is the biome you want to find", "?"), new SP("and which biome exactly are you seeking", "?"), new SP("what's the name of the biome you want to reach", "?") } },
+            {"WhichBiomeByCharacteristic" , new SP[] { new SP("which type of biome are you looking for", "?"), new SP("which type of biome", "?"), new SP("what is the type of biome you want to find", "?"), new SP("and which type of biome are you seeking", "?"), new SP("what's the type of biome you want to reach", "?") } },
             {"Alright" , new SP[] { new SP("alright"), new SP("alrighty"), new SP("all right"), new SP("okay"), new SP("very well"), new SP("fine"), new SP("got it"), new SP("sure") } },
             {"Goodbye" , new SP[] { new SP("goodbye", "!"), new SP("bye", "!"), new SP("bye bye", "!"), new SP("see ya", "!"), new SP("see you soon", "!"), new SP("see you later", "!"), new SP("take care", "!"), new SP("cheers", "!") } },
 
@@ -82,9 +84,11 @@ namespace Cave
 
         public static Dictionary<int, (string text, string nextSentenceType)[]> choicesByType = new Dictionary<int, (string text, string nextSentenceType)[]>
         {
-            { 0 , new (string text, string nextSentenceType)[] { ("I'm looking for a biome", "BiomeSeekingQuestion"), ("I'm good", "Goodbye") } },
-            { 1 , new (string text, string nextSentenceType)[] { ("Forest", "BiomeSeeking"), ("Obsidian", "BiomeSeeking") } } //, ("Frozen Ocean", 0) } }
+            { 0 , new (string text, string nextSentenceType)[] { ("I'm looking for a biome", "BiomeSeekingHow"), ("I'm good", "Goodbye") } },
+            { 1 , new (string text, string nextSentenceType)[] { ("A specific biome", "BiomeSeekingSpecific"), ("A type of biome", "BiomeSeekingByCharacteristic") } },
         };
+        public static (string text, string nextSentenceType)[] biomeTypeChoices = null;
+        public static (string text, string nextSentenceType)[] biomeCharacteristicChoices = null;
 
         public static Dictionary<(int entityId1, int entityId2), OneRelationship> relationshipsDict = new Dictionary<(int entityId1, int entityId2), OneRelationship>();
     }
@@ -116,6 +120,7 @@ namespace Cave
             public int font;
             public int size = 1;
             public float speakingStartTime;
+            public bool hasBeenProceeded;
 
             public OneSentence() { }
             public OneSentence(Entity speakerToPut, Entity nonSpeakerToPut, string sentenceToPut)
@@ -137,19 +142,20 @@ namespace Cave
                 speakingStartTime = timeElapsed;
             }
 
-            public virtual void updateSpeakingStartTimes() { speakingStartTime = timeElapsed; }
+            public virtual void updateSpeakingStartTimes(float timeToPut) { speakingStartTime = timeToPut; }
             public virtual void createSentence(OneSentence previousSentence, int forceTextAspect)
             {
                 if (type == 0) { introductorySentence(previousSentence); }
-                if (type == 1) { introductoryReactionSentence(previousSentence); }
-                if (type == 2) { fuckOffSentence(previousSentence); }
-                if (type == 3) { greetingSentence(previousSentence); }
-                if (type == 4) { greetingFinalResponse(previousSentence); }
-                if (type == 5) { goodbyeSentence(previousSentence); }
-                if (type == 6) { biomeLocalisationSentence(previousSentence); }
-                if (type == 7) { thankYouSentence(previousSentence); }
+                else if (type == 1) { introductoryReactionSentence(previousSentence); }
+                else if (type == 2) { fuckOffSentence(previousSentence); }
+                else if (type == 3) { greetingSentence(previousSentence); }
+                else if (type == 4) { greetingFinalResponse(previousSentence); }
+                else if (type == 5) { goodbyeSentence(previousSentence); }
+                else if (type == 6) { biomeLocalisationSentence(previousSentence); }
+                else if (type == 7) { thankYouSentence(previousSentence); }
+                else { errorSentence(previousSentence); }
                 if (forceTextAspect == 1) { sentence = replaceAllCharactersByDict(sentence, lowToUpDict); }
-                if (forceTextAspect == 2) { sentence = replaceAllCharactersByDict(sentence, upToLowDict); }
+                else if (forceTextAspect == 2) { sentence = replaceAllCharactersByDict(sentence, upToLowDict); }
             }
             public void findTextWrappingIdx()
             {
@@ -200,6 +206,11 @@ namespace Cave
                     stateBool[0] = true;
                 }
                 sentence += tempPart + terminator + " ";
+            }
+            public void errorSentence(OneSentence previousSentence)
+            {
+                bool[] S = new bool[2] { true, false };    // 0 : Sentence ended or first sentence, force maj on next.
+                writeElement("something went wrong with the dialogues !!! ERROR ERROR !!! BUG !!! BUG BUG !!! DEV please FIX this !!!1!", S, "!");
             }
             public void introductorySentence(OneSentence previousSentence)  // type = 0
             {
@@ -275,7 +286,7 @@ namespace Cave
             {
                 bool[] S = new bool[2] { true, false };    // 0 : Sentence ended or first sentence, force maj on next.
                 bool isResponse = previousSentence != null && previousSentence.type == type;
-                if (!isResponse) { pickSentencePart("Alright", S, c: 0.45f); }
+                if (!isResponse) { pickSentencePart("Alright", S, ",", c: 0.45f); }
                 pickSentencePart("Goodbye", S);
             }
             public void biomeLocalisationSentence(OneSentence previousSentence)  // type = 6
@@ -284,11 +295,11 @@ namespace Cave
                 if (previousSentence is null || !(previousSentence is OneChoice)) { writeElement("ERROR ERROR (previous sentence was null of not a choice)", S); return; }
                 TextBox chosenTextBox = ((OneChoice)previousSentence).chosenTextBox;
                 if (chosenTextBox is null) { writeElement("ERROR ERROR (chosenTextBox was null)", S); return; }
-                if (!biomeNamesToTypesDict.ContainsKey(chosenTextBox.text)) { writeElement("I have no idea what this biome is, sorry...", S); return; }
-                
-                (int x, int y)? biomeLocation = speaker.screen.findChunkWithBiome(speaker, biomeNamesToTypesDict[chosenTextBox.text]);  // This can crash if biome name doesn't exist (shouldn't).
+                if (previousSentence.type != 3 && !biomeNamesToTypesDict.ContainsKey(chosenTextBox.text)) { writeElement("I have no idea what this biome is, sorry...", S); return; }
+
+                (BiomeTraits biome, (int x, int y) pos)? biomeLocation = speaker.screen.findChunkWithBiome(speaker, previousSentence.type == 3 ? (-1, -1) : biomeNamesToTypesDict[chosenTextBox.text], previousSentence.type == 3 ? chosenTextBox.text : "");  // This can crash if biome name doesn't exist (shouldn't).
                 if (biomeLocation is null) { writeElement("I don't know where you can find that biome, sorry...", S); return; }
-                (int x, int y) diff = (biomeLocation.Value.x * 32 - speaker.posX, biomeLocation.Value.y * 32 - speaker.posY);
+                (int x, int y) diff = (biomeLocation.Value.pos.x * 32 - speaker.posX, biomeLocation.Value.pos.y * 32 - speaker.posY);
                 diff = (Abs(diff.x) < 40 ? 0 : AbsFloor(diff.x, 10), Abs(diff.y) < 40 ? 0 : AbsFloor(diff.y, 10));
 
                 pickSentencePart("TheClosest", S);
@@ -313,6 +324,7 @@ namespace Cave
                     writeElement(diff.y > 0 ? "above" : "under", S);
                 }
                 writeElement("where we are", S, ".");
+                if (previousSentence.type == 3) { writeElement("It is a " + biomeLocation.Value.biome.name, S, "."); }
             }
             public void thankYouSentence(OneSentence previousSentence)  // type = 7
             {
@@ -363,20 +375,22 @@ namespace Cave
             public bool proceed()
             {
                 if (currentSentence is OneChoice && !((OneChoice)currentSentence).choiceDone) { return false; }    // If current sentence is a choice, don't allow it to be skipped
+                currentSentence.hasBeenProceeded = true;
                 previousSentences.Add(currentSentence);
                 if (nextSentences.Count == 0) { return stopTalking(); } // Finished talking
                 currentSentence = nextSentences[0];
                 nextSentences.RemoveAt(0);
-                currentSentence.updateSpeakingStartTimes();
+                currentSentence.updateSpeakingStartTimes(currentSentence.hasBeenProceeded ? -999999 : timeElapsed);
                 return false;   // Not finished talking
             }
             public void goBack()
             {
                 if (previousSentences.Count == 0) { return; }
+                currentSentence.hasBeenProceeded = true;
                 nextSentences.Insert(0, currentSentence);
                 currentSentence = previousSentences[previousSentences.Count - 1];
                 previousSentences.RemoveAt(previousSentences.Count - 1);
-                currentSentence.updateSpeakingStartTimes();
+                currentSentence.updateSpeakingStartTimes(-999999);
             }
             public bool stopTalking()
             {
@@ -399,8 +413,15 @@ namespace Cave
             public void updateDialogue(string dialogueToAdd)
             {
                 if (dialogueToAdd == "Goodbye") { goodbyeDialogue(); }
-                if (dialogueToAdd == "BiomeSeekingQuestion") { biomeSeekingChoice(); }
-                if (dialogueToAdd == "BiomeSeeking") { biomeSeekingAnswer(); }
+                else if (dialogueToAdd == "BiomeSeekingHow") { biomeSeekingHowChoice(); }
+                else if (dialogueToAdd == "BiomeSeekingSpecific") { biomeSeekingSpecificChoice(); }
+                else if (dialogueToAdd == "BiomeSeekingByCharacteristic") { biomeSeekingByCharacteristicChoice(); }
+                else if (dialogueToAdd == "BiomeSeeking") { biomeSeekingAnswer(); }
+                else { errorDialogue(); }
+            }
+            public void errorDialogue()
+            {
+                nextSentences.Add(new OneSentence(this, speakers[1], speakers[0], -1));
             }
             public void introductionDialogue((Entity one, Entity two) speakerTuple)
             {
@@ -423,9 +444,17 @@ namespace Cave
                 nextSentences.Add(new OneSentence(this, speakers[1], speakers[0], 5));
                 nextSentences.Add(new OneSentence(this, speakers[0], speakers[1], 5));
             }
-            public void biomeSeekingChoice()
+            public void biomeSeekingHowChoice()
             {
                 nextSentences.Add(new OneChoice(this, speakers[1], speakers[0], 1));
+            }
+            public void biomeSeekingSpecificChoice()
+            {
+                nextSentences.Add(new OneMultiChoice(this, speakers[1], speakers[0], 2));
+            }
+            public void biomeSeekingByCharacteristicChoice()
+            {
+                nextSentences.Add(new OneMultiChoice(this, speakers[1], speakers[0], 3));
             }
             public void biomeSeekingAnswer()
             {
@@ -441,6 +470,7 @@ namespace Cave
 
         public class TextBox
         {
+            public Game game;
             public (int x, int y) pos;
             public string text;
             public string nextSentenceType;
@@ -455,8 +485,10 @@ namespace Cave
             public int maxY;
             public bool hasBeenSelected = false;
 
-            public TextBox((string text, string nextSentenceType) tupelo, (int x, int y) posToPut)
+            public TextBox() { }
+            public TextBox(Game gameToPut, (string text, string nextSentenceType) tupelo, (int x, int y) posToPut)
             {
+                game = gameToPut;
                 pos = posToPut;
                 text = tupelo.text;
                 nextSentenceType = tupelo.nextSentenceType;
@@ -466,7 +498,11 @@ namespace Cave
             }
 
             public void setHasBeenSelected(bool newValue) { hasBeenSelected = newValue; }
-            public void updateActivationTime(float newValue) { activationTime = newValue; }
+            public virtual void updateActivationTime(float newValue)
+            {
+                activationTime = newValue;
+                clickabilityTime = activationTime + (float)text.Length / talkingSpeed;
+            }
             public void findBoundaries()
             {
                 rectPos = (pos.x - 16, pos.y - 16);
@@ -476,23 +512,90 @@ namespace Cave
                 minY = pos.y - 16;
                 maxY = pos.y + 16;
             }
-            public bool checkIfInBoundaries((int x, int y) posToCheck)
+            public virtual bool checkIfInBoundaries((int x, int y) posToCheck)
             {
-                if (posToCheck.x < minX || posToCheck.x > maxX || posToCheck.y < minY || posToCheck.y > maxY) { return false; }
+                if (timeElapsed < clickabilityTime || posToCheck.x < minX || posToCheck.x > maxX || posToCheck.y < minY || posToCheck.y > maxY) { return false; }
                 return true;
             }
-            public void drawTextBoxBehind(Bitmap bitmap, (int x, int y) mousePos, bool dialogueDone)
+            public virtual void drawTextBoxBehind(Bitmap bitmap, (int x, int y) mousePos, bool dialogueDone)
             {
+                if (timeElapsed < activationTime) { return; }
                 Color colorToPaste;
                 if (hasBeenSelected || (!dialogueDone && checkIfInBoundaries(mousePos))) { colorToPaste = Color.FromArgb(120, 180, 120); }
                 else { colorToPaste = Color.FromArgb(100, 100, 100); }
                 drawRectangle(bitmap, colorToPaste, rectPos, rectSize);
             }
-            public void drawText(Bitmap bitmap)
+            public virtual void drawText(Bitmap bitmap)
             {
                 if (timeElapsed < activationTime) { return; }
                 string sentenceToPrint = text.Substring(0, Clamp(0, (int)(talkingSpeed * (timeElapsed - activationTime)), text.Length));
                 drawString(bitmap, sentenceToPrint, pos, 1, true);
+            }
+        }
+
+        public class ChoiceListTextBox : TextBox
+        {
+            public (string text, string nextSentenceType)[] choiceArray;
+            public int choiceArrayCursor;
+            public TextBox leftArrow;
+            public TextBox rightArrow;
+
+            public ChoiceListTextBox(Game gameToPut, (string text, string nextSentenceType)[] choiceArrayToPut, (int x, int y) posToPut)
+            {
+                game = gameToPut;
+                choiceArray = choiceArrayToPut;
+                pos = posToPut;
+                leftArrow = new TextBox(gameToPut, ("<-", "Irrelevant"), (pos.x, pos.y - 32));
+                rightArrow = new TextBox(gameToPut, ("->", "Irrelevant"), (pos.x + 46, pos.y - 32));
+                updateCurrentChoice(0);
+                activationTime = timeElapsed;
+                clickabilityTime = activationTime + (float)text.Length / talkingSpeed;
+            }
+            public void updateCurrentChoice(int cursorValueChange)
+            {
+                choiceArrayCursor = PosMod(choiceArrayCursor + cursorValueChange, choiceArray.Length);
+                text = choiceArray[choiceArrayCursor].text;
+                nextSentenceType = choiceArray[choiceArrayCursor].nextSentenceType;
+                findAllBoundaries();
+            }
+            public override void updateActivationTime(float newValue)
+            {
+                activationTime = newValue;
+                clickabilityTime = activationTime + (float)text.Length / talkingSpeed;
+                leftArrow.updateActivationTime(newValue);
+                rightArrow.updateActivationTime(newValue);
+            }
+            public void findAllBoundaries()
+            {
+                findBoundaries();
+                leftArrow.findBoundaries();
+                rightArrow.findBoundaries();
+            }
+            public override bool checkIfInBoundaries((int x, int y) posToCheck)
+            {
+                if (leftArrow.checkIfInBoundaries(posToCheck)) { if (leftMouseClick && game.mouseInOverlayPictureBox) { updateCurrentChoice(-1); } return false; }
+                if (rightArrow.checkIfInBoundaries(posToCheck)) { if (leftMouseClick && game.mouseInOverlayPictureBox) { updateCurrentChoice(1); } return false; }
+
+                if (timeElapsed < clickabilityTime || posToCheck.x < minX || posToCheck.x > maxX || posToCheck.y < minY || posToCheck.y > maxY) { return false; }
+                return true;
+            }
+            public override void drawTextBoxBehind(Bitmap bitmap, (int x, int y) mousePos, bool dialogueDone)
+            {
+                if (timeElapsed < activationTime) { return; }
+                Color colorToPaste;
+                if (hasBeenSelected || (!dialogueDone && checkIfInBoundaries(mousePos))) { colorToPaste = Color.FromArgb(120, 180, 120); }
+                else { colorToPaste = Color.FromArgb(100, 100, 100); }
+                drawRectangle(bitmap, colorToPaste, rectPos, rectSize);
+                leftArrow.drawTextBoxBehind(bitmap, mousePos, dialogueDone);
+                rightArrow.drawTextBoxBehind(bitmap, mousePos, dialogueDone);
+            }
+            public override void drawText(Bitmap bitmap)
+            {
+                if (timeElapsed < activationTime) { return; }
+                string sentenceToPrint = text.Substring(0, Clamp(0, (int)(talkingSpeed * (timeElapsed - activationTime)), text.Length));
+                drawString(bitmap, sentenceToPrint, pos, 1, true);
+                leftArrow.drawText(bitmap);
+                rightArrow.drawText(bitmap);
             }
         }
 
@@ -502,6 +605,7 @@ namespace Cave
             public bool choiceDone = false;
             public TextBox chosenTextBox;
 
+            public OneChoice() { }
             public OneChoice(Entity speakerToPut, Entity nonSpeakerToPut, string sentenceToPut)
             {
                 speaker = speakerToPut;
@@ -524,17 +628,20 @@ namespace Cave
                 makeTextBoxes();
             }
 
-            public void setChoiceDone(bool newValue, TextBox chosenTextBoxToPut) { choiceDone = newValue; chosenTextBox = choiceDone ? chosenTextBoxToPut : null; }
-            public override void updateSpeakingStartTimes()
+            public virtual void setChoiceDone(bool newValue, TextBox chosenTextBoxToPut) { choiceDone = newValue; chosenTextBox = choiceDone ? chosenTextBoxToPut : null; }
+            public override void updateSpeakingStartTimes(float timeToPut)
             {
-                speakingStartTime = timeElapsed;
+                speakingStartTime = timeToPut;
                 float newActivationTime = speakingStartTime + sentence.Length / (float)speaker.GetPersonality().talkingSpeed;
                 foreach(TextBox textBox in choiceTextBoxes) { textBox.updateActivationTime(newActivationTime); }
             }
             public override void createSentence(OneSentence previousSentence, int forceTextAspect)
             {
                 if (type == 0) { doYouNeedAnythingChoice(previousSentence); }
-                if (type == 1) { biomeSeekingChoice(previousSentence); }
+                else if (type == 1) { biomeSeekingChoice(previousSentence); }
+                else if (type == 2) { biomeSeekingChoiceSpecific(previousSentence); }
+                else if (type == 3) { biomeSeekingChoiceByCharacteristic(previousSentence); }
+                else { errorSentence(previousSentence); }
                 if (forceTextAspect == 1) { sentence = replaceAllCharactersByDict(sentence, lowToUpDict); }
                 if (forceTextAspect == 2) { sentence = replaceAllCharactersByDict(sentence, upToLowDict); }
             }
@@ -550,9 +657,23 @@ namespace Cave
                 bool[] S = new bool[2] { true, false };    // 0 : Sentence ended or first sentence, force maj on next.
                 bool isResponse = previousSentence != null && previousSentence.type == type;
                 pickSentencePart("So", S, c: 0.35f);
-                pickSentencePart("WhichBiome", S);
+                pickSentencePart("WhichBiomeHow", S);
             }
-            public void makeTextBoxes()
+            public void biomeSeekingChoiceSpecific(OneSentence previousSentence)
+            {
+                bool[] S = new bool[2] { true, false };    // 0 : Sentence ended or first sentence, force maj on next.
+                bool isResponse = previousSentence != null && previousSentence.type == type;
+                pickSentencePart("So", S, c: 0.25f);
+                pickSentencePart("WhichBiomeSpecific", S);
+            }
+            public void biomeSeekingChoiceByCharacteristic(OneSentence previousSentence)
+            {
+                bool[] S = new bool[2] { true, false };    // 0 : Sentence ended or first sentence, force maj on next.
+                bool isResponse = previousSentence != null && previousSentence.type == type;
+                pickSentencePart("So", S, c: 0.25f);
+                pickSentencePart("WhichBiomeByCharacteristic", S);
+            }
+            public virtual void makeTextBoxes()
             {
                 List<TextBox> listoTextoBoxo = new List<TextBox>();
                 (string text, string nextSentenceType)[] stringoArrayo = choicesByType[type];
@@ -560,8 +681,8 @@ namespace Cave
                 int i = 0;
                 foreach ((string text, string nextSentenceType) choice in stringoArrayo)
                 {
-                    if (i == 0) { listoTextoBoxo.Add(new TextBox(choice, (100, 110))); }
-                    else if (i == 1) { listoTextoBoxo.Add(new TextBox(choice, (300, 110))); }
+                    if (i == 0) { listoTextoBoxo.Add(new TextBox(dialogue.game, choice, (100, 110))); }
+                    else if (i == 1) { listoTextoBoxo.Add(new TextBox(dialogue.game, choice, (300, 110))); }
                     i++;
                 }
                 choiceTextBoxes = listoTextoBoxo.ToArray();
@@ -582,6 +703,40 @@ namespace Cave
                 EntityPersonality personality = speaker.GetPersonality();
                 string sentenceToPrint = sentence.Substring(0, Clamp(0, (int)(personality.talkingSpeed * (timeElapsed - speakingStartTime)), sentence.Length));
                 return drawString(bitmap, sentenceToPrint, pos, size, true, personality.letterHoverSpeed, this);
+            }
+        }
+
+        public class OneMultiChoice : OneChoice
+        {
+            public OneMultiChoice(Entity speakerToPut, Entity nonSpeakerToPut, string sentenceToPut)
+            {
+                speaker = speakerToPut;
+                nonSpeaker = nonSpeakerToPut;
+                sentence = sentenceToPut;
+                speakingStartTime = timeElapsed;
+            }
+            public OneMultiChoice(Dialogue dialogueToPut, Entity speakerToPut, Entity nonSpeakerToPut, int typeToPut, int forceTextAspect = 0)
+            {
+                dialogue = dialogueToPut;
+                speaker = speakerToPut;
+                nonSpeaker = nonSpeakerToPut;
+                type = typeToPut;
+                sentence = "";
+                OneSentence previousSentence = dialogue.nextSentences.Count > 0 ? dialogue.nextSentences[dialogue.nextSentences.Count - 1] : null;
+                createSentence(previousSentence, forceTextAspect);
+                findTextWrappingIdx();
+                speakingStartTime = timeElapsed;
+
+                makeTextBoxes();
+            }
+
+            public override void setChoiceDone(bool newValue, TextBox chosenTextBoxToPut) { choiceDone = newValue; }
+            public override void makeTextBoxes()
+            {
+                if (type == 2) { chosenTextBox = new ChoiceListTextBox(dialogue.game, biomeTypeChoices, (120, 110)); ; }
+                else if (type == 3) { chosenTextBox = new ChoiceListTextBox(dialogue.game, biomeCharacteristicChoices, (120, 110)); }
+                else { chosenTextBox = new ChoiceListTextBox(dialogue.game, biomeTypeChoices, (120, 110)); }    // This should never happen, default when type not supported
+                choiceTextBoxes = new TextBox[] { chosenTextBox };
             }
         }
 
