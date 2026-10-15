@@ -3100,7 +3100,7 @@ namespace Cave
                                                                      // Obsidian Fairy
                 new ((int type, int subType) type, float percentage)[]{ ((0, 1), 100), },
                 new ((int type, int subType) type, float percentage)[]{ ((50, 0), 400), ((20, 1), 200), ((2, 0), 100), ((30, 0), 400), ((30, 1), 400), },
-                C:new string[]{ "Hot" },                             // ObsidianPlant   ObsidianVine    Cattail        Kelp            CeilingKelp
+                C:new string[]{ "Hot", "Obsidian" },                 // ObsidianPlant   ObsidianVine    Cattail        Kelp            CeilingKelp
                 cT:(1, 4), txT:(0, 0), cW:0.3f) },
 
                 { (2, 0),  new BiomeTraits("Flower Forest",         (Color.Green.R, Color.Green.G + 40, Color.Green.B + 80), null, (Color.MediumSeaGreen, null, 0),

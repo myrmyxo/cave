@@ -659,6 +659,17 @@ namespace Cave
             return listo.ToArray();
         }
 
+        public static T getItemByValueNeeded<T>((T baseValue, (int valueNeeded, T returnValue)[] array) bigTuple, int valueToTest)    // The array has tuples sorted by valueNeeded, ascending !!!
+        {
+            T returnValue = bigTuple.baseValue;
+            foreach ((int valueNeeded, T returnValue) tupelo in bigTuple.array)
+            {
+                if (valueToTest < tupelo.valueNeeded) { return returnValue; }
+                returnValue = tupelo.returnValue;
+            }
+            return returnValue;
+        }
+
 
         // Will throw an error when the collection is empty
         public static T getRandomItem<T>(List<T> collection) { return collection[rand.Next(collection.Count)]; }

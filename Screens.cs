@@ -481,15 +481,11 @@ namespace Cave
             {
                 if (currentDialogue == null)
                 {
-                    enterPress = false; backPress = false; escapePress = false; // To not accidentally skip the first dialogue
-                    if (talkPress == false || targetEntity == null) { return; }
-                    currentDialogue = new Dialogue(this, new Entity[] { player, targetEntity });  // if no current dialogue, having selected an entity with cursor, and pressing T, make new Dialogue
-                    talkPress = false;
-                    return;
+                    if (talkPress != false && targetEntity != null) { currentDialogue = new Dialogue(this, new Entity[] { player, targetEntity }); }    // if no current dialogue, having selected an entity with cursor, and pressing T, make new Dialogue
+                    goto Aftertest;
                 }
 
-                if (escapePress) { currentDialogue = null; talkPress = false; enterPress = false; backPress = false; escapePress = false; return; } // If exiting talk mode, exit out of current dialogue (might change in future)
-
+                if (escapePress) { currentDialogue = null; goto Aftertest; } // If exiting talk mode, exit out of current dialogue (might change in future)
                 if (backPress) { currentDialogue.goBack(); goto Aftertest; }   // If pressing back, go back one sentence
                 if (currentDialogue.currentSentence is OneChoice)
                 {
@@ -505,18 +501,17 @@ namespace Cave
                                 selectedTextBox.setHasBeenSelected(true);
                                 currentDialogue.updateDialogue(selectedTextBox.nextSentenceType);
                                 currentDialogue.proceed();
+                                leftMouseClick = false;
                             }
-                            leftMouseClick = false;
                         }
-                        goto Aftertest;
                     }
                 }
-                if (enterPress || talkPress)   // If pressing enter, proceed
+                if (enterPress || talkPress || (leftMouseClick && mouseInOverlayPictureBox))   // If pressing enter, proceed
                 {
                     if (currentDialogue.proceed()) { currentDialogue = null; }  // If the talk finished, exit dialogue
                 }
             Aftertest:;
-                talkPress = false; enterPress = false; backPress = false; escapePress = false;
+                leftMouseClick = false; talkPress = false; enterPress = false; backPress = false; escapePress = false;
 
                 // Make it so if it dies it says ARRRRGHHH and it's not possible to do anything else
             }
@@ -1733,8 +1728,9 @@ namespace Cave
                     xOffset -= 120;
                 }
             }
-            public (BiomeTraits biome, (int x, int y) pos)? findChunkWithBiome(Entity casterEntity, (int x, int y) biomeToFind, string typeToFind = "")
+            public (BiomeTraits biome, (int x, int y) pos, int biomeSize)? findChunkWithBiome(Entity casterEntity, int minBiomeSize, (int x, int y) biomeToFind, string typeToFind = "")
             {
+                HashSet<(int x, int y)> forbiddenPos = new HashSet<(int x, int y)>();
                 (int x, int y) entityChunkPos = ChunkIdx(casterEntity.posX, casterEntity.posY);
                 (int x, int y) currentSpiralPos = (0, 0);
                 (int x, int y) posToTest;
@@ -1744,20 +1740,55 @@ namespace Cave
                 {
                     currentSpiralPos = spiralProgression(currentSpiralPos);
                     posToTest = (currentSpiralPos.x + entityChunkPos.x, currentSpiralPos.y + entityChunkPos.y);
+                    if (forbiddenPos.Contains(posToTest)) { continue; }
 
                     mainBiome = new Chunk(this, posToTest, true).bottomLeftTileBiomeForStatsOnly[0].traits;
-                    if (typeToFind == "" ? mainBiome.type == biomeToFind : mainBiome.characteristics.Contains(typeToFind)) { return (mainBiome, posToTest); }
+                    if (typeToFind == "" ? mainBiome.type == biomeToFind : mainBiome.characteristics.Contains(typeToFind))
+                    {
+                        int biomeSize = testIfBiomeBigEnough(posToTest, mainBiome, forbiddenPos);
+                        if (biomeSize >= minBiomeSize) { return (mainBiome, posToTest, biomeSize); }
+                    }
                 }
                 currentSpiralPos = (currentSpiralPos.x / 2, currentSpiralPos.y / 2);
                 for (int i = 0; i < 10000; i++)
                 {
                     currentSpiralPos = spiralProgression(currentSpiralPos);
                     posToTest = (currentSpiralPos.x * 2 + entityChunkPos.x, currentSpiralPos.y * 2 + entityChunkPos.y);
+                    if (forbiddenPos.Contains(posToTest)) { continue; }
 
                     mainBiome = new Chunk(this, posToTest, true).bottomLeftTileBiomeForStatsOnly[0].traits;
-                    if (typeToFind == "" ? mainBiome.type == biomeToFind : mainBiome.characteristics.Contains(typeToFind)) { return (mainBiome, posToTest); }
+                    if (typeToFind == "" ? mainBiome.type == biomeToFind : mainBiome.characteristics.Contains(typeToFind))
+                    {
+                        int biomeSize = testIfBiomeBigEnough(posToTest, mainBiome, forbiddenPos);
+                        if (biomeSize >= minBiomeSize) { return (mainBiome, posToTest, biomeSize); }
+                    }
                 }
                 return null;
+            }
+            public int testIfBiomeBigEnough((int x, int y) startPos, BiomeTraits traitsToFind, HashSet<(int x, int y)> forbiddenPos)
+            {
+                BiomeTraits currentBiomeTraits;
+                (int x, int y) currentPos;
+                (int x, int y) currentPos2;
+                List<(int x, int y)> posToTestList = new List<(int x, int y)> { startPos };
+                int count = 0;
+                while (posToTestList.Any() && count < 5000)
+                {
+                    currentPos = posToTestList[0];
+                    posToTestList.RemoveAt(0);
+                    if (forbiddenPos.Contains(currentPos)) { continue; }
+                    forbiddenPos.Add(currentPos);
+                    currentBiomeTraits = new Chunk(this, currentPos, true).bottomLeftTileBiomeForStatsOnly[0].traits;
+                    if (currentBiomeTraits != traitsToFind) { continue; }
+                    foreach ((int x, int y) mod in neighbourArray)
+                    {
+                        currentPos2 = (currentPos.x + mod.x, currentPos.y + mod.y);
+                        if (forbiddenPos.Contains(currentPos2)) { continue; }
+                        posToTestList.Add(currentPos2);
+                    }
+                    count++;
+                }
+                return count;
             }
             public TileTraits getTileContent((int x, int y) pos, bool forceMaturityLevelOne = true, bool onlyGetIfFullyLoaded = false)
             {
