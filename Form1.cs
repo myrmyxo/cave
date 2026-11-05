@@ -62,6 +62,7 @@ namespace Cave
             makeFamousTerrainFeaturesTraitsDict();
             makeBiomeTraitsDict();
             makeDimensionTraitsDict();
+            makeStructureTraitsDict();
 
             makeTheFilledChunk();
 
@@ -133,6 +134,11 @@ namespace Cave
             // Transition between Mangrove, Algae Ocean + Salt Ocean is buggy. The individual mangrove/salt and magrove algae work but when it's in the middle of algae/salt transition they get chopped up ??
             // Prevent Entities and Plants from spawning in Nests/Structures (depending on the type of structure). With a "forbiddenLocations" HashSet that's applied to ChunkJson when the Structure/Nest is applied to Chunks.
             // Downwards Flesh Tree looks WEIRD now. Due to changes in plant system (need to fix and maybe other plants are buggy now).
+            // Entities don't die in acid anymore. Even when negative health.
+            // When spawning in an Algae Ocean it's clear that all fish spawned in the same chunk are the same color -> no real random shit bleh blah
+            // ENTITIES KEEP OF FUCKING DESPAWNING
+            // Dynamic structure loading is buggy as and does not load nests in succession anymore ???
+            // Rarely nonReplacableTiles doesn't work and a house has sand instead for some reason
 
             // - - - Cool Ideas For Later ! - - -
             // make global using thing because it's RAD... IT DOES NOT FUCKING WORK because not right version guhhh
@@ -163,6 +169,7 @@ namespace Cave
             // Shave ice worms for wool lol
             // Lorax and lorax trees. Lorax dimension. With oncelers cutting them lmfao.
             // When visiting Candimension, it starts a decaying of it with mold ? Or when exiting, everything sweet starts decaying back ?
+            // After being picked up in living dimension, flesh becomes deadFlesh after some time ? Can build out of it, does not rot ? Or maybe carnals can do smth in particular, keep it alive, idk.
 
             // Biome shit
             // Sometimes Lava lakes in obsidian biomes, but rare -> player can still die if not careful
@@ -175,6 +182,8 @@ namespace Cave
             // Oasis biome in deserts ? like mushroom in MC idk ?
             // A biome that has the same colors as the drawing of bathtub mermaid by Mili cuz it's fucking awesome saucy baka
             // Cloud forest/Mossy forest !!
+            // Guirelandes biome in changelier dimenison
+            // Vellus hair biome ! That transitions from flesh to real hair forest
 
             // Entities ideas !
             // add kobolds. Add urchins in ocean biomes that can damage player (maybe) and eat the kelp. And add LITHOPEDIONS
@@ -450,6 +459,12 @@ namespace Cave
     }
     public class MathF
     {
+        public static long cash((long x, long y, long z) pos, long seed)  // cash stands for chaos hash :D. Thank you soooo much bakkaa on stackoverflow
+        {
+            long h = seed + pos.x * 374761393 + pos.y * 668265263 + pos.z * 39079; // all constants are prime
+            h = (h ^ (h >> 13)) * 1274126177;
+            return Abs(h ^ (h >> 16));
+        }
         public static long cash((int x, int y, int z) pos, long seed)  // cash stands for chaos hash :D. Thank you soooo much bakkaa on stackoverflow
         {
             long h = seed + pos.x * 374761393 + pos.y * 668265263 + pos.z * 39079; // all constants are prime
@@ -469,6 +484,10 @@ namespace Cave
             seedo ^= (seedo >> 35);
             seedo ^= (seedo << 4);
             return (long)seedo;
+        }
+        public static long LCGxy(((long x, long y) pos, long layer) pos, long seed)
+        {
+            return cash((pos.pos.x, pos.pos.y, pos.layer), seed);
         }
         public static long LCGxy(((int x, int y) pos, int layer) pos, long seed)
         {

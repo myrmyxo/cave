@@ -31,6 +31,7 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
+using static Cave.Villages;
 
 namespace Cave
 {
@@ -69,24 +70,15 @@ namespace Cave
                 "en",
                 "un",
         };
-
-        public static Dictionary<(int type, int subType, int subSubType), string> structureNames = new Dictionary<(int type, int subType, int subSubType), string>
-        {
-            { (0, 0, 0), "lake" },
-            { (1, 0, 0), "cube amalgam" },
-            { (2, 0, 0), "sawblade" },
-            { (2, 1, 0), "star" },
-            { (3, 0, 0), "entry portal" },
-            { (3, 0, 1), "exit portal" },
-        };
     }
     public class Structures
     {
         public class Structure
         {
-            public int c;   // The "mega" type. If a normal structure, a nest...
+            public Screens.Screen screen;
             public int id;
             public (int type, int subType, int subSubType) type;
+            public StructureTraits traits;
             public long seed;
             public (int x, int y) pos;
             public (int x, int y) size = (0, 0);
@@ -106,12 +98,13 @@ namespace Cave
             public bool isImmuneToUnloading = false;
             public bool isErasedFromTheWorld = false;   // serves both for deletion and when creating the structure if it's not valid and doesn't get added to the world
 
-            public Screens.Screen screen;
             protected Structure() { }   // for inheritance (for Nests)
             public Structure(Game game, StructureJson structureJson)
             {
                 setAllStructureJsonVariables(game, structureJson);
+                applyTraitsToStructure();
                 if (isErasedFromTheWorld) { return; }
+
                 findChunkPresence();
                 addStructureToTheRightDictInTheScreen();
 
@@ -124,10 +117,10 @@ namespace Cave
             {
                 screen = game.getScreen(structureJson.dim);
                 id = structureJson.id;
-                if (screen.activeStructures.ContainsKey(id) || screen.inertStructures.ContainsKey(id)) { return; }
+                if (screen.dynamicStructures.ContainsKey(id) || screen.inertStructures.ContainsKey(id)) { return; }
 
                 type = structureJson.type;
-                isDynamic = structureJson.isD;
+                traits = getStructureTraits(type);
                 isErasedFromTheWorld = structureJson.isE;
                 seed = structureJson.seed;
                 pos = structureJson.pos;
@@ -147,22 +140,9 @@ namespace Cave
                 id = currentStructureId;
 
                 if (forceType != null) { type = forceType.Value; }
-                else
-                {
-                    long seedo = seed % 79461537;
-                    if (Abs(seedo) % 200 < 50) // cubeAmalgam
-                    {
-                        type = (1, 0, 0);
-                    }
-                    else if (Abs(seedo) % 200 < 150) // circularBlade
-                    {
-                        type = (2, 0, 0);
-                    }
-                    else // star 
-                    {
-                        type = (2, 1, 0);
-                    }
-                }
+                else { type = findStructureType(); }
+                traits = getStructureTraits(type);
+                applyTraitsToStructure();
 
                 if (isPlayerGenerated && forceStructure != null) { structureDict = forceStructure; }
                 if (!isPlayerGenerated) { drawStructure(); } // contains imprintChunks()
@@ -170,7 +150,6 @@ namespace Cave
                 if (isErasedFromTheWorld) { return; }   // if the structure FAILED, don't do anything. Don't add it or anything else
                 currentStructureId++;
 
-                findChunkPresence();
                 if (isPlayerGenerated) { return; } // if structure is player generated, don't save it and add to dicts YET
                 saveStructure();
                 addToMegaChunks();
@@ -191,12 +170,24 @@ namespace Cave
                 }
             }
             public virtual int setClassTypeInJson() { return 0; }
+            public void applyTraitsToStructure()
+            {
+                isDynamic = traits.isDynamic;
+            }
+            public (int type, int subType, int subSubType) findStructureType()
+            {
+                int seedo = Abs((int)(seed % 79461537)) % 200;
+                if (seedo < 50) { type = (1, 0, 0); }       // cubeAmalgam
+                else if (seedo < 150) { type = (2, 0, 0); } // circularBlade
+                else { type = (2, 1, 0); }                  // star 
+                return type;
+            }
             public void addStructureToTheRightDictInTheScreen()
             {
                 if (isDynamic)
                 {
                     foreach ((int, int) chunkPos in chunkPresence) { screen.getChunkFromChunkPos(chunkPos, false); }
-                    screen.activeStructures[id] = this;
+                    screen.dynamicStructures[id] = this;
                     isImmuneToUnloading = false;
                 }
                 else { screen.inertStructures[id] = this; }
@@ -241,7 +232,7 @@ namespace Cave
 
                 long seedo = seed % 79461537;
                 int howManyTilesToFill = 1 + Min((int)(seedo % biomeTraitsFirst.lakeSize.maxTiles), (int)(seedo % (biomeTraitsFirst.lakeSize.maxTiles + 211)));
-                if (seedo % 250 == 0) { howManyTilesToFill += 3000; }
+                if (false && seedo % 250 == 0) { howManyTilesToFill += 3000; }  // Has been set as false as when making village update it started throwing stack overflows around for some reason (maybe Chunk size increased due to fore/background
                 else if (seedo % 50 == 0) { howManyTilesToFill += 1500; }
 
                 int[] tilesFilled = new int[] { 0, howManyTilesToFill }; // just a way to update the amount of tiles filled recursively not to go too high lolol. 2nd is maximum not to go over.
@@ -322,14 +313,24 @@ namespace Cave
                     seedo = LCGz(seedo);
                 }
 
+                (int x, int y) fillType = traits.baseFillType;
+                BiomeTraits mainStructureChunkBiomeTraits = screen.getChunkFromPixelPos(pos, true, false).biomeIndex[PosMod(pos.x), PosMod(pos.y)][0].traits;
+                if (traits.biomeDependantFillType != null && traits.biomeDependantFillType.ContainsKey(mainStructureChunkBiomeTraits.type)) { fillType = traits.biomeDependantFillType[mainStructureChunkBiomeTraits.type]; }
+                else if (traits.dimensionDependantFillType != null && !screen.isMonoBiome && traits.dimensionDependantFillType.ContainsKey(screen.type)) { fillType = traits.dimensionDependantFillType[screen.type]; }
+                else if (traits.takeBiomeTileTypeAsFillType) { fillType = mainStructureChunkBiomeTraits.realTileTypeForStructures; }
+
                 bool success;
                 if (type.type == 0) { success = drawLakeNew(); }
-                else if (type == (1, 0, 0)) { success = cubeAmalgam(); }
-                else if (type == (2, 0, 0)) { success = sawBlade(); }
-                else if (type == (2, 1, 0)) { success = star(); }
+                else if (type == (1, 0, 0)) { success = cubeAmalgam(fillType); }
+                else if (type == (2, 0, 0)) { success = sawBlade(fillType); }
+                else if (type == (2, 1, 0)) { success = star(fillType); }
                 else { success = false; }   // if not in these structure is not validated
 
-                if (success) { imprintChunks(); }
+                if (success)
+                {
+                    findChunkPresence();
+                    imprintChunks(); 
+                }
                 else { isErasedFromTheWorld = true; }
             }
             public void initAfterStructureValidated()
@@ -337,9 +338,9 @@ namespace Cave
                 if (type.type == 3) { portal(); }
                 timeAtBirth = timeElapsed;
 
+                findChunkPresence();
                 imprintChunks();
 
-                findChunkPresence();
                 saveStructure();
                 addToMegaChunks();
                 addStructureToTheRightDictInTheScreen();
@@ -360,7 +361,7 @@ namespace Cave
                     }
                 }
             }
-            public bool cubeAmalgam()
+            public bool cubeAmalgam((int x, int y) typeToFill)
             {
                 size = ((int)(seed % 5) + 1, (int)(LCGxPos(seed) % 5) + 1);
                 int squaresToDig = (int)(seed % (10 + (size.x * size.y))) + (int)(size.x * size.y * 0.2f) + 1;
@@ -374,20 +375,20 @@ namespace Cave
                     seedoY = LCGyNeg(seedoY);
                     int sizo = (int)((LCGxNeg(seedoY)) % 7 + 7) % 7 + 1;
                     int centerX = (int)(pos.x + sizo + seedoX % (size.x * 32 - 2 * sizo));
-                    int centerY = (int)(pos.x + sizo + seedoY % (size.y * 32 - 2 * sizo));
+                    int centerY = (int)(pos.y + sizo + seedoY % (size.y * 32 - 2 * sizo));
                     for (int i = -sizo; i <= sizo; i++)
                     {
                         for (int j = -sizo; j <= sizo; j++)
                         {
                             posToTest = (centerX + i, centerY + j);
-                            if (Abs(i) == sizo || Abs(j) == sizo) { structureDict[posToTest] = (1, 0); }
+                            if (Abs(i) == sizo || Abs(j) == sizo) { structureDict[posToTest] = typeToFill; }
                             else { structureDict[posToTest] = (0, 0); }
                         }
                     }
                 }
                 return true;
             }
-            public bool sawBlade()
+            public bool sawBlade((int x, int y) typeToFill)
             {
                 int sizeX = (int)(seed % 5) + 1;
                 size = (sizeX, sizeX);
@@ -414,21 +415,21 @@ namespace Cave
                                 posToTest = (pos.x + i + mod.x, pos.y + j + mod.y);
                                 if (!structureDict.ContainsKey(posToTest))
                                 {
-                                    structureDict[posToTest] = (1, 0);
+                                    structureDict[posToTest] = typeToFill;
                                 }
                             }
                         }
                     }
                 }
                 // lil X thingy in the middle
-                structureDict[(pos.x, pos.y)] = (1, 0);
+                structureDict[(pos.x, pos.y)] = typeToFill;
                 foreach ((int x, int y) mod in diagArray)
                 {
-                    structureDict[(pos.x + mod.x, pos.y + mod.y)] = (2, 0);
+                    structureDict[(pos.x + mod.x, pos.y + mod.y)] = typeToFill;
                 }
                 return true;
             }
-            public bool star()
+            public bool star((int x, int y) typeToFill)
             {
                 int sizeX = (int)(seed % 5) + 1;
                 size = (sizeX, sizeX);
@@ -455,7 +456,7 @@ namespace Cave
                                 posToTest = (pos.x + i + mod.x, pos.y + j + mod.y);
                                 if (!structureDict.ContainsKey(posToTest))
                                 {
-                                    structureDict[posToTest] = (1, 0);
+                                    structureDict[posToTest] = typeToFill;
                                 }
                             }
                         }
@@ -542,7 +543,9 @@ namespace Cave
             {
                 return; // lol
             }
-            public virtual Nest getItselfAsNest() { return null; } // not perfect but ehhhhh... for debug
+            public virtual Nest getItselfAsNest() { return null; }          // not perfect but ehhhhh... for debug
+            public virtual Village getItselfAsVillage() { return null; }    // not perfect but ehhhhh... for debug
+            public virtual House getItselfAsHouse() { return null; }        // not perfect but ehhhhh... for debug
             public void tryTeleportation()
             {
                 int idToTeleportTo = sisterStructure.screen.id;
@@ -592,21 +595,26 @@ namespace Cave
             }
             public void imprintChunks()
             {
-                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
+                HashSet<Chunk> chunkSet = new HashSet<Chunk>();
                 Chunk chunkToTest;
+                
+                foreach ((int x, int y) chunkPos in chunkPresence)
+                {
+                    chunkToTest = screen.getChunkFromChunkPos(chunkPos, true, false);
+                    chunkSet.Add(chunkToTest);
+                    if (chunkToTest.nonReplacableTiles is null && chunkToTest.maturity < 2) { chunkToTest.nonReplacableTiles = new HashSet<(int x, int y)>(); }
+                }
 
                 foreach ((int x, int y) posToTest in structureDict.Keys)
                 {
-                    chunkToTest = screen.getChunkFromPixelPos(posToTest, true, false, extraDict:chunkDict);
+                    chunkToTest = screen.getChunkFromPixelPos(posToTest, true, false);
                     chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)] = getTileTraits(structureDict[posToTest]);
+                    if (chunkToTest.nonReplacableTiles != null) { chunkToTest.nonReplacableTiles.Add((PosMod(posToTest.x), PosMod(posToTest.y))); }
                     chunkToTest.modificationCount = 1;
                     chunkToTest.findTileColor(PosMod(posToTest.x), PosMod(posToTest.y));
                 }
 
-                foreach (Chunk chunk in chunkDict.Values)
-                {
-                    saveChunk(chunk);
-                }
+                foreach (Chunk chunk in chunkSet) { saveChunk(chunk); }
             }
             public void EraseFromTheWorld()
             {
@@ -617,7 +625,7 @@ namespace Cave
                     megaChunk.structures.Remove(id);
                     saveMegaChunk(megaChunk);
                 }
-                if (screen.activeStructures.ContainsKey(id)) { screen.activeStructures.Remove(id); }
+                if (screen.dynamicStructures.ContainsKey(id)) { screen.dynamicStructures.Remove(id); }
                 isErasedFromTheWorld = true;
                 saveStructure();
                 if (sisterStructure != null) { sisterStructure.EraseFromTheWorld(); }

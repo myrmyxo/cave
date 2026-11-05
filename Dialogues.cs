@@ -190,7 +190,7 @@ namespace Cave
                     tempPart = replaceCharacterAtPosByDict(tempPart, 0, lowToUpDict);
                     stateBool[0] = false;
                 }
-                if (sp.isSentenceEnd || (terminator != "" && terminator != ","))   // If this is an end sentence
+                if ((terminator == "" && sp.isSentenceEnd) || (terminator != "" && terminator != ","))   // If this is an end sentence
                 {
                     stateBool[0] = true;
                 }

@@ -32,6 +32,7 @@ using static Cave.Players;
 using static Cave.Particles;
 using static Cave.Traits;
 using static Cave.Dialogues;
+using static Cave.Villages;
 
 namespace Cave
 {
@@ -77,7 +78,7 @@ namespace Cave
         {
             public (int x, int y) pos;
             public bool doneGeneratingStructures = false;
-            public List<(int x, int y, long seed, ((int type, int subType, int subSubType), bool isNest)? forceType)> structuresLeftToGenerate;
+            public List<(int x, int y, long seed, (int type, int subType, int subSubType)? forceType)> structuresLeftToGenerate;
             public List<int> structures = new List<int>();
             [NonSerialized] public bool isImmuneToUnloading = false;
             [NonSerialized] public Screens.Screen screen;
@@ -86,10 +87,7 @@ namespace Cave
                 pos = posToPut;
                 screen = screenToPut;
             }
-            public MegaChunk()
-            {
-
-            }
+            public MegaChunk() { }
             public bool generateStructuresInTheBackground() // returns true if done generating
             {
                 if (doneGeneratingStructures) { return true; }
@@ -117,16 +115,16 @@ namespace Cave
                 Structure structure;
                 foreach (int structureId in structures)
                 {
-                    if (screen.activeStructures.ContainsKey(structureId))
+                    if (screen.dynamicStructures.ContainsKey(structureId))
                     {
-                        structure = screen.activeStructures[structureId];
+                        structure = screen.dynamicStructures[structureId];
                         structure.isImmuneToUnloading = false;
                         structure.saveStructure();
-                        foreach ((int x, int y) pososo in screen.activeStructures[structureId].chunkPresence) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
+                        foreach ((int x, int y) pososo in screen.dynamicStructures[structureId].chunkPresence) // this unloads the chunks in nests that are getting unloaded, as the magachunk would get reloaded again if not as they wouldn't be counted as nest loaded chunks anymore
                         {
                             if (Distance(pososo, playerPos) * 32 > 1.6f * screen.game.effectiveRadius) { chunksToRemove.Add(pososo); }
                         }
-                        screen.activeStructures.Remove(structureId);
+                        screen.dynamicStructures.Remove(structureId);
                     }
                     if (screen.inertStructures.ContainsKey(structureId)) { screen.inertStructures.Remove(structureId); }
                 }
@@ -138,32 +136,35 @@ namespace Cave
                 Structure structure;
                 foreach (int structureId in structures)
                 {
-                    if (screen.inertStructures.ContainsKey(structureId) || screen.activeStructures.ContainsKey(structureId)) { continue; }  // don't load if already in the dicts
+                    if (screen.inertStructures.ContainsKey(structureId) || screen.dynamicStructures.ContainsKey(structureId)) { continue; }  // don't load if already in the dicts
                     structure = loadStructure(screen.game, structureId); // loadStructure already adds the structure to the right dicto so no need to do it here
                     if (structure.isErasedFromTheWorld)
                     {
-                        
+
                         triedLoadingErasedStructures = true;    // This happens if structures were incorrectly deleted from MegaChunks. Not a big deal as this takes care of it, but still indicative of a problem somewhere
                         structuresToRemove.Add(structureId);
                     }
                 }
-                foreach(int structureId in structuresToRemove) { structures.Remove(structureId); }
+                foreach (int structureId in structuresToRemove) { structures.Remove(structureId); }
                 return triedLoadingErasedStructures;
             }
-            public void forceGenerateAllStructures() { while (!generateNextStructure()); doneGeneratingStructures = true; }
+            public void forceGenerateAllStructures() { while (!generateNextStructure()) ; doneGeneratingStructures = true; }
             public bool generateNextStructure() // we assume that structuresLeftToGenerate is not null. Returns true is the megaChunk has generated all the structures it needed and is now complete
             {
                 if (structuresLeftToGenerate.Count == 0) { structuresLeftToGenerate = null; return true; }
-                (int x, int y, long seed, ((int type, int subType, int subSubType), bool isNest)? forceType) item = structuresLeftToGenerate[0];
+                (int x, int y, long seed, (int type, int subType, int subSubType)? forceType) item = structuresLeftToGenerate[0];
                 structuresLeftToGenerate.RemoveAt(0);
-                if (item.forceType is null) { new Structure(screen, (item.x, item.y), item.seed, null); }
-                else if (!item.forceType.Value.isNest) { new Structure(screen, (item.x, item.y), item.seed, item.forceType.Value.Item1); }
-                else { new Nest(screen, (item.x, item.y), item.seed); }
+                if (item.forceType is null) { new Structure(screen, (item.x, item.y), item.seed, null); return false; }
+                StructureTraits structureTraits = getStructureTraits(item.forceType.Value);
+                if (structureTraits.isHouse) { new House(screen, (item.x, item.y), item.seed, item.forceType.Value); }
+                else if (structureTraits.isVillage) { new Village(screen, (item.x, item.y), item.seed, item.forceType.Value); }
+                else if (structureTraits.isNest) { new Nest(screen, (item.x, item.y), item.seed, item.forceType.Value); }
+                else { new Structure(screen, (item.x, item.y), item.seed, item.forceType); return false; }
                 return false;
             }
             public void createStructuresToGenerate()
             {
-                structuresLeftToGenerate = new List<(int x, int y, long seed, ((int type, int subType, int subSubType), bool isNest)? forceType)>();
+                structuresLeftToGenerate = new List<(int x, int y, long seed, (int type, int subType, int subSubType)? forceType)>();
                 if (loadStructuresYesOrNo)
                 {
                     int validatedStructureCount = 0;
@@ -172,43 +173,23 @@ namespace Cave
                     long seed = LCGxy((pos, screen.id), screen.seed);   // the screen.id might cause stupid shite l8r. . . .. such as dimensions varying depending on ID ?? which might be something good actually idk ??
                     if (seed > 0) {; }
 
-                    int structuresAmount = (int)(seed % 3 + 1);
-                    totalStructureTestedCount += structuresAmount;
-                    for (int i = 0; i < structuresAmount; i++)
-                    {                           // Don't mind    /\_/\
-                        seed = LCGxPos(seed);   // the mogege   ( ^o^ )
-                        // if (!new Structure(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), null).isErasedFromTheWorld) { validatedStructureCount++; };
-                        structuresLeftToGenerate.Add((pos.x * 512 + 32 + (int)(seed % 480), pos.y * 512 + 32 + (int)(LCGxNeg(seed) % 480), seed, null));
-                    }
-                    int waterLakesAmount = (int)(15 + seed % 150);
-                    totalStructureTestedCount += waterLakesAmount;
-                    for (int i = 0; i < waterLakesAmount; i++)
-                    {                           // Don't mind    /\_/\
-                        seed = LCGxPos(seed);   // the mogege   ( ^o^ )
-                        // if (!new Structure(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (seedX, seedY), (0, 0, 0)).isErasedFromTheWorld) { validatedStructureCount++; };
-                        structuresLeftToGenerate.Add((pos.x * 512 + 32 + (int)(seed % 480), pos.y * 512 + 32 + (int)(LCGxNeg(seed) % 480), seed, ((0, 0, 0), false)));
-                    }
-                    int nestAmount = (int)(seed % 3);
-                    totalStructureTestedCount += nestAmount;
-                    if (!spawnNests) { nestAmount = 0; }
-                    for (int i = 0; i < nestAmount; i++)
-                    {                           // Don't mind    /\_/\
-                        seed = LCGxPos(seed);   // the mogege   ( ^o^ )
-                        // if (!new Nest(screen, (pos.x * 512 + 32 + (int)(seedX % 480), pos.y * 512 + 32 + (int)(seedY % 480)), (long)(seedX * 0.5f + seedY * 0.5f)).isErasedFromTheWorld) { validatedStructureCount++; }
-                        structuresLeftToGenerate.Add((pos.x * 512 + 32 + (int)(seed % 480), pos.y * 512 + 32 + (int)(LCGxNeg(seed) % 480), seed, ((0, 0, 0), true)));
-                    }
-                    /*if (posX == 0 && posY == 0) // to have a nest spawn at (0, 0) for testing shit
-                    {
-                        Nest nesto = new Nest((0, 0), (long)(seedX * 0.5f + seedY * 0.5f), this);
-                        if (!nesto.isNotToBeAdded)
-                        {
-                            megaChunk.nests.Add(nesto.id);
-                            activeNests[nesto.id] = nesto;
-                            validatedStructureCount++;
-                        }
-                        totalStructureTestedCount++;
-                    }*/
+                    createOneStructuresToGenerate(seed, null, spawnNormalStructures ? (int)(seed % 3 + 1) : 0, ref totalStructureTestedCount);
+                    createOneStructuresToGenerate(seed, (0, 0, 0), spawnLakes ? (int)(15 + seed % 150) : 0, ref totalStructureTestedCount);
+                    createOneStructuresToGenerate(seed, (5, 0, 0), spawnVillages ? Max(0, (int)(seed % 4 - 2)) : 0, ref totalStructureTestedCount);
+                    createOneStructuresToGenerate(seed, (6, 0, 0), spawnLoneHouses ? Max(0, (int)(seed % 7 - 4)) : 0, ref totalStructureTestedCount);
+                    createOneStructuresToGenerate(seed, (4, 0, 0), spawnNests ? Max(0, (int)(seed % 3 - 1)) : 0, ref totalStructureTestedCount);
+
+                    // if (pos == (0, 0)) { createOneStructuresToGenerate(seed, (4, 0, 0), 1, ref totalStructureTestedCount, 0, 0); }  // to have a specific structure spawn at (0, 0) for testing shit 
                     screen.game.structureGenerationLogs.Add($"-- Created {validatedStructureCount}/{totalStructureTestedCount} structures at Dimension {screen.id}, MegaChunk ({pos.x}, {pos.y}) --\n");
+                }
+            }
+            public void createOneStructuresToGenerate(long seed, (int type, int subType, int subSubType)? typeToGenerate, int amountToGenerate, ref int totalStructureTestedCount, int? forceX = null, int? forceY = null)
+            {
+                totalStructureTestedCount += amountToGenerate;
+                for (int i = 0; i < amountToGenerate; i++)
+                {                           // Don't mind    /\_/\
+                    seed = LCGxPos(seed);   // the mogege   ( ^o^ )
+                    structuresLeftToGenerate.Add((forceX ?? pos.x * 512 + 16 + (int)(seed % 480), forceY ?? pos.y * 512 + 16 + (int)(LCGxNeg(seed) % 480), seed, typeToGenerate));
                 }
             }
         }
@@ -234,21 +215,23 @@ namespace Cave
         {
             public long seed;
             public (int, int) pos;
-            public int[,] fill1;
-            public int[,] fill2;
+            public int[,,] fore;
+            public int[,,] fill;
+            public int[,,] back;
             public int mt;
             public List<int> eLst;
             public List<int> pLst;
             public int explLvl;
             public bool[,] fog;
             public List<FireJson> f;
+            public int[] nRT;
             public ChunkJson(Chunk chunk)
             {
                 seed = chunk.chunkSeed;
                 pos = chunk.pos;
-                (int[,] one, int[,] two) returnTuple = ChunkToChunkJsonfillStates(chunk.fillStates);
-                fill1 = returnTuple.one;
-                fill2 = returnTuple.two;
+                fore = ChunkToChunkJsonfillStates(chunk.foregroundFillStates);
+                fill = ChunkToChunkJsonfillStates(chunk.fillStates);
+                back = ChunkToChunkJsonfillStates(chunk.backgroundFillStates);
                 mt = chunk.maturity;
                 eLst = new List<int>();
                 foreach (Entity entity in chunk.entityList)
@@ -277,6 +260,12 @@ namespace Cave
                     f = new List<FireJson>();
                     foreach (Fire fire in chunk.fireDict.Values) { f.Add(new FireJson(fire)); }
                 }
+                if (chunk.nonReplacableTiles != null && chunk.nonReplacableTiles.Any())
+                {
+                    nRT = new int[2 * chunk.nonReplacableTiles.Count];
+                    int c = 0;
+                    foreach ((int x, int y) pos in chunk.nonReplacableTiles) { nRT[c] = pos.x; nRT[c + 1] = pos.y; c += 2; }
+                }
             }
             public ChunkJson() { }
         }
@@ -301,7 +290,7 @@ namespace Cave
         {
             public int seed;
             public int id;
-            public int nstId;
+            public int hId;
             public (int, int) type;
             public (int, int) bB;
             public int state;
@@ -319,8 +308,8 @@ namespace Cave
             {
                 seed = entity.seed;
                 id = entity.id;
-                if (entity.nest == null) { nstId = -1; }
-                else { nstId = entity.nest.id; }
+                if (entity.home == null) { hId = -1; }
+                else { hId = entity.home.id; }
                 type = entity.type;
                 bB = entity.birthBiome;
                 state = entity.state;
@@ -408,36 +397,12 @@ namespace Cave
             }
             public PlantElementJson() { }
         }
-        public class RoomJson
-        {
-            public int id;
-            public int type;
-            public long seed;
-            public (int x, int y) pos;
-
-            public int[,] tiles;
-
-            public int[] ent;
-            public RoomJson(Room room)
-            {
-                id = room.id;
-                seed = room.seed;
-                type = room.type;
-                pos = room.position;
-                tiles = tileListToArray(room.tiles);
-                ent = new int[room.assignedEntities.Count];
-                int idx = 0;
-                foreach (Entity entity in room.assignedEntities) { ent[idx] = entity.id; idx++; }
-            }
-            public RoomJson() { }
-        }
         public class StructureJson
         {
             public int c;   // for class, if it's a normal Structure, or a Nest etc...
             public int id;
             public int dim;
             public (int, int, int) type;
-            public bool isD;
             public bool isE;
             public long seed;
             public (int, int) pos;
@@ -458,7 +423,6 @@ namespace Cave
                 id = structure.id;
                 dim = structure.screen.id;
                 type = structure.type;
-                isD = structure.isDynamic;
                 isE = structure.isErasedFromTheWorld;
                 seed = structure.seed;
                 pos = structure.pos;
@@ -472,20 +436,65 @@ namespace Cave
             }
             public StructureJson() { }
         }
-        public class NestJson : StructureJson
+        public class RoomJson
+        {
+            public int id;
+            public int type;
+            public long seed;
+            public (int x, int y) pos;
+
+            public int[,] t;
+            public int[,] b;
+            public int[,] e;
+
+            public int[] ent;
+            public RoomJson(Room room)
+            {
+                id = room.id;
+                seed = room.seed;
+                type = room.type;
+                pos = room.position;
+                t = tileListToArray(room.tiles);
+                b = tileListToArray(room.borders);
+                e = tileListToArray(room.entrances);
+                ent = new int[room.assignedEntities.Count];
+                int idx = 0;
+                foreach (Entity entity in room.assignedEntities) { ent[idx] = entity.id; idx++; }
+            }
+            public RoomJson() { }
+        }
+        public class HouseJson : StructureJson
         {
             public RoomJson[] rooms;
-            public int roomId = 0;
+            public int villageId = 0;   // The ID of this house, in the VILLAGE structure (not the global Structure id, separate)
+            public int roomId = 0;      // The current roomId to create new rooms
             public bool stable = false;
 
             public int[] ent;
+            public HouseJson(House house)
+            {
+                setAllStructureJsonVariables(house);
+                setAllHouseJsonVariables(house);
+            }
+            public void setAllHouseJsonVariables(House house)
+            {
+                Room[] allRooms = house is Nest ? ((Nest)house).rooms.Values.ToArray() : allRooms = house.rooms.Values.ToArray();
+                rooms = new RoomJson[allRooms.Length];
+                for (int i = 0; i < allRooms.Length; i++) { rooms[i] = new RoomJson(allRooms[i]); }
+                roomId = house.currentRoomId;
+
+                Entity[] entities = house.assignedEntities.ToArray();
+                ent = new int[house.assignedEntities.Count];
+                for (int i = 0; i < ent.Length; i++) { ent[i] = entities[i].id; }
+            }
+            public HouseJson() { }
+        }
+        public class NestJson : HouseJson
+        {
             public NestJson(Nest nest)
             {
                 setAllStructureJsonVariables(nest);
-
-                Room[] allRooms = nest.rooms.Values.ToArray();
-                rooms = new RoomJson[allRooms.Length];
-                for (int i = 0; i < allRooms.Length; i++) { rooms[i] = new RoomJson(allRooms[i]); }
+                setAllHouseJsonVariables(nest);
 
                 ent = new int[nest.outsideEntities.Count + nest.adults.Count + nest.larvae.Count];
                 int idx = 0;
@@ -494,6 +503,23 @@ namespace Cave
                 foreach (Entity entity in nest.larvae) { ent[idx] = entity.id; idx++; }
             }
             public NestJson() { }
+        }
+        public class VillageJson : StructureJson
+        {
+            public HouseJson[] houses;
+            public int houseId;
+            public int[] ent;
+
+            public VillageJson(Village village)
+            {
+                setAllStructureJsonVariables(village);
+
+                House[] allHouses = village.houses.Values.ToArray();
+                houses = new HouseJson[allHouses.Length];
+                for (int i = 0; i < allHouses.Length; i++) { houses[i] = new HouseJson(allHouses[i]); }
+                houseId = village.currentHouseId;
+            }
+            public VillageJson() { }
         }
         public class OneRelationshipJson
         {
@@ -563,31 +589,47 @@ namespace Cave
             }
             return listo;
         }
-        public static TileTraits[,] ChunkJsonToChunkfillStates(int[,] array1, int[,] array2)                                                                                                                                                                     
+        public static TileTraits[,] makeAirArray()
         {
             TileTraits[,] arrayo = new TileTraits[32, 32];
             for (int i = 0; i < 32; i++)
             {
                 for (int j = 0; j < 32; j++)
                 {
-                    arrayo[i, j] = getTileTraits((array1[i, j], array2[i, j]));
+                    arrayo[i, j] = getTileTraits((0, 0));
                 }
             }
             return arrayo;
         }
-        public static (int[,], int[,]) ChunkToChunkJsonfillStates(TileTraits[,] array)
+        public static TileTraits[,] ChunkJsonToChunkfillStates(int[,,] array)
         {
-            int[,] arrayo1 = new int[32, 32];
-            int[,] arrayo2 = new int[32, 32];
+            TileTraits[,] arrayo = new TileTraits[32, 32];
             for (int i = 0; i < 32; i++)
             {
                 for (int j = 0; j < 32; j++)
                 {
-                    arrayo1[i, j] = array[i, j].type.type;
-                    arrayo2[i, j] = array[i, j].type.subType;
+                    arrayo[i, j] = getTileTraits((array[0, i, j], array[1, i, j]));
                 }
             }
-            return (arrayo1, arrayo2);
+            return arrayo;
+        }
+        public static int[,,] ChunkToChunkJsonfillStates(TileTraits[,] array)
+        {
+            if (array is null) { return null; }
+            int[,,] arrayo = new int[2, 32, 32];
+            TileTraits traits;
+            bool notAir = false;
+            for (int i = 0; i < 32; i++)
+            {
+                for (int j = 0; j < 32; j++)
+                {
+                    traits = array[i, j];
+                    arrayo[0, i, j] = traits.type.type;
+                    arrayo[1, i, j] = traits.type.subType;
+                    if (!notAir && array[i, j].type != (0, 0)) { notAir = true; }
+                }
+            }
+            return notAir ? arrayo : null;
         }
         public static (Dictionary<(int index, int subType, int typeOfElement), int>, List<(int index, int subType, int typeOfElement)>) arrayToInventory(int[,] arrayo)
         {
@@ -761,6 +803,16 @@ namespace Cave
                 {
                     NestJson structureJson = JsonConvert.DeserializeObject<NestJson>(content);
                     return new Nest(game, structureJson);
+                }
+                else if (classType == "2")
+                {
+                    VillageJson structureJson = JsonConvert.DeserializeObject<VillageJson>(content);
+                    return new Village(game, structureJson);
+                }
+                else if (classType == "3")
+                {
+                    HouseJson structureJson = JsonConvert.DeserializeObject<HouseJson>(content);
+                    return new House(game, structureJson, false);
                 }
                 return null;
             }

@@ -31,42 +31,35 @@ using static Cave.Screens;
 using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
+using static Cave.Villages;
 
 namespace Cave
 {
     public class Nests
     {
-        public class Room
+        public class NestRoom : Room
         {
-            public bool isToBeDestroyed = false;
             public Nest nest;
-            public int id;
-            public int type;
-            public long seed;
-            public (int x, int y) position;
 
-            public HashSet<(int x, int y)> tiles = new HashSet<(int x, int y)>();
-            public HashSet<(int x, int y)> borders = new HashSet<(int x, int y)>();
             public int maxBordelLevel;
             public HashSet<(int x, int y)> dropPositions = new HashSet<(int x, int y)>();
-            public bool containsDebris;
-
-            public HashSet<Entity> assignedEntities = new HashSet<Entity>();
 
             public int capacity = 0;
             public int contentCount = 0;
             public bool isFull = false;
-            public bool inConstruction = false;
 
-            // type of room : 0 = mainRoom, 1 = normalRoom, 2 = honeyRoom, 3 = nursery, 10000 = corridor
-            public Room(Nest nestToPut, RoomJson roomJson)
+            // type of room : 0 = mainNestRoom, 1 = normalNestRoom, 2 = honeyNestRoom, 3 = nursery, 10000 = corridor
+            public NestRoom(Nest nestToPut, RoomJson roomJson)
             {
                 nest = nestToPut;
+                house = nestToPut;
                 id = roomJson.id;
                 type = roomJson.type;
                 seed = roomJson.seed;
                 position = roomJson.pos;
-                tiles = arrayToTileHashSet(roomJson.tiles);
+                tiles = arrayToTileHashSet(roomJson.t);
+                borders = arrayToTileHashSet(roomJson.b);
+                entrances = arrayToTileHashSet(roomJson.e);
                 findBorders();
                 findDropPositions();
                 findCapacity();
@@ -76,9 +69,10 @@ namespace Cave
                 }
                 testFullness();
             }
-            public Room((int x, int y) posToPut, int typeToPut, int idToPut, Nest nestToPut)
+            public NestRoom((int x, int y) posToPut, int typeToPut, int idToPut, Nest nestToPut)
             {
                 nest = nestToPut;
+                house = nestToPut;
                 tiles = new HashSet<(int x, int y)>();
                 type = typeToPut;
                 id = idToPut;
@@ -95,20 +89,21 @@ namespace Cave
                 findDropPositions();
                 findCapacity();
             }
-            public Room((int x, int y) targetPos, int typeToPut, int idToPut, Room motherRoom, Nest nestToPut)
+            public NestRoom((int x, int y) targetPos, int typeToPut, int idToPut, NestRoom motherNestRoom, Nest nestToPut)
             {
                 nest = nestToPut;
+                house = nestToPut;
                 tiles = new HashSet<(int x, int y)>();
                 type = typeToPut;
                 id = idToPut;
                 position = targetPos;
                 findSeed();
 
-                if (type == 10000) { makeCorridorBetweenPoints(motherRoom.borders, targetPos, 100); }
+                if (type == 10000) { makeCorridorBetweenPoints(motherNestRoom.borders, targetPos, 100); }
                 else if (type == 10001)
                 {
-                    ((int x, int y) pos, bool found) returnTuple = findEntrancePoint(new List<(int x, int y)>(motherRoom.borders));
-                    if (returnTuple.found) { makeCorridorBetweenPoints(motherRoom.borders, returnTuple.pos, 100); }
+                    ((int x, int y) pos, bool found) returnTuple = findEntrancePoint(new List<(int x, int y)>(motherNestRoom.borders));
+                    if (returnTuple.found) { makeCorridorBetweenPoints(motherNestRoom.borders, returnTuple.pos, 100); }
                     else { isToBeDestroyed = true; return; }
                 }
                 else { isToBeDestroyed = true; return; }
@@ -117,9 +112,10 @@ namespace Cave
                 findDropPositions();
                 findCapacity();
             }
-            public Room((int x, int y) startPos, (int x, int y) targetPos, int typeToPut, int idToPut, Nest nestToPut)
+            public NestRoom((int x, int y) startPos, (int x, int y) targetPos, int typeToPut, int idToPut, Nest nestToPut)
             {
                 nest = nestToPut;
+                house = nestToPut;
                 tiles = new HashSet<(int x, int y)>();
                 type = typeToPut;
                 id = idToPut;
@@ -133,12 +129,7 @@ namespace Cave
                 findDropPositions();
                 findCapacity();
             }
-            public long findSeed()
-            {
-                seed = nest.seed * (LCGxNeg(position.x) + LCGyNeg(position.y)) + LCGxPos(position.x) * LCGyPos(position.y);
-                return seed;
-            }
-            public void findBorders()
+            public override void findBorders()
             {
                 List<(int x, int y)> tilesToTest = new List<(int x, int y)>(tiles);
                 HashSet<(int x, int y)> bordersDict = new HashSet<(int x, int y)>();
@@ -164,100 +155,33 @@ namespace Cave
                     borders = newBorders;
                 }
             }
-            public void fillTiles()
+            public override void fillTiles()
             {
-                Dictionary<(int x, int y), Chunk> chunkDict = new Dictionary<(int x, int y), Chunk>();
+                nest.updateTiles();
+                HashSet<Chunk> chunkSet = new HashSet<Chunk>();
                 Chunk chunkToTest;
-                (int type, int subType) typeToFill = (0, 0);
+
+                TileTraits typeToFill = getTileTraits((0, 0));
+
+                foreach ((int x, int y) chunkPos in nest.chunkPresence)
+                {
+                    chunkToTest = nest.screen.getChunkFromChunkPos(chunkPos, true, false);
+                    if (chunkToTest.nonReplacableTiles is null && chunkToTest.maturity < 2) { chunkToTest.nonReplacableTiles = new HashSet<(int x, int y)>(); }
+                }
 
                 foreach ((int x, int y) posToTest in tiles)
                 {
-                    chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false, extraDict:chunkDict);
-                    chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)] = getTileTraits(typeToFill);
+                    chunkToTest = nest.screen.getChunkFromPixelPos(posToTest, true, false);
+                    chunkSet.Add(chunkToTest);
+                    chunkToTest.fillStates[PosMod(posToTest.x), PosMod(posToTest.y)] = typeToFill;
+                    if (chunkToTest.nonReplacableTiles != null) { chunkToTest.nonReplacableTiles.Add((PosMod(posToTest.x), PosMod(posToTest.y))); }
                     chunkToTest.modificationCount = 1;
                     chunkToTest.findTileColor(PosMod(posToTest.x), PosMod(posToTest.y));
                 }
 
-                foreach (Chunk chunk in chunkDict.Values) { saveChunk(chunk); }
+                foreach (Chunk chunk in chunkSet) { saveChunk(chunk); }
             }
-            public void addToQueue(List<((int x, int y) position, float cost)> queue, ((int x, int y) position, float cost) valueToAdd)
-            {
-                int idx = 0;
-                while (idx < queue.Count)
-                {
-                    if (valueToAdd.position == queue[idx].position) { return; }
-                    if (valueToAdd.cost < queue[idx].cost) { queue.Insert(idx, valueToAdd); return; }
-                    idx++;
-                }
-                queue.Add(valueToAdd);
-            }
-            public float heuristic((int x, int y) posToTest, (int x, int y) targetPos, float shape)
-            {
-                int diffX = Abs(posToTest.x - targetPos.x);
-                int diffY = Abs(posToTest.y - targetPos.y);
-                int diagNumber = Min(diffX, diffY);
-                return (int)(diffX + diffY - 2 * diagNumber + shape * diagNumber);
-            }
-            public float heuristic((int x, int y) posToTest, List<(int x, int y)> targets, float shape)
-            {
-                int mini = 999999999;
-
-                foreach ((int x, int y) pos in targets)
-                {
-                    int diffX = Abs(posToTest.x - pos.x);
-                    int diffY = Abs(posToTest.y - pos.y);
-                    int diagNumber = Min(diffX, diffY);
-                    mini = Min((int)(diffX + diffY - 2 * diagNumber + shape * diagNumber), mini);
-                }
-                return mini;
-            }
-            public float heuristic((int x, int y) posToTest, (int x, int y)[] targets, float shape)
-            {
-                int mini = 999999999;
-
-                foreach ((int x, int y) pos in targets)
-                {
-                    int diffX = Abs(posToTest.x - pos.x);
-                    int diffY = Abs(posToTest.y - pos.y);
-                    int diagNumber = Min(diffX, diffY);
-                    mini = Min((int)(diffX + diffY - 2 * diagNumber + shape * diagNumber), mini);
-                }
-                return mini;
-            }
-            public (int x, int y)[] makeHeuristicTargets((int x, int y) centerPos, int targetDistance)
-            {
-                (int x, int y)[] arrayo = new (int x, int y)[seed % 4 + 5];
-                long seedo = seed;
-                if (type == 2)
-                {
-                    targetDistance = (int)(targetDistance * 0.5f);
-                    for (int i = 0; i < seed % 4 + 5; i++)
-                    {
-                        seedo = LCGxNeg(seedo);
-                        arrayo[i] = (centerPos.x + (int)(seedo % targetDistance) - (int)(0.5f * targetDistance), centerPos.y + i * 2);
-                    }
-                }
-                else if (type == 3)
-                {
-                    targetDistance = (int)(targetDistance * 0.5f);
-                    for (int i = 0; i < seed % 4 + 5; i++)
-                    {
-                        int modX = (((i % 2) * 2) - 1) * i;
-                        seedo = LCGxNeg(seedo);
-                        arrayo[i] = (centerPos.x + modX, centerPos.y + (int)((Abs(modX) + i) * 0.5f));
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < seed % 4 + 5; i++)
-                    {
-                        seedo = LCGxNeg(seedo);
-                        arrayo[i] = (centerPos.x + (int)(seedo % targetDistance) - (int)(0.5f * targetDistance), centerPos.y + (int)(LCGxPos(seedo) % targetDistance) - (int)(0.5f * targetDistance));
-                    }
-                }
-                return arrayo;
-            }
-            public void makeBubbleRoom((int x, int y) centerPos, int forceSize)
+            public override void makeBubbleRoom((int x, int y) centerPos, int forceSize, bool minFloor = false, bool failIfNeighborsAir = true, bool failIfLiquid = true, bool failIfSolid = false)
             {
                 int tileAmount;
                 if (forceSize == 0) { tileAmount = (int)(25 + (seed % 750)); }
@@ -272,19 +196,27 @@ namespace Cave
                 (int x, int y) posToAdd;
                 (int x, int y) posToTest;
                 int repeatCounter = 0;
+                TileTraits traits;
                 while (tilesToTest.Count > 0 && repeatCounter < tileAmount)
                 {
                     currentTile = tilesToTest[0].pos;
                     tilesToTest.RemoveAt(0);
-                    foreach ((int x, int y) mod in neighbourArray)
+
+                    traits = nest.screen.getTileContent(currentTile);
+                    if (((minFloor && currentTile.y < centerPos.y) || traits.isLiquid && failIfLiquid) || (traits.isSolid && failIfSolid)) { goto SkipToNextIteration; }
+                    if (failIfNeighborsAir)
                     {
-                        for (int mult = 1; mult <= 2; mult++)
+                        foreach ((int x, int y) mod in neighbourArray)
                         {
-                            posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
-                            TileTraits traits = nest.screen.getTileContent(posToTest);
-                            if (!traits.isSolid || nest.tiles.Contains(posToTest)) { goto SkipToNextIteration; }
+                            for (int mult = 1; mult <= 2; mult++)
+                            {
+                                posToTest = (currentTile.x + mod.x, currentTile.y + mod.y);
+                                traits = nest.screen.getTileContent(posToTest);
+                                if (traits.isAir) { goto SkipToNextIteration; }
+                            }
                         }
                     }
+
                     tilesToFill.Add(currentTile);
                     foreach ((int x, int y) mod in neighbourArray)
                     {
@@ -306,8 +238,6 @@ namespace Cave
                     return;
                 }
             }
-
-
             public ((int x, int y) pos, bool found) findEntrancePoint(List<(int x, int y)> tilesToTest)
             {
                 HashSet<(int x, int y)> visitedTiles = new HashSet<(int x, int y)>();
@@ -452,23 +382,8 @@ namespace Cave
                 }
                 else if (type == 3) { contentCount = assignedEntities.Count; }
             }
-            public ((int x, int y) pos, bool found) findTileOfTypeInRoom(int typeToFind)
-            {
-                List<(int x, int y)> tileList = new List<(int x, int y)>(tiles);
-                (int x, int y) posToTest;
-                int idxToTest;
-                while (tileList.Count > 0)
-                {
-                    idxToTest = rand.Next(tileList.Count);
-                    posToTest = tileList[idxToTest];
-                    tileList.RemoveAt(idxToTest);
-                    TileTraits tile = nest.screen.getTileContent(posToTest);
-                    if (tile.type.type == typeToFind) { return (posToTest, true); }
-                }
-                return ((0, 0), false);
-            }
         }
-        public class Nest : Structure
+        public class Nest : House
         {
             // stats to build nest and what it looks like iggg
             public int roomSize = 0; // bigger leads to bigger rooms NOT USED
@@ -476,16 +391,12 @@ namespace Cave
             public int extensivity = 0; // bigger leads to new rooms and corridors being dug out farther away from the center ig NOT USED
             public float shape = 1.41421356237f; //the only one that has an actual effect LMFAO
 
-            public HashSet<(int x, int y)> tiles = new HashSet<(int x, int y)>();
-            public HashSet<(int x, int y)> borders = new HashSet<(int x, int y)>();
-            public Dictionary<int, Room> rooms = new Dictionary<int, Room>();
-            public int currentRoomId = 0;
+            public new Dictionary<int, NestRoom> rooms = new Dictionary<int, NestRoom>();
             public bool isStable = false;
 
             // entity management
             public int eggsToLay = 0;
             public int totalHoney = 0;
-            public HashSet<int> outsideEntities = new HashSet<int>();
             public HashSet<Entity> larvae = new HashSet<Entity>();
             public HashSet<Entity> adults = new HashSet<Entity>();
             public HashSet<Entity> hungryLarvae = new HashSet<Entity>();
@@ -496,9 +407,11 @@ namespace Cave
             public Nest(Game game, NestJson nestJson)
             {
                 setAllStructureJsonVariables(game, nestJson);
+                applyTraitsToStructure();
                 if (isErasedFromTheWorld) { return; }
 
-                foreach (RoomJson roomJson in nestJson.rooms) { rooms[roomJson.id] = new Room(this, roomJson); }
+                foreach (RoomJson roomJson in nestJson.rooms) { rooms[roomJson.id] = new NestRoom(this, roomJson); }
+                currentRoomId = nestJson.roomId;
 
                 foreach (int entityId in nestJson.ent)
                 {
@@ -512,19 +425,20 @@ namespace Cave
 
                 addStructureToTheRightDictInTheScreen();
             }
-            public Nest(Screens.Screen screenToPut, (int x, int y) posToPut, long seedToPut)
+            public Nest(Screens.Screen screenToPut, (int x, int y) posToPut, long seedToPut, (int type, int subType, int subSubType) typeToPut)
             {
                 screen = screenToPut;
                 seed = seedToPut;
-                type = (0, 0, 0);
                 pos = posToPut;
-                isDynamic = true;
+                type = typeToPut;
+                traits = getStructureTraits(type);
+                applyTraitsToStructure();
 
-                Room mainRoom = new Room(posToPut, 0, currentRoomId, this);
-                if (!mainRoom.isToBeDestroyed)
+                NestRoom mainNestRoom = new NestRoom(posToPut, 0, currentRoomId, this);
+                if (!mainNestRoom.isToBeDestroyed)
                 {
-                    addRoom(mainRoom, true);
-                    Room corridoro = new Room((0, 0), 10001, currentRoomId, mainRoom, this); // (0, 0) is placeholder cause it'll get replaced
+                    addRoom(mainNestRoom, true);
+                    NestRoom corridoro = new NestRoom((0, 0), 10001, currentRoomId, mainNestRoom, this); // (0, 0) is placeholder cause it'll get replaced
                     if (!corridoro.isToBeDestroyed) { addRoom(corridoro, true); }
                     else { isErasedFromTheWorld = true; return; }
                 }
@@ -569,10 +483,17 @@ namespace Cave
             public override Nest getItselfAsNest() { return this; } // not perfect but ehhhhh... for debug
             public void setNestAsEntitysNest(Entity entity)
             {
-                entity.nest = this;
-                entity.nestId = id;
+                entity.home = this;
+                entity.homeId = id;
             }
-            public void addRoom(Room room, bool fillTiles)
+            public override void removeEntity(Entity entity)
+            {
+                assignedEntities.Remove(entity);
+                adults.Remove(entity);
+                larvae.Remove(entity);
+                outsideEntities.Remove(entity.id);
+            }
+            public void addRoom(NestRoom room, bool fillTiles)
             {
                 room.id = currentRoomId;
                 rooms[currentRoomId] = room;
@@ -580,14 +501,14 @@ namespace Cave
                 if (fillTiles) { room.fillTiles(); }
                 updateTiles();
             }
-            public void removeRoom(Room room)
+            public void removeRoom(NestRoom room)
             {
                 rooms.Remove(room.id);
                 updateTiles();
             }
             public int getRoomId(Entity entityToTest)
             {
-                foreach (Room room in rooms.Values)
+                foreach (NestRoom room in rooms.Values)
                 {
                     if (room.assignedEntities.Contains(entityToTest)) { return room.id; }
                 }
@@ -595,13 +516,13 @@ namespace Cave
             }
             public int getRoomId((int x, int y) posToGetFrom)
             {
-                foreach (Room room in rooms.Values)
+                foreach (NestRoom room in rooms.Values)
                 {
                     if (room.tiles.Contains(posToGetFrom)) { return room.id; }
                 }
                 return -1;
             }
-            public bool testRoomAvailability((int x, int y) centerPos, int amountToTest)
+            public bool testNestRoomAvailability((int x, int y) centerPos, int amountToTest)
             {
                 (int x, int y) currentPos;
                 List<(int x, int y)> tilesToTest = new List<(int x, int y)> { centerPos };
@@ -632,7 +553,7 @@ namespace Cave
                 }
                 return true;
             }
-            public (bool valid, (int x, int y)) findNewRoomLocation()
+            public (bool valid, (int x, int y)) findNewNestRoomLocation()
             {
                 int repeatCounter = 2;
                 int distance;
@@ -642,7 +563,7 @@ namespace Cave
                     float angle = (float)(rand.NextDouble() * 6.28318530718);
                     (int x, int y) targetPos = (pos.x + (int)(Math.Cos(angle) * distance), pos.y + (int)(Math.Sin(angle) * distance));
 
-                    if (testRoomAvailability(targetPos, 45)) { return (true, targetPos); }
+                    if (testNestRoomAvailability(targetPos, 45)) { return (true, targetPos); }
                     repeatCounter++;
                 }
                 return (false, (0, 0)); // CANNOT MAKE NOW ROOM ON 0, 0 LOL
@@ -650,8 +571,8 @@ namespace Cave
             public void forkRandomCorridorToRandomRoom()
             {
                 int repeatCounter = 0;
-                Room corridor;
-                Room room;
+                NestRoom corridor;
+                NestRoom room;
                 while (repeatCounter < 100)
                 {
                     corridor = rooms[rand.Next(rooms.Count)];
@@ -667,18 +588,18 @@ namespace Cave
             }
             public bool makeCorridorAndRoom((int x, int y) targetPos)
             {
-                int roomTypeToMake = findTypeOfRoomToDig();
+                int roomTypeToMake = findTypeOfNestRoomToDig();
                 if (roomTypeToMake == -1) { isStable = true; return false; } //if no need for new room don't make new room lol. isStable
-                Room newRoom = new Room(targetPos, roomTypeToMake, currentRoomId, this);
-                if (newRoom.isToBeDestroyed) { return false; }
-                (int x, int y) originPoint = getRandomItem(newRoom.borders);
+                NestRoom newNestRoom = new NestRoom(targetPos, roomTypeToMake, currentRoomId, this);
+                if (newNestRoom.isToBeDestroyed) { return false; }
+                (int x, int y) originPoint = getRandomItem(newNestRoom.borders);
                 (int x, int y) targetPosCorridor = findClosestBorder(originPoint);
-                addRoom(newRoom, false);
+                addRoom(newNestRoom, false);
 
-                Room corridoro = new Room(targetPosCorridor, 10000, currentRoomId, newRoom, this); //+1 is important ! else it will override lol
+                NestRoom corridoro = new NestRoom(targetPosCorridor, 10000, currentRoomId, newNestRoom, this); //+1 is important ! else it will override lol
                 if (!corridoro.isToBeDestroyed) { addRoom(corridoro, false); return true; }
 
-                removeRoom(newRoom);
+                removeRoom(newNestRoom);
                 return false;
             }
             public override void moveStructure()
@@ -690,7 +611,7 @@ namespace Cave
             public void randomlyExtendNest()
             {
                 decideForBabies();
-                (bool valid, (int x, int y) pos) returnTuple = findNewRoomLocation();
+                (bool valid, (int x, int y) pos) returnTuple = findNewNestRoomLocation();
                 if (returnTuple.valid)
                 {
                     makeCorridorAndRoom(returnTuple.pos);
@@ -698,7 +619,7 @@ namespace Cave
                     updateDigErrands();
                     updateDropPositions();
                 }
-                //forkRandomCorridorToRandomRoom();
+                //forkRandomCorridorToRandomNestRoom();
             }
             public (int x, int y) findClosestPoint((int x, int y) posToTest)
             {
@@ -744,13 +665,13 @@ namespace Cave
                 }
                 return posMin;
             }
-            public void updateTiles()
+            public override void updateTiles()
             {
                 chunkPresence = new HashSet<(int x, int y)>();
                 megaChunkPresence = new HashSet<(int x, int y)>();
                 tiles = new HashSet<(int x, int y)>();
                 borders = new HashSet<(int x, int y)>();
-                foreach (Room room in rooms.Values)
+                foreach (NestRoom room in rooms.Values)
                 {
                     foreach ((int x, int y) tile in room.tiles)
                     {
@@ -765,19 +686,19 @@ namespace Cave
                 }
                 foreach ((int x, int y) poso in chunkPresence) { megaChunkPresence.Add(MegaChunkIdxFromChunkPos(poso)); }
             }
-            public void setAllRoomsAsFinished()
+            public void setAllNestRoomsAsFinished()
             {
-                foreach (Room room in rooms.Values) { room.inConstruction = false; }
+                foreach (NestRoom room in rooms.Values) { room.inConstruction = false; }
             }
             public void updateDigErrands()
             {
-                setAllRoomsAsFinished();
+                setAllNestRoomsAsFinished();
 
                 digErrands = new HashSet<(int x, int y)>();
                 foreach ((int x, int y) pos in tiles)
                 {
                     TileTraits traits = screen.getTileContent(pos);
-                    Room room = rooms[getRoomId(pos)];
+                    NestRoom room = rooms[getRoomId(pos)];
                     if (traits.isAir || (traits.type.type == -5 && room.type == 2)) { }
                     else
                     {
@@ -791,7 +712,7 @@ namespace Cave
                 availableHoneyRooms = new HashSet<int>();
                 availableNurseries = new HashSet<int>();
                 updateTiles();
-                foreach (Room room in rooms.Values)
+                foreach (NestRoom room in rooms.Values)
                 {
                     if (room.type == 2)
                     {
@@ -805,7 +726,7 @@ namespace Cave
                     }
                 }
             }
-            public int findTypeOfRoomToDig()
+            public int findTypeOfNestRoomToDig()
             {
                 int honeyCount = countTotalHoney();
                 int honeyCapacity = 0;
@@ -813,7 +734,7 @@ namespace Cave
                 int larvaCount = 0;
                 int miscTiles = 0;
                 int totalEntities = larvae.Count + adults.Count;
-                foreach (Room room in rooms.Values)
+                foreach (NestRoom room in rooms.Values)
                 {
                     if (room.type == 2) { honeyCapacity += room.capacity; }
                     else if (room.type == 3)
@@ -846,7 +767,7 @@ namespace Cave
             public int countTotalHoney()
             {
                 totalHoney = 0;
-                foreach (Room room in rooms.Values)
+                foreach (NestRoom room in rooms.Values)
                 {
                     if (room.type == 2)
                     {
@@ -872,10 +793,10 @@ namespace Cave
                 }
                 eggsToLay = Max(0, (int)(0.25 * (totalHoney - upkeepHoneyCost)));
             }
-            public Room getRandomRoomOfType(int typeToGet)
+            public NestRoom getRandomRoomOfType(int typeToGet)
             {
-                List<Room> roomList = rooms.Values.ToList();
-                Room roomToTest;
+                List<NestRoom> roomList = rooms.Values.ToList();
+                NestRoom roomToTest;
                 while (roomList.Count > 0)
                 {
                     roomToTest = roomList.ElementAt(rand.Next(roomList.Count));

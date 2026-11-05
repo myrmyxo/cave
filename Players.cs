@@ -352,7 +352,7 @@ namespace Cave
                 foreach (((float x, float y) pos, (float x, float y) angle, (int lives, bool lifeLoss) life) value in modsToTest) { rayCast(visitedChunks, value, 25); }
                 foreach (Chunk chunk in visitedChunks) { chunk.updateFogOfWarFull(); }
             }
-            public void rayCast(HashSet<Chunk> chunkDict, ((float x, float y) startPos, (float x, float y) angle, (int lives, bool lifeLoss) life) values, int limit = 45)
+            public void rayCast(HashSet<Chunk> chunkDict, ((float x, float y) startPos, (float x, float y) angle, (int lives, bool lifeLoss) life) values, int limit = 45, HashSet<(int x, int y)> foregroundHidingPositions = null)
             {
                 float xRatio = (values.angle.x) / (Abs(values.angle.y) + 0.0000001f);
                 float yRatio = (values.angle.y) / (Abs(values.angle.x) + 0.0000001f);
@@ -382,12 +382,13 @@ namespace Cave
                     Chunk chunk = screen.getChunkFromPixelPos(posToTest, false, true);
                     if (chunk is null) { return; }
                     TileTraits tile = chunk.getTileContentInTHISChunk(posToTest);
-                    chunk.updateFogOfWarOneTile(chunkDict, posToTest);
+                    if (foregroundHidingPositions is null) { chunk.updateFogOfWarOneTile(chunkDict, posToTest); }   // If normal raycast (not the foreground hiding one)
                     if (!tile.isTransparent) { lifeLoss = true; }
                     if (lifeLoss) { lives--; }
                     if (lives <= 0) { return; }
+                    if (foregroundHidingPositions != null) { foregroundHidingPositions.Add(posToTest); }    // If foreground hiding raycast (put after return so it can't like, see through a border (which would make stuff like fairy wings appears through)
                 }   // Under this comment, important to keep the sign >= 0 ? 0 : 1 stuff !!! Else it will drift of when raycasting in negatives
-                rayCastsToContinue.Add(((values.startPos.x + currentPos.x + (signX >= 0 ? 0 : 1), values.startPos.y + currentPos.y + (signY >= 0 ? 0 : 1)), values.angle, (lives, lifeLoss)));
+                if (foregroundHidingPositions is null) { rayCastsToContinue.Add(((values.startPos.x + currentPos.x + (signX >= 0 ? 0 : 1), values.startPos.y + currentPos.y + (signY >= 0 ? 0 : 1)), values.angle, (lives, lifeLoss))); }
             }
             public void updateDirection()
             {

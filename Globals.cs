@@ -25,7 +25,11 @@ namespace Cave
         public static bool devMode = true;
         public static bool doBackgroundStructureGeneration = true;
         public static bool loadStructuresYesOrNo = false;
+        public static bool spawnLakes = false;
+        public static bool spawnNormalStructures = false;
         public static bool spawnNests = false;
+        public static bool spawnVillages = false;
+        public static bool spawnLoneHouses = false;
         public static bool spawnEntitiesBool = false;
         public static bool spawnPlants = false;
 
@@ -79,6 +83,7 @@ namespace Cave
         public static (int, int)[] bigSquareModArray = new (int, int)[9] { (0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2) };
         public static (int, int)[] bigSquareCenteredModArray = new (int, int)[25] { (-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2), (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -1), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1), (-2, 2), (-1, 2), (0, 2), (1, 2), (2, 2) };
         public static (int, int)[] neighbourArray = new (int, int)[4] { (-1, 0), (1, 0), (0, 1), (0, -1) };
+        public static (int, int)[] neighbourPlusZeroArray = new (int, int)[5] { (0, 0), (-1, 0), (1, 0), (0, 1), (0, -1) };
         public static (int, int)[] diagArray = new (int, int)[4] { (-1, 1), (1, 1), (1, -1), (-1, -1) };
         public static (int x, int y)[] directionPositionArray = new (int x, int y)[8] { (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), };
         public static (int x, int y)[] directionPositionPlusZeroArray = new (int x, int y)[9] { (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (0, 0) };

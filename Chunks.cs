@@ -177,9 +177,12 @@ namespace Cave
             public (BiomeTraits traits, int percentage)[,][] biomeIndex;
             public HashSet<BiomeTraits> allBiomesInTheChunk;
 
+            public TileTraits[,] foregroundFillStates = new TileTraits[32, 32];
             public TileTraits[,] fillStates = new TileTraits[32, 32];
+            public TileTraits[,] backgroundFillStates = new TileTraits[32, 32];
             public ((int r, int g, int b) solid, (int r, int g, int b) air)[,] baseColors;
             public Bitmap bitmap;
+            public Bitmap foregroundBitmap;
             public Bitmap effectsBitmap;
             public Bitmap fireBitmap;
             public Bitmap scoreBitmap;
@@ -195,20 +198,26 @@ namespace Cave
             public int maturity = 0;    // 0 -> terrain with base TFTs, 1 -> terrain with base TFTs and maturation TFTs, 2 -> terrain with base TFTs, maturation TFTs, and plants + entities generated
             // public HashSet<(int type, int subType)> tileTypesContainedOnGeneration = new HashSet<(int type, int subType)>();
 
+            public HashSet<(int x, int y)> nonReplacableTiles = null;
+
             public int explorationLevel = 0; // set fog : 0 for not visible, 1 for cremebetweens, 2 for fully visible
             public bool[,] fogOfWar = null;
             public Bitmap fogBitmap = null;
             public Bitmap lightBitmap = new Bitmap(32, 32);
-            public Chunk()
-            {
-
-            }
+            public Chunk() { }
             public Chunk(Screens.Screen screenToPut, ChunkJson chunkJson)
             {
                 screen = screenToPut;
                 pos = chunkJson.pos;
                 chunkSeed = chunkJson.seed;
-                fillStates = ChunkJsonToChunkfillStates(chunkJson.fill1, chunkJson.fill2);
+                foregroundFillStates = chunkJson.fore is null ? makeAirArray() : ChunkJsonToChunkfillStates(chunkJson.fore);
+                fillStates = chunkJson.fill is null ? makeAirArray() : ChunkJsonToChunkfillStates(chunkJson.fill);
+                backgroundFillStates = chunkJson.back is null ? makeAirArray() : ChunkJsonToChunkfillStates(chunkJson.back);
+                if (chunkJson.nRT != null)
+                {
+                    nonReplacableTiles = new HashSet<(int x, int y)>();
+                    for (int i = 0; i < chunkJson.nRT.Length; i += 2) { nonReplacableTiles.Add((chunkJson.nRT[i], chunkJson.nRT[i + 1])); }
+                }
                 maturity = chunkJson.mt;
 
                 determineContents(chunkJson);
@@ -361,6 +370,7 @@ namespace Cave
                 biomeIndex = new (BiomeTraits traits, int percentage)[32, 32][];
                 baseColors = new ((int r, int g, int b) solid, (int r, int g, int b) air)[32, 32];
                 bitmap = new Bitmap(32, 32);
+                foregroundBitmap = new Bitmap(32, 32);
                 effectsBitmap = new Bitmap(32, 32);
 
                 if (screen.isMonoBiome)
@@ -640,6 +650,7 @@ namespace Cave
 
                 if (updateTheTiles)
                 {
+                    TileTraits airTraits = getTileTraits((0, 0));
                     for (int i = 0; i < 32; i++)
                     {
                         for (int j = 0; j < 32; j++)
@@ -656,6 +667,9 @@ namespace Cave
                                 else { fillStates[i, j] = getTileTraits(mainBiomeTraits.fillType); }
                             }
                             else { fillStates[i, j] = getTileTraits(mainBiomeTraits.tileType); quartileFilledArray[(i > 16 ? 1 : 0) + (j > 16 ? 2 : 0)] = true; }
+                            
+                            foregroundFillStates[i, j] = airTraits;
+                            backgroundFillStates[i, j] = airTraits;
                         }
                     }
                     applyTerrainFeatures(biomeIndex, 0);
@@ -742,10 +756,12 @@ namespace Cave
                 }
                 else { (biomeValues, derivative, scoreArray, quartileFilledArray) = manyValues.Value; }
 
+                bool nRTnonNull = nonReplacableTiles != null;
                 for (int i = 0; i < 32; i++)
                 {
                     for (int j = 0; j < 32; j++)
                     {
+                        if (nRTnonNull && nonReplacableTiles.Contains((i, j))) { continue; }
                         applyTerrainFeaturesOneTile(terrainFeaturesNoiseDict, maturityLevelToApply, biomeTraits[i, j], biomeValues[i, j], derivative, i, j, scoreArray[i, j], quartileFilledArray[(i > 16 ? 1 : 0) + (j > 16 ? 2 : 0)]);
                     }
                 }
@@ -802,7 +818,8 @@ namespace Cave
 
                     (int type, int subType) typeToFill = tFT.tileType;
                     float noiseValue;
-                    if (tFT.transitionRules == 0)
+                    if (tFT.transitionRules == -1) { noiseValue = 999999; valueRequired = tFT.baseThreshold; }
+                    else if (tFT.transitionRules == 0)
                     {    // Temp !!!!
                         if (tFT.baseThreshold + meanNoiseValue % 256 + meanNoiseValue * 0.25f - 512 <= 0) { noiseValue = -999999; }
                         else { noiseValue = Abs(noiseValue1 - noiseValue2); }
@@ -1075,7 +1092,27 @@ namespace Cave
             }
             public void findTileColor(int i, int j)
             {
-                TileTraits traits = fillStates[i, j];
+                findTileColorReal(i, j, false);
+                findTileColorReal(i, j, true);
+            }
+            public void findTileColorReal(int i, int j, bool isForeground)
+            {
+                bool isBackGround = false;
+                TileTraits traits;
+                if (isForeground)
+                {
+                    traits = foregroundFillStates[i, j];
+                    if (traits.isAir) { foregroundBitmap.SetPixel(i, j, Color.Transparent); return; }   // If doing foreground, and it is air, draw transparent
+                }
+                else
+                {
+                    traits = fillStates[i, j];
+                    if (traits.isAir)
+                    {
+                        traits = backgroundFillStates[i, j];
+                        if (!traits.isAir) { isBackGround = true; }
+                    }
+                }
 
                 int[] colorArray;
                 if (traits.isSolid) { colorArray = new int[] { baseColors[i, j].solid.r, baseColors[i, j].solid.g, baseColors[i, j].solid.b }; }
@@ -1170,6 +1207,7 @@ namespace Cave
                 colorArray[0] += (int)(materialColor.r * (1 - materialColor.mult)) + rando;
                 colorArray[1] += (int)(materialColor.g * (1 - materialColor.mult)) + rando;
                 colorArray[2] += (int)(materialColor.b * (1 - materialColor.mult)) + rando;
+                if (isBackGround) { grayenColorArray(colorArray, 35, 30); }
                 Color colorToSet = Color.FromArgb(ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2]));
 
                 if (traits.type == (0, -1))  // csgo missing texture effect when thing is not in the the tha            SOIL
@@ -1187,8 +1225,16 @@ namespace Cave
                     if ((i + j) % 2 == 0) { colorToSet = Color.FromArgb(110, 110, 110); }
                     else { colorToSet = Color.FromArgb(255, 140, 255); }
                 }
-                bitmap.SetPixel(i, j, colorToSet);
+                (isForeground ? foregroundBitmap : bitmap).SetPixel(i, j, colorToSet);
                 effectsBitmap.SetPixel(i, j, traits.isLiquid ? Color.FromArgb(80, ColorClamp(colorArray[0]), ColorClamp(colorArray[1]), ColorClamp(colorArray[2])) : Color.Transparent);
+            }
+            public void grayenColorArray(int[] colorArray, int grayeningPercentage, int valueModifier = 0)  // colorArray has 3 ints exactly, r, g, b
+            {
+                float mean = (colorArray[0] + colorArray[1] + colorArray[2]) * 0.33334f;
+                int coloringPercentage = 100 - grayeningPercentage;
+                colorArray[0] = valueModifier + (int)(0.01f * (colorArray[0] * coloringPercentage + mean * grayeningPercentage));
+                colorArray[1] = valueModifier + (int)(0.01f * (colorArray[1] * coloringPercentage + mean * grayeningPercentage));
+                colorArray[2] = valueModifier + (int)(0.01f * (colorArray[2] * coloringPercentage + mean * grayeningPercentage));
             }
             public TileTraits tileModification(int i, int j, (int type, int subType) newMaterial)
             {
@@ -1223,7 +1269,7 @@ namespace Cave
             }
             public void checkForStructureAlteration((int x, int y) posToTest, (int type, int subType) newType)
             {
-                foreach (Structure structure in screen.activeStructures.Values)
+                foreach (Structure structure in screen.dynamicStructures.Values)
                 {
                     if (structure.structureDict.ContainsKey(posToTest) && structure.structureDict[posToTest] != newType)
                     {
@@ -1245,6 +1291,7 @@ namespace Cave
                 applyTerrainFeatures(biomeIndex, 2);
                 maturity = 2;
                 manyValues = null;
+                nonReplacableTiles = null;
 
                 (HashSet<(int x, int y)> airTilesWithSoilUnder, HashSet<(int x, int y)> airTilesWithSoilNext, HashSet<(int x, int y)> airTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithSoilUnder, HashSet<(int x, int y)> liquidTilesWithSoilNext, HashSet<(int x, int y)> liquidTilesWithSoilOver, HashSet<(int x, int y)> liquidTilesWithAirOver, HashSet<(int x, int y)> airTiles, HashSet<(int x, int y)> liquidTiles, HashSet<(int x, int y)> solidTiles) spawnLocations = getSpawnLocations();
 

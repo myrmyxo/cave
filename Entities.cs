@@ -33,6 +33,7 @@ using static Cave.Chunks;
 using static Cave.Players;
 using static Cave.Particles;
 using static Cave.Dialogues;
+using static Cave.Villages;
 
 namespace Cave
 {
@@ -131,8 +132,8 @@ namespace Cave
             public bool isDeadAndShouldDisappear = false;
             public bool hasBeenUnloadedOrKilled = false;
 
-            public Nest nest = null;
-            public int nestId = -1;
+            public House home = null;
+            public int homeId = -1;
             public Entity() { }
             public Entity(Screens.Screen screenToPut, EntityJson entityJson)
             {
@@ -146,7 +147,7 @@ namespace Cave
                 else { targetPos = entityJson.tPos.Value; }
                 seed = entityJson.seed; ;
                 id = entityJson.id;
-                nestId = entityJson.nstId;
+                homeId = entityJson.hId;
                 testOrphanage();
                 (Dictionary<(int index, int subType, int typeOfElement), int>, List<(int index, int subType, int typeOfElement)>) returnTuple = arrayToInventory(entityJson.inv);
                 inventoryQuantities = returnTuple.Item1;
@@ -200,10 +201,10 @@ namespace Cave
             }
             public void testOrphanage()
             {
-                if (nestId == -1 || nest != null) { return; }
-                if (screen.activeStructures.ContainsKey(nestId))
+                if (homeId == -1 || home != null) { return; }
+                if (screen.dynamicStructures.ContainsKey(homeId))
                 {
-                    screen.activeStructures[nestId].addEntityToStructure(this);
+                    screen.dynamicStructures[homeId].addEntityToStructure(this);
                 }
             }
             public Color findColor()
@@ -739,6 +740,9 @@ namespace Cave
             }
             public void moveHornet()
             {
+                Nest nest = null;
+                if (home is Nest) { nest = (Nest)home; }
+
                 testOrphanage();
                 if (type.subType == 0)
                 {
@@ -785,11 +789,11 @@ namespace Cave
                 }
                 else if (type.subType == 3)
                 {
-                    moveAdultHornet();
+                    moveAdultHornet(nest);
                 }
             AfterTest:;
             }
-            public void moveAdultHornet()
+            public void moveAdultHornet(Nest nest)
             {
                 if (state == 0) { hoverIdle(0.5f, 100); }   // idle
                 else if (state == 1) // moving in the air randomly
@@ -800,7 +804,7 @@ namespace Cave
                     {
                         if (inventoryElements.Contains((-5, 0, 0)) && nest.availableHoneyRooms.Count > 0)
                         {
-                            Room targetRoom = nest.rooms[getRandomItem(nest.availableHoneyRooms)];
+                            NestRoom targetRoom = nest.rooms[getRandomItem(nest.availableHoneyRooms)];
                             targetPos = getRandomItem(targetRoom.dropPositions);
 
                             if (pathfindToLocation(targetPos)) { state = 10007; }
@@ -812,8 +816,8 @@ namespace Cave
                         }
                         else if (rand.Next(3) == 0 && nest.hungryLarvae.Count > 0)
                         {
-                            Room roomToTest = nest.getRandomRoomOfType(2);
-                            ((int x, int y) pos, bool found) returnTuple = roomToTest.findTileOfTypeInRoom(-5);
+                            NestRoom roomToTest = nest.getRandomRoomOfType(2);
+                            ((int x, int y) pos, bool found) returnTuple = roomToTest.findTileOfTypeInRoom((-5, 0));
                             if (!returnTuple.found) { return; }
                             targetPos = returnTuple.pos;
 
@@ -826,7 +830,7 @@ namespace Cave
                         }
                         else if (rand.Next(3) > 0 && nest.eggsToLay > 0 && nest.availableNurseries.Count > 0)
                         {
-                            Room targetRoom = nest.rooms[getRandomItem(nest.availableNurseries)];
+                            NestRoom targetRoom = nest.rooms[getRandomItem(nest.availableNurseries)];
                             targetPos = getRandomItem(targetRoom.dropPositions);
 
                             if (pathfindToLocation(targetPos)) { state = 10008; }
@@ -911,7 +915,7 @@ namespace Cave
                         Place(targetPos, (-5, 0, 0), false);
                         if (nest != null)
                         {
-                            Room room = nest.rooms[nest.getRoomId(targetPos)];
+                            NestRoom room = nest.rooms[nest.getRoomId(targetPos)];
                             if (room.type == 2)
                             {
                                 room.testFullness();
@@ -927,11 +931,11 @@ namespace Cave
                     {
                         if (timeAtLastPlace + 1 < timeElapsed)
                         {
-                            Room room = nest.rooms[nest.getRoomId(targetPos)];
+                            NestRoom room = nest.rooms[nest.getRoomId(targetPos)];
                             if (room.type == 3 && Place(targetPos, (3, 0, 1), true))
                             {
                                 Entity kiddo = screen.entitiesToAdd.Values.ToArray()[screen.entitiesToAdd.Count - 1];
-                                kiddo.nest = nest;
+                                kiddo.home = nest;
                                 room.assignedEntities.Add(kiddo);  // since it's the last to be added, add last entity in entity list to the room
                                 nest.larvae.Add(kiddo);
                                 nest.eggsToLay--;
@@ -945,7 +949,7 @@ namespace Cave
                 }
                 else if (state == 9) // feeding kiddo !
                 {
-                    if (nest != null && nest.hungryLarvae.Contains(targetEntity)) { tryFeedTargetEntity(); }
+                    if (nest != null && nest.hungryLarvae.Contains(targetEntity)) { tryFeedTargetEntity(nest); }
                     state = 0;
                 }
                 else { state = 0; }
@@ -1183,11 +1187,11 @@ namespace Cave
                     if (length > 0) { entityDrop = (entityDrop.element, length); }
                     entityToGive.addElementToInventory(entityDrop.element, entityDrop.count);
                 }
-                if (nest != null) { nest.adults.Remove(this); nest.larvae.Remove(this); nest.outsideEntities.Remove(id); }
-                else if (nestId != -1)
+                if (home != null) { home.removeEntity(this); }
+                else if (homeId != -1)
                 {
-                    if(screen.activeStructures.ContainsKey(nestId)) { screen.activeStructures[nestId].addEntityToStructure(this); }
-                    nest.adults.Remove(this); nest.larvae.Remove(this); nest.outsideEntities.Remove(id);
+                    if(screen.dynamicStructures.ContainsKey(homeId)) { screen.dynamicStructures[homeId].addEntityToStructure(this); }
+                    home.removeEntity(this);
                 }
                 screen.entitiesToRemove[id] = this;
             }
@@ -1496,9 +1500,10 @@ namespace Cave
                 }
                 return false;
             }
-            public bool tryFeedTargetEntity()
+            public bool tryFeedTargetEntity(Nest nest)
             {
                 if (targetEntity == null) { return false; }
+                if (targetEntity.home != nest) { targetEntity = null; return false; }   // Only feed if part of the same nest
                 if (targetEntity.type.type == 3 && targetEntity.type.subType == 1)
                 {
                     if (inventoryElements.Contains((-5, 0, 0)) && targetEntity.food < 3 && timeElapsed - targetEntity.timeAtBirth > 45 + 15 * food)
@@ -1507,12 +1512,12 @@ namespace Cave
                         targetEntity.food++;
                         if (targetEntity.food < 3 && timeElapsed - targetEntity.timeAtBirth > 45 + 15 * food)
                         {
-                            targetEntity.nest.hungryLarvae.Remove(targetEntity);
+                            nest.hungryLarvae.Remove(targetEntity);
                         }
                         return true;
                     }
                 }
-                targetEntity.nest.hungryLarvae.Remove(targetEntity);
+                nest.hungryLarvae.Remove(targetEntity);
                 return false;
             }
             public EntityPersonality GetPersonality()

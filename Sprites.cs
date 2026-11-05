@@ -95,6 +95,7 @@ namespace Cave
                 { (2, 2), new OneSprite("LitterTile", false) },
                 { (2, 3), new OneSprite("PeatTile", false) },
                 { (3, 0), new OneSprite("PlantMatter", false) },
+                { (3, 1), new OneSprite("Wood", false) },
                 { (4, 0), new OneSprite("FleshTile", true) },
                 { (4, 1), new OneSprite("BoneTile", true) },
                 { (4, 2), new OneSprite("SkinTile", true) },
@@ -609,7 +610,7 @@ namespace Cave
             Screens.Screen screen = game.playerList[0].screen;
             if (debugMode)
             {
-                drawNumber(game.overlayBitmap, screen.activeStructureLoadedChunkIndexes.Count, (420, 120), 1, true);    // Active Structures count
+                drawNumber(game.overlayBitmap, screen.dynamicStructureLoadedChunkIndexes.Count, (420, 120), 1, true);    // Dynamic Structures count
                 drawNumber(game.overlayBitmap, game.mousePosition.x, (320, 120), 1, true);    // Mouse pos X
                 drawNumber(game.overlayBitmap, game.mousePosition.y, (350, 120), 1, true);    // Mouse pos Y
                 drawNumber(game.overlayBitmap, game.screenMousePosition.x, (320, 108), 1, true);    // Mouse pos X
